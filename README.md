@@ -4,6 +4,15 @@ Codex Room is a local browser application where two or three genuinely separate,
 
 The application uses the official `openai-codex` Python SDK and its local app-server transport. It reuses the Codex authentication already available on the machine. Normal Room turns are explicitly pinned at the adapter boundary to `gpt-5.6-terra` with `high` reasoning; this Room-local policy does not depend on the user's global Codex model default.
 
+## Install for development and testing
+
+Codex Room requires Python 3.10 or later. From this directory, create an environment and install the application with its test dependencies:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install ".[test]"
+```
+
 ## Start
 
 From this directory, double-click `Start-Codex-Room.cmd`. It starts the local server and opens:
@@ -101,6 +110,8 @@ Reusable Agent A/B profiles live separately from Room overrides and Round overla
 ```
 
 The automated suite verifies distinct identities, N-participant routing and settlement, separate histories, PASS behavior, observer targeting, pause/resume, persistence across runtime restarts, runaway limits, compaction continuity, deliberate reset/archive auditing, exports, two-agent compatibility, and Agent C's fresh-context boundary.
+
+`test-transcript-stability.ps1` is a specialized browser transcript check. It is excluded from the routine Python test suite because it requires Node.js plus an installed Chrome or Edge browser; run it separately when that browser-level coverage is needed.
 
 ## Roadmap
 
