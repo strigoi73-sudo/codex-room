@@ -1,0 +1,18 @@
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.playwright-cli/
+node_modules/
+output/
+*.py[cod]
+data/*.db
+data/*.db-*
+data/rooms/
+data/backups/
+data/identity-recovery-*/
+data/.rollover-staging/
+data/*-result.json
+data/institutional/.publishing/
+data/institutional/releases/
+Codex Git Transfer/
