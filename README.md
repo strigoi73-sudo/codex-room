@@ -11,7 +11,7 @@ Codex Room requires Python 3.10 or later. From this directory, create an environ
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -c constraints-test.txt ".[test]"
-\`\`\`
+```
 
 `constraints-test.txt` records the known-good application and test dependency versions used by routine development and CI. Dependency upgrades should be deliberate changes to that constraint set rather than incidental resolver drift.
 
