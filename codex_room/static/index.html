@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Codex Room</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true"><span></span><span></span></div>
+          <div><strong>Codex Room</strong><small>Independent agents, one room</small></div>
+        </div>
+        <button class="primary full" id="new-room-button">＋ New room</button>
+        <button class="ghost full profile-button" id="profiles-button">Agent profile defaults</button>
+        <div class="sidebar-label">Rooms</div>
+        <nav id="room-list" class="room-list" aria-label="Rooms"></nav>
+        <label class="archived-toggle"><input id="show-archived" type="checkbox" /> Show archived</label>
+        <div class="connection-card">
+          <span id="health-dot" class="dot"></span>
+          <div><strong id="health-title">Connecting</strong><small id="health-detail">Checking local Codex</small></div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section id="welcome-view" class="center-view hidden">
+          <div class="welcome-orbit"><i></i><i></i><b>R</b></div>
+          <p class="eyebrow">A durable conversation space</p>
+          <h1>Watch independent Codex agents<br />think together.</h1>
+          <p class="lede">Separate threads. Explicit message delivery. You stay in the room.</p>
+          <button class="primary large" id="welcome-new-room">Create your first room</button>
+        </section>
+
+        <section id="create-view" class="create-view hidden">
+          <header class="page-header compact">
+            <div><p class="eyebrow">New room</p><h1>Set the table</h1></div>
+            <button class="ghost" id="cancel-create">Cancel</button>
+          </header>
+          <form id="create-form" class="create-form">
+            <input name="auto_start" type="hidden" value="false" />
+            <div class="form-section">
+              <label>Room title<input name="title" value="Untitled Room" maxlength="120" required /></label>
+              <label>Opening topic<textarea name="topic" rows="6" maxlength="50000" placeholder="What should the agents explore together?" required></textarea></label>
+            </div>
+            <div class="agent-setup-grid">
+              <div class="agent-setup agent-a-border">
+                <div class="setup-heading"><span class="agent-glyph a">A</span><label>Agent name<input name="agent_a_name" value="Agent A" maxlength="80" required /></label></div>
+                <small id="agent-a-profile-hint" class="profile-hint">Using saved Agent A profile</small>
+                <label>Room override <span class="optional">optional</span><textarea name="agent_a_instructions" rows="8" maxlength="50000" placeholder="Leave blank to use the saved Agent A profile unchanged"></textarea></label>
+                <button type="button" class="text-button restore-default" data-agent="a">Clear room override</button>
+              </div>
+              <div class="agent-setup agent-b-border">
+                <div class="setup-heading"><span class="agent-glyph b">B</span><label>Agent name<input name="agent_b_name" value="Agent B" maxlength="80" required /></label></div>
+                <small id="agent-b-profile-hint" class="profile-hint">Using saved Agent B profile</small>
+                <label>Room override <span class="optional">optional</span><textarea name="agent_b_instructions" rows="8" maxlength="50000" placeholder="Leave blank to use the saved Agent B profile unchanged"></textarea></label>
+                <button type="button" class="text-button restore-default" data-agent="b">Clear room override</button>
+              </div>
+            </div>
+            <label class="include-agent-c"><input name="include_agent_c" type="checkbox" /> Include a fresh Agent C <span class="optional">The Integrator · receives no prior context</span></label>
+            <details class="limits">
+              <summary>Runaway protection</summary>
+              <div class="limit-grid">
+                <label>Maximum turns<input name="max_turns" type="number" min="2" max="500" value="40" /></label>
+                <label>Consecutive PASS limit<input name="max_consecutive_passes" type="number" min="1" max="20" value="3" /></label>
+                <label>Inactivity (seconds)<input name="inactivity_seconds" type="number" min="30" max="86400" value="900" /></label>
+              </div>
+            </details>
+            <div id="create-error" class="error-banner hidden"></div>
+            <button class="primary large create-submit" type="submit"><span>Create room</span><span class="button-note">Starts the selected persistent Codex threads</span></button>
+          </form>
+        </section>
+
+        <section id="room-view" class="room-view hidden">
+          <header class="room-header">
+            <div class="room-title-wrap">
+              <button class="mobile-sidebar ghost" aria-label="Show rooms">☰</button>
+              <div><p class="eyebrow">Persistent room</p><h1 id="room-title">Room</h1><small id="round-summary" class="round-summary">No round</small></div>
+              <span id="room-status" class="status-pill">loading</span>
+            </div>
+            <div class="header-actions">
+              <button class="ghost" id="export-md">Export MD</button>
+              <button class="ghost" id="export-json">Export JSON</button>
+              <button class="ghost danger-text" id="archive-room">Archive</button>
+            </div>
+          </header>
+
+          <div id="agent-strip" class="agent-strip" aria-label="Room participants"></div>
+
+          <div id="transcript" class="transcript" aria-live="polite"></div>
+
+          <div class="observer-dock">
+            <div class="room-controls">
+              <button id="pause-room" class="control">Ⅱ Pause</button>
+              <button id="resume-room" class="control">▶ Resume</button>
+              <button id="stop-room" class="control danger-text">■ Stop</button>
+              <button id="new-round" class="control">＋ New round</button>
+              <button id="start-round" class="control primary">▶ Start round</button>
+              <button id="add-agent-c" class="control">＋ Add Agent C</button>
+              <button id="reset-room" class="control danger-text">↻ Reset agents</button>
+              <span id="turn-counter" class="turn-counter">0 / 40 turns</span>
+            </div>
+            <form id="message-form" class="composer">
+              <select name="target" aria-label="Message target">
+                <option value="all">All agents</option>
+              </select>
+              <textarea name="content" rows="2" maxlength="50000" placeholder="Intervene as the observer…" required></textarea>
+              <button class="send-button" type="submit" aria-label="Send message">↑</button>
+            </form>
+            <div id="room-error" class="error-banner hidden"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="round-dialog">
+      <form id="round-form" method="dialog">
+        <p class="eyebrow">New round</p><h2>Prepare the next experiment</h2>
+        <p>Preparation stores all context without running any agent. Start the round explicitly when it is ready.</p>
+        <label>Round label <span class="optional">optional</span><input name="title" maxlength="120" placeholder="Round 2" /></label>
+        <label>Public prompt<textarea name="prompt" rows="5" maxlength="50000" required></textarea></label>
+        <div class="round-grid">
+          <label>Agent A private initialization <span class="optional">optional</span><textarea name="agent_a_private" rows="4" maxlength="50000"></textarea></label>
+          <label>Agent B private initialization <span class="optional">optional</span><textarea name="agent_b_private" rows="4" maxlength="50000"></textarea></label>
+          <label class="agent-c-round-field hidden">Agent C private initialization <span class="optional">optional</span><textarea name="agent_c_private" rows="4" maxlength="50000" disabled></textarea></label>
+        </div>
+        <label>Shared task overlay <span class="optional">optional</span><textarea name="task_overlay" rows="3" maxlength="50000"></textarea></label>
+        <div class="round-grid">
+          <label>Agent A overlay <span class="optional">optional</span><textarea name="agent_a_overlay" rows="3" maxlength="50000"></textarea></label>
+          <label>Agent B overlay <span class="optional">optional</span><textarea name="agent_b_overlay" rows="3" maxlength="50000"></textarea></label>
+          <label class="agent-c-round-field hidden">Agent C overlay <span class="optional">optional</span><textarea name="agent_c_overlay" rows="3" maxlength="50000" disabled></textarea></label>
+        </div>
+        <label>Starting participant<select name="starting_agent"></select></label>
+        <div class="dialog-actions"><button type="button" class="ghost close-dialog">Cancel</button><button value="default" class="primary" type="submit">Prepare round</button></div>
+      </form>
+    </dialog>
+    <dialog id="profiles-dialog">
+      <form id="profiles-form" method="dialog">
+        <p class="eyebrow">Persistent defaults</p><h2>Agent profiles</h2>
+        <p>These personalities are automatically snapshotted into every new Room. Room overrides and round overlays remain separate.</p>
+        <div class="round-grid">
+          <div><label>Agent A profile name<input name="agent_a_name" maxlength="120" required /></label><label>Agent A instructions<textarea name="agent_a_instructions" rows="10" maxlength="50000" required></textarea></label></div>
+          <div><label>Agent B profile name<input name="agent_b_name" maxlength="120" required /></label><label>Agent B instructions<textarea name="agent_b_instructions" rows="10" maxlength="50000" required></textarea></label></div>
+          <div class="fixed-profile"><span class="agent-glyph c">C</span><div><strong id="agent-c-profile-name">Agent C</strong><small>Fixed join template</small><p id="agent-c-profile-instructions">The Integrator</p></div></div>
+        </div>
+        <div class="dialog-actions"><button type="button" class="ghost close-dialog">Cancel</button><button value="default" class="primary" type="submit">Save defaults</button></div>
+      </form>
+    </dialog>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

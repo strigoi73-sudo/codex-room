@@ -1,0 +1,3153 @@
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import json
+import uuid
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, AsyncIterator, Iterable
+
+import aiosqlite
+
+from .models import (
+    AGENT_A_IMPLEMENTER_INSTRUCTIONS,
+    AGENT_B_VERIFIER_INSTRUCTIONS,
+    AGENT_C_INTEGRATOR_INSTRUCTIONS,
+    AgentStatus,
+    CreateRoomRequest,
+    PrepareRoundRequest,
+    RolloverRoomRequest,
+    RoomStatus,
+    RoundStatus,
+)
+
+
+_LEGACY_PAIR_PROFILE_SHA256 = {
+    "agent_a": "4a70ed77bc61a6e4c81c6bc9c013b9cd86dab4d158c7ec3fe5d8b9b7e2b06399",
+    "agent_b": "f32fc62a1a86c392c53d2d21313fa74491fd282094a1dbebea245966e7a1ca61",
+}
+_TRIAD_PROFILE_TEXT = {
+    "agent_a": AGENT_A_IMPLEMENTER_INSTRUCTIONS,
+    "agent_b": AGENT_B_VERIFIER_INSTRUCTIONS,
+}
+_TRIAD_PROFILE_MIGRATION_ID = "triad_profiles_v1"
+_INSTITUTIONAL_RELEASE_BINDABLE_ROOM_STATUSES = frozenset(
+    {
+        RoomStatus.PREPARING,
+        RoomStatus.RUNNING,
+        RoomStatus.PAUSED,
+        RoomStatus.STOPPED,
+        RoomStatus.FINISHED,
+    }
+)
+
+
+def utc_now() -> str:
+    return datetime.now(UTC).isoformat(timespec="milliseconds")
+
+
+def new_id(prefix: str) -> str:
+    return f"{prefix}_{uuid.uuid4().hex}"
+
+
+class Database:
+    def __init__(self, path: str | Path) -> None:
+        self.path = str(path)
+
+    @asynccontextmanager
+    async def connect(self) -> AsyncIterator[aiosqlite.Connection]:
+        db = await aiosqlite.connect(self.path, timeout=30)
+        db.row_factory = aiosqlite.Row
+        await db.execute("PRAGMA foreign_keys = ON")
+        await db.execute("PRAGMA busy_timeout = 30000")
+        try:
+            yield db
+        finally:
+            close_task = asyncio.create_task(db.close())
+            try:
+                await asyncio.shield(close_task)
+            except asyncio.CancelledError:
+                await close_task
+                raise
+
+    async def initialize(self) -> None:
+        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
+        async with self.connect() as db:
+            await db.executescript(
+                """
+                PRAGMA journal_mode = WAL;
+
+                CREATE TABLE IF NOT EXISTS rooms (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    topic TEXT NOT NULL,
+                    discussion_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    max_turns INTEGER NOT NULL,
+                    max_consecutive_passes INTEGER NOT NULL,
+                    inactivity_seconds INTEGER NOT NULL,
+                    turn_count INTEGER NOT NULL DEFAULT 0,
+                    consecutive_passes INTEGER NOT NULL DEFAULT 0,
+                    metadata_json TEXT NOT NULL DEFAULT '{}'
+                );
+
+                CREATE TABLE IF NOT EXISTS agents (
+                    id TEXT PRIMARY KEY,
+                    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                    agent_key TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    thread_id TEXT,
+                    developer_instructions TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    last_error TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(room_id, agent_key),
+                    UNIQUE(thread_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS events (
+                    id TEXT PRIMARY KEY,
+                    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                    discussion_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    destination TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    related_event_id TEXT REFERENCES events(id),
+                    status TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL DEFAULT '{}'
+                );
+
+                CREATE TABLE IF NOT EXISTS deliveries (
+                    id TEXT PRIMARY KEY,
+                    event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+                    agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+                    runnable INTEGER NOT NULL DEFAULT 1,
+                    status TEXT NOT NULL,
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    queued_at TEXT NOT NULL,
+                    started_at TEXT,
+                    completed_at TEXT,
+                    error TEXT,
+                    UNIQUE(event_id, agent_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_events_room_time
+                    ON events(room_id, created_at, id);
+                CREATE INDEX IF NOT EXISTS idx_deliveries_agent_status
+                    ON deliveries(agent_id, status, queued_at);
+
+                CREATE TABLE IF NOT EXISTS agent_profiles (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    developer_instructions TEXT NOT NULL,
+                    default_slot TEXT UNIQUE,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS rounds (
+                    id TEXT PRIMARY KEY,
+                    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                    title TEXT,
+                    prompt TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    started_at TEXT,
+                    ended_at TEXT,
+                    status TEXT NOT NULL,
+                    starting_agent TEXT,
+                    turn_count INTEGER NOT NULL DEFAULT 0,
+                    consecutive_passes INTEGER NOT NULL DEFAULT 0,
+                    agent_a_private TEXT,
+                    agent_b_private TEXT,
+                    task_overlay TEXT,
+                    agent_a_overlay TEXT,
+                    agent_b_overlay TEXT,
+                    close_reason TEXT,
+                    last_activity_at TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS round_agent_state (
+                    round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+                    agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+                    context_stored_at TEXT NOT NULL,
+                    context_consumed_at TEXT,
+                    finish_boundary_sequence INTEGER,
+                    last_outcome TEXT,
+                    PRIMARY KEY(round_id, agent_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS agent_executions (
+                    batch_id TEXT PRIMARY KEY,
+                    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                    agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+                    round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+                    lifecycle_version INTEGER NOT NULL,
+                    worker_generation INTEGER NOT NULL,
+                    sdk_thread_id TEXT,
+                    sdk_turn_id TEXT,
+                    state TEXT NOT NULL,
+                    result_json TEXT,
+                    usage_json TEXT,
+                    activity_json TEXT,
+                    completion_source TEXT,
+                    created_at TEXT NOT NULL,
+                    turn_started_at TEXT,
+                    result_recorded_at TEXT,
+                    decision_recorded_at TEXT,
+                    settled_at TEXT,
+                    last_reconciled_at TEXT,
+                    last_verified_progress_at TEXT,
+                    error TEXT,
+                    UNIQUE(sdk_thread_id, sdk_turn_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_agent_executions_open
+                    ON agent_executions(room_id, agent_id, state, created_at);
+
+                CREATE TABLE IF NOT EXISTS usage_continuations (
+                    id TEXT PRIMARY KEY,
+                    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                    agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+                    thread_id TEXT NOT NULL,
+                    source_batch_id TEXT NOT NULL,
+                    round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+                    lifecycle_version INTEGER NOT NULL,
+                    worker_generation INTEGER NOT NULL,
+                    input_event_ids_json TEXT NOT NULL,
+                    triggering_event_ids_json TEXT NOT NULL,
+                    reported_retry_at TEXT NOT NULL,
+                    wake_at TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    continuation_batch_id TEXT,
+                    reschedule_count INTEGER NOT NULL DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    fired_at TEXT,
+                    completed_at TEXT,
+                    last_error TEXT,
+                    UNIQUE(agent_id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_usage_continuations_due
+                    ON usage_continuations(state, wake_at);
+                """
+            )
+            await self._ensure_column(db, "rooms", "active_round_id", "TEXT")
+            await self._ensure_column(db, "rooms", "agent_a_profile_id", "TEXT")
+            await self._ensure_column(db, "rooms", "agent_b_profile_id", "TEXT")
+            await self._ensure_column(db, "rooms", "agent_a_override", "TEXT")
+            await self._ensure_column(db, "rooms", "agent_b_override", "TEXT")
+            await self._ensure_column(db, "rooms", "lifecycle_version", "INTEGER NOT NULL DEFAULT 0")
+            await self._ensure_column(db, "agents", "profile_id", "TEXT")
+            await self._ensure_column(db, "agents", "profile_snapshot", "TEXT")
+            await self._ensure_column(db, "agents", "room_override", "TEXT")
+            await self._ensure_column(db, "events", "round_id", "TEXT")
+            await self._ensure_column(db, "events", "sequence_no", "INTEGER")
+            await self._ensure_column(db, "events", "event_class", "TEXT NOT NULL DEFAULT 'mechanical'")
+            await self._ensure_column(db, "events", "conversational", "INTEGER NOT NULL DEFAULT 0")
+            await self._ensure_column(db, "events", "counts_as_turn", "INTEGER NOT NULL DEFAULT 0")
+            await self._ensure_column(db, "events", "counts_toward_pass", "INTEGER NOT NULL DEFAULT 0")
+            await self._ensure_column(db, "events", "visibility", "TEXT NOT NULL DEFAULT 'mechanical'")
+            await self._ensure_column(db, "events", "agent_readable", "INTEGER NOT NULL DEFAULT 0")
+            await self._ensure_column(db, "events", "turn_triggering", "INTEGER NOT NULL DEFAULT 0")
+            await self._ensure_column(db, "deliveries", "batch_id", "TEXT")
+            await self._ensure_column(db, "deliveries", "consumed_at", "TEXT")
+            await self._ensure_column(db, "deliveries", "runnable", "INTEGER NOT NULL DEFAULT 1")
+            await self._ensure_column(db, "events", "execution_id", "TEXT")
+            await self._ensure_column(
+                db, "agent_executions", "last_verified_progress_at", "TEXT"
+            )
+            await self._ensure_column(db, "rounds", "last_activity_at", "TEXT")
+            await self._ensure_column(db, "rounds", "participant_private_json", "TEXT NOT NULL DEFAULT '{}'")
+            await self._ensure_column(db, "rounds", "participant_overlays_json", "TEXT NOT NULL DEFAULT '{}'")
+            await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
+
+            now = utc_now()
+            await db.executemany(
+                """INSERT OR IGNORE INTO agent_profiles
+                   (id, name, developer_instructions, default_slot, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                [
+                    (
+                        "profile_default_a",
+                        "Agent A default",
+                        AGENT_A_IMPLEMENTER_INSTRUCTIONS,
+                        "agent_a",
+                        now,
+                        now,
+                    ),
+                    (
+                        "profile_default_b",
+                        "Agent B default",
+                        AGENT_B_VERIFIER_INSTRUCTIONS,
+                        "agent_b",
+                        now,
+                        now,
+                    ),
+                    (
+                        "profile_default_c",
+                        "Agent C · The Integrator",
+                        AGENT_C_INTEGRATOR_INSTRUCTIONS,
+                        "agent_c",
+                        now,
+                        now,
+                    ),
+                ],
+            )
+            await db.execute("UPDATE events SET round_id=discussion_id WHERE round_id IS NULL")
+            await db.execute("UPDATE events SET sequence_no=rowid WHERE sequence_no IS NULL")
+            await db.execute(
+                """UPDATE events SET
+                   event_class=CASE
+                     WHEN event_type IN ('observer_message','agent_message','agent_pass','agent_finish','topic') THEN 'conversation'
+                     WHEN event_type IN ('agent_activity','tool_activity') THEN 'status'
+                     ELSE 'lifecycle' END,
+                   conversational=CASE WHEN event_type IN
+                     ('observer_message','agent_message','agent_pass','agent_finish','topic') THEN 1 ELSE 0 END,
+                   counts_as_turn=CASE WHEN event_type IN
+                     ('agent_message','agent_pass','agent_finish') THEN 1 ELSE 0 END,
+                   counts_toward_pass=CASE WHEN event_type='agent_pass' THEN 1 ELSE 0 END,
+                   visibility=CASE
+                     WHEN event_type='observer_message' AND destination NOT IN ('both','all') THEN 'private'
+                     WHEN source='room' THEN 'mechanical' ELSE 'public' END,
+                   agent_readable=CASE WHEN event_type IN
+                     ('observer_message','agent_message','topic') THEN 1 ELSE 0 END,
+                   turn_triggering=CASE WHEN event_type IN
+                     ('observer_message','agent_message','topic') THEN 1 ELSE 0 END
+                   WHERE event_class='mechanical'"""
+            )
+            await db.execute(
+                """UPDATE deliveries SET consumed_at=completed_at
+                   WHERE status='delivered' AND consumed_at IS NULL"""
+            )
+            legacy_rooms = await db.execute_fetchall("SELECT * FROM rooms")
+            for room in legacy_rooms:
+                round_id = room["active_round_id"] or room["discussion_id"]
+                round_status = self._round_status_for_room(room["status"])
+                started_at = room["created_at"] if round_status != RoundStatus.PREPARING else None
+                ended_at = room["updated_at"] if round_status in {
+                    RoundStatus.FINISHED,
+                    RoundStatus.STOPPED,
+                } else None
+                await db.execute(
+                    """INSERT OR IGNORE INTO rounds
+                       (id, room_id, title, prompt, created_at, started_at, ended_at,
+                        status, starting_agent, turn_count, consecutive_passes)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'either', ?, ?)""",
+                    (
+                        round_id,
+                        room["id"],
+                        "Migrated initial round",
+                        room["topic"],
+                        room["created_at"],
+                        started_at,
+                        ended_at,
+                        round_status,
+                        room["turn_count"],
+                        room["consecutive_passes"],
+                    ),
+                )
+                await db.execute(
+                    "UPDATE rooms SET active_round_id=? WHERE id=? AND active_round_id IS NULL",
+                    (round_id, room["id"]),
+                )
+                agents = await db.execute_fetchall(
+                    "SELECT * FROM agents WHERE room_id=?", (room["id"],)
+                )
+                for agent in agents:
+                    snapshot = agent["profile_snapshot"] or agent["developer_instructions"]
+                    await db.execute(
+                        """UPDATE agents SET profile_snapshot=?
+                           WHERE id=? AND profile_snapshot IS NULL""",
+                        (snapshot, agent["id"]),
+                    )
+                    await db.execute(
+                        """INSERT OR IGNORE INTO round_agent_state
+                           (round_id, agent_id, context_stored_at, context_consumed_at)
+                           VALUES (?, ?, ?, ?)""",
+                        (round_id, agent["id"], room["created_at"], room["created_at"]),
+                    )
+            await self._migrate_known_pair_profiles(db, now)
+            await db.execute(
+                """CREATE UNIQUE INDEX IF NOT EXISTS idx_events_room_sequence
+                   ON events(room_id, sequence_no)"""
+            )
+            await db.execute(
+                """CREATE INDEX IF NOT EXISTS idx_rounds_room_created
+                   ON rounds(room_id, created_at)"""
+            )
+            await db.execute(
+                """CREATE UNIQUE INDEX IF NOT EXISTS idx_events_execution_result
+                   ON events(execution_id) WHERE execution_id IS NOT NULL"""
+            )
+            await db.commit()
+
+    async def _migrate_known_pair_profiles(
+        self, db: aiosqlite.Connection, now: str
+    ) -> None:
+        """Replace only the known stale pair defaults and matching live snapshots.
+
+        Existing custom profiles, Room overrides, and archived predecessor snapshots
+        are deliberately outside this one-time migration.
+        """
+        defaults = await db.execute_fetchall(
+            """SELECT id, default_slot, developer_instructions FROM agent_profiles
+               WHERE default_slot IN ('agent_a', 'agent_b')"""
+        )
+        for row in defaults:
+            slot = row["default_slot"]
+            digest = hashlib.sha256(row["developer_instructions"].encode("utf-8")).hexdigest()
+            if digest == _LEGACY_PAIR_PROFILE_SHA256[slot]:
+                await db.execute(
+                    """UPDATE agent_profiles SET developer_instructions=?, updated_at=?
+                       WHERE id=? AND developer_instructions=?""",
+                    (_TRIAD_PROFILE_TEXT[slot], now, row["id"], row["developer_instructions"]),
+                )
+
+        candidates = await db.execute_fetchall(
+            """SELECT a.id, a.room_id, a.agent_key, a.profile_id, a.profile_snapshot,
+                      a.developer_instructions, a.room_override, r.status, r.metadata_json
+               FROM agents a JOIN rooms r ON r.id=a.room_id
+               WHERE a.agent_key IN ('agent_a', 'agent_b') AND r.status != ?""",
+            (RoomStatus.ARCHIVED,),
+        )
+        changed_rooms: dict[str, tuple[dict[str, Any], set[str]]] = {}
+        for row in candidates:
+            slot = row["agent_key"]
+            snapshot = row["profile_snapshot"] or ""
+            effective = row["developer_instructions"] or ""
+            room_metadata = json.loads(row["metadata_json"] or "{}")
+            if (
+                room_metadata.get("sealed") is True
+                or row["profile_id"] != f"profile_default_{slot[-1]}"
+                or row["room_override"] is not None
+                or hashlib.sha256(snapshot.encode("utf-8")).hexdigest()
+                != _LEGACY_PAIR_PROFILE_SHA256[slot]
+                or hashlib.sha256(effective.encode("utf-8")).hexdigest()
+                != _LEGACY_PAIR_PROFILE_SHA256[slot]
+            ):
+                continue
+            replacement = _TRIAD_PROFILE_TEXT[slot]
+            cursor = await db.execute(
+                """UPDATE agents SET profile_snapshot=?, developer_instructions=?, updated_at=?
+                   WHERE id=? AND profile_snapshot=? AND developer_instructions=?
+                         AND room_override IS NULL""",
+                (replacement, replacement, now, row["id"], snapshot, effective),
+            )
+            if cursor.rowcount == 1:
+                _, changed_agents = changed_rooms.setdefault(
+                    row["room_id"], (room_metadata, set())
+                )
+                changed_agents.add(slot)
+
+        for room_id, (metadata, changed_agents) in changed_rooms.items():
+            migrations = metadata.setdefault("profile_migrations", [])
+            if not any(item.get("id") == _TRIAD_PROFILE_MIGRATION_ID for item in migrations):
+                migrations.append(
+                    {
+                        "id": _TRIAD_PROFILE_MIGRATION_ID,
+                        "applied_at": now,
+                        "agents": sorted(changed_agents),
+                        "previous_sha256": {
+                            slot: _LEGACY_PAIR_PROFILE_SHA256[slot]
+                            for slot in sorted(changed_agents)
+                        },
+                        "replacement_sha256": {
+                            slot: hashlib.sha256(text.encode("utf-8")).hexdigest()
+                            for slot, text in _TRIAD_PROFILE_TEXT.items()
+                            if slot in changed_agents
+                        },
+                    }
+                )
+                await db.execute(
+                    "UPDATE rooms SET metadata_json=?, updated_at=? WHERE id=?",
+                    (json.dumps(metadata, ensure_ascii=False), now, room_id),
+                )
+
+    async def recover_interrupted_work(self) -> None:
+        """Preserve in-flight claims for exact-turn reconciliation after restart."""
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE agent_executions
+                   SET state='recovering', last_reconciled_at=NULL
+                   WHERE state IN ('active', 'recovering')"""
+            )
+            await db.execute(
+                """UPDATE agent_executions
+                   SET state='quarantined',
+                       error='Process exited before the exact Codex turn identity was persisted'
+                   WHERE state='claimed'"""
+            )
+            await db.commit()
+
+    async def create_room(self, request: CreateRoomRequest) -> str:
+        room_id = new_id("room")
+        round_id = new_id("round")
+        now = utc_now()
+        a_id = f"{room_id}:agent_a"
+        b_id = f"{room_id}:agent_b"
+        c_id = f"{room_id}:agent_c"
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            profile_a = await self._fetchone(
+                db, "SELECT * FROM agent_profiles WHERE default_slot='agent_a'", ()
+            )
+            profile_b = await self._fetchone(
+                db, "SELECT * FROM agent_profiles WHERE default_slot='agent_b'", ()
+            )
+            profile_c = await self._fetchone(
+                db, "SELECT * FROM agent_profiles WHERE default_slot='agent_c'", ()
+            )
+            if profile_a is None or profile_b is None or profile_c is None:
+                raise RuntimeError("Default agent profiles are missing")
+            a_profile_text = profile_a["developer_instructions"]
+            b_profile_text = profile_b["developer_instructions"]
+            a_instructions = self._effective_instructions(
+                a_profile_text, request.agent_a_instructions
+            )
+            b_instructions = self._effective_instructions(
+                b_profile_text, request.agent_b_instructions
+            )
+            await db.execute(
+                """INSERT INTO rooms
+                (id, title, status, topic, discussion_id, created_at, updated_at,
+                 max_turns, max_consecutive_passes, inactivity_seconds, metadata_json,
+                 active_round_id, agent_a_profile_id, agent_b_profile_id,
+                 agent_a_override, agent_b_override)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    room_id,
+                    request.title,
+                    RoomStatus.CREATING,
+                    request.topic,
+                    round_id,
+                    now,
+                    now,
+                    request.max_turns,
+                    request.max_consecutive_passes,
+                    request.inactivity_seconds,
+                    json.dumps({"schema_version": 2, "created_by": "local_observer"}),
+                    round_id,
+                    profile_a["id"],
+                    profile_b["id"],
+                    request.agent_a_instructions,
+                    request.agent_b_instructions,
+                ),
+            )
+            agent_rows = [
+                (
+                    a_id,
+                    room_id,
+                    "agent_a",
+                    request.agent_a_name,
+                    a_instructions,
+                    AgentStatus.INITIALIZING,
+                    now,
+                    now,
+                    profile_a["id"],
+                    a_profile_text,
+                    request.agent_a_instructions,
+                ),
+                (
+                    b_id,
+                    room_id,
+                    "agent_b",
+                    request.agent_b_name,
+                    b_instructions,
+                    AgentStatus.INITIALIZING,
+                    now,
+                    now,
+                    profile_b["id"],
+                    b_profile_text,
+                    request.agent_b_instructions,
+                ),
+            ]
+            if request.include_agent_c:
+                agent_rows.append(
+                    (
+                        c_id,
+                        room_id,
+                        "agent_c",
+                        "Agent C",
+                        profile_c["developer_instructions"],
+                        AgentStatus.INITIALIZING,
+                        now,
+                        now,
+                        profile_c["id"],
+                        profile_c["developer_instructions"],
+                        None,
+                    )
+                )
+            await db.executemany(
+                """INSERT INTO agents
+                (id, room_id, agent_key, name, thread_id, developer_instructions,
+                 status, created_at, updated_at, profile_id, profile_snapshot, room_override)
+                VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)""",
+                agent_rows,
+            )
+            await db.execute(
+                """INSERT INTO rounds
+                   (id, room_id, title, prompt, created_at, status, starting_agent)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    round_id,
+                    room_id,
+                    "Opening round",
+                    request.topic,
+                    now,
+                    RoundStatus.PREPARING,
+                    request.starting_agent,
+                ),
+            )
+            await db.executemany(
+                """INSERT INTO round_agent_state
+                   (round_id, agent_id, context_stored_at)
+                   VALUES (?, ?, ?)""",
+                [(round_id, row[0], now) for row in agent_rows],
+            )
+            await db.commit()
+        return room_id
+
+    async def reserve_rollover(
+        self,
+        source_room_id: str,
+        request: RolloverRoomRequest,
+        institutional_release: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Freeze a quiescent predecessor and create one unroutable staged successor."""
+        operation_id = new_id("rollover")
+        successor_id = new_id("room")
+        round_id = new_id("round")
+        now = utc_now()
+        checkpoint_hash = hashlib.sha256(request.checkpoint.encode("utf-8")).hexdigest()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            source = await self._fetchone(db, "SELECT * FROM rooms WHERE id=?", (source_room_id,))
+            if source is None:
+                raise KeyError(source_room_id)
+            source_metadata = json.loads(source["metadata_json"] or "{}")
+            committed = source_metadata.get("rollover_successor")
+            if committed:
+                if committed.get("checkpoint_sha256") == checkpoint_hash:
+                    if committed.get("institutional_release") != institutional_release:
+                        await db.rollback()
+                        raise ValueError(
+                            "This Room has already rolled over with another institutional release"
+                        )
+                    await db.rollback()
+                    return {
+                        "operation_id": committed["operation_id"],
+                        "source_room_id": source_room_id,
+                        "successor_room_id": committed["room_id"],
+                        "checkpoint_sha256": checkpoint_hash,
+                        "already_committed": True,
+                    }
+                await db.rollback()
+                raise ValueError("This Room has already rolled over with another checkpoint")
+            if source["status"] != RoomStatus.FINISHED:
+                raise ValueError("Only a naturally finished Room can roll over")
+            active_round = await self._fetchone(
+                db, "SELECT status FROM rounds WHERE id=?", (source["active_round_id"],)
+            )
+            if active_round is None or active_round["status"] != RoundStatus.FINISHED:
+                raise ValueError("Room rollover requires a naturally finished active round")
+            open_deliveries = await self._fetchone(
+                db,
+                """SELECT COUNT(*) AS count FROM deliveries d
+                   JOIN events e ON e.id=d.event_id
+                   WHERE e.room_id=? AND d.status IN ('pending','processing')""",
+                (source_room_id,),
+            )
+            open_executions = await self._fetchone(
+                db,
+                """SELECT COUNT(*) AS count FROM agent_executions
+                   WHERE room_id=? AND state IN
+                   ('claimed','active','recovering','result_ready','quarantined')""",
+                (source_room_id,),
+            )
+            if (open_deliveries and open_deliveries["count"]) or (
+                open_executions and open_executions["count"]
+            ):
+                raise ValueError("Room rollover requires fully quiescent delivery and execution state")
+            agents = await db.execute_fetchall(
+                "SELECT * FROM agents WHERE room_id=? ORDER BY agent_key", (source_room_id,)
+            )
+            if not agents or any(not agent["thread_id"] for agent in agents):
+                raise ValueError("Every predecessor participant must have a persistent thread")
+
+            active = {
+                "operation_id": operation_id,
+                "successor_room_id": successor_id,
+                "checkpoint_sha256": checkpoint_hash,
+                "checkpoint_character_count": len(request.checkpoint),
+                "provisioned_threads": {},
+                "started_at": now,
+            }
+            if institutional_release is not None:
+                active["institutional_release"] = institutional_release
+            source_metadata["rollover_pending"] = active
+            cursor = await db.execute(
+                """UPDATE rooms SET status=?, metadata_json=?, updated_at=?
+                   WHERE id=? AND status=?""",
+                (
+                    RoomStatus.ROLLING_OVER,
+                    json.dumps(source_metadata, ensure_ascii=False),
+                    now,
+                    source_room_id,
+                    RoomStatus.FINISHED,
+                ),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise ValueError("Room rollover reservation lost its state comparison")
+
+            successor_metadata = {
+                "schema_version": 2,
+                "created_by": "room_rollover",
+                "rollover_state": "staging",
+                "lineage": {
+                    "operation_id": operation_id,
+                    "predecessor_room_id": source_room_id,
+                    "checkpoint_sha256": checkpoint_hash,
+                    "checkpoint_character_count": len(request.checkpoint),
+                    "participants": {
+                        agent["agent_key"]: agent["id"] for agent in agents
+                    },
+                },
+            }
+            if institutional_release is not None:
+                successor_metadata["institutional_release"] = institutional_release
+                successor_metadata["lineage"]["institutional_release"] = institutional_release
+            await db.execute(
+                """INSERT INTO rooms
+                   (id, title, status, topic, discussion_id, created_at, updated_at,
+                    max_turns, max_consecutive_passes, inactivity_seconds, metadata_json,
+                    active_round_id, agent_a_profile_id, agent_b_profile_id,
+                    agent_a_override, agent_b_override)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    successor_id,
+                    request.title or f"{source['title']} (continued)"[:120],
+                    RoomStatus.CREATING,
+                    request.checkpoint,
+                    round_id,
+                    now,
+                    now,
+                    source["max_turns"],
+                    source["max_consecutive_passes"],
+                    source["inactivity_seconds"],
+                    json.dumps(successor_metadata, ensure_ascii=False),
+                    round_id,
+                    source["agent_a_profile_id"],
+                    source["agent_b_profile_id"],
+                    source["agent_a_override"],
+                    source["agent_b_override"],
+                ),
+            )
+            successor_agents: list[tuple[Any, ...]] = []
+            for agent in agents:
+                successor_agents.append(
+                    (
+                        f"{successor_id}:{agent['agent_key']}",
+                        successor_id,
+                        agent["agent_key"],
+                        agent["name"],
+                        agent["developer_instructions"],
+                        AgentStatus.INITIALIZING,
+                        now,
+                        now,
+                        agent["profile_id"],
+                        agent["profile_snapshot"],
+                        agent["room_override"],
+                    )
+                )
+            await db.executemany(
+                """INSERT INTO agents
+                   (id, room_id, agent_key, name, thread_id, developer_instructions,
+                    status, created_at, updated_at, profile_id, profile_snapshot, room_override)
+                   VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)""",
+                successor_agents,
+            )
+            await db.execute(
+                """INSERT INTO rounds
+                   (id, room_id, title, prompt, created_at, status, starting_agent,
+                    participant_private_json, participant_overlays_json)
+                   VALUES (?, ?, ?, ?, ?, ?, 'either', '{}', '{}')""",
+                (round_id, successor_id, "Inherited checkpoint", request.checkpoint, now, RoundStatus.PREPARING),
+            )
+            await db.executemany(
+                """INSERT INTO round_agent_state (round_id, agent_id, context_stored_at)
+                   VALUES (?, ?, ?)""",
+                [(round_id, row[0], now) for row in successor_agents],
+            )
+            await db.commit()
+        return {
+            "operation_id": operation_id,
+            "source_room_id": source_room_id,
+            "successor_room_id": successor_id,
+            "checkpoint_sha256": checkpoint_hash,
+            "already_committed": False,
+        }
+
+    async def record_rollover_thread(
+        self,
+        source_room_id: str,
+        operation_id: str,
+        successor_room_id: str,
+        agent_key: str,
+        thread_id: str,
+    ) -> None:
+        """Bind one externally provisioned thread to the reserved successor."""
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            source = await self._fetchone(db, "SELECT * FROM rooms WHERE id=?", (source_room_id,))
+            if source is None:
+                raise KeyError(source_room_id)
+            metadata = json.loads(source["metadata_json"] or "{}")
+            pending = metadata.get("rollover_pending") or {}
+            if (
+                source["status"] != RoomStatus.ROLLING_OVER
+                or pending.get("operation_id") != operation_id
+                or pending.get("successor_room_id") != successor_room_id
+            ):
+                raise ValueError("Rollover reservation is no longer current")
+            predecessor_ids = {
+                row["thread_id"]
+                for row in await db.execute_fetchall(
+                    "SELECT thread_id FROM agents WHERE room_id=? AND thread_id IS NOT NULL",
+                    (source_room_id,),
+                )
+            }
+            successor_ids = {
+                row["thread_id"]
+                for row in await db.execute_fetchall(
+                    "SELECT thread_id FROM agents WHERE room_id=? AND thread_id IS NOT NULL",
+                    (successor_room_id,),
+                )
+            }
+            if thread_id in predecessor_ids or thread_id in successor_ids:
+                await db.rollback()
+                raise ValueError("Rollover thread ID must be fresh and unique")
+            cursor = await db.execute(
+                """UPDATE agents SET thread_id=?, status=?, updated_at=?
+                   WHERE room_id=? AND agent_key=? AND thread_id IS NULL""",
+                (thread_id, AgentStatus.IDLE, utc_now(), successor_room_id, agent_key),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise ValueError(f"Rollover participant {agent_key} was already provisioned")
+            pending.setdefault("provisioned_threads", {})[agent_key] = thread_id
+            metadata["rollover_pending"] = pending
+            await db.execute(
+                "UPDATE rooms SET metadata_json=?, updated_at=? WHERE id=?",
+                (json.dumps(metadata, ensure_ascii=False), utc_now(), source_room_id),
+            )
+            await db.commit()
+
+    async def finalize_rollover(
+        self, source_room_id: str, operation_id: str, successor_room_id: str
+    ) -> dict[str, Any]:
+        """Atomically link/seal the predecessor and expose a fully provisioned successor."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            source = await self._fetchone(db, "SELECT * FROM rooms WHERE id=?", (source_room_id,))
+            successor = await self._fetchone(db, "SELECT * FROM rooms WHERE id=?", (successor_room_id,))
+            if source is None or successor is None:
+                raise ValueError("Rollover source or staged successor is missing")
+            source_metadata = json.loads(source["metadata_json"] or "{}")
+            pending = source_metadata.get("rollover_pending") or {}
+            if (
+                source["status"] != RoomStatus.ROLLING_OVER
+                or pending.get("operation_id") != operation_id
+                or pending.get("successor_room_id") != successor_room_id
+                or successor["status"] != RoomStatus.CREATING
+            ):
+                raise ValueError("Rollover finalization no longer matches its reservation")
+            open_deliveries = await self._fetchone(
+                db,
+                """SELECT COUNT(*) AS count FROM deliveries d JOIN events e ON e.id=d.event_id
+                   WHERE e.room_id=? AND d.status IN ('pending','processing')""",
+                (source_room_id,),
+            )
+            active_round = await self._fetchone(
+                db, "SELECT status FROM rounds WHERE id=?", (source["active_round_id"],)
+            )
+            open_executions = await self._fetchone(
+                db,
+                """SELECT COUNT(*) AS count FROM agent_executions WHERE room_id=? AND state IN
+                   ('claimed','active','recovering','result_ready','quarantined')""",
+                (source_room_id,),
+            )
+            agents = await db.execute_fetchall(
+                "SELECT agent_key, thread_id FROM agents WHERE room_id=? ORDER BY agent_key",
+                (successor_room_id,),
+            )
+            predecessor_ids = {
+                row["thread_id"]
+                for row in await db.execute_fetchall(
+                    "SELECT thread_id FROM agents WHERE room_id=? AND thread_id IS NOT NULL",
+                    (source_room_id,),
+                )
+            }
+            ids = [agent["thread_id"] for agent in agents]
+            if (
+                (open_deliveries and open_deliveries["count"])
+                or (open_executions and open_executions["count"])
+                or active_round is None
+                or active_round["status"] != RoundStatus.FINISHED
+                or not agents
+                or any(not item for item in ids)
+                or len(set(ids)) != len(ids)
+                or not set(ids).isdisjoint(predecessor_ids)
+            ):
+                raise ValueError("Rollover cannot finalize without quiescence and unique fresh threads")
+            history = source_metadata.setdefault("rollover_history", [])
+            history.append({**pending, "state": "committed", "completed_at": now})
+            source_metadata.pop("rollover_pending", None)
+            source_metadata["rollover_successor"] = {
+                "operation_id": operation_id,
+                "room_id": successor_room_id,
+                "checkpoint_sha256": pending["checkpoint_sha256"],
+                "checkpoint_character_count": pending["checkpoint_character_count"],
+            }
+            if pending.get("institutional_release") is not None:
+                source_metadata["rollover_successor"]["institutional_release"] = pending[
+                    "institutional_release"
+                ]
+            source_metadata["sealed"] = True
+            successor_metadata = json.loads(successor["metadata_json"] or "{}")
+            successor_metadata["rollover_state"] = "ready"
+            await db.execute(
+                "UPDATE rooms SET status=?, metadata_json=?, updated_at=? WHERE id=?",
+                (RoomStatus.ARCHIVED, json.dumps(source_metadata, ensure_ascii=False), now, source_room_id),
+            )
+            await db.execute(
+                "UPDATE rooms SET status=?, metadata_json=?, updated_at=? WHERE id=?",
+                (RoomStatus.PREPARING, json.dumps(successor_metadata, ensure_ascii=False), now, successor_room_id),
+            )
+            await db.commit()
+        room = await self.get_room(successor_room_id)
+        assert room is not None
+        return room
+
+    async def abort_rollover(
+        self,
+        source_room_id: str,
+        operation_id: str,
+        successor_room_id: str,
+        error: str,
+        extra_orphaned_thread_ids: Iterable[str] = (),
+        suspicious_thread_ids: Iterable[str] = (),
+    ) -> list[str]:
+        """Restore the predecessor and retain an audit of provisioned orphan threads."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            source = await self._fetchone(db, "SELECT * FROM rooms WHERE id=?", (source_room_id,))
+            if source is None:
+                raise KeyError(source_room_id)
+            metadata = json.loads(source["metadata_json"] or "{}")
+            pending = metadata.get("rollover_pending") or {}
+            if pending.get("operation_id") != operation_id:
+                await db.rollback()
+                return []
+            rows = await db.execute_fetchall(
+                "SELECT thread_id FROM agents WHERE room_id=? AND thread_id IS NOT NULL",
+                (successor_room_id,),
+            )
+            predecessor_ids = {
+                row["thread_id"]
+                for row in await db.execute_fetchall(
+                    "SELECT thread_id FROM agents WHERE room_id=? AND thread_id IS NOT NULL",
+                    (source_room_id,),
+                )
+            }
+            candidates = list(
+                dict.fromkeys([row["thread_id"] for row in rows] + list(extra_orphaned_thread_ids))
+            )
+            suspicious = list(
+                dict.fromkeys(
+                    list(suspicious_thread_ids)
+                    + [thread_id for thread_id in candidates if thread_id in predecessor_ids]
+                )
+            )
+            orphaned = [
+                thread_id for thread_id in candidates if thread_id not in predecessor_ids
+            ]
+            metadata.setdefault("rollover_history", []).append(
+                {
+                    **pending,
+                    "state": "aborted",
+                    "completed_at": now,
+                    "error": error[:1000],
+                    "orphaned_thread_ids": orphaned,
+                    "suspicious_thread_ids": suspicious,
+                }
+            )
+            metadata.pop("rollover_pending", None)
+            await db.execute("DELETE FROM rooms WHERE id=?", (successor_room_id,))
+            await db.execute(
+                "UPDATE rooms SET status=?, metadata_json=?, updated_at=? WHERE id=?",
+                (RoomStatus.FINISHED, json.dumps(metadata, ensure_ascii=False), now, source_room_id),
+            )
+            await db.commit()
+        return orphaned
+
+    async def get_pending_rollovers(self) -> list[dict[str, Any]]:
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                "SELECT * FROM rooms WHERE status=?", (RoomStatus.ROLLING_OVER,)
+            )
+        result: list[dict[str, Any]] = []
+        for row in rows:
+            source = self._decode_row(row)
+            pending = source.get("metadata", {}).get("rollover_pending")
+            if pending:
+                result.append({"source": source, **pending})
+        return result
+
+    async def get_committed_rollovers(self) -> list[dict[str, Any]]:
+        """Return committed lineage records so missing audit events can be repaired idempotently."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                "SELECT * FROM rooms WHERE status=?", (RoomStatus.ARCHIVED,)
+            )
+        result: list[dict[str, Any]] = []
+        for row in rows:
+            source = self._decode_row(row)
+            committed = source.get("metadata", {}).get("rollover_successor")
+            if committed:
+                result.append({"source": source, **committed})
+        return result
+
+    async def list_rooms(self, include_archived: bool = False) -> list[dict[str, Any]]:
+        where = "" if include_archived else "WHERE status != 'archived'"
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                f"SELECT * FROM rooms {where} ORDER BY updated_at DESC"  # noqa: S608
+            )
+        decoded = [self._decode_row(row) for row in rows]
+        return [
+            room
+            for room in decoded
+            if room.get("metadata", {}).get("rollover_state") != "staging"
+        ]
+
+    async def get_room(self, room_id: str) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(db, "SELECT * FROM rooms WHERE id=?", (room_id,))
+        return self._decode_row(row) if row else None
+
+    async def get_agents(self, room_id: str) -> list[dict[str, Any]]:
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                "SELECT * FROM agents WHERE room_id=? ORDER BY agent_key", (room_id,)
+            )
+        return [self._decode_row(row) for row in rows]
+
+    async def get_agent(self, room_id: str, agent_key: str) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                "SELECT * FROM agents WHERE room_id=? AND agent_key=?",
+                (room_id, agent_key),
+            )
+        return self._decode_row(row) if row else None
+
+    async def set_agent_thread(self, agent_id: str, thread_id: str) -> None:
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute(
+                "UPDATE agents SET thread_id=?, status=?, last_error=NULL, updated_at=? WHERE id=?",
+                (thread_id, AgentStatus.IDLE, now, agent_id),
+            )
+            await db.commit()
+
+    async def reserve_agent_c(self, room_id: str) -> dict[str, Any]:
+        """Add C without delivering any pre-join event or round initialization."""
+        now = utc_now()
+        agent_id = f"{room_id}:agent_c"
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            room = await self._fetchone(db, "SELECT * FROM rooms WHERE id=?", (room_id,))
+            if room is None:
+                raise KeyError(room_id)
+            if room["status"] in {
+                RoomStatus.ARCHIVED,
+                RoomStatus.CREATING,
+                RoomStatus.ROLLING_OVER,
+                RoomStatus.ERROR,
+            }:
+                raise ValueError(f"Cannot add an agent while room is {room['status']}")
+            existing = await self._fetchone(
+                db, "SELECT 1 FROM agents WHERE room_id=? AND agent_key='agent_c'", (room_id,)
+            )
+            if existing is not None:
+                raise ValueError("Agent C is already a participant")
+            profile = await self._fetchone(
+                db, "SELECT * FROM agent_profiles WHERE default_slot='agent_c'", ()
+            )
+            if profile is None:
+                raise RuntimeError("Agent C default profile is missing")
+            maximum = await self._fetchone(
+                db, "SELECT COALESCE(MAX(sequence_no), 0) AS value FROM events WHERE room_id=?",
+                (room_id,),
+            )
+            watermark = maximum["value"] if maximum else 0
+            await db.execute(
+                """INSERT INTO agents
+                   (id, room_id, agent_key, name, thread_id, developer_instructions,
+                    status, created_at, updated_at, profile_id, profile_snapshot, room_override)
+                   VALUES (?, ?, 'agent_c', 'Agent C', NULL, ?, ?, ?, ?, ?, ?, NULL)""",
+                (
+                    agent_id,
+                    room_id,
+                    profile["developer_instructions"],
+                    AgentStatus.INITIALIZING,
+                    now,
+                    now,
+                    profile["id"],
+                    profile["developer_instructions"],
+                ),
+            )
+            await db.execute(
+                """INSERT INTO round_agent_state
+                   (round_id, agent_id, context_stored_at, context_consumed_at,
+                    delivery_start_sequence)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (room["active_round_id"], agent_id, now, now, watermark),
+            )
+            await db.commit()
+        agent = await self.get_agent(room_id, "agent_c")
+        assert agent is not None
+        return agent
+
+    async def remove_agent(self, room_id: str, agent_key: str) -> None:
+        async with self.connect() as db:
+            await db.execute("DELETE FROM agents WHERE room_id=? AND agent_key=?", (room_id, agent_key))
+            await db.commit()
+
+    async def set_agent_status(
+        self, agent_id: str, status: AgentStatus | str, error: str | None = None
+    ) -> None:
+        async with self.connect() as db:
+            await db.execute(
+                "UPDATE agents SET status=?, last_error=?, updated_at=? WHERE id=?",
+                (str(status), error, utc_now(), agent_id),
+            )
+            await db.commit()
+
+    async def set_all_agent_statuses(
+        self, room_id: str, status: AgentStatus | str, error: str | None = None
+    ) -> None:
+        async with self.connect() as db:
+            await db.execute(
+                "UPDATE agents SET status=?, last_error=?, updated_at=? WHERE room_id=?",
+                (str(status), error, utc_now(), room_id),
+            )
+            await db.commit()
+
+    async def reopen_ready_agent(self, room_id: str, agent_key: str) -> bool:
+        async with self.connect() as db:
+            cursor = await db.execute(
+                """UPDATE agents SET status=?, last_error=NULL, updated_at=?
+                   WHERE room_id=? AND agent_key=? AND status=?""",
+                (
+                    AgentStatus.IDLE,
+                    utc_now(),
+                    room_id,
+                    agent_key,
+                    AgentStatus.READY_TO_FINISH,
+                ),
+            )
+            await db.commit()
+        return cursor.rowcount == 1
+
+    async def set_room_status(self, room_id: str, status: RoomStatus | str) -> None:
+        async with self.connect() as db:
+            await db.execute(
+                "UPDATE rooms SET status=?, updated_at=? WHERE id=?",
+                (str(status), utc_now(), room_id),
+            )
+            await db.commit()
+
+    async def reopen_finished_room(self, room_id: str) -> None:
+        """Reopen the current discussion without changing either thread identity."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            cursor = await db.execute(
+                """UPDATE rooms SET status=?, consecutive_passes=0, updated_at=?
+                   WHERE id=? AND status=?""",
+                (RoomStatus.RUNNING, now, room_id, RoomStatus.FINISHED),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise ValueError("Only a naturally finished room can be reopened by a message")
+            await db.execute(
+                """UPDATE agents SET status=?, last_error=NULL, updated_at=?
+                   WHERE room_id=? AND status IN (?, ?)""",
+                (
+                    AgentStatus.IDLE,
+                    now,
+                    room_id,
+                    AgentStatus.FINISHED,
+                    AgentStatus.READY_TO_FINISH,
+                ),
+            )
+            await db.execute(
+                """UPDATE rounds SET status=?, ended_at=NULL, close_reason=NULL,
+                   consecutive_passes=0 WHERE id=(SELECT active_round_id FROM rooms WHERE id=?)""",
+                (RoundStatus.ACTIVE, room_id),
+            )
+            await db.commit()
+
+    async def update_room(self, room_id: str, changes: dict[str, Any]) -> None:
+        allowed = {"title", "max_turns", "max_consecutive_passes", "inactivity_seconds"}
+        filtered = {key: value for key, value in changes.items() if key in allowed and value is not None}
+        if not filtered:
+            return
+        assignments = ", ".join(f"{key}=?" for key in filtered)
+        values = [*filtered.values(), utc_now(), room_id]
+        async with self.connect() as db:
+            room = await self._fetchone(db, "SELECT status FROM rooms WHERE id=?", (room_id,))
+            if room is None:
+                raise KeyError(room_id)
+            if room["status"] in {
+                RoomStatus.CREATING,
+                RoomStatus.ROLLING_OVER,
+                RoomStatus.ARCHIVED,
+            }:
+                raise ValueError(f"Cannot update a room while it is {room['status']}")
+            await db.execute(
+                f"UPDATE rooms SET {assignments}, updated_at=? WHERE id=?",  # noqa: S608
+                values,
+            )
+            await db.commit()
+
+    async def bind_institutional_release(
+        self, room_id: str, institutional_release: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Atomically bind one immutable release and its audit event to a live Room."""
+        now = utc_now()
+        event_id = new_id("event")
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            room = await self._fetchone(db, "SELECT * FROM rooms WHERE id=?", (room_id,))
+            if room is None:
+                raise KeyError(room_id)
+            metadata = json.loads(room["metadata_json"] or "{}")
+            if metadata.get("sealed") is True:
+                raise ValueError("Cannot bind an institutional release to a sealed Room")
+            if room["status"] not in _INSTITUTIONAL_RELEASE_BINDABLE_ROOM_STATUSES:
+                raise ValueError(
+                    f"Cannot bind an institutional release while Room is {room['status']}"
+                )
+            lineage = metadata.get("lineage")
+            if lineage is None:
+                lineage = {}
+            if not isinstance(lineage, dict):
+                raise ValueError("Room lineage metadata is malformed")
+            current = metadata.get("institutional_release")
+            lineage_current = lineage.get("institutional_release")
+            if current is not None or lineage_current is not None:
+                if current == institutional_release and lineage_current == institutional_release:
+                    await db.rollback()
+                    return None
+                raise ValueError("Room is already bound to another institutional release")
+
+            metadata["institutional_release"] = institutional_release
+            lineage["institutional_release"] = institutional_release
+            metadata["lineage"] = lineage
+            sequence_row = await self._fetchone(
+                db,
+                "SELECT COALESCE(MAX(sequence_no), 0) + 1 AS next_sequence FROM events WHERE room_id=?",
+                (room_id,),
+            )
+            sequence_no = sequence_row["next_sequence"] if sequence_row else 1
+            round_id = room["active_round_id"] or room["discussion_id"]
+            await db.execute(
+                "UPDATE rooms SET metadata_json=?, updated_at=? WHERE id=?",
+                (json.dumps(metadata, ensure_ascii=False), now, room_id),
+            )
+            await db.execute(
+                """INSERT INTO events
+                (id, room_id, discussion_id, created_at, event_type, source,
+                 destination, content, status, metadata_json, round_id, sequence_no,
+                 event_class, conversational, counts_as_turn, counts_toward_pass,
+                 visibility, agent_readable, turn_triggering)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, 0, 0)""",
+                (
+                    event_id,
+                    room_id,
+                    room["discussion_id"],
+                    now,
+                    "institutional_release_bound",
+                    "room",
+                    "observer",
+                    "Institutional release bound to Room continuity.",
+                    "recorded",
+                    json.dumps(
+                        {"institutional_release": institutional_release},
+                        ensure_ascii=False,
+                    ),
+                    round_id,
+                    sequence_no,
+                    "lifecycle",
+                    "mechanical",
+                ),
+            )
+            await db.commit()
+        event = await self.get_event(event_id)
+        assert event is not None
+        event["_created"] = True
+        return event
+
+    async def get_default_profiles(self) -> dict[str, dict[str, Any]]:
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                "SELECT * FROM agent_profiles WHERE default_slot IS NOT NULL ORDER BY default_slot"
+            )
+        return {row["default_slot"]: dict(row) for row in rows}
+
+    async def update_default_profiles(
+        self,
+        agent_a_name: str,
+        agent_a_instructions: str,
+        agent_b_name: str,
+        agent_b_instructions: str,
+    ) -> dict[str, dict[str, Any]]:
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            await db.executemany(
+                """UPDATE agent_profiles SET name=?, developer_instructions=?, updated_at=?
+                   WHERE default_slot=?""",
+                [
+                    (agent_a_name, agent_a_instructions, now, "agent_a"),
+                    (agent_b_name, agent_b_instructions, now, "agent_b"),
+                ],
+            )
+            await db.commit()
+        return await self.get_default_profiles()
+
+    async def get_rounds(self, room_id: str) -> list[dict[str, Any]]:
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                "SELECT * FROM rounds WHERE room_id=? ORDER BY created_at, id", (room_id,)
+            )
+        return [self._decode_round(row) for row in rows]
+
+    async def get_round(self, round_id: str) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(db, "SELECT * FROM rounds WHERE id=?", (round_id,))
+        return self._decode_round(row) if row else None
+
+    async def get_round_agent_states(self, round_id: str) -> list[dict[str, Any]]:
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT ras.*, a.agent_key, a.name
+                   FROM round_agent_state ras JOIN agents a ON a.id=ras.agent_id
+                   WHERE ras.round_id=? ORDER BY a.agent_key""",
+                (round_id,),
+            )
+        return [dict(row) for row in rows]
+
+    async def get_round_agent_state(
+        self, round_id: str, agent_id: str
+    ) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                "SELECT * FROM round_agent_state WHERE round_id=? AND agent_id=?",
+                (round_id, agent_id),
+            )
+        return dict(row) if row else None
+
+    async def prepare_round(self, room_id: str, request: PrepareRoundRequest) -> dict[str, Any]:
+        round_id = new_id("round")
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            room = await self._fetchone(db, "SELECT * FROM rooms WHERE id=?", (room_id,))
+            if room is None:
+                raise KeyError(room_id)
+            if room["status"] in {
+                RoomStatus.ARCHIVED,
+                RoomStatus.CREATING,
+                RoomStatus.ROLLING_OVER,
+                RoomStatus.ERROR,
+            }:
+                raise ValueError(f"Cannot prepare a round while room is {room['status']}")
+            agents = await db.execute_fetchall(
+                "SELECT id, agent_key FROM agents WHERE room_id=? ORDER BY agent_key", (room_id,)
+            )
+            member_keys = {agent["agent_key"] for agent in agents}
+            if request.starting_agent != "either" and request.starting_agent not in member_keys:
+                raise ValueError(f"Starting agent {request.starting_agent} is not a Room participant")
+            configured_keys = set(request.participant_private) | set(request.participant_overlays)
+            if not configured_keys <= member_keys:
+                missing = sorted(configured_keys - member_keys)
+                raise ValueError(f"Round configuration targets non-participants: {missing}")
+            if room["active_round_id"]:
+                await db.execute(
+                    """UPDATE rounds SET status=?, ended_at=COALESCE(ended_at, ?),
+                       close_reason=COALESCE(close_reason, 'replaced_by_new_round')
+                       WHERE id=? AND status IN (?, ?)""",
+                    (
+                        RoundStatus.STOPPED,
+                        now,
+                        room["active_round_id"],
+                        RoundStatus.ACTIVE,
+                        RoundStatus.PREPARING,
+                    ),
+                )
+            await db.execute(
+                """INSERT INTO rounds
+                   (id, room_id, title, prompt, created_at, status, starting_agent,
+                    agent_a_private, agent_b_private, task_overlay,
+                    agent_a_overlay, agent_b_overlay,
+                    participant_private_json, participant_overlays_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    round_id,
+                    room_id,
+                    request.title,
+                    request.prompt,
+                    now,
+                    RoundStatus.PREPARING,
+                    request.starting_agent,
+                    request.agent_a_private,
+                    request.agent_b_private,
+                    request.task_overlay,
+                    request.agent_a_overlay,
+                    request.agent_b_overlay,
+                    json.dumps(request.participant_private, ensure_ascii=False),
+                    json.dumps(request.participant_overlays, ensure_ascii=False),
+                ),
+            )
+            await db.executemany(
+                """INSERT INTO round_agent_state
+                   (round_id, agent_id, context_stored_at) VALUES (?, ?, ?)""",
+                [(round_id, agent["id"], now) for agent in agents],
+            )
+            await db.execute(
+                """UPDATE rooms SET status=?, discussion_id=?, active_round_id=?,
+                   turn_count=0, consecutive_passes=0, updated_at=? WHERE id=?""",
+                (RoomStatus.PREPARING, round_id, round_id, now, room_id),
+            )
+            await db.execute(
+                """UPDATE agents SET status=?, last_error=NULL, updated_at=? WHERE room_id=?""",
+                (AgentStatus.IDLE, now, room_id),
+            )
+            await db.commit()
+        result = await self.get_round(round_id)
+        assert result is not None
+        return result
+
+    async def start_round(self, room_id: str, round_id: str) -> dict[str, Any]:
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            cursor = await db.execute(
+                """UPDATE rounds SET status=?, started_at=?, turn_count=0,
+                   consecutive_passes=0, last_activity_at=?
+                   WHERE id=? AND room_id=? AND status=?""",
+                (
+                    RoundStatus.ACTIVE,
+                    now,
+                    now,
+                    round_id,
+                    room_id,
+                    RoundStatus.PREPARING,
+                ),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise ValueError("Only the currently prepared round can be started")
+            await db.execute(
+                """UPDATE rooms SET status=?, discussion_id=?, active_round_id=?,
+                   turn_count=0, consecutive_passes=0, updated_at=?
+                   WHERE id=? AND active_round_id=?""",
+                (RoomStatus.RUNNING, round_id, round_id, now, room_id, round_id),
+            )
+            await db.execute(
+                """UPDATE agents SET status=?, last_error=NULL, updated_at=? WHERE room_id=?""",
+                (AgentStatus.IDLE, now, room_id),
+            )
+            await db.commit()
+        result = await self.get_round(round_id)
+        assert result is not None
+        return result
+
+    async def mark_round_context_consumed(self, round_id: str, agent_id: str) -> None:
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE round_agent_state SET context_consumed_at=COALESCE(context_consumed_at, ?)
+                   WHERE round_id=? AND agent_id=?""",
+                (utc_now(), round_id, agent_id),
+            )
+            await db.commit()
+
+    async def create_event(
+        self,
+        room_id: str,
+        event_type: str,
+        source: str,
+        destination: str,
+        content: str,
+        *,
+        related_event_id: str | None = None,
+        status: str = "recorded",
+        metadata: dict[str, Any] | None = None,
+        deliver_to: Iterable[str] = (),
+        runnable_to: Iterable[str] | None = None,
+        discussion_id: str | None = None,
+        round_id: str | None = None,
+        event_class: str | None = None,
+        conversational: bool | None = None,
+        counts_as_turn: bool | None = None,
+        counts_toward_pass: bool | None = None,
+        visibility: str | None = None,
+        agent_readable: bool | None = None,
+        turn_triggering: bool | None = None,
+        execution_id: str | None = None,
+        event_id: str | None = None,
+    ) -> dict[str, Any]:
+        event_id = event_id or new_id("event")
+        now = utc_now()
+        traits = self._event_traits(event_type)
+        event_class = event_class or traits[0]
+        conversational = traits[1] if conversational is None else conversational
+        counts_as_turn = traits[2] if counts_as_turn is None else counts_as_turn
+        counts_toward_pass = traits[3] if counts_toward_pass is None else counts_toward_pass
+        agent_readable = traits[4] if agent_readable is None else agent_readable
+        turn_triggering = traits[5] if turn_triggering is None else turn_triggering
+        if visibility is None:
+            visibility = "private" if (metadata or {}).get("private") else traits[6]
+        readable_recipients = tuple(dict.fromkeys(deliver_to))
+        runnable_recipients = (
+            readable_recipients
+            if runnable_to is None
+            else tuple(dict.fromkeys(runnable_to))
+        )
+        if not set(runnable_recipients).issubset(readable_recipients):
+            raise ValueError("Runnable recipients must also be readable recipients")
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            existing_event = await self._fetchone(
+                db, "SELECT * FROM events WHERE id=?", (event_id,)
+            )
+            if existing_event is not None:
+                await db.rollback()
+                result = self._decode_row(existing_event)
+                result["_created"] = False
+                return result
+            if execution_id is not None:
+                existing = await self._fetchone(
+                    db, "SELECT * FROM events WHERE execution_id=?", (execution_id,)
+                )
+                if existing is not None:
+                    await db.rollback()
+                    result = self._decode_row(existing)
+                    result["_created"] = False
+                    return result
+            if discussion_id is None:
+                room_row = await self._fetchone(
+                    db, "SELECT discussion_id, active_round_id FROM rooms WHERE id=?", (room_id,)
+                )
+                if room_row is None:
+                    raise KeyError(room_id)
+                discussion_id = room_row["discussion_id"]
+                round_id = round_id or room_row["active_round_id"] or discussion_id
+            else:
+                round_id = round_id or discussion_id
+            sequence_row = await self._fetchone(
+                db,
+                "SELECT COALESCE(MAX(sequence_no), 0) + 1 AS next_sequence FROM events WHERE room_id=?",
+                (room_id,),
+            )
+            sequence_no = sequence_row["next_sequence"] if sequence_row else 1
+            await db.execute(
+                """INSERT INTO events
+                (id, room_id, discussion_id, created_at, event_type, source,
+                 destination, content, related_event_id, status, metadata_json,
+                 round_id, sequence_no, event_class, conversational, counts_as_turn,
+                 counts_toward_pass, visibility, agent_readable, turn_triggering,
+                 execution_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    event_id,
+                    room_id,
+                    discussion_id,
+                    now,
+                    event_type,
+                    source,
+                    destination,
+                    content,
+                    related_event_id,
+                    status,
+                    json.dumps(metadata or {}, ensure_ascii=False),
+                    round_id,
+                    sequence_no,
+                    event_class,
+                    1 if conversational else 0,
+                    1 if counts_as_turn else 0,
+                    1 if counts_toward_pass else 0,
+                    visibility,
+                    1 if agent_readable else 0,
+                    1 if turn_triggering else 0,
+                    execution_id,
+                ),
+            )
+            for agent_key in readable_recipients:
+                agent = await self._fetchone(
+                    db,
+                    "SELECT id FROM agents WHERE room_id=? AND agent_key=?",
+                    (room_id, agent_key),
+                )
+                if agent is None:
+                    raise KeyError(f"Agent {agent_key} not found")
+                await db.execute(
+                    """INSERT OR IGNORE INTO deliveries
+                    (id, event_id, agent_id, runnable, status, attempts, queued_at)
+                    VALUES (?, ?, ?, ?, 'pending', 0, ?)""",
+                    (
+                        new_id("delivery"),
+                        event_id,
+                        agent["id"],
+                        1 if agent_key in runnable_recipients else 0,
+                        now,
+                    ),
+                )
+            await db.execute("UPDATE rooms SET updated_at=? WHERE id=?", (now, room_id))
+            if conversational:
+                await db.execute(
+                    "UPDATE rounds SET last_activity_at=? WHERE id=?",
+                    (now, round_id),
+                )
+            await db.commit()
+        event = await self.get_event(event_id)
+        assert event is not None
+        event["_created"] = True
+        return event
+
+    async def get_event(self, event_id: str) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(db, "SELECT * FROM events WHERE id=?", (event_id,))
+        return self._decode_row(row) if row else None
+
+    async def get_events(self, room_id: str, limit: int = 2000) -> list[dict[str, Any]]:
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT * FROM events WHERE room_id=?
+                ORDER BY sequence_no ASC LIMIT ?""",
+                (room_id, limit),
+            )
+            delivery_rows = await db.execute_fetchall(
+                """SELECT d.event_id, a.agent_key, d.runnable, d.status, d.batch_id, d.attempts,
+                          d.queued_at, d.started_at, d.completed_at, d.consumed_at
+                   FROM deliveries d JOIN agents a ON a.id=d.agent_id
+                   JOIN events e ON e.id=d.event_id WHERE e.room_id=?""",
+                (room_id,),
+            )
+        deliveries: dict[str, list[dict[str, Any]]] = {}
+        for row in delivery_rows:
+            item = dict(row)
+            item["runnable"] = bool(item["runnable"])
+            deliveries.setdefault(item.pop("event_id"), []).append(item)
+        events = [self._decode_row(row) for row in rows]
+        for event in events:
+            event["deliveries"] = deliveries.get(event["id"], [])
+        self._annotate_retry_observer_state(events)
+        return events
+
+    async def get_retryable_attempt_failures(
+        self,
+        room_id: str,
+        round_id: str,
+        agent_key: str,
+        input_event_ids: Iterable[str],
+    ) -> list[dict[str, Any]]:
+        """Find retry warnings causally included in a successful or terminal batch."""
+        successful_inputs = set(input_event_ids)
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT * FROM events
+                   WHERE room_id=? AND round_id=? AND source=?
+                     AND event_type='agent_error'
+                     AND json_extract(metadata_json, '$.will_retry')=1
+                   ORDER BY sequence_no""",
+                (room_id, round_id, agent_key),
+            )
+        failures = []
+        for row in rows:
+            event = self._decode_row(row)
+            failed_inputs = set(event["metadata"].get("input_event_ids") or ())
+            if failed_inputs and failed_inputs.issubset(successful_inputs):
+                failures.append(event)
+        return failures
+
+    @staticmethod
+    def _annotate_retry_observer_state(events: list[dict[str, Any]]) -> None:
+        """Project retry outcomes for both current and legacy observer history."""
+        pending: dict[tuple[str | None, str], list[dict[str, Any]]] = {}
+        for event in events:
+            metadata = event["metadata"]
+            key = (event.get("round_id"), event["source"])
+            if event["event_type"] == "agent_error":
+                if metadata.get("will_retry") is True:
+                    metadata.setdefault("operator_state", "retrying")
+                    pending.setdefault(key, []).append(event)
+                else:
+                    metadata.setdefault("operator_state", "terminal_failure")
+                    failed_inputs = set(metadata.get("input_event_ids") or ())
+                    matched = [
+                        warning
+                        for warning in pending.get(key, [])
+                        if set(warning["metadata"].get("input_event_ids") or ())
+                        and set(warning["metadata"].get("input_event_ids") or ()).issubset(
+                            failed_inputs
+                        )
+                    ]
+                    for warning in matched:
+                        warning["metadata"]["operator_state"] = "recovery_failed"
+                        warning["metadata"]["terminal_error_event_id"] = event["id"]
+                    if matched:
+                        metadata.setdefault(
+                            "retry_recovery",
+                            {
+                                "status": "failed",
+                                "attempt_failure_count": len(matched),
+                                "attempt_failure_event_ids": [item["id"] for item in matched],
+                                "attempt_batch_ids": [
+                                    item["metadata"].get("batch_id") for item in matched
+                                    if item["metadata"].get("batch_id")
+                                ],
+                            },
+                        )
+                        pending[key] = [item for item in pending[key] if item not in matched]
+                continue
+            if event["event_type"] not in {"agent_message", "agent_pass", "agent_finish"}:
+                continue
+            successful_inputs = set(metadata.get("input_event_ids") or ())
+            matched = [
+                warning
+                for warning in pending.get(key, [])
+                if set(warning["metadata"].get("input_event_ids") or ())
+                and set(warning["metadata"].get("input_event_ids") or ()).issubset(
+                    successful_inputs
+                )
+            ]
+            if not matched:
+                continue
+            recovery = metadata.setdefault(
+                "retry_recovery",
+                {
+                    "status": "recovered",
+                    "attempt_failure_count": len(matched),
+                    "attempt_failure_event_ids": [item["id"] for item in matched],
+                    "attempt_batch_ids": [
+                        item["metadata"].get("batch_id") for item in matched
+                        if item["metadata"].get("batch_id")
+                    ],
+                },
+            )
+            for warning in matched:
+                warning["metadata"]["operator_state"] = "recovered"
+                warning["metadata"]["recovered_by_event_id"] = event["id"]
+                warning["metadata"]["recovered_outcome"] = event["event_type"]
+            if recovery.get("status") == "recovered":
+                pending[key] = [item for item in pending[key] if item not in matched]
+
+    async def get_latest_successful_context_checkpoint(
+        self, room_id: str, agent_key: str
+    ) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                """SELECT * FROM events
+                   WHERE room_id=? AND event_type='context_checkpoint'
+                     AND json_extract(metadata_json, '$.agent')=?
+                     AND json_extract(metadata_json, '$.result')='compacted'
+                   ORDER BY sequence_no DESC LIMIT 1""",
+                (room_id, agent_key),
+            )
+        return self._decode_row(row) if row else None
+
+    async def establish_context_checkpoint_growth_baseline(
+        self,
+        room_id: str,
+        agent_key: str,
+        input_tokens: int,
+        batch_id: str,
+    ) -> tuple[dict[str, Any] | None, bool]:
+        """Persist the first authoritative input count after the latest compaction.
+
+        A checkpoint without the new fields is legacy state and is treated as pending.
+        The transaction makes establishment durable before later turns can use it.
+        """
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            row = await self._fetchone(
+                db,
+                """SELECT * FROM events
+                   WHERE room_id=? AND event_type='context_checkpoint'
+                     AND json_extract(metadata_json, '$.agent')=?
+                     AND json_extract(metadata_json, '$.result')='compacted'
+                   ORDER BY sequence_no DESC LIMIT 1""",
+                (room_id, agent_key),
+            )
+            if row is None:
+                await db.rollback()
+                return None, False
+
+            metadata = json.loads(row["metadata_json"] or "{}")
+            baseline = metadata.get("growth_baseline_input_tokens")
+            if metadata.get("growth_baseline_state") == "established" and isinstance(
+                baseline, int
+            ):
+                await db.rollback()
+                return self._decode_row(row), False
+
+            metadata.update(
+                {
+                    "growth_baseline_state": "established",
+                    "growth_baseline_input_tokens": input_tokens,
+                    "growth_baseline_batch_id": batch_id,
+                }
+            )
+            await db.execute(
+                "UPDATE events SET metadata_json=? WHERE id=?",
+                (json.dumps(metadata, ensure_ascii=False), row["id"]),
+            )
+            await db.commit()
+            updated = await self._fetchone(db, "SELECT * FROM events WHERE id=?", (row["id"],))
+        return self._decode_row(updated), True
+
+    async def get_round_decision_events(
+        self, room_id: str, round_id: str
+    ) -> list[dict[str, Any]]:
+        """Return the untruncated causal record needed for settlement."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT * FROM events
+                   WHERE room_id=? AND round_id=?
+                     AND event_type IN ('agent_message','agent_pass','agent_finish')
+                   ORDER BY sequence_no""",
+                (room_id, round_id),
+            )
+            delivery_rows = await db.execute_fetchall(
+                """SELECT d.event_id, a.agent_key, d.runnable, d.status, d.batch_id, d.attempts,
+                          d.queued_at, d.started_at, d.completed_at, d.consumed_at
+                   FROM deliveries d JOIN agents a ON a.id=d.agent_id
+                   JOIN events e ON e.id=d.event_id
+                   WHERE e.room_id=? AND e.round_id=? AND e.event_type='agent_message'""",
+                (room_id, round_id),
+            )
+        deliveries: dict[str, list[dict[str, Any]]] = {}
+        for row in delivery_rows:
+            item = dict(row)
+            item["runnable"] = bool(item["runnable"])
+            deliveries.setdefault(item.pop("event_id"), []).append(item)
+        events = [self._decode_row(row) for row in rows]
+        for event in events:
+            event["deliveries"] = deliveries.get(event["id"], [])
+        return events
+
+    async def snapshot(self, room_id: str) -> dict[str, Any] | None:
+        room = await self.get_room(room_id)
+        if room is None:
+            return None
+        room["agents"] = await self.get_agents(room_id)
+        room["events"] = await self.get_events(room_id)
+        rounds = await self.get_rounds(room_id)
+        for round_item in rounds:
+            round_item["events"] = [
+                event for event in room["events"] if event.get("round_id") == round_item["id"]
+            ]
+            round_item["agent_state"] = await self.get_round_agent_states(round_item["id"])
+            configured_members = {
+                state["agent_key"]
+                for state in round_item["agent_state"]
+                if not state.get("delivery_start_sequence")
+            }
+            private_by_agent = round_item.get("participant_private", {})
+            overlays_by_agent = round_item.get("participant_overlays", {})
+            round_item["private_initialization"] = {
+                key: {
+                    "present": bool(content),
+                    "visibility": f"observer_and_{key}",
+                    "content": content,
+                }
+                for key, content in private_by_agent.items()
+            }
+            for key in ("agent_a", "agent_b"):
+                round_item["private_initialization"].setdefault(
+                    key,
+                    {"present": False, "visibility": f"observer_and_{key}", "content": None},
+                )
+            round_item["effective_agent_configuration"] = {
+                agent["agent_key"]: {
+                    "profile_id": agent.get("profile_id"),
+                    "profile_snapshot": agent.get("profile_snapshot"),
+                    "room_override": agent.get("room_override"),
+                    "task_overlay": round_item.get("task_overlay"),
+                    "round_overlay": overlays_by_agent.get(agent["agent_key"]),
+                }
+                for agent in room["agents"]
+                if agent["agent_key"] in configured_members
+            }
+        room["rounds"] = rounds
+        room["active_round"] = next(
+            (item for item in rounds if item["id"] == room.get("active_round_id")), None
+        )
+        return room
+
+    async def claim_next_batch(
+        self, room_id: str, agent_key: str, worker_generation: int = 0
+    ) -> dict[str, Any] | None:
+        now = utc_now()
+        batch_id = new_id("batch")
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            agent = await self._fetchone(
+                db,
+                """SELECT a.*, r.status AS room_status, r.active_round_id,
+                          r.max_turns, r.lifecycle_version, ro.turn_count AS round_turn_count,
+                          ras.finish_boundary_sequence, ras.context_consumed_at,
+                          ras.delivery_start_sequence
+                   FROM agents a JOIN rooms r ON r.id=a.room_id
+                   JOIN rounds ro ON ro.id=r.active_round_id
+                   JOIN round_agent_state ras ON ras.round_id=ro.id AND ras.agent_id=a.id
+                   WHERE a.room_id=? AND a.agent_key=? AND r.status='running'
+                     AND ro.status='active'""",
+                (room_id, agent_key),
+            )
+            if agent is None:
+                await db.rollback()
+                return None
+            execution = await self._fetchone(
+                db,
+                """SELECT * FROM agent_executions
+                   WHERE room_id=? AND agent_id=? AND round_id=?
+                     AND state IN ('claimed','active','recovering','result_ready','usage_suspended')
+                   ORDER BY created_at LIMIT 1""",
+                (room_id, agent["id"], agent["active_round_id"]),
+            )
+            if execution is not None:
+                if execution["state"] == "usage_suspended":
+                    await db.commit()
+                    return None
+                rows = await db.execute_fetchall(
+                    """SELECT d.id AS delivery_id, d.attempts,
+                              d.runnable AS delivery_runnable, e.*
+                       FROM deliveries d JOIN events e ON e.id=d.event_id
+                       WHERE d.agent_id=? AND d.batch_id=?
+                       ORDER BY e.sequence_no""",
+                    (agent["id"], execution["batch_id"]),
+                )
+                continuation_row = await self._fetchone(
+                    db,
+                    """SELECT * FROM usage_continuations
+                       WHERE continuation_batch_id=? AND state='running'""",
+                    (execution["batch_id"],),
+                )
+                await db.commit()
+                if not rows:
+                    return None
+                return self._claimed_batch(
+                    agent,
+                    rows,
+                    execution["batch_id"],
+                    recovered=True,
+                    execution=self._decode_execution(execution),
+                    usage_continuation=(
+                        self._decode_usage_continuation(continuation_row)
+                        if continuation_row else None
+                    ),
+                )
+
+            # Legacy or crash-window processing with no execution identity is not
+            # safe to replay. Give it a durable quarantined record so the worker
+            # can surface the ambiguity instead of starting duplicate work.
+            legacy = await self._fetchone(
+                db,
+                """SELECT d.batch_id
+                   FROM deliveries d JOIN events e ON e.id=d.event_id
+                   WHERE d.agent_id=? AND d.status='processing'
+                     AND e.room_id=? AND e.round_id=?
+                   LIMIT 1""",
+                (agent["id"], room_id, agent["active_round_id"]),
+            )
+            if legacy is not None:
+                legacy_batch_id = legacy["batch_id"] or batch_id
+                if legacy["batch_id"] is None:
+                    await db.execute(
+                        """UPDATE deliveries SET batch_id=?
+                           WHERE agent_id=? AND status='processing' AND event_id IN (
+                             SELECT id FROM events WHERE room_id=? AND round_id=?
+                           )""",
+                        (legacy_batch_id, agent["id"], room_id, agent["active_round_id"]),
+                    )
+                await db.execute(
+                    """INSERT INTO agent_executions
+                       (batch_id, room_id, agent_id, round_id, lifecycle_version,
+                        worker_generation, state, created_at, error)
+                       VALUES (?, ?, ?, ?, ?, ?, 'quarantined', ?, ?)""",
+                    (
+                        legacy_batch_id,
+                        room_id,
+                        agent["id"],
+                        agent["active_round_id"],
+                        agent["lifecycle_version"],
+                        worker_generation,
+                        now,
+                        "Processing claim has no persisted Codex turn identity",
+                    ),
+                )
+                rows = await db.execute_fetchall(
+                    """SELECT d.id AS delivery_id, d.attempts,
+                              d.runnable AS delivery_runnable, e.*
+                       FROM deliveries d JOIN events e ON e.id=d.event_id
+                       WHERE d.agent_id=? AND d.batch_id=? ORDER BY e.sequence_no""",
+                    (agent["id"], legacy_batch_id),
+                )
+                execution = await self._fetchone(
+                    db, "SELECT * FROM agent_executions WHERE batch_id=?", (legacy_batch_id,)
+                )
+                await db.commit()
+                return self._claimed_batch(
+                    agent,
+                    rows,
+                    legacy_batch_id,
+                    recovered=True,
+                    execution=self._decode_execution(execution),
+                )
+            active_batches = await self._fetchone(
+                db,
+                """SELECT COUNT(DISTINCT d.batch_id) AS count
+                   FROM deliveries d JOIN events e ON e.id=d.event_id
+                   WHERE e.room_id=? AND e.round_id=? AND d.status='processing'""",
+                (room_id, agent["active_round_id"]),
+            )
+            if agent["round_turn_count"] + (active_batches["count"] or 0) >= agent["max_turns"]:
+                await db.rollback()
+                return None
+            boundary = agent["finish_boundary_sequence"]
+            delivery_start = agent["delivery_start_sequence"] or 0
+            if boundary is not None:
+                await db.execute(
+                    """UPDATE deliveries SET status='cancelled', completed_at=?,
+                       error='At or before FINISH consumption boundary'
+                       WHERE agent_id=? AND status='pending' AND event_id IN (
+                         SELECT id FROM events WHERE room_id=? AND round_id=?
+                           AND sequence_no<=?
+                       )""",
+                    (now, agent["id"], room_id, agent["active_round_id"], boundary),
+                )
+            trigger = await self._fetchone(
+                db,
+                """SELECT MAX(e.sequence_no) AS max_sequence
+                   FROM deliveries d JOIN events e ON e.id=d.event_id
+                   WHERE d.agent_id=? AND d.status='pending' AND d.runnable=1
+                     AND e.room_id=? AND e.round_id=? AND e.conversational=1
+                     AND e.sequence_no>?
+                     AND (? IS NULL OR e.sequence_no>?)""",
+                (
+                    agent["id"],
+                    room_id,
+                    agent["active_round_id"],
+                    delivery_start,
+                    boundary,
+                    boundary,
+                ),
+            )
+            if trigger is None or trigger["max_sequence"] is None:
+                await db.commit()
+                return None
+            rows = await db.execute_fetchall(
+                """SELECT d.id AS delivery_id, d.attempts,
+                          d.runnable AS delivery_runnable, e.*
+                   FROM deliveries d JOIN events e ON e.id=d.event_id
+                   WHERE d.agent_id=? AND d.status='pending' AND e.room_id=?
+                     AND e.round_id=? AND e.conversational=1
+                     AND e.sequence_no>?
+                     AND (? IS NULL OR e.sequence_no>?)
+                     AND e.sequence_no<=?
+                   ORDER BY e.sequence_no""",
+                (
+                    agent["id"],
+                    room_id,
+                    agent["active_round_id"],
+                    delivery_start,
+                    boundary,
+                    boundary,
+                    trigger["max_sequence"],
+                ),
+            )
+            if not rows:
+                await db.commit()
+                return None
+            continuation_row = await self._fetchone(
+                db,
+                """SELECT * FROM usage_continuations
+                   WHERE agent_id=? AND room_id=? AND round_id=?
+                     AND lifecycle_version=? AND thread_id=? AND state='ready'""",
+                (
+                    agent["id"],
+                    room_id,
+                    agent["active_round_id"],
+                    agent["lifecycle_version"],
+                    agent["thread_id"],
+                ),
+            )
+            delivery_ids = [row["delivery_id"] for row in rows]
+            placeholders = ",".join("?" for _ in delivery_ids)
+            cursor = await db.execute(
+                f"""UPDATE deliveries SET status='processing', attempts=attempts+1,
+                   started_at=?, error=NULL, batch_id=?
+                   WHERE id IN ({placeholders}) AND status='pending'""",  # noqa: S608
+                (now, batch_id, *delivery_ids),
+            )
+            if cursor.rowcount != len(delivery_ids):
+                await db.rollback()
+                return None
+            await db.execute(
+                "UPDATE agents SET status=?, last_error=NULL, updated_at=? WHERE id=?",
+                (AgentStatus.RUNNING, now, agent["id"]),
+            )
+            await db.execute(
+                """INSERT INTO agent_executions
+                   (batch_id, room_id, agent_id, round_id, lifecycle_version,
+                    worker_generation, state, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, 'claimed', ?)""",
+                (
+                    batch_id,
+                    room_id,
+                    agent["id"],
+                    agent["active_round_id"],
+                    agent["lifecycle_version"],
+                    worker_generation,
+                    now,
+                ),
+            )
+            if continuation_row is not None:
+                cursor = await db.execute(
+                    """UPDATE usage_continuations
+                       SET state='running', continuation_batch_id=?, updated_at=?
+                       WHERE id=? AND state='ready'""",
+                    (batch_id, now, continuation_row["id"]),
+                )
+                if cursor.rowcount != 1:
+                    await db.rollback()
+                    return None
+            await db.commit()
+            execution = await self._fetchone(
+                db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
+            )
+        return self._claimed_batch(
+            agent,
+            rows,
+            batch_id,
+            recovered=False,
+            execution=self._decode_execution(execution),
+            usage_continuation=(
+                self._decode_usage_continuation(continuation_row)
+                if continuation_row else None
+            ),
+        )
+
+    async def claim_next_delivery(
+        self, room_id: str, agent_key: str, worker_generation: int = 0
+    ) -> dict[str, Any] | None:
+        """Compatibility alias; the returned unit is now a coalesced batch."""
+        return await self.claim_next_batch(room_id, agent_key, worker_generation)
+
+    def _claimed_batch(
+        self,
+        agent: aiosqlite.Row,
+        rows: Iterable[aiosqlite.Row],
+        batch_id: str,
+        *,
+        recovered: bool,
+        execution: dict[str, Any],
+        usage_continuation: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        events = [self._decode_row(row) for row in rows]
+        result = dict(agent)
+        result.update(
+            {
+                "batch_id": batch_id,
+                "delivery_ids": [event["delivery_id"] for event in events],
+                "events": events,
+                "discussion_id": agent["active_round_id"],
+                "round_id": agent["active_round_id"],
+                "max_event_sequence": max(event["sequence_no"] for event in events),
+                "triggering_delivery_ids": [
+                    event["delivery_id"] for event in events
+                    if event.get("delivery_runnable")
+                ],
+                "triggering_event_ids": [
+                    event["id"] for event in events if event.get("delivery_runnable")
+                ],
+                "passive_event_ids": [
+                    event["id"] for event in events if not event.get("delivery_runnable")
+                ],
+                "recovered": recovered,
+                "execution": execution,
+                "usage_continuation": usage_continuation,
+            }
+        )
+        return result
+
+    async def has_open_delivery(
+        self, room_id: str, agent_key: str, discussion_id: str
+    ) -> bool:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                """SELECT 1
+                   FROM deliveries d
+                   JOIN events e ON e.id=d.event_id
+                   JOIN agents a ON a.id=d.agent_id
+                   WHERE e.room_id=? AND e.discussion_id=? AND a.agent_key=?
+                     AND d.status IN ('pending', 'processing') AND d.runnable=1
+                     AND e.conversational=1
+                   LIMIT 1""",
+                (room_id, discussion_id, agent_key),
+            )
+        return row is not None
+
+    async def get_delivery_execution(self, room_id: str) -> dict[str, dict[str, Any]]:
+        """Return durable queue/claim evidence keyed by participant."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT a.agent_key,
+                          SUM(CASE WHEN e.id IS NOT NULL AND d.status='pending'
+                                    AND d.runnable=1 THEN 1 ELSE 0 END)
+                            AS pending_count,
+                          SUM(CASE WHEN e.id IS NOT NULL AND d.status='pending'
+                                    AND d.runnable=0 THEN 1 ELSE 0 END)
+                            AS passive_pending_count,
+                          SUM(CASE WHEN e.id IS NOT NULL AND d.status='processing' THEN 1 ELSE 0 END)
+                            AS processing_count,
+                          MAX(CASE WHEN e.id IS NOT NULL AND d.status='processing'
+                                   THEN d.batch_id END) AS batch_id,
+                          MIN(CASE WHEN e.id IS NOT NULL AND d.status='processing'
+                                   THEN d.started_at END) AS started_at
+                   FROM agents a
+                   LEFT JOIN deliveries d ON d.agent_id=a.id
+                   LEFT JOIN events e ON e.id=d.event_id
+                     AND e.room_id=? AND e.round_id=(SELECT active_round_id FROM rooms WHERE id=?)
+                   WHERE a.room_id=?
+                   GROUP BY a.id, a.agent_key
+                   ORDER BY a.agent_key""",
+                (room_id, room_id, room_id),
+            )
+            execution_rows = await db.execute_fetchall(
+                """SELECT x.*, a.agent_key FROM agent_executions x
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE x.room_id=? AND x.state IN
+                     ('claimed','active','recovering','result_ready','usage_suspended','quarantined')
+                   ORDER BY x.created_at""",
+                (room_id,),
+            )
+            continuation_rows = await db.execute_fetchall(
+                """SELECT u.*, a.agent_key FROM usage_continuations u
+                   JOIN agents a ON a.id=u.agent_id
+                   WHERE u.room_id=? AND u.state IN ('scheduled','ready','running')""",
+                (room_id,),
+            )
+        executions = {
+            row["agent_key"]: self._decode_execution(row) for row in execution_rows
+        }
+        continuations = {
+            row["agent_key"]: self._decode_usage_continuation(row)
+            for row in continuation_rows
+        }
+        result = {
+            row["agent_key"]: {
+                "pending_count": int(row["pending_count"] or 0),
+                "passive_pending_count": int(row["passive_pending_count"] or 0),
+                "processing_count": int(row["processing_count"] or 0),
+                "batch_id": row["batch_id"],
+                "started_at": row["started_at"],
+                "execution": executions.get(row["agent_key"]),
+                "usage_continuation": continuations.get(row["agent_key"]),
+            }
+            for row in rows
+        }
+        return result
+
+    async def get_delivery_participation(
+        self, room_id: str, agent_key: str, round_id: str
+    ) -> dict[str, int]:
+        """Count durable readable and runnable deliveries for settlement membership."""
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                """SELECT COUNT(*) AS readable_count,
+                          SUM(CASE WHEN d.runnable=1 THEN 1 ELSE 0 END) AS runnable_count
+                   FROM deliveries d
+                   JOIN events e ON e.id=d.event_id
+                   JOIN agents a ON a.id=d.agent_id
+                   WHERE e.room_id=? AND e.round_id=? AND a.agent_key=?
+                     AND e.conversational=1""",
+                (room_id, round_id, agent_key),
+            )
+        return {
+            "readable_count": int(row["readable_count"] or 0) if row else 0,
+            "runnable_count": int(row["runnable_count"] or 0) if row else 0,
+        }
+
+    async def bind_execution_turn(
+        self,
+        batch_id: str,
+        thread_id: str,
+        turn_id: str,
+        worker_generation: int,
+    ) -> bool:
+        """Durably bind a claimed Room batch to its one exact Codex turn."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            row = await self._fetchone(
+                db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
+            )
+            if row is None:
+                await db.rollback()
+                return False
+            if row["sdk_thread_id"] == thread_id and row["sdk_turn_id"] == turn_id:
+                await db.commit()
+                return True
+            if row["state"] != "claimed" or row["worker_generation"] != worker_generation:
+                await db.rollback()
+                return False
+            processing = await self._fetchone(
+                db,
+                "SELECT COUNT(*) AS count FROM deliveries WHERE batch_id=? AND status='processing'",
+                (batch_id,),
+            )
+            if processing is None or not processing["count"]:
+                await db.rollback()
+                return False
+            try:
+                cursor = await db.execute(
+                    """UPDATE agent_executions
+                       SET sdk_thread_id=?, sdk_turn_id=?, state='active',
+                           turn_started_at=?, last_reconciled_at=?,
+                           last_verified_progress_at=?
+                       WHERE batch_id=? AND state='claimed' AND worker_generation=?""",
+                    (thread_id, turn_id, now, now, now, batch_id, worker_generation),
+                )
+            except aiosqlite.IntegrityError:
+                await db.rollback()
+                return False
+            if cursor.rowcount != 1:
+                await db.rollback()
+                return False
+            await db.commit()
+        return True
+
+    async def touch_execution_progress(self, batch_id: str) -> None:
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE agent_executions
+                   SET last_reconciled_at=?, last_verified_progress_at=?
+                   WHERE batch_id=? AND state IN ('active','recovering')""",
+                (now, now, batch_id),
+            )
+            await db.commit()
+
+    async def record_execution_result(
+        self,
+        batch_id: str,
+        result: dict[str, Any],
+        usage: dict[str, Any] | None,
+        activity: list[dict[str, Any]],
+        completion_source: str,
+    ) -> bool:
+        """Persist a terminal result before any Room-side settlement effects."""
+        now = utc_now()
+        result_json = json.dumps(result, ensure_ascii=False)
+        usage_json = json.dumps(usage, ensure_ascii=False) if usage is not None else None
+        activity_json = json.dumps(activity, ensure_ascii=False)
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            row = await self._fetchone(
+                db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
+            )
+            if row is None:
+                await db.rollback()
+                return False
+            if row["state"] in {"result_ready", "settled"}:
+                matches = row["result_json"] == result_json
+                if matches:
+                    await db.commit()
+                else:
+                    await db.rollback()
+                return matches
+            if row["state"] not in {"active", "recovering", "cancelled", "stale"}:
+                await db.rollback()
+                return False
+            cursor = await db.execute(
+                """UPDATE agent_executions SET state='result_ready', result_json=?,
+                   usage_json=?, activity_json=?, completion_source=?,
+                   result_recorded_at=?, last_reconciled_at=?, error=NULL
+                   WHERE batch_id=? AND state IN ('active','recovering','cancelled','stale')""",
+                (
+                    result_json,
+                    usage_json,
+                    activity_json,
+                    completion_source,
+                    now,
+                    now,
+                    batch_id,
+                ),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                return False
+            await db.commit()
+        return True
+
+    async def set_execution_state(
+        self, batch_id: str, state: str, error: str | None = None
+    ) -> None:
+        now = utc_now()
+        terminal = now if state in {"settled", "failed", "cancelled", "stale"} else None
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE agent_executions SET state=?, error=?,
+                   last_reconciled_at=?, settled_at=COALESCE(?, settled_at)
+                   WHERE batch_id=?""",
+                (state, error, now, terminal, batch_id),
+            )
+            await db.commit()
+
+    async def get_execution(self, batch_id: str) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
+            )
+        return self._decode_execution(row) if row else None
+
+    async def get_usage_continuation(
+        self, room_id: str, agent_key: str
+    ) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                """SELECT u.* FROM usage_continuations u
+                   JOIN agents a ON a.id=u.agent_id
+                   WHERE u.room_id=? AND a.agent_key=?""",
+                (room_id, agent_key),
+            )
+        return self._decode_usage_continuation(row) if row else None
+
+    async def suspend_usage_continuation(
+        self,
+        batch: dict[str, Any],
+        agent: dict[str, Any],
+        *,
+        reported_retry_at: str,
+        wake_at: str,
+        diagnostic: str,
+        worker_generation: int,
+    ) -> dict[str, Any] | None:
+        """Atomically park one exact failed execution until its reported reset."""
+        now = utc_now()
+        continuation_id = new_id("usage")
+        input_ids = [event["id"] for event in batch["events"]]
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            current = await self._fetchone(
+                db,
+                """SELECT r.status, r.active_round_id, r.lifecycle_version,
+                          a.thread_id
+                   FROM rooms r JOIN agents a ON a.room_id=r.id
+                   WHERE r.id=? AND a.id=?""",
+                (batch["room_id"], agent["id"]),
+            )
+            execution = await self._fetchone(
+                db,
+                "SELECT state FROM agent_executions WHERE batch_id=?",
+                (batch["batch_id"],),
+            )
+            if (
+                current is None
+                or execution is None
+                or current["status"] != RoomStatus.RUNNING
+                or current["active_round_id"] != batch["round_id"]
+                or current["lifecycle_version"] != batch["lifecycle_version"]
+                or current["thread_id"] != agent["thread_id"]
+                or execution["state"] not in {"active", "recovering"}
+            ):
+                await db.rollback()
+                return None
+            cursor = await db.execute(
+                """UPDATE agent_executions
+                   SET state='usage_suspended', error=?, last_reconciled_at=?
+                   WHERE batch_id=? AND state IN ('active','recovering')""",
+                (diagnostic[:4000], now, batch["batch_id"]),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                return None
+            await db.execute(
+                """INSERT INTO usage_continuations
+                   (id, room_id, agent_id, thread_id, source_batch_id, round_id,
+                    lifecycle_version, worker_generation, input_event_ids_json,
+                    triggering_event_ids_json, reported_retry_at, wake_at, state,
+                    created_at, updated_at, last_error)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', ?, ?, ?)
+                   ON CONFLICT(agent_id) DO UPDATE SET
+                     thread_id=excluded.thread_id,
+                     source_batch_id=excluded.source_batch_id,
+                     round_id=excluded.round_id,
+                     lifecycle_version=excluded.lifecycle_version,
+                     worker_generation=excluded.worker_generation,
+                     input_event_ids_json=excluded.input_event_ids_json,
+                     triggering_event_ids_json=excluded.triggering_event_ids_json,
+                     reported_retry_at=excluded.reported_retry_at,
+                     wake_at=excluded.wake_at,
+                     state='scheduled', continuation_batch_id=NULL,
+                     reschedule_count=usage_continuations.reschedule_count+1,
+                     updated_at=excluded.updated_at, fired_at=NULL,
+                     completed_at=NULL, last_error=excluded.last_error""",
+                (
+                    continuation_id,
+                    batch["room_id"],
+                    agent["id"],
+                    agent["thread_id"],
+                    batch["batch_id"],
+                    batch["round_id"],
+                    batch["lifecycle_version"],
+                    worker_generation,
+                    json.dumps(input_ids),
+                    json.dumps(batch["triggering_event_ids"]),
+                    reported_retry_at,
+                    wake_at,
+                    now,
+                    now,
+                    diagnostic[:4000],
+                ),
+            )
+            await db.execute(
+                "UPDATE agents SET status=?, last_error=NULL, updated_at=? WHERE id=?",
+                (AgentStatus.USAGE_SUSPENDED, now, agent["id"]),
+            )
+            row = await self._fetchone(
+                db, "SELECT * FROM usage_continuations WHERE agent_id=?", (agent["id"],)
+            )
+            await db.commit()
+        assert row is not None
+        return self._decode_usage_continuation(row)
+
+    async def release_due_usage_continuations(
+        self, room_id: str, now: str
+    ) -> list[dict[str, Any]]:
+        """Make due, still-current suspensions claimable by their normal worker."""
+        outcomes: list[dict[str, Any]] = []
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            rows = await db.execute_fetchall(
+                """SELECT u.*, a.agent_key, a.status AS agent_status,
+                          a.thread_id AS current_thread_id,
+                          r.status AS room_status, r.active_round_id,
+                          r.lifecycle_version AS current_lifecycle_version,
+                          ro.status AS round_status, x.state AS execution_state
+                   FROM usage_continuations u
+                   JOIN agents a ON a.id=u.agent_id
+                   JOIN rooms r ON r.id=u.room_id
+                   LEFT JOIN rounds ro ON ro.id=u.round_id
+                   LEFT JOIN agent_executions x ON x.batch_id=u.source_batch_id
+                   WHERE u.room_id=? AND u.state='scheduled' AND u.wake_at<=?
+                   ORDER BY u.wake_at""",
+                (room_id, now),
+            )
+            for row in rows:
+                expected = json.loads(row["input_event_ids_json"] or "[]")
+                delivery = await self._fetchone(
+                    db,
+                    """SELECT COUNT(*) AS count FROM deliveries
+                       WHERE agent_id=? AND batch_id=? AND status='processing'""",
+                    (row["agent_id"], row["source_batch_id"]),
+                )
+                valid = (
+                    row["room_status"] == RoomStatus.RUNNING
+                    and row["active_round_id"] == row["round_id"]
+                    and row["current_lifecycle_version"] == row["lifecycle_version"]
+                    and row["round_status"] == RoundStatus.ACTIVE
+                    and row["current_thread_id"] == row["thread_id"]
+                    and row["agent_status"] == AgentStatus.USAGE_SUSPENDED
+                    and row["execution_state"] == "usage_suspended"
+                    and delivery is not None
+                    and delivery["count"] == len(expected)
+                    and bool(expected)
+                )
+                if valid:
+                    await db.execute(
+                        """UPDATE deliveries SET status='pending', attempts=CASE
+                             WHEN attempts>0 THEN attempts-1 ELSE 0 END,
+                           started_at=NULL, completed_at=NULL, error=NULL, batch_id=NULL
+                           WHERE agent_id=? AND batch_id=? AND status='processing'""",
+                        (row["agent_id"], row["source_batch_id"]),
+                    )
+                    await db.execute(
+                        """UPDATE agent_executions
+                           SET state='usage_released', settled_at=?, last_reconciled_at=?
+                           WHERE batch_id=? AND state='usage_suspended'""",
+                        (now, now, row["source_batch_id"]),
+                    )
+                    await db.execute(
+                        """UPDATE usage_continuations SET state='ready', fired_at=?,
+                           updated_at=? WHERE id=? AND state='scheduled'""",
+                        (now, now, row["id"]),
+                    )
+                    await db.execute(
+                        "UPDATE agents SET status=?, updated_at=? WHERE id=?",
+                        (AgentStatus.IDLE, now, row["agent_id"]),
+                    )
+                    state = "fired"
+                    reason = None
+                else:
+                    reason = "Scheduled usage continuation is stale under current lifecycle state"
+                    await db.execute(
+                        """UPDATE deliveries SET status='cancelled', completed_at=?, error=?
+                           WHERE agent_id=? AND batch_id=? AND status='processing'""",
+                        (now, reason, row["agent_id"], row["source_batch_id"]),
+                    )
+                    await db.execute(
+                        """UPDATE agent_executions SET state='cancelled', settled_at=?, error=?
+                           WHERE batch_id=? AND state='usage_suspended'""",
+                        (now, reason, row["source_batch_id"]),
+                    )
+                    await db.execute(
+                        """UPDATE usage_continuations SET state='cancelled',
+                           completed_at=?, updated_at=?, last_error=? WHERE id=?""",
+                        (now, now, reason, row["id"]),
+                    )
+                    await db.execute(
+                        """UPDATE agents SET status=?, updated_at=?
+                           WHERE id=? AND status=?""",
+                        (
+                            AgentStatus.IDLE,
+                            now,
+                            row["agent_id"],
+                            AgentStatus.USAGE_SUSPENDED,
+                        ),
+                    )
+                    state = "cancelled"
+                item = self._decode_usage_continuation(row)
+                item.update({"agent_key": row["agent_key"], "outcome": state})
+                item["last_error"] = reason
+                outcomes.append(item)
+            await db.commit()
+        return outcomes
+
+    async def finish_usage_continuation(
+        self,
+        continuation_id: str,
+        batch_id: str,
+        state: str,
+        error: str | None = None,
+    ) -> bool:
+        if state not in {"completed", "failed", "cancelled", "ready"}:
+            raise ValueError("Invalid usage continuation terminal state")
+        now = utc_now()
+        async with self.connect() as db:
+            cursor = await db.execute(
+                """UPDATE usage_continuations SET state=?, updated_at=?,
+                   completed_at=CASE WHEN ?='ready' THEN NULL ELSE ? END,
+                   continuation_batch_id=CASE WHEN ?='ready' THEN NULL
+                     ELSE continuation_batch_id END, last_error=?
+                   WHERE id=? AND continuation_batch_id=? AND state='running'""",
+                (state, now, state, now, state, error, continuation_id, batch_id),
+            )
+            await db.commit()
+        return cursor.rowcount == 1
+
+    async def recover_agent_processing(self, room_id: str, agent_id: str) -> int:
+        """Requeue an orphaned claim only after the runtime proves execution absent."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            cursor = await db.execute(
+                """UPDATE deliveries SET status='pending', started_at=NULL, batch_id=NULL,
+                          completed_at=NULL, error='Recovered orphaned in-process worker'
+                   WHERE agent_id=? AND status='processing' AND event_id IN (
+                     SELECT id FROM events WHERE room_id=?
+                       AND round_id=(SELECT active_round_id FROM rooms WHERE id=?)
+                   )""",
+                (agent_id, room_id, room_id),
+            )
+            if cursor.rowcount:
+                await db.execute(
+                    "UPDATE agents SET status=?, updated_at=? WHERE id=? AND status=?",
+                    (AgentStatus.IDLE, now, agent_id, AgentStatus.RUNNING),
+                )
+            await db.commit()
+        return cursor.rowcount
+
+    async def complete_deliveries(
+        self, delivery_ids: list[str], *, batch_id: str | None = None
+    ) -> bool:
+        if not delivery_ids:
+            return True
+        placeholders = ",".join("?" for _ in delivery_ids)
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            cursor = await db.execute(
+                f"""UPDATE deliveries SET status='delivered', completed_at=?, consumed_at=?
+                   WHERE id IN ({placeholders}) AND status='processing'
+                     {"AND batch_id=?" if batch_id is not None else ""}""",  # noqa: S608
+                (utc_now(), utc_now(), *delivery_ids, *((batch_id,) if batch_id is not None else ())),
+            )
+            if cursor.rowcount != len(delivery_ids):
+                delivered = await self._fetchone(
+                    db,
+                    f"""SELECT COUNT(*) AS count FROM deliveries
+                        WHERE id IN ({placeholders}) AND status='delivered'
+                          {"AND batch_id=?" if batch_id is not None else ""}""",  # noqa: S608
+                    (*delivery_ids, *((batch_id,) if batch_id is not None else ())),
+                )
+                if delivered is None or delivered["count"] != len(delivery_ids):
+                    await db.rollback()
+                    return False
+            await db.commit()
+        return True
+
+    async def complete_delivery(self, delivery_id: str) -> None:
+        await self.complete_deliveries([delivery_id])
+
+    async def fail_delivery(
+        self,
+        delivery_id: str,
+        error: str,
+        retry: bool,
+        *,
+        batch_id: str | None = None,
+    ) -> bool:
+        return bool(
+            await self.fail_deliveries(
+                [delivery_id], error, retry, batch_id=batch_id
+            )
+        )
+
+    async def fail_deliveries(
+        self,
+        delivery_ids: list[str],
+        error: str,
+        retry: bool,
+        *,
+        batch_id: str | None = None,
+    ) -> int:
+        if not delivery_ids:
+            return 0
+        placeholders = ",".join("?" for _ in delivery_ids)
+        batch_clause = " AND batch_id=?" if batch_id is not None else ""
+        params: list[Any] = [
+            "pending" if retry else "failed",
+            utc_now(),
+            error[:4000],
+            *delivery_ids,
+        ]
+        if batch_id is not None:
+            params.append(batch_id)
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            cursor = await db.execute(
+                f"""UPDATE deliveries SET status=?, completed_at=?, error=?
+                    WHERE id IN ({placeholders}) AND status='processing'{batch_clause}""",  # noqa: S608
+                params,
+            )
+            if cursor.rowcount != len(delivery_ids):
+                await db.rollback()
+                return 0
+            await db.commit()
+        return cursor.rowcount
+
+    async def cancel_pending_deliveries(self, room_id: str, discussion_id: str | None = None) -> None:
+        params: list[Any] = [utc_now(), room_id]
+        extra = ""
+        if discussion_id is not None:
+            extra = " AND e.discussion_id=?"
+            params.append(discussion_id)
+        async with self.connect() as db:
+            await db.execute(
+                f"""UPDATE deliveries SET status='cancelled', completed_at=?
+                    WHERE id IN (
+                      SELECT d.id FROM deliveries d JOIN events e ON e.id=d.event_id
+                      WHERE e.room_id=? AND d.status IN ('pending','processing'){extra}
+                    )""",  # noqa: S608
+                params,
+            )
+            execution_params: list[Any] = [utc_now(), room_id]
+            execution_extra = ""
+            if discussion_id is not None:
+                execution_extra = " AND round_id=?"
+                execution_params.append(discussion_id)
+            await db.execute(
+                f"""UPDATE agent_executions
+                    SET state='cancelled', settled_at=?, error='Cancelled by Room lifecycle change'
+                    WHERE room_id=? AND state IN
+                      ('claimed','active','recovering','result_ready','usage_suspended')
+                    {execution_extra}""",  # noqa: S608
+                execution_params,
+            )
+            continuation_params: list[Any] = [utc_now(), utc_now(), room_id]
+            continuation_extra = ""
+            if discussion_id is not None:
+                continuation_extra = " AND round_id=?"
+                continuation_params.append(discussion_id)
+            await db.execute(
+                f"""UPDATE usage_continuations
+                    SET state='cancelled', completed_at=?, updated_at=?,
+                        last_error='Cancelled by Room lifecycle change'
+                    WHERE room_id=? AND state IN ('scheduled','ready','running')
+                    {continuation_extra}""",  # noqa: S608
+                continuation_params,
+            )
+            await db.commit()
+
+    async def register_decision(
+        self,
+        room_id: str,
+        round_id: str,
+        agent_id: str,
+        outcome: str,
+        finish_boundary_sequence: int,
+        execution_id: str | None = None,
+    ) -> dict[str, Any]:
+        now = utc_now()
+        passed = outcome == "PASS"
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            if execution_id is not None:
+                execution = await self._fetchone(
+                    db,
+                    "SELECT state, decision_recorded_at FROM agent_executions WHERE batch_id=?",
+                    (execution_id,),
+                )
+                if execution is None or execution["state"] not in {"result_ready", "settled"}:
+                    await db.rollback()
+                    raise RuntimeError("Execution is not ready for decision settlement")
+                if execution["decision_recorded_at"] is not None:
+                    row = await self._fetchone(db, "SELECT * FROM rounds WHERE id=?", (round_id,))
+                    await db.commit()
+                    assert row is not None
+                    result = dict(row)
+                    result["_decision_applied"] = False
+                    return result
+            await db.execute(
+                """UPDATE rooms SET turn_count=turn_count+1,
+                   consecutive_passes=CASE WHEN ? THEN consecutive_passes+1 ELSE 0 END,
+                   updated_at=? WHERE id=?""",
+                (1 if passed else 0, now, room_id),
+            )
+            await db.execute(
+                """UPDATE rounds SET turn_count=turn_count+1,
+                   consecutive_passes=CASE WHEN ? THEN consecutive_passes+1 ELSE 0 END
+                   WHERE id=? AND room_id=? AND status=?""",
+                (1 if passed else 0, round_id, room_id, RoundStatus.ACTIVE),
+            )
+            await db.execute(
+                """UPDATE round_agent_state SET last_outcome=?,
+                   finish_boundary_sequence=CASE WHEN ?='FINISH' THEN ?
+                     ELSE finish_boundary_sequence END
+                   WHERE round_id=? AND agent_id=?""",
+                (
+                    outcome,
+                    outcome,
+                    finish_boundary_sequence,
+                    round_id,
+                    agent_id,
+                ),
+            )
+            if execution_id is not None:
+                cursor = await db.execute(
+                    """UPDATE agent_executions SET decision_recorded_at=?
+                       WHERE batch_id=? AND decision_recorded_at IS NULL""",
+                    (now, execution_id),
+                )
+                if cursor.rowcount != 1:
+                    await db.rollback()
+                    raise RuntimeError("Execution decision settlement lost its compare-and-set")
+            row = await self._fetchone(db, "SELECT * FROM rounds WHERE id=?", (round_id,))
+            await db.commit()
+        assert row is not None
+        result = dict(row)
+        result["_decision_applied"] = True
+        return result
+
+    async def close_discussion(
+        self, room_id: str, discussion_id: str, reason: str, content: str
+    ) -> dict[str, Any]:
+        """Atomically close a live discussion and write its audit event."""
+        event_id = new_id("event")
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            cursor = await db.execute(
+                """UPDATE rooms SET status=?, updated_at=?
+                   WHERE id=? AND discussion_id=? AND status=?""",
+                (
+                    RoomStatus.FINISHED,
+                    now,
+                    room_id,
+                    discussion_id,
+                    RoomStatus.RUNNING,
+                ),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise ValueError("Discussion is no longer live and cannot be closed")
+            await db.execute(
+                """UPDATE rounds SET status=?, ended_at=?, close_reason=?
+                   WHERE id=? AND room_id=?""",
+                (RoundStatus.FINISHED, now, reason, discussion_id, room_id),
+            )
+            await db.execute(
+                """UPDATE deliveries SET status='cancelled', completed_at=?
+                   WHERE id IN (
+                     SELECT d.id FROM deliveries d JOIN events e ON e.id=d.event_id
+                     WHERE e.room_id=? AND e.discussion_id=?
+                       AND d.status IN ('pending','processing') AND d.runnable=1
+                   )""",
+                (now, room_id, discussion_id),
+            )
+            await db.execute(
+                """UPDATE agents SET status=?, last_error=NULL, updated_at=?
+                   WHERE room_id=?""",
+                (AgentStatus.FINISHED, now, room_id),
+            )
+            sequence_cursor = await db.execute(
+                """SELECT COALESCE(MAX(sequence_no), 0) + 1 AS next_sequence
+                   FROM events WHERE room_id=?""",
+                (room_id,),
+            )
+            sequence_no = (await sequence_cursor.fetchone())["next_sequence"]
+            await db.execute(
+                """INSERT INTO events
+                (id, room_id, discussion_id, created_at, event_type, source,
+                 destination, content, related_event_id, status, metadata_json,
+                 round_id, sequence_no, event_class, conversational,
+                 counts_as_turn, counts_toward_pass)
+                VALUES (?, ?, ?, ?, 'discussion_closed', 'room', 'observer',
+                        ?, NULL, 'recorded', ?, ?, ?, 'lifecycle', 0, 0, 0)""",
+                (
+                    event_id,
+                    room_id,
+                    discussion_id,
+                    now,
+                    content,
+                    json.dumps({"reason": reason}, ensure_ascii=False),
+                    discussion_id,
+                    sequence_no,
+                ),
+            )
+            await db.commit()
+        event = await self.get_event(event_id)
+        assert event is not None
+        return event
+
+    async def begin_new_topic(self, room_id: str, topic: str) -> tuple[str, str]:
+        room = await self.get_room(room_id)
+        if room is None:
+            raise KeyError(room_id)
+        old_id = room["discussion_id"]
+        prepared = await self.prepare_round(
+            room_id, PrepareRoundRequest(title="Legacy new topic", prompt=topic)
+        )
+        await self.start_round(room_id, prepared["id"])
+        return old_id, prepared["id"]
+
+    async def stop_active_round(self, room_id: str, reason: str) -> None:
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE rounds SET status=?, ended_at=COALESCE(ended_at, ?),
+                   close_reason=? WHERE id=(SELECT active_round_id FROM rooms WHERE id=?)
+                   AND status IN (?, ?)""",
+                (
+                    RoundStatus.STOPPED,
+                    now,
+                    reason,
+                    room_id,
+                    RoundStatus.ACTIVE,
+                    RoundStatus.PREPARING,
+                ),
+            )
+            await db.commit()
+
+    async def invalidate_inflight(self, room_id: str) -> None:
+        async with self.connect() as db:
+            await db.execute(
+                "UPDATE rooms SET lifecycle_version=lifecycle_version+1, updated_at=? WHERE id=?",
+                (utc_now(), room_id),
+            )
+            await db.commit()
+
+    async def resume_active_round(self, room_id: str) -> None:
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE rounds SET status=?, ended_at=NULL, close_reason=NULL,
+                   last_activity_at=?
+                   WHERE id=(SELECT active_round_id FROM rooms WHERE id=?)""",
+                (RoundStatus.ACTIVE, now, room_id),
+            )
+            await db.commit()
+
+    async def reset_room_threads(self, room_id: str) -> list[str]:
+        agents = await self.get_agents(room_id)
+        old_ids = [a["thread_id"] for a in agents if a.get("thread_id")]
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE agents SET thread_id=NULL, status=?, last_error=NULL, updated_at=?
+                   WHERE room_id=?""",
+                (AgentStatus.INITIALIZING, utc_now(), room_id),
+            )
+            await db.commit()
+        return old_ids
+
+    async def replace_agent_threads(self, room_id: str, thread_ids: dict[str, str]) -> None:
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            for key, thread_id in thread_ids.items():
+                await db.execute(
+                    """UPDATE agents SET thread_id=?, status=?, last_error=NULL, updated_at=?
+                       WHERE room_id=? AND agent_key=?""",
+                    (thread_id, AgentStatus.IDLE, now, room_id, key),
+                )
+            await db.commit()
+
+    async def _fetchone(
+        self, db: aiosqlite.Connection, query: str, params: tuple[Any, ...]
+    ) -> aiosqlite.Row | None:
+        cursor = await db.execute(query, params)
+        return await cursor.fetchone()
+
+    @staticmethod
+    async def _ensure_column(
+        db: aiosqlite.Connection, table: str, column: str, definition: str
+    ) -> None:
+        rows = await db.execute_fetchall(f"PRAGMA table_info({table})")
+        if column not in {row[1] for row in rows}:
+            await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+    @staticmethod
+    def _round_status_for_room(status: str) -> RoundStatus:
+        if status in {RoomStatus.CREATING, RoomStatus.PREPARING}:
+            return RoundStatus.PREPARING
+        if status == RoomStatus.FINISHED:
+            return RoundStatus.FINISHED
+        if status in {
+            RoomStatus.STOPPED,
+            RoomStatus.ROLLING_OVER,
+            RoomStatus.ARCHIVED,
+            RoomStatus.ERROR,
+        }:
+            return RoundStatus.STOPPED
+        return RoundStatus.ACTIVE
+
+    @staticmethod
+    def _decode_row(row: aiosqlite.Row) -> dict[str, Any]:
+        result = dict(row)
+        if "metadata_json" in result:
+            result["metadata"] = json.loads(result.pop("metadata_json") or "{}")
+        for key in (
+            "conversational",
+            "counts_as_turn",
+            "counts_toward_pass",
+            "agent_readable",
+            "turn_triggering",
+            "delivery_runnable",
+        ):
+            if key in result:
+                result[key] = bool(result[key])
+        return result
+
+    @staticmethod
+    def _decode_execution(row: aiosqlite.Row) -> dict[str, Any]:
+        result = dict(row)
+        for source, target, fallback in (
+            ("result_json", "result", None),
+            ("usage_json", "usage", None),
+            ("activity_json", "activity", []),
+        ):
+            raw = result.pop(source, None)
+            result[target] = json.loads(raw) if raw is not None else fallback
+        return result
+
+    @staticmethod
+    def _decode_usage_continuation(row: aiosqlite.Row) -> dict[str, Any]:
+        result = dict(row)
+        result["input_event_ids"] = json.loads(
+            result.pop("input_event_ids_json") or "[]"
+        )
+        result["triggering_event_ids"] = json.loads(
+            result.pop("triggering_event_ids_json") or "[]"
+        )
+        return result
+
+    @staticmethod
+    def _decode_round(row: aiosqlite.Row) -> dict[str, Any]:
+        result = dict(row)
+        private = json.loads(result.pop("participant_private_json", "{}") or "{}")
+        overlays = json.loads(result.pop("participant_overlays_json", "{}") or "{}")
+        # Preserve legacy A/B rows without synthesizing absent C configuration.
+        for key in ("agent_a", "agent_b"):
+            old_private = result.get(f"{key}_private")
+            old_overlay = result.get(f"{key}_overlay")
+            if old_private is not None and key not in private:
+                private[key] = old_private
+            if old_overlay is not None and key not in overlays:
+                overlays[key] = old_overlay
+        result["participant_private"] = private
+        result["participant_overlays"] = overlays
+        return result
+
+    @staticmethod
+    def _effective_instructions(profile: str, override: str | None) -> str:
+        if not override or not override.strip():
+            return profile
+        return f"{profile}\n\nROOM-SPECIFIC OVERRIDE\n{override.strip()}"
+
+    @staticmethod
+    def _event_traits(event_type: str) -> tuple[str, bool, bool, bool, bool, bool, str]:
+        if event_type in {"observer_message", "round_start_turn", "topic"}:
+            return "conversation", True, False, False, True, True, "public"
+        if event_type == "agent_message":
+            return "conversation", True, True, False, True, True, "public"
+        if event_type == "agent_pass":
+            return "conversation", True, True, True, False, False, "public"
+        if event_type in {"agent_finish", "agent_reopened"}:
+            return (
+                "conversation",
+                True,
+                event_type == "agent_finish",
+                False,
+                False,
+                False,
+                "public",
+            )
+        if event_type in {"private_initialization", "round_context_stored"}:
+            return "initialization", False, False, False, True, False, (
+                "private" if event_type == "private_initialization" else "public"
+            )
+        if event_type in {"agent_activity", "tool_activity"}:
+            return "status", False, False, False, False, False, "mechanical"
+        return "lifecycle", False, False, False, False, False, "mechanical"

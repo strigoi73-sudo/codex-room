@@ -1,0 +1,23 @@
+[project]
+name = "codex-room"
+version = "0.1.0"
+description = "A local room where independent persistent Codex threads collaborate while a human observes."
+requires-python = ">=3.10"
+dependencies = [
+  "aiosqlite>=0.22,<1",
+  "fastapi>=0.141,<1",
+  "openai-codex>=0.147,<1",
+  "pydantic>=2.13,<3",
+  "uvicorn[standard]>=0.52,<1",
+]
+
+[project.optional-dependencies]
+test = [
+  "httpx>=0.28,<1",
+  "pytest>=9,<10",
+  "pytest-asyncio>=1.4,<2",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
