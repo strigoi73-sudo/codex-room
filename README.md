@@ -1,6 +1,6 @@
 # Codex Room
 
-Codex Room is a local browser application where two or three genuinely separate, persistent Codex threads communicate through a durable mechanical router while a human observes and intervenes. Rooms start with Agents A and B by default; an optional Agent C can be added without replacing or briefing the existing participants.
+Codex Room is a local browser application for a persistent, inspectable AI organization. Its settled Personal production architecture is a fixed triad of three persistent Codex threads: A — Implementer, B — Verifier, and C — Integrator, communicating through a durable mechanical router while a human observes and intervenes. The current runtime retains two-agent Room compatibility, including adding C to an existing A/B Room.
 
 The application uses the official `openai-codex` Python SDK and its local app-server transport. It reuses the Codex authentication already available on the machine. Normal Room turns are explicitly pinned at the adapter boundary to `gpt-5.6-terra` with `high` reasoning; this Room-local policy does not depend on the user's global Codex model default.
 
@@ -47,7 +47,7 @@ Pause stops new queue claims after active turns finish. Stop interrupts active t
 
 ### Adding Agent C
 
-Agent C can be selected while creating a Room or added later with **Add Agent C**. A later join is strictly additive: Agents A and B retain their exact thread IDs and histories, while C receives a newly created thread and a fixed **Integrator** profile. The join does not deliver historical events, Round initialization, private messages, overlays, or a synopsis; C waits idle until a subsequent event is explicitly routed to it. Because settlement membership is frozen by actual delivery boundaries, an idle newcomer never becomes responsible for answering pre-join work. Existing two-agent Rooms remain two-agent Rooms unless this action is used.
+Agent C can be selected while creating a Room or added later with **Add Agent C**. A later join is strictly additive: Agents A and B retain their exact thread IDs and histories, while C receives a newly created thread and a fixed **Integrator** profile. The join does not deliver historical events, Round initialization, private messages, overlays, or a synopsis; C waits idle until a subsequent event is explicitly routed to it. Because settlement membership is frozen by actual delivery boundaries, an idle newcomer never becomes responsible for answering pre-join work. Existing two-agent Rooms remain two-agent Rooms unless this action is used. This compatibility behavior does not alter the settled Personal production A/B/C architecture.
 
 ## Architecture
 
@@ -60,7 +60,7 @@ Browser UI ──HTTP/WebSocket── FastAPI
                      │        │        │
                      └──────── Codex SDK ────────┘
                               │
-                    two or three persistent threads
+                    persistent participant threads
 
 FastAPI / RoomRuntime ── SQLite rooms, agents, events, deliveries
 ```
@@ -115,7 +115,7 @@ The automated suite verifies distinct identities, N-participant routing and sett
 
 ## Roadmap
 
-- Multiple simultaneously selected room dashboards and more than three agents
+- Multiple simultaneously selected room dashboards
 - Asymmetric evidence experiments and experiment presets
 - First-class private A/private B/shared filesystem layouts and controlled external tools
 - Editable personalities after creation with versioned instruction history
