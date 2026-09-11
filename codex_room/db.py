@@ -1645,13 +1645,27 @@ class Database:
             row = await self._fetchone(db, "SELECT * FROM events WHERE id=?", (event_id,))
         return self._decode_row(row) if row else None
 
-    async def get_events(self, room_id: str, limit: int = 2000) -> list[dict[str, Any]]:
+    async def get_events(
+        self, room_id: str, limit: int | None = 2000
+    ) -> list[dict[str, Any]]:
+        if limit is not None and limit < 0:
+            raise ValueError("limit must be non-negative or None")
         async with self.connect() as db:
-            rows = await db.execute_fetchall(
-                """SELECT * FROM events WHERE room_id=?
-                ORDER BY sequence_no ASC LIMIT ?""",
-                (room_id, limit),
-            )
+            if limit is None:
+                rows = await db.execute_fetchall(
+                    """SELECT * FROM events WHERE room_id=?
+                    ORDER BY sequence_no ASC""",
+                    (room_id,),
+                )
+            else:
+                rows = await db.execute_fetchall(
+                    """SELECT * FROM (
+                           SELECT * FROM events WHERE room_id=?
+                           ORDER BY sequence_no DESC LIMIT ?
+                       )
+                       ORDER BY sequence_no ASC""",
+                    (room_id, limit),
+                )
             delivery_rows = await db.execute_fetchall(
                 """SELECT d.event_id, a.agent_key, d.runnable, d.status, d.batch_id, d.attempts,
                           d.queued_at, d.started_at, d.completed_at, d.consumed_at
@@ -1669,6 +1683,15 @@ class Database:
             event["deliveries"] = deliveries.get(event["id"], [])
         self._annotate_retry_observer_state(events)
         return events
+
+    async def get_event_count(self, room_id: str) -> int:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                "SELECT COUNT(*) AS event_count FROM events WHERE room_id=?",
+                (room_id,),
+            )
+        return int(row["event_count"]) if row else 0
 
     async def get_retryable_attempt_failures(
         self,
@@ -1863,12 +1886,27 @@ class Database:
             event["deliveries"] = deliveries.get(event["id"], [])
         return events
 
-    async def snapshot(self, room_id: str) -> dict[str, Any] | None:
+    async def snapshot(
+        self, room_id: str, *, event_limit: int | None = 2000
+    ) -> dict[str, Any] | None:
         room = await self.get_room(room_id)
         if room is None:
             return None
         room["agents"] = await self.get_agents(room_id)
-        room["events"] = await self.get_events(room_id)
+        event_count = await self.get_event_count(room_id)
+        room["events"] = await self.get_events(room_id, limit=event_limit)
+        room["event_window"] = {
+            "limit": event_limit,
+            "total": event_count,
+            "returned": len(room["events"]),
+            "truncated": len(room["events"]) < event_count,
+            "first_sequence_no": (
+                room["events"][0].get("sequence_no") if room["events"] else None
+            ),
+            "last_sequence_no": (
+                room["events"][-1].get("sequence_no") if room["events"] else None
+            ),
+        }
         rounds = await self.get_rounds(room_id)
         for round_item in rounds:
             round_item["events"] = [
