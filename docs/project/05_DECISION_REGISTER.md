@@ -231,3 +231,23 @@ The implementation scope is **[CORE + ROOM migration]**: CORE changes establish 
 **Reality:** DECIDED / NOT IMPLEMENTED.
 
 **Development order:** this migration is the first major post-refresh implementation task and must be implemented and adequately verified before **A2 — Assurance Pass 2**. A2 remains the next assurance milestone immediately afterward. This changes the prior near-term sequencing without superseding A2 itself or D-014's requirement that the Engineering Foundation precede A2.
+
+
+### D-021 — Repository `docs/project/` is the canonical home for maintained Project sources
+**Date:** 2026-09-11  
+**Status:** ACTIVE
+
+The maintained Codex Room Project-source documents are canonically stored in the private GitHub repository `strigoi73-sudo/codex-room` under `docs/project/` on canonical `main`.
+
+Settled source-of-truth rules:
+
+- the repository copies under `docs/project/` are the authoritative maintained Project sources;
+- Git/GitHub provide exact version history, diffs, provenance, and review identity for those documents just as they do for code;
+- the live GPT Project custom instructions remain a bootstrap/runtime configuration, not a duplicate maintained Project source; they should identify the canonical repository, document ownership, and retrieval rules;
+- GPT Project source attachments should not be maintained as parallel authoritative copies of the repository documents after cutover;
+- retrieve only the Project documents relevant to the task rather than loading the entire package reflexively;
+- for “where are we?”, “what’s next?”, or resume-after-context-switch questions, read the canonical `docs/project/06_DEVELOPMENT_CONTROL.md` before answering and verify consequential volatile repository facts directly when practical;
+- when current Project-source content is consequential and repository access is unavailable, state that freshness cannot be verified rather than silently substituting stale remembered or uploaded text;
+- live GPT Project instructions may be exported as dated handoff snapshots when useful, but no repository copy should become a second authoritative live-instructions source.
+
+This decision changes the maintenance location and retrieval workflow, not the semantic ownership of the individual documents defined by the Package Index.

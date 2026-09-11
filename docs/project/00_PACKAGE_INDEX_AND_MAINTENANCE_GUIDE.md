@@ -1,7 +1,8 @@
 # Codex Room GPT Project — Package Index & Maintenance Guide
 
 **Package initialized:** 2026-09-08  
-**Purpose:** Maintain a compact, durable knowledge base for future ChatGPT work on Codex Room.  
+**Purpose:** Maintain the canonical, durable knowledge base for future ChatGPT work on Codex Room.  
+**Canonical home:** `strigoi73-sudo/codex-room` → `docs/project/` on canonical `main`.  
 **Freshness principle:** Every file is a maintained synthesis with a defined scope. Newer direct evidence or later explicit decisions may supersede dated material.
 
 ## 1. Package contents
@@ -18,15 +19,17 @@
 | `09_REPOSITORY_AND_OPERATIONS_REFERENCE.md` | Dated repository map, maintenance boundaries, recovery notes, and verification conventions. | Moderate |
 | `10_WORK_PROGRAM_AND_IDENTIFIER_INDEX.md` | Stable human-facing legend and cross-reference for phase, issue, decision, evidence, assurance, and scope identifiers. It does not own current status. | Low |
 
-**Project instructions:** the live Codex Room GPT Project custom-instructions configuration is authoritative and is intentionally **not duplicated as a maintained Project source**. If a handoff/export ever needs a copy, capture it as a dated snapshot rather than maintaining a second authoritative version.
+**Project-source authority:** the maintained files in repository `docs/project/` are the authoritative Project sources. Do not maintain parallel authoritative copies as GPT Project source attachments or elsewhere.
+
+**GPT Project instructions:** the live Codex Room GPT Project custom-instructions configuration remains authoritative for bootstrap/runtime guidance and is intentionally **not duplicated as a maintained Project source**. Its job is to identify the canonical repository and document-ownership rules, then retrieve the relevant repository source when needed. If a handoff/export ever needs a copy of the live instructions, capture it as a dated snapshot rather than maintaining a second authoritative version.
 
 **Manifest policy:** `MANIFEST.md` is **not a live maintained Project source**. Generate a manifest only for a deliberate export, handoff, or archival package where exact package inventory and hashes are useful.
 
-**Filename convention:** preserve the leading canonical document number (for example `06_` or `10_`). Automatic trailing download/upload suffixes such as ` (1)` or ` (3)` before the extension are incidental and do not change logical document identity. Keep only one active Project source for each logical document.
+**Filename convention:** preserve the leading canonical document number (for example `06_` or `10_`). Repository filenames under `docs/project/` are canonical. Automatic trailing download/upload suffixes such as ` (1)` or ` (3)` before the extension are incidental historical artifacts and do not change logical document identity.
 
 ## 2. How to resolve disagreements
 
-Do not assign one universal authority order to all project material. Resolve conflicts according to the kind of claim being made and its freshness.
+Do not assign one universal authority order to all project material. Resolve conflicts according to the kind of claim being made and its freshness. When a maintained Project source is required, read the canonical repository version from `docs/project/`; do not substitute an older uploaded copy or remembered text when freshness matters.
 
 - **What the software currently does:** prefer the freshest relevant source code, current tests, runtime evidence, and current repository inspection.
 - **What Codex Room is intended or permitted to do:** prefer the current ratified Constitution, Charter where applicable, and later explicit decisions recorded in the Decision Register.
@@ -95,13 +98,13 @@ After substantial work, update only the files materially affected.
 
 Use explicit dates for volatile claims. Remove resolved questions from Development Control after their resolution is recorded elsewhere as appropriate.
 
-**Repository-state boundary:** maintained Project sources track the **meaning** of repository changes, not mechanically changing repository state. Git/GitHub are authoritative for current HEAD, refs, diffs, commit history, pull requests, CI runs, and hosted verification; local Git is authoritative for the local working tree and local ref state. Do not update Project sources merely because a commit SHA or CI run changed. Preserve exact commits, test counts, or run IDs in the Evidence Register only when they materially support a durable claim, closeout, decision, or assurance result.
+**Repository/source boundary:** the canonical maintained Project sources themselves live under `docs/project/` and are versioned by Git/GitHub. Their contents track durable **meaning**, while Git/GitHub also remain authoritative for mechanically changing repository facts such as current HEAD, refs, diffs, commit history, pull requests, CI runs, and hosted verification; local Git is authoritative for the local working tree and local ref state. Do not update Project-source prose merely because a commit SHA or CI run changed. Preserve exact commits, test counts, or run IDs in the Evidence Register only when they materially support a durable claim, closeout, decision, or assurance result.
 
 **Volatile-state ownership:** `06_DEVELOPMENT_CONTROL.md` is the sole maintained owner of current priority, active work/issue status, blockers, open questions, and temporary budget timing. `04`, `09`, and `10` may retain dated historical evidence or stable structural references, but should not mirror the live work queue, current-status tables, or exact current repository HEAD.
 
 ## 5. Context economy
 
-The Project package is designed to preserve continuity without turning active context into an archive.
+The canonical repository Project package is designed to preserve continuity without turning active context into an archive. GPT Project custom instructions should bootstrap retrieval from this package; maintained source attachments should not mirror the same documents after cutover.
 
 Keep large or episodic material outside the maintained core, including:
 

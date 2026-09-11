@@ -16,13 +16,15 @@ Canonical source-control arrangement:
 
 The earlier September 8 state with an unborn/untracked Git repository is historical and superseded. Milestone commit identities belong in Git history/Evidence Register. Exact current HEAD, ref agreement, CI state, and working-tree state are mechanically changing repository facts and should be inspected directly from GitHub or local Git when consequential rather than maintained in Project sources.
 
-**Boundary:** Project sources track durable meaning, architecture, decisions, evidence, and work state; Git/GitHub track repository state and provenance.
+**Canonical Project-source home:** maintained Project sources live under `docs/project/` in this repository. Those repository files are authoritative for Charter, Constitution, Architecture & Current State, Decision Register, Development Control, Evidence Register, Product Vision, Repository & Operations, and the identifier index. The GPT Project should not maintain duplicate authoritative source attachments after cutover.
+
+**Boundary:** the repository Project sources track durable meaning, architecture, decisions, evidence, and work state; Git/GitHub also track their exact bytes/history plus mechanically changing repository state and provenance.
 
 ## 2. Official cognition-allocation and development workflow
 
 Decision D-018 governs the default external development workflow. The objective is to spend cognition only where cognition is useful, execute work at the cheapest authorized capable layer, and preserve exact evidence across handoffs.
 
-- **ChatGPT Codex Room Project — reasoning, coordination, and connected execution:** use maintained Project context for scoping, sequencing, tradeoffs, and review. When connected tools can safely perform repository inspection, bounded edits, GitHub operations, or other deterministic work, perform that work directly instead of delegating it merely for execution.
+- **ChatGPT Codex Room Project — reasoning, coordination, and connected execution:** use the live GPT Project instructions as a bootstrap, then retrieve the relevant canonical files from `docs/project/` for scoping, sequencing, tradeoffs, and review. Do not rely on stale uploaded copies when repository freshness matters. When connected tools can safely perform repository inspection, bounded edits, GitHub operations, or other deterministic work, perform that work directly instead of delegating it merely for execution.
 - **Deterministic local tools — local execution without model cognition:** use Git, shell commands, tests, filesystem searches, and other deterministic tools when the task depends on local state but does not require model reasoning.
 - **Local Codex — local development cognition and execution:** use Codex when local-only access, substantial implementation work, scattered or ambiguous evidence, failure-prone investigation, or valuable independent cognition makes it useful. When the task is already understood, use explicit phase-titled prompts with narrow scope, verification requirements, and stop conditions.
 - **Git — exact change and provenance machinery:** use status, diff, blob IDs, commits, and history as the preferred representation of what actually changed.
@@ -40,6 +42,17 @@ Prefer exact diffs/status/test outputs over model narration of mechanically avai
 Do not create ZIP/Drive transfer copies as routine development checkpoints. The temporary `Codex Git Transfer` process was a one-time bridge used to establish the baseline; it is not the normal maintenance workflow.
 
 A review attaches to the exact reviewed commit/bytes. Any later mutation makes the prior review stale for the new version.
+
+### GPT Project bootstrap/retrieval workflow
+
+Use the repository sources selectively rather than loading the full package by default:
+
+1. use `docs/project/00_PACKAGE_INDEX_AND_MAINTENANCE_GUIDE.md` when document ownership or source authority is unclear;
+2. use `docs/project/06_DEVELOPMENT_CONTROL.md` for current priority, active work, blockers, and open questions;
+3. retrieve Charter/Constitution/Decision Register when governing intent is relevant;
+4. retrieve Architecture & Current State for implementation synthesis, Evidence Register for rationale/evidence, Product Vision for future direction, and this file for repository/operations mechanics;
+5. verify consequential current repository facts directly from Git/GitHub instead of treating maintained prose as a live ref/status feed;
+6. if repository access is unavailable and current Project-source content is consequential, state that freshness cannot be verified rather than silently falling back to stale memory or historical attachments.
 
 ## 3. Reproducible development/test baseline and CI
 
@@ -149,6 +162,6 @@ Exact-byte independent review of this P3 implementation remains pending but non-
 
 ## 10. Historical external artifacts
 
-Older repository ZIP snapshots, Room exports, handoff bundles, raw archives, and database/recovery backups remain historical evidence only. Inspect them narrowly when a question requires them.
+Older repository ZIP snapshots, Room exports, handoff bundles, raw archives, prior GPT Project source attachments, and database/recovery backups remain historical evidence only after the repository-source cutover. Inspect them narrowly when a question requires them.
 
 Do not infer present behavior solely from an old artifact. Prefer the canonical current Git commit/source and dated current evidence.
