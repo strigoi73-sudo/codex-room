@@ -64,7 +64,7 @@ Current clean-development procedure:
 
 `constraints-test.txt` records the known-good application/test dependency set for routine development and CI while `pyproject.toml` retains broader supported ranges. Clean-environment verification collected and passed **129 tests**. `test-transcript-stability.ps1` remains a separate specialized browser check because it requires Node.js plus Chrome or Edge.
 
-Minimal CI lives at `.github/workflows/python-tests.yml`. It runs on pushes to `main` and pull requests targeting `main`, uses Python 3.12 on Ubuntu, grants `contents: read`, installs through `constraints-test.txt`, and runs the canonical pytest command. Dependency upgrades should be deliberate changes to the constraint set rather than incidental resolver drift.
+Minimal CI lives at `.github/workflows/python-tests.yml`. It runs on pushes to `main` and pull requests targeting `main`, uses Python 3.12 on Ubuntu, grants `contents: read`, installs through `constraints-test.txt`, and runs the canonical pytest command. Commits or pull requests whose changed paths are entirely under `docs/project/**` are ignored by this Python-test workflow; mixed code + Project-document changes still run CI. Dependency upgrades should be deliberate changes to the constraint set rather than incidental resolver drift.
 
 ## 4. Source/runtime/generated boundaries
 
