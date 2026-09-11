@@ -11,10 +11,13 @@ from typing import Any, AsyncIterator, Iterable
 
 import aiosqlite
 
-from .models import (
+from .personalities import (
     AGENT_A_IMPLEMENTER_INSTRUCTIONS,
     AGENT_B_VERIFIER_INSTRUCTIONS,
     AGENT_C_INTEGRATOR_INSTRUCTIONS,
+)
+
+from .models import (
     AgentStatus,
     CreateRoomRequest,
     PrepareRoundRequest,

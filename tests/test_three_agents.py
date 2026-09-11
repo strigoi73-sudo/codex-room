@@ -7,7 +7,6 @@ from pydantic import ValidationError
 
 from codex_room.db import Database
 from codex_room.models import (
-    AGENT_C_INTEGRATOR_INSTRUCTIONS,
     AddAgentRequest,
     AgentDecision,
     AgentStatus,
@@ -16,6 +15,9 @@ from codex_room.models import (
     Outcome,
     PrepareRoundRequest,
     RoomStatus,
+)
+from codex_room.personalities import (
+    AGENT_C_INTEGRATOR_INSTRUCTIONS,
     default_agent_instructions,
 )
 from codex_room.orchestrator import RoomRuntime
