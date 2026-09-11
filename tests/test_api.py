@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 import time
 
 from fastapi.testclient import TestClient
@@ -91,3 +92,82 @@ def test_http_profile_and_staged_round_endpoints(tmp_path):
         export = client.get(f"/api/rooms/{room['id']}/export?format=json").json()
         assert len(export["rounds"]) == 2
         assert export["rounds"][1]["private_initialization"]["agent_a"]["present"] is True
+
+def test_snapshot_returns_latest_window_and_export_returns_full_history(tmp_path):
+    adapter = FakeAgentAdapter()
+    database_path = tmp_path / "event-window.db"
+    app = create_app(
+        database_path=database_path,
+        data_root=tmp_path / "data",
+        adapter=adapter,
+    )
+    with TestClient(app) as client:
+        created = client.post(
+            "/api/rooms",
+            json={
+                "title": "Window",
+                "topic": "Initial",
+                "auto_start": False,
+            },
+        )
+        assert created.status_code == 201
+        room = created.json()
+        room_id = room["id"]
+        round_id = room["active_round_id"]
+
+        with sqlite3.connect(database_path) as connection:
+            existing_count, max_sequence = connection.execute(
+                """SELECT COUNT(*), COALESCE(MAX(sequence_no), 0)
+                   FROM events WHERE room_id=?""",
+                (room_id,),
+            ).fetchone()
+            connection.executemany(
+                """INSERT INTO events
+                   (id, room_id, discussion_id, created_at, event_type, source,
+                    destination, content, related_event_id, status, metadata_json,
+                    round_id, sequence_no)
+                   VALUES (?, ?, ?, ?, 'bulk_test_event', 'room', 'observer',
+                           ?, NULL, 'recorded', '{}', ?, ?)""",
+                [
+                    (
+                        f"bulk-{offset}",
+                        room_id,
+                        round_id,
+                        room["created_at"],
+                        f"bulk event {offset}",
+                        round_id,
+                        max_sequence + offset,
+                    )
+                    for offset in range(1, 2006)
+                ],
+            )
+            connection.commit()
+
+        expected_total = existing_count + 2005
+
+        state = client.get(f"/api/rooms/{room_id}")
+        assert state.status_code == 200
+        snapshot = state.json()
+        assert len(snapshot["events"]) == 2000
+        assert snapshot["events"][0]["id"] == "bulk-6"
+        assert snapshot["events"][-1]["id"] == "bulk-2005"
+        assert snapshot["event_window"] == {
+            "limit": 2000,
+            "total": expected_total,
+            "returned": 2000,
+            "truncated": True,
+            "first_sequence_no": max_sequence + 6,
+            "last_sequence_no": max_sequence + 2005,
+        }
+
+        exported_response = client.get(f"/api/rooms/{room_id}/export?format=json")
+        assert exported_response.status_code == 200
+        exported = exported_response.json()
+        assert len(exported["events"]) == expected_total
+        assert exported["event_window"]["limit"] is None
+        assert exported["event_window"]["total"] == expected_total
+        assert exported["event_window"]["returned"] == expected_total
+        assert exported["event_window"]["truncated"] is False
+        assert any(event["id"] == "bulk-1" for event in exported["events"])
+        assert exported["events"][-1]["id"] == "bulk-2005"
+

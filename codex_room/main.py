@@ -160,7 +160,7 @@ def create_app(
 
     @app.get("/api/rooms/{room_id}/export")
     async def export_room(room_id: str, format: str = Query(pattern="^(markdown|json)$")) -> Response:
-        snapshot = await db.snapshot(room_id)
+        snapshot = await db.snapshot(room_id, event_limit=None)
         if snapshot is None:
             raise HTTPException(status_code=404, detail="Room not found")
         safe_title = "".join(c if c.isalnum() or c in "-_" else "-" for c in snapshot["title"])
