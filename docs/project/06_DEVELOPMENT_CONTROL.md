@@ -146,6 +146,13 @@ Implementation details such as warning thresholds, UI presentation, carry-forwar
 
 ## Maintenance issues
 
+### I-004 — README conflicts with permanent-triad behavior
+**Reality:** OBSERVED ISSUE  
+**Evidence qualifier:** VERIFIED — 2026-09-12 repository inspection  
+**Priority:** LOW — record during A2; do not interrupt the audit for repair
+
+The README's **First run** section still says the user may choose whether a new Room includes Agent C. Current source and D-020 instead make every new Personal Room an A/B/C triad. The later README **Adding Agent C** section correctly describes the new architecture, so the document is internally inconsistent. This is documentation/intent drift, not evidence of a runtime defect.
+
 ### I-003 — B SDK-thread/profile continuity residue
 **Evidence qualifier:** NEEDS VERIFICATION  
 **Priority:** LOW  
