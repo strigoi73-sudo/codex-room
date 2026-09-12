@@ -35,7 +35,7 @@ This table preserves names and navigation only. Read Development Control for cur
 | `EF-3` | Minimal GitHub CI | Development Control |
 | `A1` | Assurance Pass 1 | Development Control / Evidence Register |
 | `A2` | Assurance Pass 2 | Development Control / Evidence Register |
-| `P4` | Deterministic operational tooling | Development Control / Product Vision |
+| `P4` | Deterministic Room and agent capabilities | Development Control / Product Vision |
 
 ## 3. Established maintenance identifiers
 

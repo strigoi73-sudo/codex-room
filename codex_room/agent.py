@@ -616,10 +616,59 @@ class CodexAgentAdapter:
             if item_type not in safe_types:
                 continue
             status = getattr(item, "status", None)
-            activities.append(
-                {
-                    "type": item_type,
-                    "status": getattr(status, "value", status) or "completed",
-                }
-            )
+            status_value = getattr(status, "value", status) or "completed"
+            if item_type == "command_execution":
+                capability = CodexAgentAdapter._safe_capability_activity(
+                    getattr(item, "command", ""),
+                    getattr(item, "aggregated_output", ""),
+                    status_value,
+                )
+                if capability is not None:
+                    activities.append(capability)
+                    continue
+            activities.append({"type": item_type, "status": status_value})
         return activities
+
+    @staticmethod
+    def _safe_capability_activity(
+        command: str, aggregated_output: str, status: str
+    ) -> dict[str, Any] | None:
+        """Persist structured capability evidence without arbitrary shell output."""
+        normalized = str(command).strip()
+        if any(separator in normalized for separator in ("&&", ";", "|")):
+            return None
+        parts = normalized.split()
+        if parts and parts[0] == "&":
+            parts = parts[1:]
+        if len(parts) < 2:
+            return None
+        executable = parts[0].strip('"').lower()
+        if executable not in {"codex-room-cap", "codex-room-cap.cmd"}:
+            return None
+        if parts[1].lower() != "assert-file":
+            return None
+        lines = [line.strip() for line in str(aggregated_output).splitlines() if line.strip()]
+        if not lines:
+            return None
+        try:
+            payload = json.loads(lines[-1])
+        except (json.JSONDecodeError, TypeError):
+            return None
+        if (
+            not isinstance(payload, dict)
+            or payload.get("codex_room_capability") != 1
+            or payload.get("capability") != "assert_file"
+        ):
+            return None
+        safe_payload = {
+            key: payload[key]
+            for key in ("codex_room_capability", "capability", "ok", "subject", "checks", "error")
+            if key in payload
+        }
+        return {
+            "type": "deterministic_capability",
+            "status": status,
+            "capability": "assert_file",
+            "ok": bool(payload.get("ok")),
+            "result": safe_payload,
+        }

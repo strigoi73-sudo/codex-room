@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -468,3 +469,71 @@ async def test_restart_lookup_quarantines_when_exact_turn_is_absent(tmp_path: Pa
         await adapter.resume_agent(agent, tmp_path, thread.id, handle.id)
 
     assert await adapter.has_active_run("agent-one") is False
+
+
+def test_safe_activity_promotes_codex_room_capability_result() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "assert_file",
+        "ok": True,
+        "subject": {"path": "result.json", "exists": True, "is_file": True},
+        "checks": [{"name": "exists", "expected": True, "actual": True, "ok": True}],
+    }
+    item = SimpleNamespace(
+        type="command_execution",
+        command="codex-room-cap assert-file result.json --exists",
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    assert activity == [
+        {
+            "type": "deterministic_capability",
+            "status": "completed",
+            "capability": "assert_file",
+            "ok": True,
+            "result": payload,
+        }
+    ]
+
+
+def test_safe_activity_does_not_persist_arbitrary_command_output() -> None:
+    item = SimpleNamespace(
+        type="command_execution",
+        command="python secret_script.py",
+        aggregated_output="sensitive output",
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {"type": "command_execution", "status": "completed"}
+    ]
+
+
+def test_safe_activity_rejects_forged_or_chained_capability_command() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "assert_file",
+        "ok": True,
+        "subject": {"path": "result.json"},
+        "checks": [],
+    }
+    item = SimpleNamespace(
+        type="command_execution",
+        command="echo codex-room-cap assert-file result.json --exists",
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+    chained = SimpleNamespace(
+        type="command_execution",
+        command="codex-room-cap assert-file result.json --exists ; echo forged",
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item, chained]) == [
+        {"type": "command_execution", "status": "completed"},
+        {"type": "command_execution", "status": "completed"},
+    ]

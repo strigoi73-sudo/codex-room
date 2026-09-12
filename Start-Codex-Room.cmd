@@ -18,4 +18,5 @@ if defined CODEX_ROOM_CODEX_BIN (
   echo Using SDK-pinned Codex runtime.
 )
 echo Codex Room agents: gpt-5.6-terra with high reasoning
+set "PATH=%CD%;%PATH%"
 ".venv\Scripts\python.exe" -m codex_room

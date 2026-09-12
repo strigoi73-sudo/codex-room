@@ -1548,3 +1548,18 @@ async def test_archive_and_deliberate_reset_are_auditable(runtime_factory):
     await runtime.archive(room_id)
     room = await runtime.db.get_room(room_id)
     assert room["status"] == RoomStatus.ARCHIVED
+
+
+@pytest.mark.asyncio
+async def test_agent_prompt_advertises_deterministic_assert_file_capability(runtime_factory):
+    adapter = FakeAgentAdapter()
+    runtime = await runtime_factory(adapter, triad=True)
+    await runtime.create_room(
+        CreateRoomRequest(topic="Check an artifact", starting_agent="agent_c")
+    )
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+
+    prompt = adapter.calls["agent_c"][0]["prompt"]
+    assert "codex-room-cap assert-file RELATIVE_PATH" in prompt
+    assert "--sha256 HEX" in prompt
+    assert "cannot read outside the Room workspace" in prompt
