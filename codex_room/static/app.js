@@ -233,7 +233,9 @@ function syncParticipantControls(room) {
   starter.replaceChildren();
   agents.forEach((agent) => starter.append(new Option(agentName(agent), agent.agent_key)));
   starter.append(new Option("All participants independently", "either"));
-  starter.value = [...starter.options].some((option) => option.value === previousStarter) ? previousStarter : agents[0]?.agent_key || "either";
+  starter.value = [...starter.options].some((option) => option.value === previousStarter)
+    ? previousStarter
+    : (hasC ? "agent_c" : agents[0]?.agent_key || "either");
 }
 
 function renderTranscript(events) {
@@ -448,7 +450,6 @@ $("#create-form").addEventListener("submit", async (event) => {
   const values = Object.fromEntries(new FormData(form));
   if (!values.agent_a_instructions.trim()) delete values.agent_a_instructions;
   if (!values.agent_b_instructions.trim()) delete values.agent_b_instructions;
-  values.include_agent_c = form.elements.include_agent_c.checked;
   ["max_turns", "max_consecutive_passes", "inactivity_seconds"].forEach((key) => values[key] = Number(values[key]));
   try {
     const room = await api("/api/rooms", { method: "POST", body: JSON.stringify(values) });
@@ -480,7 +481,7 @@ $("#resume-room").addEventListener("click", () => roomAction("resume"));
 $("#stop-room").addEventListener("click", () => { if (confirm("Stop this discussion and cancel queued deliveries?")) roomAction("stop"); });
 $("#add-agent-c").addEventListener("click", async (event) => {
   if (!state.room || state.room.agents.some((agent) => agent.agent_key === "agent_c")) return;
-  if (!confirm("Add a fresh Agent C? C will receive no prior Room events and will wait for a new observer prompt.")) return;
+  if (!confirm("Upgrade this historical two-agent Room to the permanent triad? A and B keep their existing thread identities. A fresh Agent C will join without receiving pre-join Room events.")) return;
   event.currentTarget.disabled = true;
   try {
     await roomAction("agents", { agent_key: "agent_c" });
@@ -500,7 +501,14 @@ $("#archive-room").addEventListener("click", async () => {
 $("#export-md").addEventListener("click", () => { if (state.room) location.href = `/api/rooms/${state.room.id}/export?format=markdown`; });
 $("#export-json").addEventListener("click", () => { if (state.room) location.href = `/api/rooms/${state.room.id}/export?format=json`; });
 $("#new-round").addEventListener("click", () => {
-  if (state.room) syncParticipantControls(state.room);
+  if (state.room) {
+    syncParticipantControls(state.room);
+    const agents = state.room.agents || [];
+    const starter = $("#round-form select[name=starting_agent]");
+    starter.value = agents.some((agent) => agent.agent_key === "agent_c")
+      ? "agent_c"
+      : agents[0]?.agent_key || "either";
+  }
   $("#round-dialog").showModal();
 });
 $("#start-round").addEventListener("click", async () => {

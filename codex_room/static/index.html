@@ -60,7 +60,10 @@
                 <button type="button" class="text-button restore-default" data-agent="b">Clear room override</button>
               </div>
             </div>
-            <label class="include-agent-c"><input name="include_agent_c" type="checkbox" /> Include a fresh Agent C <span class="optional">The Integrator · receives no prior context</span></label>
+            <div class="agent-setup agent-c-border fixed-profile">
+              <span class="agent-glyph c">C</span>
+              <div><strong>Agent C · The Integrator</strong><small>Permanent participant · fixed profile</small></div>
+            </div>
             <details class="limits">
               <summary>Runaway protection</summary>
               <div class="limit-grid">
@@ -99,7 +102,7 @@
               <button id="stop-room" class="control danger-text">■ Stop</button>
               <button id="new-round" class="control">＋ New round</button>
               <button id="start-round" class="control primary">▶ Start round</button>
-              <button id="add-agent-c" class="control">＋ Add Agent C</button>
+              <button id="add-agent-c" class="control">Upgrade legacy Room to triad</button>
               <button id="reset-room" class="control danger-text">↻ Reset agents</button>
               <span id="turn-counter" class="turn-counter">0 / 40 turns</span>
             </div>
