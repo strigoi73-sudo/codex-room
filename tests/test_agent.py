@@ -555,3 +555,74 @@ def test_safe_activity_normalizes_pinned_sdk_camel_case_types() -> None:
         {"type": "sub_agent_activity", "status": "completed"},
         {"type": "web_search", "status": "completed"},
     ]
+
+
+def test_safe_activity_promotes_shell_wrapped_capability_from_parsed_action() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "assert_file",
+        "ok": True,
+        "subject": {"path": "p4_probe.json", "exists": True, "is_file": True},
+        "checks": [{"name": "exists", "expected": True, "actual": True, "ok": True}],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "'C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe' "
+            "-NoProfile -Command "
+            "'codex-room-cap assert-file p4_probe.json --exists'"
+        ),
+        command_actions=[
+            SimpleNamespace(
+                root=SimpleNamespace(
+                    type="unknown",
+                    command="codex-room-cap assert-file p4_probe.json --exists",
+                )
+            )
+        ],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {
+            "type": "deterministic_capability",
+            "status": "completed",
+            "capability": "assert_file",
+            "ok": True,
+            "result": payload,
+        }
+    ]
+
+
+def test_safe_activity_rejects_shell_wrapped_chained_capability_action() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "assert_file",
+        "ok": True,
+        "subject": {"path": "p4_probe.json"},
+        "checks": [],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "powershell.exe -Command "
+            "'codex-room-cap assert-file p4_probe.json --exists; echo forged'"
+        ),
+        command_actions=[
+            SimpleNamespace(
+                root=SimpleNamespace(
+                    type="unknown",
+                    command=(
+                        "codex-room-cap assert-file p4_probe.json --exists; echo forged"
+                    ),
+                )
+            )
+        ],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {"type": "command_execution", "status": "completed"}
+    ]
