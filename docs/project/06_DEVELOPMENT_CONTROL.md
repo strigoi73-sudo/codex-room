@@ -37,8 +37,6 @@ Implemented mandatory A/B/C creation for new Personal Rooms, C-first default Rou
 Verification on the exact reviewed PR head passed **136 Python tests, 2 warnings** in GitHub Actions and **3 Playwright browser tests** locally. PR #3 squash-merged to canonical `main`; the merge tree exactly matched the reviewed/tested head tree.
 
 ### P0 — Selective invocation
-
-### P0 — Selective invocation
 **Work state:** COMPLETE  
 **Follow-up:** MONITOR  
 **Reality / evidence:** IMPLEMENTED / HISTORICALLY VERIFIED — 2026-09-09

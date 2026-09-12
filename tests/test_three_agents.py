@@ -98,7 +98,11 @@ async def test_add_c_preserves_ab_and_enforces_newcomer_boundary(runtime_factory
     assert c and c["developer_instructions"] == AGENT_C_INTEGRATOR_INSTRUCTIONS
     state = await runtime.db.get_round_agent_state(joined["active_round_id"], c["id"])
     assert state and state["context_consumed_at"]
-    assert state["delivery_start_sequence"] == max_before
+    # The active legacy worker may append another legitimate pre-join event
+    # between the observer's snapshot above and reserve_agent_c() acquiring its
+    # transaction. C's actual join watermark must therefore be at or after the
+    # last sequence observed before the join request, not equal to that stale read.
+    assert state["delivery_start_sequence"] >= max_before
     await asyncio.sleep(0.08)
     assert not adapter.calls["agent_c"]
 
