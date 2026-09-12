@@ -471,6 +471,23 @@ PR #4 squash-merged to canonical `main` as:
 
 Post-merge GitHub Actions run `34706293089` passed **138 tests, 2 warnings**.
 
-**Status:** CORE repair IMPLEMENTED / VERIFIED.
+**Status:** IMPLEMENTED / VERIFIED.
 
-**Remaining limit:** the exact user-local database has not yet been re-exported after pulling/restarting the repaired code. A fresh Room export is still required to verify that the observed local stale defaults were migrated in practice. Until then, local adoption is **NEEDS VERIFICATION**.
+Post-repair local verification was then performed against a newly created Personal Room after pull/restart. The export showed:
+
+- A, B, and C all inherited the current D-020 built-in profile text rather than the observed stale early-triad generation;
+- A and B had no Room override;
+- C was the designated starter;
+- the Round executed exactly **one** agent turn;
+- only C consumed Round context and recorded an outcome;
+- A and B had `context_consumed_at = null` and `last_outcome = null`;
+- C FINISHed with exactly `C-ONLY-OK`;
+- the Round closed successfully after the sole engaged participant settled.
+
+Observed post-migration profile SHA-256 values in that fresh Room were:
+
+- A: `5d12def051f832aa83ef2bb929d6d3aa9301b7f9eb387dc8eaece1c30b494493`
+- B: `aa769b9385fa8ab277769abf45963de732f16a1443d5ff6514f599f5f4def6de`
+- C: `b07be1545126c2061f82c2128195a091f991ab38a9b0ebbeb92b1d22e7614e62`
+
+This closes the remaining local-adoption verification and also supplies fresh live evidence for C-only engaged-participant settlement. I-006 is closed.
