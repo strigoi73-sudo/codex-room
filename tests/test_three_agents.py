@@ -387,8 +387,15 @@ async def test_pending_integration_trigger_is_idempotent_and_survives_restart(ru
     )
     # The A->B runnable leg is irrelevant to this durability test; mark it consumed
     # so the only pending work is C's passive copy plus the integration trigger.
+    stored_peer_message = next(
+        event
+        for event in await first.db.get_events(room_id)
+        if event["id"] == peer_message["id"]
+    )
     b_delivery = next(
-        item for item in peer_message["deliveries"] if item["agent_key"] == "agent_b"
+        item
+        for item in stored_peer_message["deliveries"]
+        if item["agent_key"] == "agent_b"
     )
     await first.db.complete_deliveries([b_delivery["id"]])
 
@@ -425,7 +432,7 @@ async def test_agent_c_compaction_keeps_its_thread_identity(runtime_factory):
     )
     runtime = await runtime_factory(adapter)
     snapshot = await runtime.create_room(
-        CreateRoomRequest(topic="Compact C", include_agent_c=True, starting_agent="agent_c")
+        CreateRoomRequest(topic="Compact C", starting_agent="agent_c")
     )
     c_thread = next(item["thread_id"] for item in snapshot["agents"] if item["agent_key"] == "agent_c")
 
@@ -462,7 +469,6 @@ async def test_fanout_does_not_cancel_c_inflight_and_c_consumes_queued_message(r
     snapshot = await runtime.create_room(
         CreateRoomRequest(
             topic="C starts long work",
-            include_agent_c=True,
             starting_agent="agent_c",
             max_consecutive_passes=10,
         )
@@ -497,7 +503,7 @@ async def test_message_fans_out_to_every_other_member(runtime_factory):
     )
     runtime = await runtime_factory(adapter)
     snapshot = await runtime.create_room(
-        CreateRoomRequest(topic="Three-way routing", include_agent_c=True, starting_agent="agent_a")
+        CreateRoomRequest(topic="Three-way routing", starting_agent="agent_a")
     )
     await wait_until(lambda: len(adapter.calls["agent_b"]) == 1 and len(adapter.calls["agent_c"]) == 1)
     assert "A contribution" in adapter.calls["agent_b"][0]["prompt"]
@@ -533,7 +539,6 @@ async def test_targeted_agent_message_is_public_but_wakes_only_selected_peer(
     snapshot = await runtime.create_room(
         CreateRoomRequest(
             topic="Selective routing",
-            include_agent_c=True,
             starting_agent="agent_a",
             max_consecutive_passes=10,
         )
@@ -766,7 +771,7 @@ async def test_three_agent_finish_waits_for_running_peer_and_reopens(runtime_fac
     )
     runtime = await runtime_factory(adapter)
     snapshot = await runtime.create_room(
-        CreateRoomRequest(topic="Settle together", include_agent_c=True, starting_agent="either")
+        CreateRoomRequest(topic="Settle together", starting_agent="either")
     )
     room_id = snapshot["id"]
     original_ids = {item["agent_key"]: item["thread_id"] for item in snapshot["agents"]}

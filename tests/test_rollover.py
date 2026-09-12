@@ -167,7 +167,6 @@ async def test_rollover_copies_only_stable_configuration_and_checkpoint(tmp_path
             CreateRoomRequest(
                 title="Long-lived source",
                 topic="OLD_PUBLIC_CANARY",
-                include_agent_c=True,
                 starting_agent="agent_a",
                 max_consecutive_passes=1,
                 auto_start=False,
@@ -523,7 +522,6 @@ async def test_targeted_profile_rebind_preserves_identity_and_records_hash(tmp_p
             CreateRoomRequest(
                 title="Rebind diagnostic",
                 topic="hold",
-                include_agent_c=True,
                 auto_start=False,
             )
         )
@@ -580,7 +578,6 @@ async def test_failed_profile_rebind_evicts_and_quarantines_without_identity_cha
             CreateRoomRequest(
                 title="Failed rebind diagnostic",
                 topic="hold",
-                include_agent_c=True,
                 auto_start=False,
             )
         )

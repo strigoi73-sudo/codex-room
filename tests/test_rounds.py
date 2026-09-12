@@ -373,10 +373,10 @@ async def test_known_pair_profile_migration_repairs_only_live_unmodified_snapsho
     database = Database(tmp_path / "profile-migration.db")
     await database.initialize()
     active_id = await database.create_room(
-        CreateRoomRequest(topic="active triad", include_agent_c=True, auto_start=False)
+        CreateRoomRequest(topic="active triad", auto_start=False)
     )
     archived_id = await database.create_room(
-        CreateRoomRequest(topic="sealed predecessor", include_agent_c=True, auto_start=False)
+        CreateRoomRequest(topic="sealed predecessor", auto_start=False)
     )
     sealed_id = await database.create_room(
         CreateRoomRequest(topic="sealed transitional predecessor", auto_start=False)

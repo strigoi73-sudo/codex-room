@@ -49,7 +49,11 @@ Pause stops new queue claims after active turns finish. Stop interrupts active t
 
 ### Adding Agent C
 
-Agent C can be selected while creating a Room or added later with **Add Agent C**. A later join is strictly additive: Agents A and B retain their exact thread IDs and histories, while C receives a newly created thread and a fixed **Integrator** profile. The join does not deliver historical events, Round initialization, private messages, overlays, or a synopsis; C waits idle until a subsequent event is explicitly routed to it. Because settlement membership is frozen by actual delivery boundaries, an idle newcomer never becomes responsible for answering pre-join work. Existing two-agent Rooms remain two-agent Rooms unless this action is used. This compatibility behavior does not alter the settled Personal production A/B/C architecture.
+Every new Personal Room is created as the permanent A/B/C triad. Agent C — the Integrator — is the ordinary default Round starter and human entry point. C may selectively invoke A, B, both, or neither; A and B may communicate directly without routing through C. Public peer messages remain readable to the whole triad while `invoke_targets` controls which peers become runnable.
+
+C is not invoked after every A/B exchange. Passive readable deliveries let C stay durably informed without spending a model turn. If material A/B MESSAGE work remains unread by C when the Round would otherwise settle, the runtime creates one integration opportunity for C before final closure. C then consumes the pending peer material through the normal coalesced delivery path and may synthesize, report, redelegate, or finish.
+
+Historical two-agent Rooms remain valid and are not silently mutated. Their **Upgrade legacy Room to triad** action adds a fresh C thread while preserving the exact A/B identities and histories. The upgrade does not deliver pre-join Room history, private prompts, overlays, or a synopsis to C. New rollover successor Rooms use the permanent triad even when the predecessor was a historical A/B Room.
 
 ## Architecture
 
