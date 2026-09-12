@@ -15,9 +15,10 @@ from typing import Any, Callable
 CAPABILITY_MARKER = 1
 REGISTRY_MARKER = 1
 MAX_JSON_BYTES = 50 * 1024 * 1024
-MAX_FIND_FILES_RESULTS = 1000
-DEFAULT_FIND_FILES_RESULTS = 200
+MAX_FIND_FILES_RESULTS = 200
+DEFAULT_FIND_FILES_RESULTS = 100
 MAX_FIND_FILES_SCANNED_ENTRIES = 100_000
+MAX_FIND_FILES_MATCH_BYTES = 48 * 1024
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
@@ -243,12 +244,22 @@ def find_files(
             if len(matches) >= max_results:
                 truncation_reason = "max_results"
                 break
-            matches.append(
-                {
-                    "path": candidate.relative_to(workspace_root).as_posix(),
-                    "size_bytes": metadata.st_size,
-                }
+            match = {
+                "path": candidate.relative_to(workspace_root).as_posix(),
+                "size_bytes": metadata.st_size,
+            }
+            prospective_match_bytes = len(
+                json.dumps(
+                    [*matches, match],
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
             )
+            if prospective_match_bytes > MAX_FIND_FILES_MATCH_BYTES:
+                truncation_reason = "result_bytes"
+                break
+            matches.append(match)
         if truncation_reason is not None:
             break
 
@@ -262,6 +273,7 @@ def find_files(
             "returned_count": len(matches),
             "scanned_entries": scanned_entries,
             "scan_limit_entries": MAX_FIND_FILES_SCANNED_ENTRIES,
+            "match_byte_limit": MAX_FIND_FILES_MATCH_BYTES,
             "truncated": truncation_reason is not None,
             "truncation_reason": truncation_reason,
             "ordering": "sorted_depth_first",
@@ -606,7 +618,8 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
         description=(
             "Find regular files under one Room-workspace directory using bounded, "
             "deterministic glob and size filters without following symlinks; return "
-            f"at most {MAX_FIND_FILES_RESULTS} files and scan at most "
+            f"at most {MAX_FIND_FILES_RESULTS} files, cap match evidence at "
+            f"{MAX_FIND_FILES_MATCH_BYTES} bytes, and scan at most "
             f"{MAX_FIND_FILES_SCANNED_ENTRIES} entries."
         ),
         origin="core",
@@ -628,6 +641,7 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
             MAX_FIND_FILES_RESULTS,
             DEFAULT_FIND_FILES_RESULTS,
             MAX_FIND_FILES_SCANNED_ENTRIES,
+            MAX_FIND_FILES_MATCH_BYTES,
             _workspace_path,
             _normalize_glob_patterns,
             _glob_variants,
