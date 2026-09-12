@@ -19,6 +19,17 @@ MAX_FIND_FILES_RESULTS = 200
 DEFAULT_FIND_FILES_RESULTS = 100
 MAX_FIND_FILES_SCANNED_ENTRIES = 100_000
 MAX_FIND_FILES_MATCH_BYTES = 48 * 1024
+MAX_SEARCH_TEXT_FILES = 200
+DEFAULT_SEARCH_TEXT_FILES = 100
+MAX_SEARCH_TEXT_MATCHES = 100
+DEFAULT_SEARCH_TEXT_MATCHES = 50
+DEFAULT_SEARCH_TEXT_FILE_BYTES = 2 * 1024 * 1024
+MAX_SEARCH_TEXT_FILE_BYTES = 10 * 1024 * 1024
+MAX_SEARCH_TEXT_TOTAL_BYTES = 20 * 1024 * 1024
+MAX_SEARCH_TEXT_MATCH_BYTES = 32 * 1024
+MAX_SEARCH_TEXT_LOCATION_BYTES = 16 * 1024
+SEARCH_TEXT_EXCERPT_CHARS = 240
+MAX_SEARCH_TEXT_QUERY_CHARS = 4096
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
@@ -370,6 +381,324 @@ def _invoke_find_files(root: Path, inputs: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _normalize_search_glob_patterns(
+    raw_patterns: list[str], field_name: str
+) -> list[str]:
+    normalized: list[str] = []
+    for raw in raw_patterns:
+        pattern = raw.replace("\\", "/")
+        while pattern.startswith("./"):
+            pattern = pattern[2:]
+        if (
+            not pattern
+            or pattern.startswith("/")
+            or any(part == ".." for part in pattern.split("/"))
+        ):
+            raise CapabilityUsageError(
+                f"search_text input '{field_name}' must contain non-empty "
+                "workspace-relative glob patterns"
+            )
+        normalized.append(pattern)
+    return normalized
+
+
+def _search_text_excerpt(line: str, start: int, end: int) -> tuple[str, int]:
+    if len(line) <= SEARCH_TEXT_EXCERPT_CHARS:
+        return line, 1
+
+    window_start = max(0, start - 80)
+    window_end = min(len(line), window_start + SEARCH_TEXT_EXCERPT_CHARS)
+    if end > window_end:
+        window_start = max(0, end - SEARCH_TEXT_EXCERPT_CHARS)
+        window_end = min(len(line), window_start + SEARCH_TEXT_EXCERPT_CHARS)
+    if window_end == len(line):
+        window_start = max(0, window_end - SEARCH_TEXT_EXCERPT_CHARS)
+    return line[window_start:window_end], window_start + 1
+
+
+def search_text(
+    root: Path,
+    query: str,
+    raw_path: str = ".",
+    *,
+    include_globs: list[str] | None = None,
+    exclude_globs: list[str] | None = None,
+    include_hidden: bool = False,
+    case_sensitive: bool = True,
+    max_files: int = DEFAULT_SEARCH_TEXT_FILES,
+    max_matches: int = DEFAULT_SEARCH_TEXT_MATCHES,
+    max_file_bytes: int = DEFAULT_SEARCH_TEXT_FILE_BYTES,
+) -> dict[str, Any]:
+    include_globs = list(include_globs or [])
+    exclude_globs = list(exclude_globs or [])
+    candidates_result = find_files(
+        root,
+        raw_path,
+        include_globs=include_globs,
+        exclude_globs=exclude_globs,
+        include_hidden=include_hidden,
+        max_results=max_files,
+    )
+    candidate_evidence = candidates_result["evidence"]
+    candidates = candidate_evidence["matches"]
+
+    flags = 0 if case_sensitive else re.IGNORECASE
+    pattern = re.compile(re.escape(query), flags)
+    query_sha256 = hashlib.sha256(query.encode("utf-8")).hexdigest()
+
+    transient_matches: list[dict[str, Any]] = []
+    durable_locations: list[dict[str, Any]] = []
+    files_searched = 0
+    bytes_read = 0
+    text_bytes_searched = 0
+    skipped_non_text = 0
+    skipped_oversize_files = 0
+    truncation_reason: str | None = None
+
+    for candidate in candidates:
+        candidate_size = int(candidate["size_bytes"])
+        if candidate_size > max_file_bytes:
+            skipped_oversize_files += 1
+            continue
+        if bytes_read + candidate_size > MAX_SEARCH_TEXT_TOTAL_BYTES:
+            truncation_reason = "total_bytes"
+            break
+
+        path, _ = _workspace_path(root, str(candidate["path"]))
+        try:
+            with path.open("rb") as handle:
+                data = handle.read(max_file_bytes + 1)
+        except OSError as exc:
+            raise CapabilityUsageError(
+                f"search_text could not read '{candidate['path']}': {exc}"
+            ) from exc
+
+        if bytes_read + len(data) > MAX_SEARCH_TEXT_TOTAL_BYTES:
+            truncation_reason = "total_bytes"
+            break
+        bytes_read += len(data)
+        if len(data) > max_file_bytes:
+            skipped_oversize_files += 1
+            continue
+
+        if b"\x00" in data:
+            skipped_non_text += 1
+            continue
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            skipped_non_text += 1
+            continue
+
+        files_searched += 1
+        text_bytes_searched += len(data)
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            for found in pattern.finditer(line):
+                if len(transient_matches) >= max_matches:
+                    truncation_reason = "max_matches"
+                    break
+
+                excerpt, excerpt_start_column = _search_text_excerpt(
+                    line, found.start(), found.end()
+                )
+                location = {
+                    "path": str(candidate["path"]),
+                    "line": line_number,
+                    "column": found.start() + 1,
+                }
+                transient = {
+                    **location,
+                    "excerpt": excerpt,
+                    "excerpt_start_column": excerpt_start_column,
+                }
+                prospective_match_bytes = len(
+                    json.dumps(
+                        [*transient_matches, transient],
+                        ensure_ascii=True,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                )
+                if prospective_match_bytes > MAX_SEARCH_TEXT_MATCH_BYTES:
+                    truncation_reason = "result_bytes"
+                    break
+                prospective_location_bytes = len(
+                    json.dumps(
+                        [*durable_locations, location],
+                        ensure_ascii=True,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                )
+                if prospective_location_bytes > MAX_SEARCH_TEXT_LOCATION_BYTES:
+                    truncation_reason = "durable_bytes"
+                    break
+
+                transient_matches.append(transient)
+                durable_locations.append(location)
+            if truncation_reason is not None:
+                break
+        if truncation_reason is not None:
+            break
+
+    candidate_truncated = bool(candidate_evidence["truncated"])
+    candidate_truncation_reason = candidate_evidence["truncation_reason"]
+    if truncation_reason is None and candidate_truncated:
+        truncation_reason = (
+            f"candidate_{candidate_truncation_reason}"
+            if candidate_truncation_reason
+            else "candidate_limit"
+        )
+    if truncation_reason is None and skipped_oversize_files:
+        truncation_reason = "oversize_files"
+
+    return {
+        "codex_room_capability": CAPABILITY_MARKER,
+        "capability": "search_text",
+        "ok": True,
+        "evidence": {
+            "path": candidate_evidence["path"],
+            "query_sha256": query_sha256,
+            "query_length": len(query),
+            "case_sensitive": case_sensitive,
+            "locations": durable_locations,
+            "match_count": len(durable_locations),
+            "candidate_files_returned": len(candidates),
+            "candidate_truncated": candidate_truncated,
+            "candidate_truncation_reason": candidate_truncation_reason,
+            "files_searched": files_searched,
+            "bytes_read": bytes_read,
+            "text_bytes_searched": text_bytes_searched,
+            "skipped_non_text": skipped_non_text,
+            "skipped_oversize_files": skipped_oversize_files,
+            "max_file_bytes": max_file_bytes,
+            "total_byte_limit": MAX_SEARCH_TEXT_TOTAL_BYTES,
+            "match_byte_limit": MAX_SEARCH_TEXT_MATCH_BYTES,
+            "durable_location_byte_limit": MAX_SEARCH_TEXT_LOCATION_BYTES,
+            "truncated": truncation_reason is not None,
+            "truncation_reason": truncation_reason,
+            "ordering": "candidate_then_line_column",
+        },
+        "matches": transient_matches,
+    }
+
+
+def _invoke_search_text(root: Path, inputs: dict[str, Any]) -> dict[str, Any]:
+    allowed = {
+        "path",
+        "query",
+        "include_globs",
+        "exclude_globs",
+        "include_hidden",
+        "case_sensitive",
+        "max_files",
+        "max_matches",
+        "max_file_bytes",
+    }
+    unknown = sorted(set(inputs) - allowed)
+    if unknown:
+        raise CapabilityUsageError(
+            "unknown search_text input field(s): " + ", ".join(unknown)
+        )
+
+    raw_path = inputs.get("path", ".")
+    query = inputs.get("query")
+    include_globs = inputs.get("include_globs", [])
+    exclude_globs = inputs.get("exclude_globs", [])
+    include_hidden = inputs.get("include_hidden", False)
+    case_sensitive = inputs.get("case_sensitive", True)
+    max_files = inputs.get("max_files", DEFAULT_SEARCH_TEXT_FILES)
+    max_matches = inputs.get("max_matches", DEFAULT_SEARCH_TEXT_MATCHES)
+    max_file_bytes = inputs.get("max_file_bytes", DEFAULT_SEARCH_TEXT_FILE_BYTES)
+
+    if not isinstance(raw_path, str) or not raw_path:
+        raise CapabilityUsageError("search_text input 'path' must be a non-empty string")
+    if (
+        not isinstance(query, str)
+        or not query
+        or len(query) > MAX_SEARCH_TEXT_QUERY_CHARS
+        or "\n" in query
+        or "\r" in query
+        or "\x00" in query
+    ):
+        raise CapabilityUsageError(
+            "search_text input 'query' must be a non-empty single-line string "
+            f"of at most {MAX_SEARCH_TEXT_QUERY_CHARS} characters"
+        )
+    try:
+        query.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise CapabilityUsageError(
+            "search_text input 'query' must be valid UTF-8 text"
+        ) from exc
+    if not isinstance(include_globs, list) or any(
+        not isinstance(pattern, str) for pattern in include_globs
+    ):
+        raise CapabilityUsageError(
+            "search_text input 'include_globs' must be a list of strings"
+        )
+    if not isinstance(exclude_globs, list) or any(
+        not isinstance(pattern, str) for pattern in exclude_globs
+    ):
+        raise CapabilityUsageError(
+            "search_text input 'exclude_globs' must be a list of strings"
+        )
+    if not isinstance(include_hidden, bool):
+        raise CapabilityUsageError(
+            "search_text input 'include_hidden' must be true or false"
+        )
+    if not isinstance(case_sensitive, bool):
+        raise CapabilityUsageError(
+            "search_text input 'case_sensitive' must be true or false"
+        )
+    if (
+        not isinstance(max_files, int)
+        or isinstance(max_files, bool)
+        or not 1 <= max_files <= MAX_SEARCH_TEXT_FILES
+    ):
+        raise CapabilityUsageError(
+            f"search_text input 'max_files' must be an integer from 1 "
+            f"to {MAX_SEARCH_TEXT_FILES}"
+        )
+    if (
+        not isinstance(max_matches, int)
+        or isinstance(max_matches, bool)
+        or not 1 <= max_matches <= MAX_SEARCH_TEXT_MATCHES
+    ):
+        raise CapabilityUsageError(
+            f"search_text input 'max_matches' must be an integer from 1 "
+            f"to {MAX_SEARCH_TEXT_MATCHES}"
+        )
+    if (
+        not isinstance(max_file_bytes, int)
+        or isinstance(max_file_bytes, bool)
+        or not 1 <= max_file_bytes <= MAX_SEARCH_TEXT_FILE_BYTES
+    ):
+        raise CapabilityUsageError(
+            f"search_text input 'max_file_bytes' must be an integer from 1 "
+            f"to {MAX_SEARCH_TEXT_FILE_BYTES}"
+        )
+
+    normalized_include = _normalize_search_glob_patterns(
+        include_globs, "include_globs"
+    )
+    normalized_exclude = _normalize_search_glob_patterns(
+        exclude_globs, "exclude_globs"
+    )
+    return search_text(
+        root,
+        query,
+        raw_path,
+        include_globs=normalized_include,
+        exclude_globs=normalized_exclude,
+        include_hidden=include_hidden,
+        case_sensitive=case_sensitive,
+        max_files=max_files,
+        max_matches=max_matches,
+        max_file_bytes=max_file_bytes,
+    )
+
+
 def assert_file(
     root: Path,
     raw_path: str,
@@ -585,6 +914,79 @@ FIND_FILES_OUTPUT_SCHEMA: dict[str, Any] = {
     },
 }
 
+SEARCH_TEXT_INPUT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["query"],
+    "properties": {
+        "path": {
+            "type": "string",
+            "default": ".",
+            "description": "Room-workspace-relative directory to search.",
+        },
+        "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": MAX_SEARCH_TEXT_QUERY_CHARS,
+            "description": "Single-line literal text to find.",
+        },
+        "include_globs": {
+            "type": "array",
+            "items": {"type": "string"},
+            "default": [],
+        },
+        "exclude_globs": {
+            "type": "array",
+            "items": {"type": "string"},
+            "default": [],
+        },
+        "include_hidden": {"type": "boolean", "default": False},
+        "case_sensitive": {"type": "boolean", "default": True},
+        "max_files": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": MAX_SEARCH_TEXT_FILES,
+            "default": DEFAULT_SEARCH_TEXT_FILES,
+        },
+        "max_matches": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": MAX_SEARCH_TEXT_MATCHES,
+            "default": DEFAULT_SEARCH_TEXT_MATCHES,
+        },
+        "max_file_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": MAX_SEARCH_TEXT_FILE_BYTES,
+            "default": DEFAULT_SEARCH_TEXT_FILE_BYTES,
+        },
+    },
+}
+
+SEARCH_TEXT_OUTPUT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": [
+        "codex_room_capability",
+        "capability",
+        "ok",
+        "evidence",
+        "matches",
+    ],
+    "properties": {
+        "codex_room_capability": {"const": CAPABILITY_MARKER},
+        "capability": {"const": "search_text"},
+        "ok": {"type": "boolean"},
+        "evidence": {"type": "object"},
+        "matches": {"type": "array"},
+        "capability_version": {"type": "string"},
+        "implementation_sha256": {"type": "string"},
+        "durable_result_fields": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+    },
+}
+
 CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
     "assert_file": CapabilitySpec(
         capability_id="assert_file",
@@ -653,6 +1055,54 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
             _is_hidden_relative,
             find_files,
             _invoke_find_files,
+        ),
+    ),
+    "search_text": CapabilitySpec(
+        capability_id="search_text",
+        description=(
+            "Search bounded UTF-8, NUL-free workspace text for a single-line "
+            "literal string. Runtime results include bounded excerpts; durable "
+            "Room evidence retains only query identity, locations, counts, and "
+            "truncation metadata."
+        ),
+        origin="core",
+        scope="core",
+        version="1",
+        input_schema=SEARCH_TEXT_INPUT_SCHEMA,
+        output_schema=SEARCH_TEXT_OUTPUT_SCHEMA,
+        durable_result_fields=("evidence",),
+        permissions={
+            "workspace_read": True,
+            "workspace_write": False,
+            "network": False,
+            "external_process": False,
+        },
+        side_effects="none",
+        verification={"status": "verified", "evidence": ["E-032"]},
+        handler=_invoke_search_text,
+        implementation_components=(
+            MAX_SEARCH_TEXT_FILES,
+            DEFAULT_SEARCH_TEXT_FILES,
+            MAX_SEARCH_TEXT_MATCHES,
+            DEFAULT_SEARCH_TEXT_MATCHES,
+            DEFAULT_SEARCH_TEXT_FILE_BYTES,
+            MAX_SEARCH_TEXT_FILE_BYTES,
+            MAX_SEARCH_TEXT_TOTAL_BYTES,
+            MAX_SEARCH_TEXT_MATCH_BYTES,
+            MAX_SEARCH_TEXT_LOCATION_BYTES,
+            SEARCH_TEXT_EXCERPT_CHARS,
+            MAX_SEARCH_TEXT_QUERY_CHARS,
+            MAX_FIND_FILES_SCANNED_ENTRIES,
+            MAX_FIND_FILES_MATCH_BYTES,
+            _workspace_path,
+            _glob_variants,
+            _matches_globs,
+            _is_hidden_relative,
+            find_files,
+            _normalize_search_glob_patterns,
+            _search_text_excerpt,
+            search_text,
+            _invoke_search_text,
         ),
     ),
 }

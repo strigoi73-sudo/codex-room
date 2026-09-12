@@ -919,6 +919,52 @@ def test_safe_activity_handles_json_escaped_surrogate_text() -> None:
     assert activity[0]["result"]["evidence"] == payload["evidence"]
 
 
+def test_safe_activity_drops_search_text_runtime_excerpts_from_durable_evidence() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "search_text",
+        "capability_version": "1",
+        "implementation_sha256": "b" * 64,
+        "ok": True,
+        "durable_result_fields": ["evidence"],
+        "evidence": {
+            "query_sha256": "c" * 64,
+            "query_length": 6,
+            "locations": [{"path": "notes.txt", "line": 4, "column": 2}],
+            "match_count": 1,
+            "truncated": False,
+        },
+        "matches": [
+            {
+                "path": "notes.txt",
+                "line": 4,
+                "column": 2,
+                "excerpt": "secret needle context",
+                "excerpt_start_column": 1,
+            }
+        ],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap invoke search_text "
+            "--input-json '{\"query\":\"needle\"}'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    result = activity[0]["result"]
+    assert activity[0]["type"] == "deterministic_capability"
+    assert activity[0]["capability"] == "search_text"
+    assert result["evidence"] == payload["evidence"]
+    assert "matches" not in result
+    assert "secret needle context" not in json.dumps(result)
+
+
 def test_safe_activity_rejects_invalid_durable_result_field_declaration() -> None:
     payload = {
         "codex_room_capability": 1,
