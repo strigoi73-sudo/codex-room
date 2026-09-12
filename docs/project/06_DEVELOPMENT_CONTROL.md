@@ -7,17 +7,17 @@
 ## Operator summary
 
 - **Where are we?** The weekly model-usage allowance refreshed early on 2026-09-12, so the pre-refresh hold is over. The minimum Engineering Foundation and the GPT Project review are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The anticipated 2026-09-15 usage-refresh constraint cleared early. D-020 remains the next implementation priority ahead of A2. I-001 remains fixed and verified, the Project-source review remains complete, and the Personal daily usage pacing limit remains approved planned development under D-019.
+- **What just changed?** The anticipated 2026-09-15 usage-refresh constraint cleared early, and the human principal explicitly started D-020 on 2026-09-12. D-020 is now in progress ahead of A2. I-001 remains fixed and verified, the Project-source review remains complete, and the Personal daily usage pacing limit remains approved planned development under D-019.
 - **What is blocked?** Nothing is blocking the planned D-020 implementation.
-- **What is next?** The **permanent Personal triad / C-integration migration** is ready to begin. After it is implemented and adequately verified, **A2 — Assurance Pass 2** follows immediately.
+- **What is next?** Complete and verify the **permanent Personal triad / C-integration migration**. After it is implemented and adequately verified, **A2 — Assurance Pass 2** follows immediately.
 - **What are we deliberately not doing?** No Assurance Pass 2 before the D-020 migration is verified; no new in-Room A/B/C exercises; no P4 implementation; no archive/retrieval work; no adjacent refactoring.
 
 ## Current Focus
 
 ### D-020 triad migration ready ahead of A2
-**Work state:** PLANNED
+**Work state:** IN PROGRESS
 
-The minimum Engineering Foundation and targeted GPT Project review are complete. The weekly model-usage allowance refreshed early on 2026-09-12, so the former pre-refresh hold no longer applies. D-020 makes the permanent Personal triad / C-integration migration the next implementation task.
+The human principal explicitly started D-020 on 2026-09-12. The minimum Engineering Foundation and targeted GPT Project review are complete. The weekly model-usage allowance refreshed early on 2026-09-12, so the former pre-refresh hold no longer applies. D-020 makes the permanent Personal triad / C-integration migration the next implementation task.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
@@ -94,7 +94,7 @@ GitHub Actions runs the canonical Python suite on pushes to `main` and pull requ
 
 ### Permanent Personal triad / C-integration migration
 **Scope:** [CORE + ROOM migration]  
-**Work state:** PLANNED — ready to start  
+**Work state:** IN PROGRESS  
 **Reality:** DECIDED / NOT IMPLEMENTED  
 **Decision:** D-020  
 **Priority:** next implementation task; complete before A2
