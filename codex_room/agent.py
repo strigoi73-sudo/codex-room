@@ -634,7 +634,18 @@ class CodexAgentAdapter:
         command: str, aggregated_output: str, status: str
     ) -> dict[str, Any] | None:
         """Persist structured capability evidence without arbitrary shell output."""
-        if "codex-room-cap" not in str(command).lower():
+        normalized = str(command).strip()
+        if any(separator in normalized for separator in ("&&", ";", "|")):
+            return None
+        parts = normalized.split()
+        if parts and parts[0] == "&":
+            parts = parts[1:]
+        if len(parts) < 2:
+            return None
+        executable = parts[0].strip('"').lower()
+        if executable not in {"codex-room-cap", "codex-room-cap.cmd"}:
+            return None
+        if parts[1].lower() != "assert-file":
             return None
         lines = [line.strip() for line in str(aggregated_output).splitlines() if line.strip()]
         if not lines:

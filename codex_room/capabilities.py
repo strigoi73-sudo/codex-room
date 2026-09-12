@@ -23,8 +23,11 @@ def _workspace_path(root: Path, raw_path: str) -> tuple[Path, str]:
     supplied = Path(raw_path)
     if supplied.is_absolute():
         raise CapabilityUsageError("path must be relative to the Room workspace")
-    root_resolved = root.resolve()
-    candidate = (root_resolved / supplied).resolve(strict=False)
+    try:
+        root_resolved = root.resolve()
+        candidate = (root_resolved / supplied).resolve(strict=False)
+    except OSError as exc:
+        raise CapabilityUsageError(f"path could not be resolved: {exc}") from exc
     if candidate != root_resolved and root_resolved not in candidate.parents:
         raise CapabilityUsageError("path must stay inside the Room workspace")
     return candidate, supplied.as_posix()
@@ -64,7 +67,10 @@ def assert_file(
 
     checks: list[dict[str, Any]] = []
     if exists:
-        checks.append({"name": "exists", "expected": True, "actual": present, "ok": present})
+        file_exists = present and is_file
+        checks.append(
+            {"name": "exists", "expected": True, "actual": file_exists, "ok": file_exists}
+        )
 
     actual_sha256: str | None = None
     if sha256_equals is not None:
