@@ -471,13 +471,13 @@ def search_text(
                 f"search_text could not read '{candidate['path']}': {exc}"
             ) from exc
 
-        if len(data) > max_file_bytes:
-            skipped_oversize_after_discovery += 1
-            continue
         if bytes_read + len(data) > MAX_SEARCH_TEXT_TOTAL_BYTES:
             truncation_reason = "total_bytes"
             break
         bytes_read += len(data)
+        if len(data) > max_file_bytes:
+            skipped_oversize_after_discovery += 1
+            continue
 
         if b"\x00" in data:
             skipped_non_text += 1
