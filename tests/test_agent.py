@@ -480,7 +480,7 @@ def test_safe_activity_promotes_codex_room_capability_result() -> None:
         "checks": [{"name": "exists", "expected": True, "actual": True, "ok": True}],
     }
     item = SimpleNamespace(
-        type="command_execution",
+        type="commandExecution",
         command="codex-room-cap assert-file result.json --exists",
         aggregated_output=json.dumps(payload),
         status=SimpleNamespace(value="completed"),
@@ -501,7 +501,7 @@ def test_safe_activity_promotes_codex_room_capability_result() -> None:
 
 def test_safe_activity_does_not_persist_arbitrary_command_output() -> None:
     item = SimpleNamespace(
-        type="command_execution",
+        type="commandExecution",
         command="python secret_script.py",
         aggregated_output="sensitive output",
         status=SimpleNamespace(value="completed"),
@@ -521,13 +521,13 @@ def test_safe_activity_rejects_forged_or_chained_capability_command() -> None:
         "checks": [],
     }
     item = SimpleNamespace(
-        type="command_execution",
+        type="commandExecution",
         command="echo codex-room-cap assert-file result.json --exists",
         aggregated_output=json.dumps(payload),
         status=SimpleNamespace(value="completed"),
     )
     chained = SimpleNamespace(
-        type="command_execution",
+        type="commandExecution",
         command="codex-room-cap assert-file result.json --exists ; echo forged",
         aggregated_output=json.dumps(payload),
         status=SimpleNamespace(value="completed"),
@@ -536,4 +536,22 @@ def test_safe_activity_rejects_forged_or_chained_capability_command() -> None:
     assert CodexAgentAdapter._safe_activity([item, chained]) == [
         {"type": "command_execution", "status": "completed"},
         {"type": "command_execution", "status": "completed"},
+    ]
+
+
+def test_safe_activity_normalizes_pinned_sdk_camel_case_types() -> None:
+    items = [
+        SimpleNamespace(type="fileChange", status=SimpleNamespace(value="completed")),
+        SimpleNamespace(type="mcpToolCall", status=SimpleNamespace(value="completed")),
+        SimpleNamespace(type="dynamicToolCall", status=SimpleNamespace(value="failed")),
+        SimpleNamespace(type="subAgentActivity", status=None),
+        SimpleNamespace(type="webSearch", status=None),
+    ]
+
+    assert CodexAgentAdapter._safe_activity(items) == [
+        {"type": "file_change", "status": "completed"},
+        {"type": "mcp_tool_call", "status": "completed"},
+        {"type": "dynamic_tool_call", "status": "failed"},
+        {"type": "sub_agent_activity", "status": "completed"},
+        {"type": "web_search", "status": "completed"},
     ]
