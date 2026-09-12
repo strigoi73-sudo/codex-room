@@ -786,17 +786,13 @@ class CodexAgentAdapter:
         normalized = str(command).strip()
         if any(separator in normalized for separator in ("&&", ";", "|")):
             return None
-        try:
-            parts = shlex.split(normalized, posix=False)
-        except ValueError:
-            return None
+        parts = normalized.split()
         if parts and parts[0] == "&":
             parts = parts[1:]
         if len(parts) < 2:
             return None
 
-        executable = parts[0].strip('"').strip("'").replace("\\", "/")
-        executable = executable.rsplit("/", 1)[-1].lower()
+        executable = parts[0].strip('"').strip("'").lower()
         if executable not in {"codex-room-cap", "codex-room-cap.cmd"}:
             return None
 
