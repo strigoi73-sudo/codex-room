@@ -261,6 +261,7 @@ def find_files(
             "matches": matches,
             "returned_count": len(matches),
             "scanned_entries": scanned_entries,
+            "scan_limit_entries": MAX_FIND_FILES_SCANNED_ENTRIES,
             "truncated": truncation_reason is not None,
             "truncation_reason": truncation_reason,
             "ordering": "sorted_depth_first",
@@ -604,7 +605,9 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
         capability_id="find_files",
         description=(
             "Find regular files under one Room-workspace directory using bounded, "
-            "deterministic glob and size filters without following symlinks."
+            "deterministic glob and size filters without following symlinks; return "
+            f"at most {MAX_FIND_FILES_RESULTS} files and scan at most "
+            f"{MAX_FIND_FILES_SCANNED_ENTRIES} entries."
         ),
         origin="core",
         scope="core",
