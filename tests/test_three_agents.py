@@ -26,10 +26,25 @@ from .fakes import FakeAgentAdapter, wait_until
 
 
 class FailingCAgentAdapter(FakeAgentAdapter):
+    def __init__(self):
+        super().__init__()
+        self._c_start_count = 0
+
     async def start_agent(self, agent, cwd):
         if agent["agent_key"] == "agent_c":
-            raise RuntimeError("simulated C thread creation failure")
+            self._c_start_count += 1
+            if self._c_start_count > 1:
+                raise RuntimeError("simulated C thread creation failure")
         return await super().start_agent(agent, cwd)
+
+
+async def _make_legacy_pair(runtime: RoomRuntime, room_id: str) -> None:
+    """Simulate a persisted pre-D-020 A/B Room before any new Round work starts."""
+    c = await runtime.db.get_agent(room_id, "agent_c")
+    assert c is not None
+    await runtime.db.remove_agent(room_id, "agent_c")
+    if c.get("thread_id"):
+        await runtime.adapter.archive_thread(c["thread_id"])
 
 
 @pytest.fixture
@@ -58,6 +73,7 @@ async def test_add_c_preserves_ab_and_enforces_newcomer_boundary(runtime_factory
         CreateRoomRequest(topic="earlier opening", starting_agent="agent_a", auto_start=False)
     )
     room_id = created["id"]
+    await _make_legacy_pair(runtime, room_id)
     prepared = await runtime.prepare_round(
         room_id,
         PrepareRoundRequest(
@@ -114,9 +130,12 @@ async def test_newcomer_without_a_delivery_does_not_block_existing_boundary(runt
             topic="Freeze membership at the delivery boundary",
             starting_agent="agent_a",
             max_consecutive_passes=10,
+            auto_start=False,
         )
     )
     room_id = snapshot["id"]
+    await _make_legacy_pair(runtime, room_id)
+    await runtime.start_round(room_id, snapshot["active_round_id"])
     await wait_until(lambda: len(adapter.calls["agent_b"]) == 1)
 
     await runtime.add_agent(room_id, AddAgentRequest())
@@ -157,7 +176,11 @@ async def test_failed_c_thread_start_compensates_without_touching_ab(runtime_fac
         CreateRoomRequest(topic="Remain two", starting_agent="agent_a", auto_start=False)
     )
     room_id = snapshot["id"]
-    before = {item["agent_key"]: item["thread_id"] for item in snapshot["agents"]}
+    await _make_legacy_pair(runtime, room_id)
+    before = {
+        item["agent_key"]: item["thread_id"]
+        for item in await runtime.db.get_agents(room_id)
+    }
     with pytest.raises(RuntimeError, match="simulated C thread creation failure"):
         await runtime.add_agent(room_id, AddAgentRequest())
     after = {item["agent_key"]: item["thread_id"] for item in await runtime.db.get_agents(room_id)}
@@ -166,6 +189,94 @@ async def test_failed_c_thread_start_compensates_without_touching_ab(runtime_fac
     assert not any(
         event["event_type"] == "agent_added" for event in await runtime.db.get_events(room_id)
     )
+
+
+@pytest.mark.asyncio
+async def test_new_room_is_permanent_triad_and_c_is_default_starter(runtime_factory):
+    adapter = FakeAgentAdapter({"agent_c": [(Outcome.PASS, "")]})
+    runtime = await runtime_factory(adapter)
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="C receives the objective first", auto_start=False)
+    )
+
+    agents = {item["agent_key"]: item for item in snapshot["agents"]}
+    assert set(agents) == {"agent_a", "agent_b", "agent_c"}
+    assert len({item["thread_id"] for item in agents.values()}) == 3
+    assert snapshot["active_round"]["starting_agent"] == "agent_c"
+
+    await runtime.start_round(snapshot["id"], snapshot["active_round_id"])
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+    await asyncio.sleep(0.05)
+    assert not adapter.calls["agent_a"]
+    assert not adapter.calls["agent_b"]
+
+
+@pytest.mark.asyncio
+async def test_peer_exchange_keeps_c_passive_then_integrates_once(runtime_factory):
+    adapter = FakeAgentAdapter(
+        {
+            "agent_b": [(Outcome.PASS, "")],
+            "agent_c": [(Outcome.FINISH, "Integrated")],
+        },
+        blocked_calls={"agent_b": {1}},
+    )
+    adapter.decisions["agent_a"].append(
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="A material result for B to verify",
+            invoke_targets=["agent_b"],
+        )
+    )
+    runtime = await runtime_factory(adapter)
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Peer work then integration",
+            starting_agent="agent_a",
+            max_consecutive_passes=10,
+        )
+    )
+
+    await wait_until(lambda: len(adapter.calls["agent_b"]) == 1)
+    assert not adapter.calls["agent_c"]
+    adapter.release_call("agent_b", 1)
+
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+    prompt = adapter.calls["agent_c"][0]["prompt"]
+    assert "A material result for B to verify" in prompt
+    assert "Integrate the unread peer work" in prompt
+    await wait_until(lambda: _room_has_status(runtime, snapshot["id"], RoomStatus.FINISHED))
+    events = await runtime.db.get_events(snapshot["id"])
+    integration = [event for event in events if event["event_type"] == "integration_required"]
+    assert len(integration) == 1
+    assert integration[0]["metadata"]["pending_peer_sources"] == ["agent_a"]
+    assert len(adapter.calls["agent_c"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_direct_peer_return_to_c_needs_no_synthetic_integration(runtime_factory):
+    adapter = FakeAgentAdapter({"agent_c": [(Outcome.FINISH, "Integrated directly")]})
+    adapter.decisions["agent_a"].append(
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="A returns the material result directly to C",
+            invoke_targets=["agent_c"],
+        )
+    )
+    runtime = await runtime_factory(adapter)
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Direct return",
+            starting_agent="agent_a",
+            max_consecutive_passes=10,
+        )
+    )
+
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+    assert "A returns the material result directly to C" in adapter.calls["agent_c"][0]["prompt"]
+    await wait_until(lambda: _room_has_status(runtime, snapshot["id"], RoomStatus.FINISHED))
+    events = await runtime.db.get_events(snapshot["id"])
+    assert not any(event["event_type"] == "integration_required" for event in events)
+    assert len(adapter.calls["agent_c"]) == 1
 
 
 @pytest.mark.asyncio
@@ -483,6 +594,7 @@ async def test_future_round_configuration_is_membership_keyed(runtime_factory):
     initial = await runtime.create_room(
         CreateRoomRequest(topic="Two-member history", starting_agent="agent_a", auto_start=False)
     )
+    await _make_legacy_pair(runtime, initial["id"])
     await runtime.add_agent(initial["id"], AddAgentRequest())
     before_new_round = await runtime.db.snapshot(initial["id"])
     assert "agent_c" not in before_new_round["active_round"]["effective_agent_configuration"]
