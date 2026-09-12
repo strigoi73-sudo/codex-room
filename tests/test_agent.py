@@ -895,6 +895,30 @@ def test_safe_activity_persists_only_declared_generic_capability_result_fields()
     ]
 
 
+def test_safe_activity_handles_json_escaped_surrogate_text() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "find_files",
+        "capability_version": "1",
+        "implementation_sha256": "a" * 64,
+        "ok": True,
+        "durable_result_fields": ["evidence"],
+        "evidence": {"matches": [{"path": "bad\udcff.txt", "size_bytes": 1}]},
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command="codex-room-cap invoke find_files --input-json '{}'",
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    assert activity[0]["type"] == "deterministic_capability"
+    assert activity[0]["result"]["evidence"] == payload["evidence"]
+
+
 def test_safe_activity_rejects_invalid_durable_result_field_declaration() -> None:
     payload = {
         "codex_room_capability": 1,
