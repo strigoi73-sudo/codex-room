@@ -1,7 +1,7 @@
 # Codex Room — Decision Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-11  
+**Last updated:** 2026-09-12  
 **Scope:** Settled architectural, governance, product-direction, and development-order decisions.  
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
@@ -251,3 +251,25 @@ Settled source-of-truth rules:
 - live GPT Project instructions may be exported as dated handoff snapshots when useful, but no repository copy should become a second authoritative live-instructions source.
 
 This decision changes the maintenance location and retrieval workflow, not the semantic ownership of the individual documents defined by the Package Index.
+
+
+### D-022 — Agent-directed deterministic capabilities with rollover continuity
+**Date:** 2026-09-12  
+**Status:** ACTIVE
+
+P4 should build a deterministic capability system rather than attempt to predict all future Room-specific software needs.
+
+Settled direction:
+
+- A/B/C decide when a subproblem warrants deterministic software;
+- every new Personal Room receives a small CORE standard library of broadly useful deterministic primitives;
+- built-in and custom capabilities share a registry/discovery/invocation model with stable identity, typed contracts, declared permissions/side effects, exact version/implementation identity, and verification/provenance metadata;
+- when the standard library is insufficient, agents may create deterministic software and register it after adequate validation rather than repeatedly spending model cognition on the same mechanical procedure;
+- registered custom capabilities belonging to a continuing body of work survive Room rollover and remain available to the successor at the exact inherited version unless deliberately retired or excluded;
+- historical Rooms retain references to the exact versions they actually used;
+- proven capabilities may later be promoted to broader Personal or CORE scope;
+- registered capability status is stronger than arbitrary ad hoc code execution and therefore requires an explicit contract, implementation identity, permissions, and verification evidence.
+
+This sets product architecture and continuity requirements. It does not claim that custom registration, rollover inheritance, Personal promotion, or the broader default library are implemented yet.
+
+**Principle:** **Agents decide when cognition should become software; Codex Room makes that software discoverable, verifiable, persistent, and reusable.**

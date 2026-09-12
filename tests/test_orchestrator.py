@@ -1551,7 +1551,9 @@ async def test_archive_and_deliberate_reset_are_auditable(runtime_factory):
 
 
 @pytest.mark.asyncio
-async def test_agent_prompt_advertises_deterministic_assert_file_capability(runtime_factory):
+async def test_agent_prompt_advertises_capability_discovery_not_one_hard_coded_tool(
+    runtime_factory,
+):
     adapter = FakeAgentAdapter()
     runtime = await runtime_factory(adapter, triad=True)
     await runtime.create_room(
@@ -1560,6 +1562,8 @@ async def test_agent_prompt_advertises_deterministic_assert_file_capability(runt
     await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
 
     prompt = adapter.calls["agent_c"][0]["prompt"]
-    assert "codex-room-cap assert-file RELATIVE_PATH" in prompt
-    assert "--sha256 HEX" in prompt
-    assert "cannot read outside the Room workspace" in prompt
+    assert "codex-room-cap list" in prompt
+    assert "codex-room-cap inspect CAPABILITY_ID" in prompt
+    assert "codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT" in prompt
+    assert "explicit inputs, objectively checkable outputs" in prompt
+    assert "codex-room-cap assert-file RELATIVE_PATH" not in prompt

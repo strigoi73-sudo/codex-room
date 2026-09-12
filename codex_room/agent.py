@@ -648,7 +648,7 @@ class CodexAgentAdapter:
         status: str,
         command_actions: list[Any] | None = None,
     ) -> dict[str, Any] | None:
-        """Persist structured capability evidence without arbitrary shell output."""
+        """Persist recognized registry/capability evidence without arbitrary shell output."""
         candidates = [str(command)]
         for wrapped in command_actions or []:
             action = getattr(wrapped, "root", wrapped)
@@ -656,15 +656,16 @@ class CodexAgentAdapter:
             if isinstance(action_command, str):
                 candidates.append(action_command)
 
-        direct_invocation = next(
+        direct = next(
             (
-                candidate
+                parsed
                 for candidate in candidates
-                if CodexAgentAdapter._is_direct_capability_invocation(candidate)
+                if (parsed := CodexAgentAdapter._parse_direct_capability_command(candidate))
+                is not None
             ),
             None,
         )
-        if direct_invocation is None:
+        if direct is None:
             return None
         lines = [line.strip() for line in str(aggregated_output).splitlines() if line.strip()]
         if not lines:
@@ -673,36 +674,121 @@ class CodexAgentAdapter:
             payload = json.loads(lines[-1])
         except (json.JSONDecodeError, TypeError):
             return None
+        if not isinstance(payload, dict):
+            return None
+
+        operation, requested_capability = direct
+        if operation in {"list", "inspect"}:
+            if (
+                payload.get("codex_room_registry") != 1
+                or payload.get("operation") != operation
+            ):
+                return None
+            if operation == "list":
+                manifests = payload.get("capabilities")
+                if not isinstance(manifests, list):
+                    return None
+                summaries = []
+                for manifest in manifests:
+                    if not isinstance(manifest, dict) or not isinstance(manifest.get("id"), str):
+                        return None
+                    summaries.append(
+                        {
+                            key: manifest[key]
+                            for key in (
+                                "id",
+                                "origin",
+                                "scope",
+                                "version",
+                                "implementation_sha256",
+                            )
+                            if key in manifest
+                        }
+                    )
+                return {
+                    "type": "deterministic_capability_registry",
+                    "status": status,
+                    "operation": "list",
+                    "capabilities": summaries,
+                }
+
+            manifest = payload.get("capability")
+            if (
+                not isinstance(manifest, dict)
+                or manifest.get("id") != requested_capability
+            ):
+                return None
+            safe_manifest = {
+                key: manifest[key]
+                for key in (
+                    "id",
+                    "description",
+                    "origin",
+                    "scope",
+                    "version",
+                    "implementation_sha256",
+                    "permissions",
+                    "side_effects",
+                    "verification",
+                )
+                if key in manifest
+            }
+            return {
+                "type": "deterministic_capability_registry",
+                "status": status,
+                "operation": "inspect",
+                "capability": requested_capability,
+                "manifest": safe_manifest,
+            }
+
         if (
-            not isinstance(payload, dict)
-            or payload.get("codex_room_capability") != 1
-            or payload.get("capability") != "assert_file"
+            payload.get("codex_room_capability") != 1
+            or payload.get("capability") != requested_capability
         ):
             return None
         safe_payload = {
             key: payload[key]
-            for key in ("codex_room_capability", "capability", "ok", "subject", "checks", "error")
+            for key in (
+                "codex_room_capability",
+                "capability",
+                "capability_version",
+                "implementation_sha256",
+                "ok",
+                "subject",
+                "checks",
+                "error",
+            )
             if key in payload
         }
         return {
             "type": "deterministic_capability",
             "status": status,
-            "capability": "assert_file",
+            "capability": requested_capability,
             "ok": bool(payload.get("ok")),
             "result": safe_payload,
         }
 
     @staticmethod
-    def _is_direct_capability_invocation(command: str) -> bool:
+    def _parse_direct_capability_command(command: str) -> tuple[str, str | None] | None:
         normalized = str(command).strip()
         if any(separator in normalized for separator in ("&&", ";", "|")):
-            return False
+            return None
         parts = normalized.split()
         if parts and parts[0] == "&":
             parts = parts[1:]
         if len(parts) < 2:
-            return False
+            return None
         executable = parts[0].strip('"').strip("'").lower()
         if executable not in {"codex-room-cap", "codex-room-cap.cmd"}:
-            return False
-        return parts[1].lower() == "assert-file"
+            return None
+
+        operation = parts[1].lower()
+        if operation == "list":
+            return ("list", None) if len(parts) == 2 else None
+        if operation in {"inspect", "invoke"}:
+            if len(parts) < 3:
+                return None
+            return operation, parts[2].strip('"').strip("'")
+        if operation == "assert-file":
+            return "invoke", "assert_file"
+        return None

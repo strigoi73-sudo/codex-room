@@ -626,3 +626,126 @@ def test_safe_activity_rejects_shell_wrapped_chained_capability_action() -> None
     assert CodexAgentAdapter._safe_activity([item]) == [
         {"type": "command_execution", "status": "completed"}
     ]
+
+
+
+def test_safe_activity_records_registry_list_without_arbitrary_output() -> None:
+    payload = {
+        "codex_room_registry": 1,
+        "operation": "list",
+        "capabilities": [
+            {
+                "id": "assert_file",
+                "description": "ignored in compact telemetry",
+                "origin": "core",
+                "scope": "core",
+                "version": "1",
+                "implementation_sha256": "a" * 64,
+                "input_schema": {"type": "object"},
+            }
+        ],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command="powershell.exe -Command 'codex-room-cap list'",
+        command_actions=[
+            SimpleNamespace(
+                root=SimpleNamespace(type="unknown", command="codex-room-cap list")
+            )
+        ],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {
+            "type": "deterministic_capability_registry",
+            "status": "completed",
+            "operation": "list",
+            "capabilities": [
+                {
+                    "id": "assert_file",
+                    "origin": "core",
+                    "scope": "core",
+                    "version": "1",
+                    "implementation_sha256": "a" * 64,
+                }
+            ],
+        }
+    ]
+
+
+def test_safe_activity_records_registry_inspection() -> None:
+    payload = {
+        "codex_room_registry": 1,
+        "operation": "inspect",
+        "capability": {
+            "id": "assert_file",
+            "description": "Exact assertions.",
+            "origin": "core",
+            "scope": "core",
+            "version": "1",
+            "implementation_sha256": "b" * 64,
+            "permissions": {"workspace_read": True},
+            "side_effects": "none",
+            "verification": {"status": "verified"},
+            "input_schema": {"type": "object"},
+        },
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command="codex-room-cap inspect assert_file",
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    assert activity[0]["type"] == "deterministic_capability_registry"
+    assert activity[0]["operation"] == "inspect"
+    assert activity[0]["capability"] == "assert_file"
+    assert "input_schema" not in activity[0]["manifest"]
+    assert activity[0]["manifest"]["implementation_sha256"] == "b" * 64
+
+
+def test_safe_activity_promotes_generic_registry_invocation() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "assert_file",
+        "capability_version": "1",
+        "implementation_sha256": "c" * 64,
+        "ok": True,
+        "subject": {"path": "probe.json", "exists": True, "is_file": True},
+        "checks": [{"name": "exists", "expected": True, "actual": True, "ok": True}],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "powershell.exe -Command "
+            "'codex-room-cap invoke assert_file --input-json ...'"
+        ),
+        command_actions=[
+            SimpleNamespace(
+                root=SimpleNamespace(
+                    type="unknown",
+                    command=(
+                        "codex-room-cap invoke assert_file "
+                        "--input-json '{\"path\":\"probe.json\",\"exists\":true}'"
+                    ),
+                )
+            )
+        ],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {
+            "type": "deterministic_capability",
+            "status": "completed",
+            "capability": "assert_file",
+            "ok": True,
+            "result": payload,
+        }
+    ]

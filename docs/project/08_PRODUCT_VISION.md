@@ -54,17 +54,25 @@ The product boundary is important: these are capabilities Codex Room or its agen
 
 Preferred principle:
 
-**agents formulate claims and choose actions → deterministic software computes exact facts → agents interpret significance**
+**agents decide when software is warranted → discover or create deterministic capability → deterministic software computes exact facts → agents interpret significance**
 
-Candidate product domains include:
+Codex Room should not attempt to predict every deterministic need in advance. A/B/C remain responsible for recognizing when a subproblem has explicit inputs, objectively checkable outputs, and no need for fresh judgment on each execution.
 
-- exact assertions and validation;
-- extraction, filtering, sorting, grouping, deduplication, normalization, and statistics;
-- artifact hashing, structural comparison, manifests, and version/provenance checks;
-- structured work/evidence state;
-- Room-state and resource introspection.
+The target capability model has three scopes:
 
-Hard-wire functions, not judgment. Goal interpretation, relevance, decomposition, evidence significance, peer invocation, synthesis, and closure remain agent cognition unless later evidence demonstrates a genuinely deterministic procedure.
+- **CORE** — a small standard library available in every new Room;
+- **lineage** — custom capability software registered during a body of work and automatically inherited by rollover successors at an exact version unless deliberately retired or excluded;
+- **Personal** — custom capabilities deliberately promoted for reuse by otherwise unrelated Personal Rooms.
+
+Built-in and custom capabilities should share one discovery/invocation surface and common manifest/provenance model. Historical Rooms retain references to the exact capability versions they used even when successors register newer versions.
+
+The initial CORE library should remain small and general-purpose. Candidate primitive families include exact assertions/validation, artifact inspection/comparison/manifests, structured-data parsing/transformation/statistics, exact text/search extraction, and set/reference operations. Domain-specific analysis should not become a built-in merely because it can be coded.
+
+Preferred agent behavior:
+
+**use an adequate existing capability → compose existing primitives when practical → create/verify custom deterministic software when justified → preserve useful registered software across continuity → deliberately promote repeatedly general solutions**
+
+Hard-wire functions, not judgment. Goal interpretation, relevance, decomposition, evidence significance, peer invocation, synthesis, capability-worthiness, and closure remain agent cognition unless later evidence demonstrates a genuinely deterministic procedure.
 
 ## 6. Personal usage pacing direction
 
