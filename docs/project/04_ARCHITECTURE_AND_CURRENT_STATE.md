@@ -125,7 +125,7 @@ Historical verification: focused and browser/UI checks passed; full suite **116 
 
 ## 9. Usage-wall delayed continuation
 
-**IMPLEMENTED / HISTORICALLY VERIFIED — 2026-09-09**
+**IMPLEMENTED / VERIFIED — 2026-09-12**
 
 A positively identified Codex usage wall with a parseable terminal “try again at” time schedules durable continuation work for the same agent/thread at:
 
@@ -133,9 +133,7 @@ A positively identified Codex usage wall with a parseable terminal “try again 
 
 The implementation persists continuation state, survives restart, releases due work through the normal serialized queue, supports one-use same-thread rebind for usage-induced `systemError`, replaces the schedule on repeated usage walls, and cancels stale continuations under stop/lifecycle changes.
 
-Historical verification: **10 focused tests passed**; full suite **127 passed**; production and fresh-migration database integrity checks were OK with no foreign-key failures.
-
-**Review limit:** exact-byte independent review of the P3 change was not completed; this remains a non-blocking review gap rather than an implementation gap.
+Historical implementation verification included **10 focused tests**, a **127-test** full suite, and database-integrity checks. A2 then re-reviewed the current exact source and mapped the current usage-wall continuation tests to the lifecycle/thread-bound transactional implementation. The current runtime/test bytes are also covered by the later canonical `main` full-suite result of **136 passed, 2 warnings**. The former exact-byte review caveat is therefore retired.
 
 ## 10. Exact-turn completion, observer stability, and rollover
 

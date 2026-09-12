@@ -6,26 +6,47 @@
 
 ## Operator summary
 
-- **Where are we?** The minimum Engineering Foundation, GPT Project review, and D-020 permanent Personal triad / C-integration migration are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** D-020 was implemented and verified, and the human principal explicitly started **A2 — Assurance Pass 2** on 2026-09-12. A2 is assessing the intended post-D-020 architecture rather than the superseded optional-C model.
-- **What is blocked?** Nothing currently blocks the bounded A2 assessment.
-- **What is next?** Complete A2 by establishing an evidence-backed assurance matrix, recording material gaps or verification limits without turning the audit into opportunistic implementation.
-- **What are we deliberately not doing?** No P4 implementation, archive/retrieval work, new in-Room A/B/C exercises, or adjacent refactoring before the bounded A2 pass unless the human principal changes priorities.
+- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
+- **What just changed?** A2 completed on 2026-09-12 against the post-D-020 architecture. No material runtime GAP was demonstrated. The pass found strong assurance in repository/reproducibility, identity continuity, execution safety, triad coordination/settlement, recovery, data integrity, and the local privacy boundary; it retained narrower PARTIAL / NEEDS VERIFICATION findings for provider-side profile application, post-D-020 empirical usage efficiency, README drift, and protected institutional composition beneath editable A/B instructions.
+- **What is blocked?** Nothing currently blocks the next planned development phase.
+- **What is next?** **P4 — Deterministic operational tooling** is the next planned phase unless the human principal chooses to address a small A2 follow-up first.
+- **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
 
-### A2 — Assurance Pass 2
-**Work state:** IN PROGRESS
+### P4 — Deterministic operational tooling
+**Work state:** PLANNED — READY TO START
 
-The human principal explicitly started A2 on 2026-09-12. The minimum Engineering Foundation and targeted GPT Project review are complete, and D-020 was implemented and verified before the pass began. A2 is assessing the intended permanent-triad architecture rather than the superseded optional-C coordination model.
+A2 completed on 2026-09-12 without demonstrating a material runtime gap that must displace the planned roadmap. P4 is therefore the next planned phase. Candidate scope remains deterministic operational work that removes repeated mechanical/model effort: deployment/restart/activation choreography, diagnostics, health checks, manifests/provenance, profile consistency checks, rollover inspection, and deterministic extraction/validation/deduplication/normalization/statistics.
 
-Audit method: use fresh repository/config inspection first, map existing exact-version tests/evidence to assurance claims, run new deterministic checks only where existing evidence is insufficient, and use model interpretation or independent adversarial review only where consequence and ambiguity justify the extra cognition. Record findings before deciding on remediation.
+Before implementation, select only demonstrated high-value candidates; do not turn P4 into general tooling expansion.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
-The default external development workflow remains D-018: reason where relevant context exists, execute through the cheapest capable authorized layer, exchange exact evidence through Git/GitHub, and use deterministic verification where model cognition is unnecessary.
-
 ## Recently completed work
+
+### A2 — Assurance Pass 2
+**Work state:** COMPLETE  
+**Evidence:** E-028  
+**Result:** No material runtime GAP demonstrated
+
+A2 assessed the intended post-D-020 architecture using fresh source/config inspection, exact-version/current deterministic test evidence, existing evidence records, and targeted reasoning. It did not launch new in-Room A/B/C exercises or opportunistic remediation.
+
+Material results:
+
+- repository/reproducibility/provenance — **GOOD**;
+- agent identity and continuity — **GOOD**, with provider-side profile application remaining **NEEDS VERIFICATION** under I-003;
+- execution serialization, stale-result protection, exact-turn recovery, and bounded execution lease — **GOOD**;
+- permanent-triad coordination and settlement — **GOOD**;
+- retry/usage-wall recovery — **GOOD**; the prior P3 exact-byte review caveat is retired by the A2 current-source review plus current exact-version deterministic tests;
+- data integrity, event/delivery provenance, export completeness, and execution observability — **GOOD**;
+- current Personal local privacy/exposure boundary — **GOOD**;
+- structural operating-economics mechanisms — **GOOD**, but empirical post-D-020 usage efficiency remains **PARTIAL** because no new real-Room usage benchmark was run;
+- intent/implementation alignment — **PARTIAL** because of I-004 README drift and because editable A/B profiles currently replace full developer instructions rather than being composed beneath a protected institutional layer. The latter remains a deferred design concern, not an A2 implementation task.
+
+No finding requires repair before P4. See E-028 for evidence and limitations.
+
+
 
 ### D-020 — Permanent Personal triad / C-integration migration
 **Scope:** [CORE + ROOM migration]  
@@ -75,13 +96,13 @@ The pre-compaction baseline ratchet was confirmed and repaired with a deferred p
 ### P3 — Usage-wall delayed continuation
 **Work state:** COMPLETE  
 **Follow-up:** MONITOR  
-**Reality / evidence:** IMPLEMENTED / HISTORICALLY VERIFIED — 2026-09-09
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-12
 
 A positively identified usage wall schedules durable continuation for the same agent/thread at the provider retry time + 60 seconds, with restart survival, serialized release, lifecycle cancellation, and repeated-wall rescheduling.
 
 Historical verification: **10 focused tests passed; 127 full-suite tests passed**; production and fresh-migration database integrity checks were OK.
 
-**Non-blocking review gap:** exact-byte independent review of the P3 implementation was not completed.
+A2 re-reviewed the current exact source and mapped the focused continuation/restart/reschedule/cancellation tests to the implementation. The former exact-byte review caveat is retired; see E-028.
 
 ## Ordered next work
 
@@ -103,24 +124,8 @@ Canonical routine command: `python -m pytest -q`. Clean-environment verification
 
 GitHub Actions runs the canonical Python suite on pushes to `main` and pull requests targeting `main`, installing through `constraints-test.txt`. The latest hosted verification on canonical `main` (`34abd391ecbb861d7661541e4a716a5152a2049d`) completed successfully with **130 passed, 2 warnings**.
 
-### A2 — Assurance Pass 2
-**Work state:** IN PROGRESS  
-**Dependencies:** Engineering Foundation — SATISFIED; D-020 triad migration — SATISFIED
-
-Use deterministic repository/config inspection first, then existing tests/reproducible checks, runtime/database evidence where needed, and model reasoning only for interpretation. Use adversarial review only where the risk justifies it.
-
-Assessment ratings remain:
-
-- GOOD
-- PARTIAL
-- GAP
-- NEEDS VERIFICATION
-- NOT RELEVANT YET
-
-Do not launch a half-audit if available model budget cannot support a coherent bounded pass.
-
 ### P4 — Deterministic operational tooling
-**Work state:** PLANNED — after Assurance Pass 2
+**Work state:** PLANNED — READY TO START
 
 High-value candidates include deployment/restart/activation choreography, diagnostics, health checks, manifests/provenance, profile consistency, rollover inspection, deterministic extraction/validation/deduplication/normalization/statistics, and review-hash checks.
 
@@ -179,4 +184,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question is currently blocking A2. I-003 remains low priority and should be revisited only when profile/thread continuity work makes it relevant.
+No high-priority open question currently blocks P4. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is a verified low-priority README drift issue. The broader A/B protected-institutional-layer question remains a future design concern unless the human principal explicitly promotes it.
