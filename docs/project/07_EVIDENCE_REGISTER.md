@@ -840,3 +840,42 @@ Canonical-main GitHub Actions run `34722758182`: **235 passed, 2 warnings**.
 
 **Remaining P4.3 limit:** the initial four-capability CORE library is code-complete but still requires one bounded fresh-Room live evaluation before P4.3 can close.
 
+#### P4.3e — First bounded live evaluation and auditable-call repair
+
+Fresh Room `room_0b855adf7e3f49ef870b6a6f6b60bc24`, Round `round_5efc6d7bb14d46c8b4727ac0077db083`, ran the prescribed four-capability probe without naming any capability or registry command.
+
+Observed durable export evidence:
+
+- C was the designated starter and sole consuming participant;
+- A and B retained `context_consumed_at: null` and no outcome;
+- registry `list` completed and durably identified `assert_file`, `compare_files`, `find_files`, and `search_text`, all CORE scope/version `1`, with implementation SHA-256 values;
+- after registry discovery, telemetry recorded two completed generic `command_execution` events, one completed `file_change`, one failed generic `command_execution`, and one completed generic `command_execution`;
+- there were **no** `deterministic_capability` invocation events and no structured durable invocation results for any of the four capabilities;
+- C FINISHed exactly `P4.3-LIBRARY-OK`;
+- the one-turn Round closed normally with `mutual_finish`.
+
+The attempt therefore did **not** satisfy the P4.3e stop condition. Because generic command text/output is intentionally omitted from Room exports, the evidence does not prove whether C replaced the registered capabilities with ad hoc shell verification or issued capability operations in a batched/chained command shape that safe telemetry deliberately refuses to promote. The existing adapter already promotes registered invocation IDs generically, including regression coverage for the newer result shapes, so no capability-specific telemetry defect was demonstrated.
+
+PR #17 made the narrow behavioral/provenance repair:
+
+- each registry list/inspect operation and each capability invocation must run as its own command execution;
+- capability operations must not be chained with other shell commands or another capability call;
+- when a task has multiple independent mechanical subproblems, agents should compose adequate registered capabilities by invoking the relevant capabilities separately rather than replacing them with one ad hoc script;
+- capability implementations, registry contents, command parser, and arbitrary-shell-output safety boundaries are unchanged.
+
+Exact PR #17 head:
+
+`ab578295ae9da339983d8f59079a0683a795e9f8`
+
+GitHub Actions PR run `34723435009`: **235 passed, 2 warnings**.
+
+PR #17 squash-merged as:
+
+`d65da0bd1399b0cd5511cf0653162e48af7ae546` — `P4.3e: keep capability invocations auditable`
+
+Canonical-main GitHub Actions run `34723499027`: **235 passed, 2 warnings**.
+
+**PR #17 repair status:** IMPLEMENTED / VERIFIED deterministically.
+
+**P4.3e status:** NEEDS LIVE VERIFICATION. One fresh post-PR-#17 Room must repeat the unchanged probe and durably show all four registered capability invocations with correct structured evidence before P4.3 can close.
+
