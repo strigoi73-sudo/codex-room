@@ -7,7 +7,7 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.2 — Capability registry and discovery** is merged and deterministically verified. Deterministic capabilities are now first-class CORE manifests with compact list, detailed inspect, registered invoke, implementation identity, and discovery/invocation telemetry. The agent prompt now teaches when to consider deterministic software and how to discover what exists rather than naming `assert_file` directly.
+- **What just changed?** **P4.2 — Capability registry and discovery** remains in live verification. A fresh live Room completed the target mechanical check with ordinary command execution rather than registry discovery, so the end-to-end stop condition was not met. PR #10 strengthened the agent guidance to check the registered capability inventory before ad hoc mechanical execution and to use an adequate registered capability when one exists; its PR and canonical-`main` GitHub Actions runs passed.
 - **What is blocked?** Nothing currently blocks continued P4 work.
 - **What is next?** Run one bounded live P4.2 discovery test: C should recognize an exact mechanical check, discover the available capability without being given its name, and invoke it through the registry path.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
@@ -56,7 +56,7 @@ Implemented behavior:
 - `codex-room-cap inspect CAPABILITY_ID` returns the detailed manifest;
 - `codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT` invokes by registered ID;
 - the already live-verified `assert_file` capability is registered as the first CORE capability; its P4.1 `assert-file` command remains as a compatibility alias;
-- normal agent prompts no longer hard-code `assert_file`; they teach the decision boundary for deterministic software and the list/inspect/invoke discovery workflow;
+- normal agent prompts no longer hard-code `assert_file`; they teach the decision boundary for deterministic software, require checking the registry before ad hoc mechanical execution, prefer an adequate registered capability when one exists, and retain ad hoc deterministic execution as a justified fallback;
 - registry list/inspect and capability invocation produce bounded structured telemetry, while arbitrary shell output remains excluded;
 - this slice implements only a static CORE registry. Custom registration, lineage persistence, rollover inheritance, Personal promotion, and the broader default library remain **DECIDED / NOT IMPLEMENTED** under D-022.
 
@@ -67,6 +67,8 @@ Verification history:
 - the first post-merge run exposed one stale new-test assertion that still expected detailed fields in the intentionally compact list response; runtime source was not implicated;
 - PR #9 changed only `tests/test_capabilities.py` to assert the compact-list boundary and obtain details through inspect; exact PR-head run `34714005661` passed **161 tests, 2 warnings**;
 - PR #9 squash-merged as `78dd8da418f2c29c37b94324d66bbe8c99da39b3`; canonical-`main` run `34714080693` passed **161 tests, 2 warnings**.
+- the first fresh live P4.2 discovery attempt after local adoption of current code created the probe and finished correctly with C only, but telemetry recorded ordinary `command_execution` rather than `deterministic_capability_registry` / `deterministic_capability`; this demonstrated a capability-selection gap rather than a registry implementation failure;
+- PR #10 strengthened only the deterministic-capability guidance plus its prompt regression test. Exact PR head `c4b3f5cf03a7684be1414ddd051a49b6d9a1cc69`; GitHub Actions run `34718435578` passed. It squash-merged as `745e76b305cab38607e6035f4fb670c3ea8f2fd4`; canonical-`main` run `34718498032` also passed.
 
 Remaining stop condition: one fresh live Room must show an agent deciding a deterministic check is appropriate, using registry discovery without being told the capability name, and producing durable registry plus invocation telemetry. Do not start the default-library or custom-capability implementation until this is inspected.
 
