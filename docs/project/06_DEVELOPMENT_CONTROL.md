@@ -7,9 +7,9 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.2 — Capability registry and discovery** remains in live verification. The post-PR-#10 live probe showed C changing behavior—one file change followed by two completed commands—but both commands still exported as generic `command_execution`, so durable registry/invocation evidence remained missing. PR #11 added a narrow safe-provenance fallback for direct capability calls wrapped by PowerShell when parsed inner command actions are unavailable. Its exact PR head passed **164 tests, 2 warnings**; the merged commit's first main run hit an unrelated existing timeout-race flake, and a rerun of the same bytes passed **164 tests, 2 warnings**.
+- **What just changed?** **P4.2 — Capability registry and discovery** is COMPLETE. A fresh post-PR-#11 Room, without being given the capability name, recorded registry `list` and `inspect`, created the probe file, recovered from one malformed invocation request, then successfully invoked registered `assert_file` with version/hash identity and all requested checks true. C alone FINISHed exactly `P4.2-DISCOVERY-OK` and the Round closed normally.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **What is next?** Run one bounded live P4.2 discovery test: C should recognize an exact mechanical check, discover the available capability without being given its name, and invoke it through the registry path.
+- **What is next?** **P4.3 — Minimal CORE standard library**: choose and implement the smallest broadly useful default capability set that earns its permanent cost, using the P4.2 registry/discovery path rather than hard-coding tool knowledge into agents.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -42,8 +42,8 @@ Final live export evidence:
 P4.1 is closed. Do not broaden this slice merely because the substrate now exists; select the next capability only from demonstrated product value.
 
 #### P4.2 — Capability registry and discovery
-**Work state:** IN PROGRESS — LIVE VERIFICATION  
-**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-12  
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED end to end — 2026-09-12  
 **Decision:** D-022  
 **Evidence:** E-031
 
@@ -72,7 +72,24 @@ Verification history:
 - the next fresh live probe after PR #10 again used only C and FINISHed correctly, but emitted one `file_change` followed by **two** completed generic `command_execution` events. Because the export deliberately hides arbitrary command text, this did not prove the commands were registry operations; it did prove the live stop condition still lacked durable registry/invocation telemetry and was consistent with an unrecognized outer-shell provenance shape;
 - PR #11 added only a narrow PowerShell/pwsh wrapper fallback in capability provenance recognition plus regression tests for registry list, registered invoke, and chained-command rejection when `command_actions` are absent. Exact PR head `8304d0a46cab644cb5069a03730af1de057ff1ad`; run `34719562400` passed **164 tests, 2 warnings**. It squash-merged as `80654078567cbdc997c09586994f1d67a1cc784c`. Main run `34719622155` first failed only the pre-existing `test_stop_before_lease_expiry_cancels_without_false_error_or_retry` timing test; rerunning the same merged bytes passed **164 tests, 2 warnings**.
 
-Remaining stop condition: one fresh live Room must show an agent deciding a deterministic check is appropriate, using registry discovery without being told the capability name, and producing durable registry plus invocation telemetry. Do not start the default-library or custom-capability implementation until this is inspected.
+Final live verification on the post-PR-#11 runtime satisfied the stop condition:
+
+- the user prompt did not name `assert_file`;
+- C was the sole invoked/consuming participant; A/B remained unengaged;
+- telemetry recorded completed registry `list` and `inspect` operations, both identifying `assert_file` version `1` with implementation SHA-256 `6f34376f64110d61d18f278597196b69c1214bba1a8c048c951c3332f049f7b3`;
+- after creating `p4_discovery_probe.json`, C made one malformed registered invocation that returned a structured `invalid_request` error, corrected the input, and retried through the registry path;
+- the successful `deterministic_capability` event recorded `capability: assert_file`, `capability_version: "1"`, the same implementation hash, `ok: true`, regular-file existence, valid JSON, and required keys `probe` and `status` all true;
+- C FINISHed exactly `P4.2-DISCOVERY-OK`; the one-turn Round closed normally.
+
+P4.2 is closed.
+
+#### P4.3 — Minimal CORE standard library
+**Work state:** PLANNED  
+**Reality / evidence:** DECIDED / NOT IMPLEMENTED  
+**Decision:** D-022
+
+Select the smallest set of broadly useful deterministic primitives that should exist in every new Personal Room. Add only capabilities with clear recurring value, compact contracts, bounded permissions/side effects, and deterministic verification. Built-in capabilities must use the same registry/discovery/invocation surface proven by P4.2.
+
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
