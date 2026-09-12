@@ -605,7 +605,7 @@ Implemented:
 - backward-compatible P4.1 `assert-file` alias routed through the registered implementation;
 - invocation results carry capability version and implementation SHA-256;
 - safe telemetry distinguishes `deterministic_capability_registry` discovery from `deterministic_capability` execution;
-- agent prompt guidance now expresses the judgment boundary for deterministic software and tells agents to discover the current registry rather than hard-coding a known tool.
+- agent prompt guidance now expresses the judgment boundary for deterministic software, tells agents to discover the current registry rather than hard-coding a known tool, and—after live verification exposed an ad hoc-command preference—requires checking the registry before ad hoc mechanical execution and using an adequate registered capability when one exists.
 
 D-022 separately settles the future direction: a small default CORE library plus agent-created registered capabilities, lineage rollover continuity, and possible Personal/CORE promotion. Those later lifecycle/persistence features are not claimed as P4.2 implementation.
 
@@ -629,8 +629,26 @@ PR #9 squash-merged as:
 
 Post-merge canonical-`main` GitHub Actions run `34714080693`: **161 passed, 2 warnings**.
 
-Because PR #9 changed tests only, the P4.2 runtime source bytes on the green canonical main are the runtime bytes introduced by PR #8.
+A subsequent fresh live Room used the exact P4.2 discovery probe without naming `assert_file`. C alone created the file and FINISHed `P4.2-DISCOVERY-OK`, but the durable tool evidence contained `file_change` plus ordinary `command_execution` and no `deterministic_capability_registry` or `deterministic_capability` event. This did not satisfy the end-to-end stop condition and demonstrated that the then-current guidance still allowed ad hoc mechanical execution to bypass an adequate registered capability.
+
+PR #10 changed only `codex_room/orchestrator.py` deterministic-capability guidance and the existing prompt regression test. It requires the agent to check the registered inventory before implementing or running an ad hoc mechanical command, use an adequate registered capability when one exists, and reserve ad hoc deterministic execution for cases where no registered capability is adequate or registry use is materially less suitable.
+
+Exact PR #10 head:
+
+`c4b3f5cf03a7684be1414ddd051a49b6d9a1cc69`
+
+GitHub Actions run `34718435578`: pytest step passed.
+
+PR #10 squash-merged as:
+
+`745e76b305cab38607e6035f4fb670c3ea8f2fd4` — `P4.2: prefer registered capabilities before ad hoc mechanics`
+
+Post-merge canonical-`main` GitHub Actions run `34718498032`: pytest step passed.
+
+The live evidence therefore supports **OBSERVED ISSUE → IMPLEMENTED / VERIFIED deterministic repair**, while live registry-first behavior still requires one rerun.
+
+Because PR #9 changed tests only, the original P4.2 registry/runtime implementation source bytes were introduced by PR #8; PR #10 later changed only the institutional selection guidance in `orchestrator.py` plus its regression test.
 
 **Status:** P4.2 CORE implementation IMPLEMENTED / VERIFIED deterministically.
 
-**Remaining limit:** a live Room has not yet shown that an agent, without being given the capability name, recognizes an exact mechanical subproblem, discovers the registry, and invokes the suitable capability. That end-to-end discovery behavior remains **NEEDS VERIFICATION** before P4.2 is COMPLETE.
+**Remaining limit:** rerun the same bounded live probe on the post-PR-#10 runtime. P4.2 becomes COMPLETE only if a live Room, without being given the capability name, recognizes the exact mechanical subproblem, records registry discovery, invokes the suitable registered capability, and produces the expected structured verification result. End-to-end discovery behavior remains **NEEDS VERIFICATION**.
