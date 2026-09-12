@@ -8,8 +8,8 @@
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
 - **What just changed?** **P4.3 — Minimal CORE standard library is COMPLETE / IMPLEMENTED / VERIFIED end to end.** A fresh post-PR-#17 Room discovered and inspected all four CORE capabilities without capability names in the user prompt, then durably invoked `find_files`, `search_text`, `compare_files`, and `assert_file` with matching version/hash identities and correct structured evidence. C alone handled the mechanical work, FINISHed exactly `P4.3-LIBRARY-OK`, and the one-turn Round closed normally.
-- **What is blocked?** Nothing currently blocks continued P4 work.
-- **What is next?** **P4.4 — Agent-created capability registration and verification**: design and implement the bounded path by which A/B/C can create deterministic software when CORE is insufficient, validate it, and register it as a first-class capability with the same identity/contract/permission/provenance surface. Rollover inheritance remains P4.5.
+- **What is blocked?** Nothing technically blocks continued P4 work; development is deliberately paused at the human principal's request after P4.3 closeout and the verified Windows shutdown repair.
+- **What is next when work resumes?** **P4.4 — Agent-created capability registration and verification**: begin with the custom-capability package/trust model and verification gate, then implement the bounded path by which A/B/C can create deterministic software when CORE is insufficient, validate it, and register it as a first-class capability with the same identity/contract/permission/provenance surface. Rollover inheritance remains P4.5.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -112,11 +112,14 @@ P4.3 is closed.
 `query_data` remains a post-evaluation candidate, not part of the initial P4.3 implementation commitment.
 
 #### P4.4 — Agent-created capability registration and verification
-**Work state:** PLANNED  \
-**Reality / evidence:** DECIDED / NOT IMPLEMENTED  \
+**Work state:** PLANNED  
+**Reality / evidence:** DECIDED / NOT IMPLEMENTED  
 **Decision:** D-022
+**Pause point:** Deliberately paused before P4.4 implementation — 2026-09-12.
 
-Implement the bounded path for A/B/C to turn a newly warranted deterministic procedure into a registered first-class capability when the existing CORE library is inadequate. Registration must bind stable identity, version/implementation identity, typed contracts, permissions/side effects, provenance, and verification evidence to the executable implementation. The verification gate must prevent ordinary ad hoc scripts from silently becoming trusted registered capabilities. P4.4 does not yet claim rollover inheritance or Personal/CORE promotion; those remain later slices under D-022.
+No P4.4 implementation has started. When work resumes, start with the custom-capability package/identity model and the registration verification gate, including an explicit distinction between declared permissions and permissions that are mechanically enforced by the execution layer.
+
+Then implement the bounded path for A/B/C to turn a newly warranted deterministic procedure into a registered first-class capability when the existing CORE library is inadequate. Registration must bind stable identity, version/implementation identity, typed contracts, permissions/side effects, provenance, and verification evidence to the executable implementation. The verification gate must prevent ordinary ad hoc scripts from silently becoming trusted registered capabilities. P4.4 does not yet claim rollover inheritance or Personal/CORE promotion; those remain later slices under D-022.
 
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
