@@ -99,6 +99,8 @@ Current sequence:
 - **P4.3d — `compare_files`: COMPLETE / IMPLEMENTED / VERIFIED.** Registered CORE version `1`; exact byte comparison plus SHA-256/size evidence; 50 MiB per-file ceiling; small unequal UTF-8 text may produce a bounded unified diff with 2 MiB / 20,000-line eligibility limits and 200-line / 32 KiB diff ceilings; binary/oversized/line-heavy cases retain exact byte comparison and report explicit text-diff status; diff content is transient while durable evidence retains only paths, hashes, sizes, equality, and diff status/count metadata. PR #16 exact head `6e5b7161dd2d75c33e1527db5d51ce552d0e4888` and squash merge `260431ad7ca64ed0c9f1f3b3bf0122ca98e4de6c` both passed **235 tests, 2 warnings**.
 - **P4.3e — bounded live evaluation of the four-capability CORE library: IN PROGRESS — LIVE VERIFICATION.**
 
+Live stop condition: one fresh post-P4.3d Room must receive a probe that names no capability or registry command, keep C as the sole consuming participant unless peer judgment is genuinely needed, durably record registry discovery, and invoke all four initial CORE capabilities (`find_files`, `search_text`, `compare_files`, `assert_file`) for naturally corresponding mechanical subproblems. Each invocation must carry version/implementation identity and a successful structured result; the evidence must match the known probe fixtures; C must FINISH exactly `P4.3-LIBRARY-OK`; and the Round should close normally.
+
 `query_data` remains a post-evaluation candidate, not part of the initial P4.3 implementation commitment.
 
 
