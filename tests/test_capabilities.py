@@ -180,6 +180,27 @@ def test_find_files_hidden_files_are_opt_in(tmp_path: Path) -> None:
     ]
 
 
+def test_find_files_never_follows_file_or_directory_symlinks(tmp_path: Path) -> None:
+    target_file = tmp_path / "target.txt"
+    target_file.write_text("target", encoding="utf-8")
+    target_dir = tmp_path / "target_dir"
+    target_dir.mkdir()
+    (target_dir / "nested.txt").write_text("nested", encoding="utf-8")
+    try:
+        (tmp_path / "file_link.txt").symlink_to(target_file)
+        (tmp_path / "dir_link").symlink_to(target_dir, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("test platform cannot create symlinks")
+
+    result = find_files(tmp_path, include_globs=["*.txt"], include_hidden=True)
+    paths = [item["path"] for item in result["evidence"]["matches"]]
+
+    assert "file_link.txt" not in paths
+    assert all(not path.startswith("dir_link/") for path in paths)
+    assert "target.txt" in paths
+    assert "target_dir/nested.txt" in paths
+
+
 def test_find_files_reports_explicit_result_truncation(tmp_path: Path) -> None:
     for name in ("a.txt", "b.txt", "c.txt"):
         (tmp_path / name).write_text(name, encoding="utf-8")
