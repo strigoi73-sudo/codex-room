@@ -47,7 +47,7 @@ class CapabilitySpec:
             digest.update(b"\n")
         return digest.hexdigest()
 
-    def manifest(self) -> dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         return {
             "id": self.capability_id,
             "description": self.description,
@@ -55,6 +55,12 @@ class CapabilitySpec:
             "scope": self.scope,
             "version": self.version,
             "implementation_sha256": self.implementation_sha256(),
+            "inspect": f"codex-room-cap inspect {self.capability_id}",
+        }
+
+    def manifest(self) -> dict[str, Any]:
+        return {
+            **self.summary(),
             "input_schema": self.input_schema,
             "output_schema": self.output_schema,
             "permissions": self.permissions,
@@ -292,11 +298,11 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
 
 
 def list_capabilities() -> dict[str, Any]:
-    manifests = [CORE_CAPABILITIES[key].manifest() for key in sorted(CORE_CAPABILITIES)]
+    summaries = [CORE_CAPABILITIES[key].summary() for key in sorted(CORE_CAPABILITIES)]
     return {
         "codex_room_registry": REGISTRY_MARKER,
         "operation": "list",
-        "capabilities": manifests,
+        "capabilities": summaries,
     }
 
 
