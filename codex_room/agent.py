@@ -19,6 +19,7 @@ ROOM_CODEX_CONFIG_OVERRIDES = (
     f'model="{ROOM_MODEL}"',
     f'model_reasoning_effort="{ROOM_REASONING_EFFORT}"',
 )
+MAX_DURABLE_CAPABILITY_RESULT_BYTES = 64 * 1024
 
 
 @dataclass(slots=True)
@@ -728,6 +729,7 @@ class CodexAgentAdapter:
                     "scope",
                     "version",
                     "implementation_sha256",
+                    "durable_result_fields",
                     "permissions",
                     "side_effects",
                     "verification",
@@ -747,20 +749,55 @@ class CodexAgentAdapter:
             or payload.get("capability") != requested_capability
         ):
             return None
+        declared_fields = payload.get("durable_result_fields")
+        if declared_fields is None:
+            # Preserve P4.1/P4.2 telemetry for older capability results.
+            durable_fields = ["subject", "checks"]
+        elif (
+            not isinstance(declared_fields, list)
+            or len(declared_fields) > 32
+            or any(
+                not isinstance(field, str) or not field or len(field) > 128
+                for field in declared_fields
+            )
+        ):
+            return None
+        else:
+            durable_fields = declared_fields
+
+        common_fields = (
+            "codex_room_capability",
+            "capability",
+            "capability_version",
+            "implementation_sha256",
+            "ok",
+            "durable_result_fields",
+            "error",
+        )
         safe_payload = {
             key: payload[key]
-            for key in (
-                "codex_room_capability",
-                "capability",
-                "capability_version",
-                "implementation_sha256",
-                "ok",
-                "subject",
-                "checks",
-                "error",
-            )
+            for key in common_fields
             if key in payload
         }
+        for field in durable_fields:
+            if field in payload and field not in safe_payload:
+                safe_payload[field] = payload[field]
+
+        serialized = json.dumps(
+            safe_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        if len(serialized) > MAX_DURABLE_CAPABILITY_RESULT_BYTES:
+            safe_payload = {
+                key: payload[key]
+                for key in common_fields
+                if key in payload
+            }
+            safe_payload["durable_result_truncated"] = True
+            safe_payload["durable_result_original_bytes"] = len(serialized)
+
         return {
             "type": "deterministic_capability",
             "status": status,

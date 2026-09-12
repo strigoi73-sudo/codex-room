@@ -118,6 +118,7 @@ def test_registry_exposes_assert_file_as_versioned_core_capability() -> None:
     assert inspected["side_effects"] == "none"
     assert inspected["verification"]["status"] == "verified"
     assert inspected["input_schema"]["required"] == ["path"]
+    assert inspected["durable_result_fields"] == ["subject", "checks"]
 
 
 def test_inspect_and_invoke_share_exact_registered_version(tmp_path: Path) -> None:
@@ -139,6 +140,7 @@ def test_inspect_and_invoke_share_exact_registered_version(tmp_path: Path) -> No
     assert invoked["ok"] is True
     assert invoked["capability_version"] == inspected["version"]
     assert invoked["implementation_sha256"] == inspected["implementation_sha256"]
+    assert invoked["durable_result_fields"] == inspected["durable_result_fields"]
 
 
 def test_registered_invoke_rejects_unknown_input_fields(tmp_path: Path) -> None:
@@ -197,4 +199,5 @@ def test_registry_cli_invokes_by_manifest_id(tmp_path: Path, monkeypatch, capsys
     assert payload["capability"] == "assert_file"
     assert payload["capability_version"] == "1"
     assert len(payload["implementation_sha256"]) == 64
+    assert payload["durable_result_fields"] == ["subject", "checks"]
     assert payload["ok"] is True

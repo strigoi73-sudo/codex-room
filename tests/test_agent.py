@@ -847,3 +847,105 @@ def test_safe_activity_promotes_generic_registry_invocation() -> None:
             "result": payload,
         }
     ]
+
+
+def test_safe_activity_persists_only_declared_generic_capability_result_fields() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "search_text",
+        "capability_version": "1",
+        "implementation_sha256": "f" * 64,
+        "ok": True,
+        "durable_result_fields": ["evidence"],
+        "evidence": {
+            "match_count": 1,
+            "matches": [{"path": "notes.txt", "line": 4, "excerpt": "needle"}],
+        },
+        "private_debug": "must not be persisted",
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap invoke search_text "
+            "--input-json '{\"query\":\"needle\"}'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    assert activity == [
+        {
+            "type": "deterministic_capability",
+            "status": "completed",
+            "capability": "search_text",
+            "ok": True,
+            "result": {
+                "codex_room_capability": 1,
+                "capability": "search_text",
+                "capability_version": "1",
+                "implementation_sha256": "f" * 64,
+                "ok": True,
+                "durable_result_fields": ["evidence"],
+                "evidence": payload["evidence"],
+            },
+        }
+    ]
+
+
+def test_safe_activity_rejects_invalid_durable_result_field_declaration() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "search_text",
+        "ok": True,
+        "durable_result_fields": "evidence",
+        "evidence": {"match_count": 1},
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap invoke search_text "
+            "--input-json '{\"query\":\"needle\"}'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {"type": "command_execution", "status": "completed"}
+    ]
+
+
+def test_safe_activity_bounds_declared_capability_result_evidence() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "search_text",
+        "capability_version": "1",
+        "implementation_sha256": "f" * 64,
+        "ok": True,
+        "durable_result_fields": ["evidence"],
+        "evidence": {"matches": [{"excerpt": "x" * 70000}]},
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap invoke search_text "
+            "--input-json '{\"query\":\"needle\"}'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+    result = activity[0]["result"]
+
+    assert activity[0]["type"] == "deterministic_capability"
+    assert activity[0]["capability"] == "search_text"
+    assert result["durable_result_fields"] == ["evidence"]
+    assert result["durable_result_truncated"] is True
+    assert result["durable_result_original_bytes"] > 64 * 1024
+    assert "evidence" not in result
