@@ -1568,6 +1568,11 @@ async def test_agent_prompt_advertises_capability_discovery_not_one_hard_coded_t
     assert "explicit inputs, objectively checkable outputs" in prompt
     assert "Before implementing or running an ad hoc mechanical command" in prompt
     assert "If an adequate registered capability exists, use it." in prompt
+    assert "run each registry list/inspect operation and each capability" in prompt
+    assert "invocation as its own command execution" in prompt
+    assert "do not chain it with other shell commands or another capability call" in prompt
+    assert "multiple independent mechanical subproblems" in prompt
+    assert "invoking the relevant ones separately" in prompt
     assert (
         "Use ad hoc deterministic execution only when no registered capability is adequate"
         in prompt
