@@ -64,6 +64,10 @@ def test_rollover_http_endpoint_leaves_successor_preparing(tmp_path):
         successor = response.json()
         assert successor["status"] == RoomStatus.PREPARING
         assert successor["active_round"]["prompt"] == "visible API checkpoint"
+        assert successor["active_round"]["starting_agent"] == "agent_c"
+        assert {agent["agent_key"] for agent in successor["agents"]} == {
+            "agent_a", "agent_b", "agent_c"
+        }
 
 
 async def _finished_source(
@@ -76,11 +80,18 @@ async def _finished_source(
         CreateRoomRequest(
             title="Long-lived source",
             topic=topic,
-            include_agent_c=include_c,
             starting_agent="agent_a",
             max_consecutive_passes=1,
+            auto_start=False,
         )
     )
+    if not include_c:
+        c = await runtime.db.get_agent(snapshot["id"], "agent_c")
+        assert c is not None
+        await runtime.db.remove_agent(snapshot["id"], "agent_c")
+        if c.get("thread_id"):
+            await runtime.adapter.archive_thread(c["thread_id"])
+    await runtime.start_round(snapshot["id"], snapshot["active_round_id"])
     await wait_until(
         lambda: _room_has_status(runtime, snapshot["id"], RoomStatus.FINISHED)
     )
@@ -156,7 +167,6 @@ async def test_rollover_copies_only_stable_configuration_and_checkpoint(tmp_path
             CreateRoomRequest(
                 title="Long-lived source",
                 topic="OLD_PUBLIC_CANARY",
-                include_agent_c=True,
                 starting_agent="agent_a",
                 max_consecutive_passes=1,
                 auto_start=False,
@@ -228,8 +238,8 @@ async def test_rollover_copies_only_stable_configuration_and_checkpoint(tmp_path
             assert canary not in exported
 
         await runtime.start_round(successor["id"], successor["active_round_id"])
-        await wait_until(lambda: len(adapter.calls["agent_a"]) >= 2)
-        prompt = adapter.calls["agent_a"][-1]["prompt"]
+        await wait_until(lambda: len(adapter.calls["agent_c"]) >= 1)
+        prompt = adapter.calls["agent_c"][-1]["prompt"]
         assert prompt.count(checkpoint) == 1
         for canary in (
             "OLD_PUBLIC_CANARY",
@@ -512,7 +522,6 @@ async def test_targeted_profile_rebind_preserves_identity_and_records_hash(tmp_p
             CreateRoomRequest(
                 title="Rebind diagnostic",
                 topic="hold",
-                include_agent_c=True,
                 auto_start=False,
             )
         )
@@ -569,7 +578,6 @@ async def test_failed_profile_rebind_evicts_and_quarantines_without_identity_cha
             CreateRoomRequest(
                 title="Failed rebind diagnostic",
                 topic="hold",
-                include_agent_c=True,
                 auto_start=False,
             )
         )
@@ -768,7 +776,7 @@ async def test_predecessor_thread_collision_is_audited_but_never_archived(tmp_pa
 
 @pytest.mark.asyncio
 async def test_provisioning_failure_rolls_back_and_audits_orphans(tmp_path):
-    adapter = FailingStartAdapter(fail_at=4)
+    adapter = FailingStartAdapter(fail_at=5)
     runtime = RoomRuntime(Database(tmp_path / "failure.db"), adapter, tmp_path / "data")
     await runtime.initialize()
     try:
@@ -804,7 +812,10 @@ async def test_duplicate_rollover_requests_resolve_to_one_successor(tmp_path):
         assert first["id"] == second["id"]
         rooms = await runtime.db.list_rooms(include_archived=True)
         assert len(rooms) == 2
-        assert len(await runtime.db.get_agents(first["id"])) == 2
+        assert len(await runtime.db.get_agents(source["id"])) == 2
+        assert len(await runtime.db.get_agents(first["id"])) == 3
+        assert first["active_round"]["starting_agent"] == "agent_c"
+        assert first["metadata"]["lineage"]["successor_added_participants"] == ["agent_c"]
     finally:
         await runtime.close()
 

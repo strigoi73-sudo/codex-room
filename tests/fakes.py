@@ -7,7 +7,28 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from codex_room.agent import AgentRunResult, InterruptOutcome
+from codex_room.db import Database
 from codex_room.models import AgentDecision, Outcome
+
+
+class LegacyPairDatabase(Database):
+    """Test-only persistence shim for pre-D-020 two-agent Room compatibility."""
+
+    async def create_room(self, request):
+        room_id = await super().create_room(request)
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            await db.execute(
+                "DELETE FROM agents WHERE room_id=? AND agent_key='agent_c'",
+                (room_id,),
+            )
+            await db.execute(
+                """UPDATE rounds SET starting_agent='either'
+                   WHERE room_id=? AND starting_agent='agent_c'""",
+                (room_id,),
+            )
+            await db.commit()
+        return room_id
 
 
 class FakeAgentAdapter:

@@ -571,23 +571,20 @@ class Database:
                     b_profile_text,
                     request.agent_b_instructions,
                 ),
+                (
+                    c_id,
+                    room_id,
+                    "agent_c",
+                    "Agent C",
+                    profile_c["developer_instructions"],
+                    AgentStatus.INITIALIZING,
+                    now,
+                    now,
+                    profile_c["id"],
+                    profile_c["developer_instructions"],
+                    None,
+                ),
             ]
-            if request.include_agent_c:
-                agent_rows.append(
-                    (
-                        c_id,
-                        room_id,
-                        "agent_c",
-                        "Agent C",
-                        profile_c["developer_instructions"],
-                        AgentStatus.INITIALIZING,
-                        now,
-                        now,
-                        profile_c["id"],
-                        profile_c["developer_instructions"],
-                        None,
-                    )
-                )
             await db.executemany(
                 """INSERT INTO agents
                 (id, room_id, agent_key, name, thread_id, developer_instructions,
@@ -684,6 +681,14 @@ class Database:
             )
             if not agents or any(not agent["thread_id"] for agent in agents):
                 raise ValueError("Every predecessor participant must have a persistent thread")
+            predecessor_has_c = any(agent["agent_key"] == "agent_c" for agent in agents)
+            profile_c = None
+            if not predecessor_has_c:
+                profile_c = await self._fetchone(
+                    db, "SELECT * FROM agent_profiles WHERE default_slot='agent_c'", ()
+                )
+                if profile_c is None:
+                    raise RuntimeError("Agent C default profile is missing")
 
             active = {
                 "operation_id": operation_id,
@@ -725,6 +730,8 @@ class Database:
                     },
                 },
             }
+            if not predecessor_has_c:
+                successor_metadata["lineage"]["successor_added_participants"] = ["agent_c"]
             if institutional_release is not None:
                 successor_metadata["institutional_release"] = institutional_release
                 successor_metadata["lineage"]["institutional_release"] = institutional_release
@@ -771,6 +778,24 @@ class Database:
                         agent["room_override"],
                     )
                 )
+            if not predecessor_has_c:
+                assert profile_c is not None
+                successor_agents.append(
+                    (
+                        f"{successor_id}:agent_c",
+                        successor_id,
+                        "agent_c",
+                        "Agent C",
+                        profile_c["developer_instructions"],
+                        AgentStatus.INITIALIZING,
+                        now,
+                        now,
+                        profile_c["id"],
+                        profile_c["developer_instructions"],
+                        None,
+                    )
+                )
+                successor_agents.sort(key=lambda row: row[2])
             await db.executemany(
                 """INSERT INTO agents
                    (id, room_id, agent_key, name, thread_id, developer_instructions,
@@ -782,7 +807,7 @@ class Database:
                 """INSERT INTO rounds
                    (id, room_id, title, prompt, created_at, status, starting_agent,
                     participant_private_json, participant_overlays_json)
-                   VALUES (?, ?, ?, ?, ?, ?, 'either', '{}', '{}')""",
+                   VALUES (?, ?, ?, ?, ?, ?, 'agent_c', '{}', '{}')""",
                 (round_id, successor_id, "Inherited checkpoint", request.checkpoint, now, RoundStatus.PREPARING),
             )
             await db.executemany(
@@ -1394,8 +1419,11 @@ class Database:
                 "SELECT id, agent_key FROM agents WHERE room_id=? ORDER BY agent_key", (room_id,)
             )
             member_keys = {agent["agent_key"] for agent in agents}
-            if request.starting_agent != "either" and request.starting_agent not in member_keys:
-                raise ValueError(f"Starting agent {request.starting_agent} is not a Room participant")
+            starting_agent = request.starting_agent or (
+                "agent_c" if "agent_c" in member_keys else "either"
+            )
+            if starting_agent != "either" and starting_agent not in member_keys:
+                raise ValueError(f"Starting agent {starting_agent} is not a Room participant")
             configured_keys = set(request.participant_private) | set(request.participant_overlays)
             if not configured_keys <= member_keys:
                 missing = sorted(configured_keys - member_keys)
@@ -1427,7 +1455,7 @@ class Database:
                     request.prompt,
                     now,
                     RoundStatus.PREPARING,
-                    request.starting_agent,
+                    starting_agent,
                     request.agent_a_private,
                     request.agent_b_private,
                     request.task_overlay,
@@ -2328,6 +2356,24 @@ class Database:
             for row in rows
         }
         return result
+
+    async def get_pending_integration_material(
+        self, room_id: str, round_id: str, integrator_key: str = "agent_c"
+    ) -> list[dict[str, Any]]:
+        """Return unread passive peer MESSAGE deliveries awaiting integration."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT e.id, e.source, e.sequence_no
+                   FROM deliveries d
+                   JOIN events e ON e.id=d.event_id
+                   JOIN agents a ON a.id=d.agent_id
+                   WHERE e.room_id=? AND e.round_id=? AND a.agent_key=?
+                     AND d.status='pending' AND d.runnable=0
+                     AND e.event_type='agent_message' AND e.source<>?
+                   ORDER BY e.sequence_no""",
+                (room_id, round_id, integrator_key, integrator_key),
+            )
+        return [dict(row) for row in rows]
 
     async def get_delivery_participation(
         self, room_id: str, agent_key: str, round_id: str

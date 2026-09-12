@@ -79,8 +79,7 @@ input:focus, textarea:focus, select:focus { border-color: #5d6470; box-shadow: 0
 .agent-setup { background: var(--panel); border: 1px solid var(--line); border-top: 2px solid; border-radius: var(--radius); padding: 20px; }
 .agent-a-border { border-top-color: var(--a); }
 .agent-b-border { border-top-color: var(--b); }
-.include-agent-c { display: flex; align-items: center; gap: 9px; margin-top: 16px; }
-.include-agent-c input { display: inline-block; width: auto; margin: 0; }
+.agent-setup-grid > .fixed-profile { grid-column: 1 / -1; }
 .setup-heading { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; margin-bottom: 15px; }
 .agent-glyph { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; font-weight: 800; flex: 0 0 auto; }
 .agent-glyph.a { color: var(--a); background: var(--a-dim); border: 1px solid rgba(86,214,179,.35); }

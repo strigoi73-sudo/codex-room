@@ -21,7 +21,11 @@ def test_http_create_state_and_exports(tmp_path):
         created = client.post("/api/rooms", json={"title": "Test", "topic": "Hello"})
         assert created.status_code == 201
         payload = created.json()
-        assert payload["agents"][0]["thread_id"] != payload["agents"][1]["thread_id"]
+        assert {agent["agent_key"] for agent in payload["agents"]} == {
+            "agent_a", "agent_b", "agent_c"
+        }
+        assert len({agent["thread_id"] for agent in payload["agents"]}) == 3
+        assert payload["active_round"]["starting_agent"] == "agent_c"
 
         room_id = payload["id"]
         state = client.get(f"/api/rooms/{room_id}")

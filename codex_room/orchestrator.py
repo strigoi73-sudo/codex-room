@@ -893,7 +893,7 @@ class RoomRuntime:
     async def new_topic(self, room_id: str, request: NewTopicRequest) -> dict[str, Any]:
         prepared = await self.prepare_round(
             room_id,
-            PrepareRoundRequest(title="New topic", prompt=request.topic, starting_agent="either"),
+            PrepareRoundRequest(title="New topic", prompt=request.topic),
         )
         round_id = prepared["active_round_id"]
         return await self.start_round(room_id, round_id)
@@ -1978,29 +1978,33 @@ class RoomRuntime:
                 await self._settlement_state(room_id, batch["round_id"])
             )
             if settled:
-                if causal:
-                    reaction_event = await self.db.create_event(
-                        room_id,
-                        "reactions_settled",
-                        "room",
-                        "observer",
-                        "Every recipient settled the listed message boundary with PASS or FINISH; "
-                        "no synthetic sender turn was required.",
-                        related_event_id=causal[0]["message_event_id"],
-                        metadata={"boundaries": causal},
-                        discussion_id=batch["round_id"],
-                        round_id=batch["round_id"],
-                    )
-                    self._publish_event(reaction_event)
-                await self._close_discussion(
-                    room_id,
-                    batch["round_id"],
-                    "mutual_finish" if all_finished else (
-                        "reactions_settled" if causal else "finish_and_pass"
-                    ),
-                    "Discussion closed after every participant independently or causally "
-                    "settled with FINISH or PASS.",
+                integration_scheduled = await self._schedule_c_integration_if_needed(
+                    room_id, batch["round_id"]
                 )
+                if not integration_scheduled:
+                    if causal:
+                        reaction_event = await self.db.create_event(
+                            room_id,
+                            "reactions_settled",
+                            "room",
+                            "observer",
+                            "Every recipient settled the listed message boundary with PASS or FINISH; "
+                            "no synthetic sender turn was required.",
+                            related_event_id=causal[0]["message_event_id"],
+                            metadata={"boundaries": causal},
+                            discussion_id=batch["round_id"],
+                            round_id=batch["round_id"],
+                        )
+                        self._publish_event(reaction_event)
+                    await self._close_discussion(
+                        room_id,
+                        batch["round_id"],
+                        "mutual_finish" if all_finished else (
+                            "reactions_settled" if causal else "finish_and_pass"
+                        ),
+                        "Discussion closed after every engaged participant independently or "
+                        "causally settled with FINISH or PASS.",
+                    )
             elif decision.outcome == Outcome.FINISH:
                 blockers = sorted(set(open_keys) | set(pending_keys))
                 waiting_text = (
@@ -2034,17 +2038,21 @@ class RoomRuntime:
                 )
                 self._publish_event(waiting)
             elif round_item["consecutive_passes"] >= room_config["max_consecutive_passes"]:
-                await self._system_event(
-                    room_id,
-                    "pass_limit",
-                    "The configured consecutive PASS limit was reached.",
+                integration_scheduled = await self._schedule_c_integration_if_needed(
+                    room_id, batch["round_id"]
                 )
-                await self._close_discussion(
-                    room_id,
-                    batch["round_id"],
-                    "pass_limit",
-                    "Discussion closed after the configured consecutive PASS limit.",
-                )
+                if not integration_scheduled:
+                    await self._system_event(
+                        room_id,
+                        "pass_limit",
+                        "The configured consecutive PASS limit was reached.",
+                    )
+                    await self._close_discussion(
+                        room_id,
+                        batch["round_id"],
+                        "pass_limit",
+                        "Discussion closed after the configured consecutive PASS limit.",
+                    )
         await self.publish_state(room_id)
 
     @staticmethod
@@ -2090,6 +2098,101 @@ class RoomRuntime:
         requested_set = set(requested)
         return tuple(key for key in peer_keys if key in requested_set)
 
+    async def _schedule_c_integration_if_needed(
+        self, room_id: str, round_id: str
+    ) -> bool:
+        """Wake C once when unread passive peer work would otherwise cross closure."""
+        integrator = await self.db.get_agent(room_id, "agent_c")
+        if integrator is None:
+            return False
+        pending = await self.db.get_pending_integration_material(
+            room_id, round_id, "agent_c"
+        )
+        if not pending:
+            return False
+
+        # Existing runnable or active C work is already an integration opportunity.
+        # If some passive material is newer than that trigger, it will remain pending
+        # and this method will schedule one later trigger at the next quiescent edge.
+        if await self.db.has_open_delivery(room_id, "agent_c", round_id):
+            return True
+        if integrator["status"] in {
+            AgentStatus.RUNNING,
+            AgentStatus.USAGE_SUSPENDED,
+        }:
+            return True
+
+        states = {
+            item["agent_key"]: item
+            for item in await self.db.get_round_agent_states(round_id)
+        }
+        peer_signals = []
+        for key in sorted(states):
+            if key == "agent_c":
+                continue
+            outcome = states[key].get("last_outcome") or "no terminal signal"
+            peer_signals.append(f"{key}: {outcome}")
+        pending_ids = [item["id"] for item in pending]
+        trigger = await self.db.create_event(
+            room_id,
+            "integration_required",
+            "room",
+            "agent_c",
+            (
+                "Integrate the unread peer work in this batch before final Round closure. "
+                "Decide whether the overall objective is satisfied, whether contradictions "
+                "or dependencies remain, and whether follow-up delegation is useful. "
+                + (
+                    "Current peer settlement signals: " + ", ".join(peer_signals) + "."
+                    if peer_signals else ""
+                )
+            ),
+            related_event_id=pending_ids[-1],
+            metadata={
+                "integrator": "agent_c",
+                "pending_peer_message_event_ids": pending_ids,
+                "pending_peer_sources": sorted({item["source"] for item in pending}),
+                "peer_settlement_signals": {
+                    key: states[key].get("last_outcome")
+                    for key in sorted(states)
+                    if key != "agent_c"
+                },
+            },
+            deliver_to=("agent_c",),
+            runnable_to=("agent_c",),
+            discussion_id=round_id,
+            round_id=round_id,
+            event_class="conversation",
+            conversational=True,
+            counts_as_turn=False,
+            counts_toward_pass=False,
+            visibility="mechanical",
+            agent_readable=True,
+            turn_triggering=True,
+        )
+        if trigger.pop("_created", True):
+            self._publish_event(trigger)
+        if await self.db.reopen_ready_agent(room_id, "agent_c"):
+            reopened = await self.db.create_event(
+                room_id,
+                "agent_reopened",
+                "room",
+                "observer",
+                "Agent C was ready to finish but must integrate unread peer work before closure.",
+                related_event_id=trigger["id"],
+                metadata={
+                    "reopened_agent": "agent_c",
+                    "message_source": "room",
+                    "reason": "integration_before_closure",
+                },
+                discussion_id=round_id,
+                round_id=round_id,
+            )
+            self._publish_event(reopened)
+        await self.ensure_workers(room_id)
+        self.wake(room_id, "agent_c")
+        return True
+
     async def _settlement_state(
         self, room_id: str, round_id: str
     ) -> tuple[bool, list[str], list[str], bool, list[dict[str, Any]]]:
@@ -2122,6 +2225,7 @@ class RoomRuntime:
         pending_keys: list[str] = []
         all_finished = True
         engaged_count = 0
+        triad_room = any(item["agent_key"] == "agent_c" for item in agents)
         for item in agents:
             state = states.get(item["id"], {})
             finished = item["status"] == AgentStatus.READY_TO_FINISH
@@ -2133,6 +2237,13 @@ class RoomRuntime:
                 and item["status"] != AgentStatus.RUNNING
             )
             counts = participation[item["agent_key"]]
+            never_engaged_member = (
+                triad_room
+                and counts["readable_count"] == 0
+                and not state.get("last_outcome")
+                and item["agent_key"] not in open_keys
+                and item["status"] != AgentStatus.RUNNING
+            )
             passive_only_unengaged_member = (
                 counts["readable_count"] > 0
                 and counts["runnable_count"] == 0
@@ -2140,12 +2251,16 @@ class RoomRuntime:
                 and item["agent_key"] not in open_keys
                 and item["status"] != AgentStatus.RUNNING
             )
-            if late_unengaged_member or passive_only_unengaged_member:
-                # Membership is not retroactive. Agent C is inserted with a sequence
-                # watermark and no historical delivery, so it cannot be required to
-                # answer an event that was never routed to it. Original round members
-                # remain part of the settlement barrier before their first routed
-                # delivery, but an explicitly passive-only recipient does not.
+            if (
+                late_unengaged_member
+                or never_engaged_member
+                or passive_only_unengaged_member
+            ):
+                # Settlement follows actual engagement rather than membership alone.
+                # This lets C deliberately solve work without waking unnecessary peers,
+                # preserves the newcomer sequence boundary, and keeps passive readers
+                # from becoming mandatory model calls. Unread passive peer MESSAGE
+                # material for C is handled separately by the integration barrier.
                 continue
             engaged_count += 1
             if not finished:
@@ -2187,6 +2302,8 @@ class RoomRuntime:
             )
         )
         if any(open_deliveries):
+            return False
+        if await self._schedule_c_integration_if_needed(room_id, round_id):
             return False
         settled, _, _, all_finished, causal = await self._settlement_state(room_id, round_id)
         if settled:
@@ -2702,6 +2819,17 @@ Respond to this event according to your own judgment. Your final response must s
                     AgentStatus.USAGE_SUSPENDED,
                 }
                 for agent in agents
+            ):
+                continue
+            if any(
+                await asyncio.gather(
+                    *(
+                        self.db.has_open_delivery(
+                            room["id"], agent["agent_key"], room["active_round_id"]
+                        )
+                        for agent in agents
+                    )
+                )
             ):
                 continue
             await self._close_discussion(

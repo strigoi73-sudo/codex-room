@@ -102,18 +102,11 @@ class CreateRoomRequest(BaseModel):
     agent_b_name: str = Field(default="Agent B", min_length=1, max_length=80)
     agent_a_instructions: str | None = Field(default=None, max_length=50_000)
     agent_b_instructions: str | None = Field(default=None, max_length=50_000)
-    include_agent_c: bool = False
     max_turns: int = Field(default=40, ge=2, le=500)
     max_consecutive_passes: int = Field(default=3, ge=1, le=20)
     inactivity_seconds: int = Field(default=900, ge=30, le=86_400)
-    starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] = "either"
+    starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] = "agent_c"
     auto_start: bool = True
-
-    @model_validator(mode="after")
-    def validate_starting_member(self) -> "CreateRoomRequest":
-        if self.starting_agent == "agent_c" and not self.include_agent_c:
-            raise ValueError("agent_c can start only when include_agent_c is true")
-        return self
 
 
 class AddAgentRequest(BaseModel):
@@ -148,7 +141,7 @@ class PrepareRoundRequest(BaseModel):
     agent_b_private: str | None = Field(default=None, max_length=50_000)
     participant_private: dict[str, str] = Field(default_factory=dict)
     participant_overlays: dict[str, str] = Field(default_factory=dict)
-    starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] = "either"
+    starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] | None = None
     task_overlay: str | None = Field(default=None, max_length=50_000)
     agent_a_overlay: str | None = Field(default=None, max_length=50_000)
     agent_b_overlay: str | None = Field(default=None, max_length=50_000)
