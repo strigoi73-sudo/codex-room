@@ -209,6 +209,7 @@ def test_find_files_reports_explicit_scan_limit_truncation(
         "b.txt",
     ]
     assert result["evidence"]["scanned_entries"] == 2
+    assert result["evidence"]["scan_limit_entries"] == 2
     assert result["evidence"]["truncated"] is True
     assert result["evidence"]["truncation_reason"] == "scan_limit"
 
