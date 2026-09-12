@@ -34,8 +34,15 @@ _LEGACY_PAIR_PROFILE_SHA256 = {
 _TRIAD_PROFILE_TEXT = {
     "agent_a": AGENT_A_IMPLEMENTER_INSTRUCTIONS,
     "agent_b": AGENT_B_VERIFIER_INSTRUCTIONS,
+    "agent_c": AGENT_C_INTEGRATOR_INSTRUCTIONS,
 }
 _TRIAD_PROFILE_MIGRATION_ID = "triad_profiles_v1"
+_EARLY_TRIAD_PROFILE_SHA256 = {
+    "agent_a": "cfad300ba057c99c9839765615bd8851cd1c4960a2f0714cae57c70f810b0480",
+    "agent_b": "97c822fcd38b6e408158b6d040d1a517c8030530af1f80033fdbd9d8b22c4bac",
+    "agent_c": "7bfe1e10d35c084e1eb8aac8013459fdc3ac48d3824ebd9d728a9ea9ceb0c6cb",
+}
+_EARLY_TRIAD_PROFILE_MIGRATION_ID = "triad_profiles_v2"
 _INSTITUTIONAL_RELEASE_BINDABLE_ROOM_STATUSES = frozenset(
     {
         RoomStatus.PREPARING,
@@ -378,6 +385,7 @@ class Database:
                         (round_id, agent["id"], room["created_at"], room["created_at"]),
                     )
             await self._migrate_known_pair_profiles(db, now)
+            await self._migrate_known_early_triad_profiles(db, now)
             await db.execute(
                 """CREATE UNIQUE INDEX IF NOT EXISTS idx_events_room_sequence
                    ON events(room_id, sequence_no)"""
@@ -466,6 +474,91 @@ class Database:
                             slot: hashlib.sha256(text.encode("utf-8")).hexdigest()
                             for slot, text in _TRIAD_PROFILE_TEXT.items()
                             if slot in changed_agents
+                        },
+                    }
+                )
+                await db.execute(
+                    "UPDATE rooms SET metadata_json=?, updated_at=? WHERE id=?",
+                    (json.dumps(metadata, ensure_ascii=False), now, room_id),
+                )
+
+    async def _migrate_known_early_triad_profiles(
+        self, db: aiosqlite.Connection, now: str
+    ) -> None:
+        """Replace the exact observed early-triad built-ins with current profiles.
+
+        This migration is deliberately hash-gated. Custom defaults, Room overrides,
+        archived Rooms, and sealed predecessor snapshots are not modified.
+        """
+        defaults = await db.execute_fetchall(
+            """SELECT id, default_slot, developer_instructions FROM agent_profiles
+               WHERE default_slot IN ('agent_a', 'agent_b', 'agent_c')"""
+        )
+        for row in defaults:
+            slot = row["default_slot"]
+            digest = hashlib.sha256(row["developer_instructions"].encode("utf-8")).hexdigest()
+            if digest == _EARLY_TRIAD_PROFILE_SHA256[slot]:
+                await db.execute(
+                    """UPDATE agent_profiles SET developer_instructions=?, updated_at=?
+                       WHERE id=? AND developer_instructions=?""",
+                    (_TRIAD_PROFILE_TEXT[slot], now, row["id"], row["developer_instructions"]),
+                )
+
+        candidates = await db.execute_fetchall(
+            """SELECT a.id, a.room_id, a.agent_key, a.profile_id, a.profile_snapshot,
+                      a.developer_instructions, a.room_override, r.status, r.metadata_json
+               FROM agents a JOIN rooms r ON r.id=a.room_id
+               WHERE a.agent_key IN ('agent_a', 'agent_b', 'agent_c') AND r.status != ?""",
+            (RoomStatus.ARCHIVED,),
+        )
+        changed_rooms: dict[str, tuple[dict[str, Any], set[str]]] = {}
+        for row in candidates:
+            slot = row["agent_key"]
+            snapshot = row["profile_snapshot"] or ""
+            effective = row["developer_instructions"] or ""
+            room_metadata = json.loads(row["metadata_json"] or "{}")
+            stale_sha256 = _EARLY_TRIAD_PROFILE_SHA256[slot]
+            if (
+                room_metadata.get("sealed") is True
+                or row["profile_id"] != f"profile_default_{slot[-1]}"
+                or row["room_override"] is not None
+                or hashlib.sha256(snapshot.encode("utf-8")).hexdigest() != stale_sha256
+                or hashlib.sha256(effective.encode("utf-8")).hexdigest() != stale_sha256
+            ):
+                continue
+            replacement = _TRIAD_PROFILE_TEXT[slot]
+            cursor = await db.execute(
+                """UPDATE agents SET profile_snapshot=?, developer_instructions=?, updated_at=?
+                   WHERE id=? AND profile_snapshot=? AND developer_instructions=?
+                         AND room_override IS NULL""",
+                (replacement, replacement, now, row["id"], snapshot, effective),
+            )
+            if cursor.rowcount == 1:
+                _, changed_agents = changed_rooms.setdefault(
+                    row["room_id"], (room_metadata, set())
+                )
+                changed_agents.add(slot)
+
+        for room_id, (metadata, changed_agents) in changed_rooms.items():
+            migrations = metadata.setdefault("profile_migrations", [])
+            if not any(
+                item.get("id") == _EARLY_TRIAD_PROFILE_MIGRATION_ID
+                for item in migrations
+            ):
+                migrations.append(
+                    {
+                        "id": _EARLY_TRIAD_PROFILE_MIGRATION_ID,
+                        "applied_at": now,
+                        "agents": sorted(changed_agents),
+                        "previous_sha256": {
+                            slot: _EARLY_TRIAD_PROFILE_SHA256[slot]
+                            for slot in sorted(changed_agents)
+                        },
+                        "replacement_sha256": {
+                            slot: hashlib.sha256(
+                                _TRIAD_PROFILE_TEXT[slot].encode("utf-8")
+                            ).hexdigest()
+                            for slot in sorted(changed_agents)
                         },
                     }
                 )
