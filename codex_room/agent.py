@@ -597,23 +597,34 @@ class CodexAgentAdapter:
     @staticmethod
     def _safe_activity(items: list[Any]) -> list[dict[str, Any]]:
         """Expose tool categories and statuses, never reasoning or hidden text."""
-        safe_types = {
-            "command_execution",
-            "file_change",
-            "mcp_tool_call",
-            "dynamic_tool_call",
-            "collab_agent_tool_call",
-            "sub_agent_activity",
-            "web_search",
-            "image_view",
-            "image_generation",
-            "context_compaction",
+        type_aliases = {
+            "command_execution": "command_execution",
+            "commandExecution": "command_execution",
+            "file_change": "file_change",
+            "fileChange": "file_change",
+            "mcp_tool_call": "mcp_tool_call",
+            "mcpToolCall": "mcp_tool_call",
+            "dynamic_tool_call": "dynamic_tool_call",
+            "dynamicToolCall": "dynamic_tool_call",
+            "collab_agent_tool_call": "collab_agent_tool_call",
+            "collabAgentToolCall": "collab_agent_tool_call",
+            "sub_agent_activity": "sub_agent_activity",
+            "subAgentActivity": "sub_agent_activity",
+            "web_search": "web_search",
+            "webSearch": "web_search",
+            "image_view": "image_view",
+            "imageView": "image_view",
+            "image_generation": "image_generation",
+            "imageGeneration": "image_generation",
+            "context_compaction": "context_compaction",
+            "contextCompaction": "context_compaction",
         }
         activities: list[dict[str, Any]] = []
         for wrapped in items:
             item = getattr(wrapped, "root", wrapped)
-            item_type = getattr(item, "type", None)
-            if item_type not in safe_types:
+            raw_type = getattr(item, "type", None)
+            item_type = type_aliases.get(raw_type)
+            if item_type is None:
                 continue
             status = getattr(item, "status", None)
             status_value = getattr(status, "value", status) or "completed"
