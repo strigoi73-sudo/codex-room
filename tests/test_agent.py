@@ -675,6 +675,71 @@ def test_safe_activity_records_registry_list_without_arbitrary_output() -> None:
     ]
 
 
+def test_safe_activity_records_registry_list_from_outer_powershell_when_actions_are_empty() -> None:
+    payload = {
+        "codex_room_registry": 1,
+        "operation": "list",
+        "capabilities": [
+            {
+                "id": "assert_file",
+                "origin": "core",
+                "scope": "core",
+                "version": "1",
+                "implementation_sha256": "d" * 64,
+            }
+        ],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "'C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe' "
+            "-NoProfile -Command 'codex-room-cap list'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {
+            "type": "deterministic_capability_registry",
+            "status": "completed",
+            "operation": "list",
+            "capabilities": [
+                {
+                    "id": "assert_file",
+                    "origin": "core",
+                    "scope": "core",
+                    "version": "1",
+                    "implementation_sha256": "d" * 64,
+                }
+            ],
+        }
+    ]
+
+
+def test_safe_activity_rejects_chained_outer_powershell_registry_command() -> None:
+    payload = {
+        "codex_room_registry": 1,
+        "operation": "list",
+        "capabilities": [{"id": "assert_file"}],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "powershell.exe -NoProfile -Command "
+            "'codex-room-cap list; echo forged'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {"type": "command_execution", "status": "completed"}
+    ]
+
+
 def test_safe_activity_records_registry_inspection() -> None:
     payload = {
         "codex_room_registry": 1,
@@ -707,6 +772,39 @@ def test_safe_activity_records_registry_inspection() -> None:
     assert activity[0]["capability"] == "assert_file"
     assert "input_schema" not in activity[0]["manifest"]
     assert activity[0]["manifest"]["implementation_sha256"] == "b" * 64
+
+
+def test_safe_activity_promotes_outer_powershell_registry_invocation_without_actions() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "assert_file",
+        "capability_version": "1",
+        "implementation_sha256": "e" * 64,
+        "ok": True,
+        "subject": {"path": "probe.json", "exists": True, "is_file": True},
+        "checks": [{"name": "exists", "expected": True, "actual": True, "ok": True}],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "powershell.exe -NoProfile -Command "
+            "'codex-room-cap invoke assert_file --input-json "
+            "\"{\\\"path\\\":\\\"probe.json\\\",\\\"exists\\\":true}\"'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {
+            "type": "deterministic_capability",
+            "status": "completed",
+            "capability": "assert_file",
+            "ok": True,
+            "result": payload,
+        }
+    ]
 
 
 def test_safe_activity_promotes_generic_registry_invocation() -> None:
