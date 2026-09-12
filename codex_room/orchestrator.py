@@ -2236,6 +2236,12 @@ class RoomRuntime:
                 and item["status"] != AgentStatus.RUNNING
             )
             counts = participation[item["agent_key"]]
+            never_engaged_member = (
+                counts["readable_count"] == 0
+                and not state.get("last_outcome")
+                and item["agent_key"] not in open_keys
+                and item["status"] != AgentStatus.RUNNING
+            )
             passive_only_unengaged_member = (
                 counts["readable_count"] > 0
                 and counts["runnable_count"] == 0
@@ -2243,12 +2249,16 @@ class RoomRuntime:
                 and item["agent_key"] not in open_keys
                 and item["status"] != AgentStatus.RUNNING
             )
-            if late_unengaged_member or passive_only_unengaged_member:
-                # Membership is not retroactive. Agent C is inserted with a sequence
-                # watermark and no historical delivery, so it cannot be required to
-                # answer an event that was never routed to it. Original round members
-                # remain part of the settlement barrier before their first routed
-                # delivery, but an explicitly passive-only recipient does not.
+            if (
+                late_unengaged_member
+                or never_engaged_member
+                or passive_only_unengaged_member
+            ):
+                # Settlement follows actual engagement rather than membership alone.
+                # This lets C deliberately solve work without waking unnecessary peers,
+                # preserves the newcomer sequence boundary, and keeps passive readers
+                # from becoming mandatory model calls. Unread passive peer MESSAGE
+                # material for C is handled separately by the integration barrier.
                 continue
             engaged_count += 1
             if not finished:
