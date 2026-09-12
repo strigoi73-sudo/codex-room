@@ -374,30 +374,17 @@ async def test_pending_integration_trigger_is_idempotent_and_survives_restart(ru
     round_id = snapshot["active_round_id"]
     await first.db.start_round(room_id, round_id)
     await first.db.set_room_status(room_id, RoomStatus.PAUSED)
-    peer_message = await first.db.create_event(
+    await first.db.create_event(
         room_id,
         "agent_message",
         "agent_a",
         "all",
         "Persisted passive A result",
-        deliver_to=("agent_b", "agent_c"),
-        runnable_to=("agent_b",),
+        deliver_to=("agent_c",),
+        runnable_to=(),
         discussion_id=round_id,
         round_id=round_id,
     )
-    # The A->B runnable leg is irrelevant to this durability test; mark it consumed
-    # so the only pending work is C's passive copy plus the integration trigger.
-    stored_peer_message = next(
-        event
-        for event in await first.db.get_events(room_id)
-        if event["id"] == peer_message["id"]
-    )
-    b_delivery = next(
-        item
-        for item in stored_peer_message["deliveries"]
-        if item["agent_key"] == "agent_b"
-    )
-    await first.db.complete_deliveries([b_delivery["id"]])
 
     assert await first._schedule_c_integration_if_needed(room_id, round_id)
     assert await first._schedule_c_integration_if_needed(room_id, round_id)
