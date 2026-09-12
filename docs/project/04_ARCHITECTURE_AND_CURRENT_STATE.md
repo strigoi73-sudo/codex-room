@@ -64,7 +64,28 @@ The working execution model remains approximately:
 
 Persistent SDK threads remain a major context-cost driver; invocation frequency and persistent-context size are distinct operating-economics concerns.
 
-## 5. Selective invocation and routing
+## 5. Deterministic Room capability substrate
+
+**IMPLEMENTED / VERIFIED deterministically — 2026-09-12; live agent invocation NEEDS VERIFICATION**
+
+P4.1 introduces the first Codex Room-owned deterministic capability without relying on the provider's experimental dynamic-tool API.
+
+Current capability:
+
+- `assert_file` performs read-only assertions against a Room-workspace-relative path;
+- supported assertions are regular-file existence, SHA-256 equality, JSON validity, and required top-level JSON keys;
+- path resolution rejects absolute paths and traversal outside the invocation workspace;
+- the capability emits one machine-readable JSON result with a stable marker, capability name, overall result, subject metadata, and individual check results;
+- assertion failure is a normal factual result rather than a capability execution failure;
+- the launcher exposes `codex-room-cap` to agent command execution, and the delivery prompt tells agents to prefer it for supported exact checks;
+- only a direct, non-chained `codex-room-cap assert-file` command with a recognized structured result is promoted into durable `tool_activity` metadata;
+- arbitrary command stdout/stderr remains excluded from Room telemetry.
+
+The agent still chooses what should be asserted and interprets significance. This preserves the P4 boundary: deterministic software computes exact facts; model cognition supplies judgment.
+
+PR #5 exact head `ae5a57b6d5ae4a046e36bf81064875375fec4cc6` passed **149 tests, 2 warnings**. The squash merge `40afe50b97bf7333a397f1b06dd7a4e3492bdb4b` passed the post-merge canonical-`main` suite with **149 tests, 2 warnings**. A live Room invocation remains to verify the end-to-end agent/wrapper/telemetry path.
+
+## 6. Selective invocation and routing
 
 **IMPLEMENTED / HISTORICALLY VERIFIED — 2026-09-09**
 
@@ -88,13 +109,13 @@ Historical verification after the selective-invocation change: **111 passed, 2 w
 
 **Monitor:** selective targeting may reduce spontaneous peer challenge if agents under-invoke useful reviewers.
 
-## 6. Delivery coalescing
+## 7. Delivery coalescing
 
 **IMPLEMENTED and worth preserving**
 
 `claim_next_batch()` continues to coalesce multiple pending conversational deliveries into one invocation when appropriate. Selective invocation was designed to preserve this behavior rather than convert delivery into one-event/one-model-call execution.
 
-## 7. Persistent threads and context management
+## 8. Persistent threads and context management
 
 **IMPLEMENTED**
 
@@ -123,7 +144,7 @@ Current behavior:
 
 Historical verification: **119 passed**, with SQLite `quick_check` OK.
 
-## 8. Retry / Agent Error observability
+## 9. Retry / Agent Error observability
 
 **IMPLEMENTED / HISTORICALLY VERIFIED — 2026-09-09**
 
@@ -131,7 +152,7 @@ Retryable agent failures are exposed as interrupted attempts rather than immedia
 
 Historical verification: focused and browser/UI checks passed; full suite **116 passed, 2 warnings**, SQLite `quick_check` OK.
 
-## 9. Usage-wall delayed continuation
+## 10. Usage-wall delayed continuation
 
 **IMPLEMENTED / VERIFIED — 2026-09-12**
 
@@ -143,7 +164,7 @@ The implementation persists continuation state, survives restart, releases due w
 
 Historical implementation verification included **10 focused tests**, a **127-test** full suite, and database-integrity checks. A2 then re-reviewed the current exact source and mapped the current usage-wall continuation tests to the lifecycle/thread-bound transactional implementation. The current runtime/test bytes are also covered by the later canonical `main` full-suite result of **136 passed, 2 warnings**. The former exact-byte review caveat is therefore retired.
 
-## 10. Exact-turn completion, observer stability, and rollover
+## 11. Exact-turn completion, observer stability, and rollover
 
 ### Exact-turn completion + inactivity lease
 
@@ -163,7 +184,7 @@ The observer blanking/rescrolling repair used keyed reconciliation, stable IDs, 
 
 Reviewed rollover behavior created a sealed predecessor, reciprocal lineage, and fresh successor SDK threads without carrying predecessor transcript/private prompts/hidden context/deliveries/executions/compaction state into the successor. Explicitly promoted institutional material remained separately bindable through the institutional release mechanism.
 
-## 11. Bounded live snapshots and complete Room exports
+## 12. Bounded live snapshots and complete Room exports
 
 **IMPLEMENTED / VERIFIED — 2026-09-11**
 
@@ -175,7 +196,7 @@ Hosted verification for the merged repair passed **130 tests, 2 warnings** on ca
 
 **Operational note:** complete exports intentionally scale with total Room history; later scalability work may revisit streaming/pagination if demonstrated Room sizes make full materialization expensive.
 
-## 12. Permanent Personal triad and integration-before-closure
+## 13. Permanent Personal triad and integration-before-closure
 
 **IMPLEMENTED / VERIFIED — 2026-09-12**
 
@@ -200,7 +221,7 @@ A fresh live Personal Room exercise on 2026-09-12 subsequently demonstrated the 
 
 Current startup migration therefore includes a separate `triad_profiles_v2` exact-hash migration for the observed early-triad A/B/C built-ins. Only matching default rows and matching non-archived, unsealed, default-profile Room snapshots with no Room override are replaced with current profile text. Non-matching custom content, Room overrides, archived Rooms, and sealed predecessors are preserved. PR #4 and canonical `main` both passed **138 tests, 2 warnings**. A fresh post-repair local Room export then verified that all three participants inherited the current D-020 profiles. The same Room also verified C-only settlement: C was the sole invoked/consuming participant and the Round closed after one C FINISH. See E-029.
 
-## 13. Runtime-state and work-queue caution
+## 14. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 

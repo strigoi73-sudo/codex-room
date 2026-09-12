@@ -491,3 +491,40 @@ Observed post-migration profile SHA-256 values in that fresh Room were:
 - C: `b07be1545126c2061f82c2128195a091f991ab38a9b0ebbeb92b1d22e7614e62`
 
 This closes the remaining local-adoption verification and also supplies fresh live evidence for C-only engaged-participant settlement. I-006 is closed.
+
+
+### E-030 — P4.1 deterministic file assertions
+**Date:** 2026-09-12  
+**Kind:** Current-source implementation + exact-diff review + GitHub PR/CI
+
+P4.1 begins the deterministic product-capability phase with one bounded vertical slice rather than a general tool framework.
+
+Implemented capability:
+
+- `codex_room.capabilities.assert_file` performs read-only exact checks for regular-file existence, SHA-256 equality, JSON validity, and required top-level JSON keys;
+- paths are required to be workspace-relative and path resolution rejects traversal outside the invocation workspace;
+- one compact JSON result carries a stable capability marker, overall `ok`, subject metadata, and per-assertion results;
+- false assertions return a normal result; malformed requests return a structured invalid-request result;
+- a Windows `codex-room-cap.cmd` wrapper invokes the repository-owned implementation through the Codex Room virtual environment;
+- `Start-Codex-Room.cmd` exposes the wrapper to inherited agent command execution through PATH;
+- normal agent delivery prompts advertise the capability and explicitly preserve the cognition boundary: agents choose assertions and interpret significance;
+- the adapter promotes only recognized structured output from a direct, non-chained `codex-room-cap assert-file` command into `deterministic_capability` activity metadata;
+- arbitrary command output remains hidden from Room telemetry.
+
+Review tightened two boundaries before verification: an existence assertion now requires a regular file rather than merely an existing path, and capability telemetry rejects commands that only mention the capability or chain additional shell operations.
+
+Exact PR head:
+
+`ae5a57b6d5ae4a046e36bf81064875375fec4cc6`
+
+GitHub Actions run `34709164489`: **149 passed, 2 warnings**.
+
+PR #5 squash-merged to canonical `main` as:
+
+`40afe50b97bf7333a397f1b06dd7a4e3492bdb4b` — `P4.1: Add deterministic file assertions`
+
+Post-merge GitHub Actions run `34709284545`: **149 passed, 2 warnings**.
+
+**Status:** CORE capability IMPLEMENTED / VERIFIED deterministically.
+
+**Remaining limit:** no real Room agent has yet invoked `codex-room-cap` on the merged build. End-to-end agent discovery, inherited PATH/wrapper execution, and exported `deterministic_capability` telemetry remain **NEEDS VERIFICATION** before P4.1 is considered complete.

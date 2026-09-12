@@ -22,11 +22,13 @@ P4 is product/runtime work: hard-wire deterministic capabilities that Codex Room
 Admission rule: given the same explicit inputs and underlying state, a correct deterministic capability should return substantially the same factual result without requiring judgment. Agents remain responsible for choosing what to test and interpreting significance.
 
 #### P4.1 — Deterministic assertions
-**Work state:** IN PROGRESS
+**Work state:** IN PROGRESS — LIVE VERIFICATION  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-12  
+**Evidence:** E-030
 
-First vertical slice: a read-only, Room-workspace-confined `assert_file` capability for exact existence, SHA-256, JSON-validity, and required-key assertions. The capability returns typed JSON; capability results are eligible for durable Room telemetry, while arbitrary command output remains hidden. The current implementation path uses the agent's existing command tool rather than the provider's experimental dynamic-tool API.
+The first vertical slice is now merged: a read-only, Room-workspace-confined `assert_file` capability for exact existence, SHA-256, JSON-validity, and required-key assertions. The capability returns typed JSON; recognized direct capability results are eligible for durable Room telemetry, while arbitrary command output remains hidden. The current implementation path uses the agent's existing command tool rather than the provider's experimental dynamic-tool API.
 
-This slice is intended to prove the capability boundary, not establish a general plugin framework. After verification, decide whether the contract is sufficient before expanding to data operations or structured organizational state.
+PR #5 and the post-merge canonical-`main` run both passed **149 tests, 2 warnings**. Remaining work is one bounded live Room check to establish that an actual Codex agent can invoke the capability through the inherited launcher environment and that the resulting structured capability evidence appears in the Room export. Do not expand P4.1 until that check is complete.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
