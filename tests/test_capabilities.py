@@ -397,6 +397,26 @@ def test_search_text_skips_non_utf8_and_nul_files(tmp_path: Path) -> None:
     )
 
 
+def test_search_text_reports_oversized_files_as_incomplete(tmp_path: Path) -> None:
+    (tmp_path / "a-large.txt").write_text("needle too large", encoding="utf-8")
+    (tmp_path / "b-small.txt").write_text("needle", encoding="utf-8")
+
+    result = search_text(
+        tmp_path,
+        "needle",
+        include_globs=["*.txt"],
+        max_file_bytes=6,
+    )
+
+    assert result["evidence"]["skipped_oversize_files"] == 1
+    assert result["evidence"]["files_searched"] == 1
+    assert result["evidence"]["locations"] == [
+        {"path": "b-small.txt", "line": 1, "column": 1}
+    ]
+    assert result["evidence"]["truncated"] is True
+    assert result["evidence"]["truncation_reason"] == "oversize_files"
+
+
 def test_search_text_reports_candidate_truncation(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("hit", encoding="utf-8")
     (tmp_path / "b.txt").write_text("hit", encoding="utf-8")
@@ -520,6 +540,7 @@ def test_registered_search_text_exposes_safe_durable_contract(tmp_path: Path) ->
         ({}, "query"),
         ({"query": ""}, "query"),
         ({"query": "a\nb"}, "single-line"),
+        ({"query": "\udcff"}, "valid UTF-8"),
         ({"query": "x", "include_globs": "*.txt"}, "include_globs"),
         ({"query": "x", "exclude_globs": ["../*.txt"]}, "workspace-relative glob"),
         ({"query": "x", "include_hidden": 1}, "include_hidden"),
