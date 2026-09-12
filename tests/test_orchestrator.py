@@ -21,7 +21,7 @@ from codex_room.models import (
 )
 from codex_room.orchestrator import RoomRuntime
 
-from .fakes import FakeAgentAdapter, wait_until
+from .fakes import FakeAgentAdapter, LegacyPairDatabase, wait_until
 
 
 async def _room_has_status(runtime: RoomRuntime, room_id: str, status: RoomStatus) -> bool:
@@ -83,8 +83,14 @@ async def _has_event_count(
 async def runtime_factory(tmp_path):
     runtimes: list[RoomRuntime] = []
 
-    async def make(adapter: FakeAgentAdapter, name: str = "room.db") -> RoomRuntime:
-        runtime = RoomRuntime(Database(tmp_path / name), adapter, tmp_path / "data")
+    async def make(
+        adapter: FakeAgentAdapter,
+        name: str = "room.db",
+        *,
+        triad: bool = False,
+    ) -> RoomRuntime:
+        database = Database(tmp_path / name) if triad else LegacyPairDatabase(tmp_path / name)
+        runtime = RoomRuntime(database, adapter, tmp_path / "data")
         await runtime.initialize()
         runtimes.append(runtime)
         return runtime
@@ -815,11 +821,10 @@ async def test_message_sender_settles_after_exact_terminal_reactions(runtime_fac
             "agent_c": [(Outcome.FINISH, "C accepts")],
         }
     )
-    runtime = await runtime_factory(adapter)
+    runtime = await runtime_factory(adapter, "triad-causal.db", triad=True)
     snapshot = await runtime.create_room(
         CreateRoomRequest(
             topic="Causal closure",
-            include_agent_c=True,
             starting_agent="agent_b",
             max_consecutive_passes=10,
         )

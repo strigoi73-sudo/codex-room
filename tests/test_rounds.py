@@ -21,7 +21,7 @@ from codex_room.models import (
 )
 from codex_room.orchestrator import RoomRuntime
 
-from .fakes import FakeAgentAdapter, wait_until
+from .fakes import FakeAgentAdapter, LegacyPairDatabase, wait_until
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ async def runtime_factory(tmp_path):
     runtimes: list[RoomRuntime] = []
 
     async def make(adapter: FakeAgentAdapter, name: str = "rounds.db") -> RoomRuntime:
-        runtime = RoomRuntime(Database(tmp_path / name), adapter, tmp_path / "data")
+        runtime = RoomRuntime(LegacyPairDatabase(tmp_path / name), adapter, tmp_path / "data")
         await runtime.initialize()
         runtimes.append(runtime)
         return runtime
