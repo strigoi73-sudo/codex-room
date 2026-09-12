@@ -13,6 +13,7 @@ from codex_room.exporter import as_json
 from codex_room.models import (
     AGENT_A_IMPLEMENTER_INSTRUCTIONS,
     AGENT_B_VERIFIER_INSTRUCTIONS,
+    AGENT_C_INTEGRATOR_INSTRUCTIONS,
     CreateRoomRequest,
     ObserverMessageRequest,
     Outcome,
