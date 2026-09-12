@@ -1,6 +1,6 @@
 # Codex Room — Repository & Operations Reference
 
-**Last synthesized:** 2026-09-11  
+**Last synthesized:** 2026-09-12  
 **Scope:** Compact technical reference for source/runtime layout, maintenance boundaries, source-control workflow, recovery, and verification practices.  
 **Freshness:** Repository details are time-bounded. Prefer current live source and Git state when available.
 
@@ -65,6 +65,20 @@ Current clean-development procedure:
 `constraints-test.txt` records the known-good application/test dependency set for routine development and CI while `pyproject.toml` retains broader supported ranges. Clean-environment verification collected and passed **129 tests**. `test-transcript-stability.ps1` remains a separate specialized browser check because it requires Node.js plus Chrome or Edge.
 
 Minimal CI lives at `.github/workflows/python-tests.yml`. It runs on pushes to `main` and pull requests targeting `main`, uses Python 3.12 on Ubuntu, grants `contents: read`, installs through `constraints-test.txt`, and runs the canonical pytest command. Commits or pull requests whose changed paths are entirely under `docs/project/**` are ignored by this Python-test workflow; mixed code + Project-document changes still run CI. Dependency upgrades should be deliberate changes to the constraint set rather than incidental resolver drift.
+
+### Windows local launch and shutdown
+
+Normal Personal local operation uses the root launch scripts:
+
+- double-click `Start-Codex-Room.cmd` to start the foreground local server; the dedicated launcher console is titled `Codex Room Server`;
+- use `Kill-Codex-Room.bat` to stop Codex Room;
+- `Kill-Codex-Room.bat --dry-run` previews the repository-specific process targets without stopping them.
+
+Current shutdown targeting identifies both the repository venv Python process running `-m codex_room` and a dedicated launcher `cmd.exe` identified by the canonical start-script path or the `Codex Room Server` window title. It then includes descendants of those seeds, stops the target set, and verifies the targeted process IDs are gone. Successful shutdown does not pause, so a temporary Kill console can exit immediately; the script pauses only on shutdown failure so diagnostics remain visible.
+
+The kill script deliberately does **not** terminate browser processes. Codex Room opens the UI through the system browser and that process may also own unrelated tabs/windows, so browser teardown is outside the safe repository-specific process boundary.
+
+PR #18 introduced this behavior. Exact PR-head and merged canonical-main Python CI both passed **238 tests, 2 warnings**. Actual Windows console teardown remains a local runtime check because hosted CI runs on Ubuntu.
 
 ## 4. Source/runtime/generated boundaries
 
