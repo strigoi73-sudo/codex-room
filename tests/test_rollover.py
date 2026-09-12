@@ -239,8 +239,7 @@ async def test_rollover_copies_only_stable_configuration_and_checkpoint(tmp_path
 
         await runtime.start_round(successor["id"], successor["active_round_id"])
         await wait_until(lambda: len(adapter.calls["agent_c"]) >= 1)
-        assert checkpoint in adapter.calls["agent_c"][-1]["prompt"]
-        prompt = adapter.calls["agent_a"][-1]["prompt"]
+        prompt = adapter.calls["agent_c"][-1]["prompt"]
         assert prompt.count(checkpoint) == 1
         for canary in (
             "OLD_PUBLIC_CANARY",

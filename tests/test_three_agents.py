@@ -165,7 +165,7 @@ def test_participant_map_values_enforce_prompt_ceiling() -> None:
 def test_fresh_ab_instruction_template_is_membership_generic() -> None:
     instructions = default_agent_instructions("Agent A", "Agent B")
     assert "Agent A, Agent B, and Agent C" in instructions
-    assert "every participant has settled" in instructions
+    assert "every engaged participant has settled" in instructions
     assert "named Agent B" not in instructions
 
 
