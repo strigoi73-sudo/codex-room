@@ -527,4 +527,22 @@ Post-merge GitHub Actions run `34709284545`: **149 passed, 2 warnings**.
 
 **Status:** CORE capability IMPLEMENTED / VERIFIED deterministically.
 
-**Remaining limit:** no real Room agent has yet invoked `codex-room-cap` on the merged build. End-to-end agent discovery, inherited PATH/wrapper execution, and exported `deterministic_capability` telemetry remain **NEEDS VERIFICATION** before P4.1 is considered complete.
+A first live Room smoke attempt was then run on the merged build. The Room created three persistent participants, designated C as starter, invoked only C, and closed after one C turn with exactly `P4.1-CAPABILITY-OK`. A/B did not consume context or record outcomes. However, the export contained no `tool_activity` or `deterministic_capability` event. The agent's final claim therefore did not independently prove the exact capability invocation/result.
+
+Inspection of the exact pinned SDK release source (`openai-codex==0.147.0`, release source commit `025a88adbd7ae4d448fc938b28d0446eb1753317`) identified the cause: completed Python SDK ThreadItems use camelCase discriminators including `commandExecution` and `fileChange`, while Codex Room's `_safe_activity()` accepted only snake_case names. This mismatch also meant ordinary real command/file/tool activity had been silently omitted from Room telemetry.
+
+PR #6 repaired the adapter boundary by normalizing the pinned SDK's camelCase activity types to Codex Room's stable snake_case telemetry vocabulary while retaining compatibility with existing snake_case test/legacy shapes.
+
+Exact PR #6 head:
+
+`92a9fcefbbcb9228a98cc8074415e32af6ffe116`
+
+GitHub Actions run `34709739325`: **150 passed, 2 warnings**.
+
+PR #6 squash-merged to canonical `main` as:
+
+`d54565afc459b251fa084910086e74123810dce0` — `P4.1: Normalize SDK activity item types`
+
+Post-merge GitHub Actions run `34709822193`: **150 passed, 2 warnings**.
+
+**Remaining limit:** repeat the same live Room smoke on the repaired build and confirm that the export contains the direct `deterministic_capability` result. Until that export is inspected, the end-to-end capability path remains **NEEDS VERIFICATION** and P4.1 remains IN PROGRESS.

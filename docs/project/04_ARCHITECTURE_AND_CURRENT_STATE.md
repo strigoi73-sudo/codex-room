@@ -83,7 +83,11 @@ Current capability:
 
 The agent still chooses what should be asserted and interprets significance. This preserves the P4 boundary: deterministic software computes exact facts; model cognition supplies judgment.
 
-PR #5 exact head `ae5a57b6d5ae4a046e36bf81064875375fec4cc6` passed **149 tests, 2 warnings**. The squash merge `40afe50b97bf7333a397f1b06dd7a4e3492bdb4b` passed the post-merge canonical-`main` suite with **149 tests, 2 warnings**. A live Room invocation remains to verify the end-to-end agent/wrapper/telemetry path.
+PR #5 exact head `ae5a57b6d5ae4a046e36bf81064875375fec4cc6` passed **149 tests, 2 warnings**. The squash merge `40afe50b97bf7333a397f1b06dd7a4e3492bdb4b` passed the post-merge canonical-`main` suite with **149 tests, 2 warnings**.
+
+The first live Room attempt then exposed a pre-existing adapter mismatch: pinned `openai-codex==0.147.0` emits completed ThreadItem type discriminators in camelCase (`commandExecution`, `fileChange`, `mcpToolCall`, etc.), while Codex Room's activity filter matched snake_case. The agent finished `P4.1-CAPABILITY-OK`, but the export contained no tool/capability telemetry, so exact invocation evidence was not independently preserved.
+
+PR #6 normalizes both SDK camelCase and legacy/test snake_case item names into Codex Room's stable snake_case telemetry vocabulary. Exact PR head `92a9fcefbbcb9228a98cc8074415e32af6ffe116` passed **150 tests, 2 warnings**; squash merge `d54565afc459b251fa084910086e74123810dce0` passed the canonical-`main` suite with **150 tests, 2 warnings**. One repeated live Room invocation remains before the end-to-end capability path is considered verified.
 
 ## 6. Selective invocation and routing
 

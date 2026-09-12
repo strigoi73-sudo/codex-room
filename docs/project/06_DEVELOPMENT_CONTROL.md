@@ -28,7 +28,9 @@ Admission rule: given the same explicit inputs and underlying state, a correct d
 
 The first vertical slice is now merged: a read-only, Room-workspace-confined `assert_file` capability for exact existence, SHA-256, JSON-validity, and required-key assertions. The capability returns typed JSON; recognized direct capability results are eligible for durable Room telemetry, while arbitrary command output remains hidden. The current implementation path uses the agent's existing command tool rather than the provider's experimental dynamic-tool API.
 
-PR #5 and the post-merge canonical-`main` run both passed **149 tests, 2 warnings**. Remaining work is one bounded live Room check to establish that an actual Codex agent can invoke the capability through the inherited launcher environment and that the resulting structured capability evidence appears in the Room export. Do not expand P4.1 until that check is complete.
+PR #5 and the post-merge canonical-`main` run both passed **149 tests, 2 warnings**. The first bounded live Room attempt reached a one-turn C-only `P4.1-CAPABILITY-OK` finish but exported no `tool_activity` / `deterministic_capability` event. Exact inspection of pinned `openai-codex==0.147.0` showed the adapter was filtering snake_case activity names while the SDK's completed ThreadItems use camelCase types such as `commandExecution` and `fileChange`. PR #6 repaired that translation boundary; its PR-head and post-merge canonical-`main` runs both passed **150 tests, 2 warnings**.
+
+Remaining work is one repeat of the same bounded live Room check. P4.1 closes only when the export independently shows the recognized structured capability result; do not expand the capability set before then.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
