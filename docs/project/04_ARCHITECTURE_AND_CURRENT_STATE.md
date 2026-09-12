@@ -46,6 +46,14 @@ Clean-environment verification collected **129 tests** and completed successfull
 
 The dependency-constraint repair was hosted-verified on 2026-09-10: the merged `main` workflow installed the known-good `openai-codex==0.147.0` set and passed **129 tests, 2 warnings**. Exact run/commit evidence belongs in the Evidence Register or GitHub rather than this architecture summary.
 
+### SDK-pinned Codex runtime selection
+
+**IMPLEMENTED / VERIFIED — 2026-09-12**
+
+`Start-Codex-Room.cmd` no longer supplies a desktop-app or version-directory Codex executable by default. When `CODEX_ROOM_CODEX_BIN` is unset, `CodexAgentAdapter` leaves `codex_bin` unset and the pinned `openai-codex==0.147.0` SDK selects its matching packaged `openai-codex-cli-bin==0.147.0` runtime. An explicit operator override remains supported and is validated for path existence by the launcher.
+
+This boundary was repaired after a live smoke attempt using the desktop-app binary produced a completed turn without a usable final response followed by a persistent-thread `system-error`. The corrected launcher commit was hosted-verified with **137 passed, 2 warnings**. See E-029.
+
 ## 4. Core execution path
 
 **IMPLEMENTED**
@@ -188,8 +196,12 @@ Current behavior:
 
 Verification evidence is recorded in E-027. On the exact reviewed PR head, GitHub Actions passed **136 tests, 2 warnings** and the specialized local Playwright suite passed **3 tests**. The squash-merge commit on `main` has the same Git tree as the reviewed/tested PR head.
 
+A fresh live Personal Room exercise on 2026-09-12 subsequently demonstrated the intended C→A→C→A→B→C coordination path, including selective invocation, passive readability, one mechanical `integration_required` wake, and final engaged-participant settlement. That exercise also exposed an older exact built-in A/B/C profile generation still persisted in the local database.
+
+Current startup migration therefore includes a separate `triad_profiles_v2` exact-hash migration for the observed early-triad A/B/C built-ins. Only matching default rows and matching non-archived, unsealed, default-profile Room snapshots with no Room override are replaced with current profile text. Non-matching custom content, Room overrides, archived Rooms, and sealed predecessors are preserved. PR #4 and canonical `main` both passed **138 tests, 2 warnings**. User-local post-migration adoption remains **NEEDS VERIFICATION** until a fresh Room export is inspected. See E-029.
+
 ## 13. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 
-No fresh live Room operational snapshot was captured as part of the 2026-09-10 Git alignment. The 2026-09-08 Room-error snapshot remains historical evidence only and must not be treated as current runtime state.
+A fresh live Personal Room export was captured on 2026-09-12 and is recorded in E-029. It provides current runtime evidence for D-020 coordination mechanics and exposed the early-triad persisted-profile migration gap that PR #4 repaired. A fresh user-local export after that repair is still pending, so local profile adoption should not yet be claimed as verified. Older Room-error snapshots remain historical evidence only.

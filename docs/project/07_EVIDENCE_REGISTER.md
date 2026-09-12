@@ -424,3 +424,53 @@ Follow-ups preserved after A2:
 **Overall A2 result:** current Personal Codex Room has **GOOD** mechanical assurance across the core execution architecture, with no demonstrated material runtime gap. Remaining weaknesses are bounded and mostly concern provider-side profile verification, documentation alignment, empirical post-D-020 usage measurement, and future protected composition of institutional versus customizable agent instructions.
 
 **Status:** A2 COMPLETE.
+
+
+### E-029 — Live post-D-020 smoke exercise and early-triad profile repair
+**Date:** 2026-09-12  
+**Kind:** Live Personal Room export + current-source diagnosis + GitHub PR/CI
+
+A bounded cognitively-light live Room exercise was run after D-020.
+
+The first attempt was started while `CODEX_ROOM_CODEX_BIN` pointed at the current desktop-app Codex executable rather than the Python SDK's matching packaged runtime. Agent C's first turn completed without a usable final response, then the persistent thread entered `system-error`; the Round stopped with zero agent decisions. The launcher was corrected so that an explicit `CODEX_ROOM_CODEX_BIN` override is still honored, but no override is supplied by default. The pinned `openai-codex==0.147.0` SDK therefore selects its matching `openai-codex-cli-bin==0.147.0` runtime. Commit `41856bbd5f7e2e7c9b4f48df835bd468a02642fd` was hosted-verified by GitHub Actions run `34705380711`: **137 passed, 2 warnings**.
+
+A second fresh Room on the SDK-pinned runtime completed successfully with six agent turns. The observed sequence was:
+
+1. C started the Round and selectively invoked A;
+2. A returned `ALPHA` and selectively invoked C;
+3. C selectively invoked A for the direct-peer stage;
+4. A sent `PING` and selectively invoked B;
+5. B FINISHed without invoking C;
+6. the Room created `integration_required` for C, coalesced it with A's passive unread message, and C FINISHed with `C-ONLY-OK | ALPHA | INTEGRATION-OK`;
+7. the Round closed with reason `reactions_settled`.
+
+This is fresh live evidence for C-first initiation, selective runnable/readable separation, direct A→C and A→B routing, passive C readability, integration-before-closure, and engaged-participant settlement.
+
+The same export showed that the new Room's default A/B/C `profile_snapshot` values were an older early-triad built-in generation. Their exact SHA-256 values were:
+
+- A: `cfad300ba057c99c9839765615bd8851cd1c4960a2f0714cae57c70f810b0480`
+- B: `97c822fcd38b6e408158b6d040d1a517c8030530af1f80033fdbd9d8b22c4bac`
+- C: `7bfe1e10d35c084e1eb8aac8013459fdc3ac48d3824ebd9d728a9ea9ceb0c6cb`
+
+Those snapshots predated the current selective-invocation wording and D-020 C coordination/integration guidance even though the runtime mechanics themselves were current.
+
+PR #4 implemented a separate `triad_profiles_v2` migration for only those exact observed hashes. The migration:
+
+- updates matching A/B/C default profile rows to the current built-in text;
+- updates matching default-profile Room snapshots/effective instructions only when the Room is not archived or sealed and has no Room override;
+- preserves all non-matching custom defaults, Room overrides, archived Rooms, and sealed predecessors;
+- records the migration in affected Room metadata;
+- is idempotent;
+- causes newly created Rooms after migration to inherit current A/B/C snapshots.
+
+The first two PR CI attempts each failed only inside the newly added test harness before completing its assertions: one omitted an empty helper parameter tuple, and one omitted the C instruction constant import. Production migration bytes were unchanged. The corrected exact PR head `7ce13c3e8688f9fdd932fa772e165f26dd348008` passed GitHub Actions run `34706196525` with **138 passed, 2 warnings**.
+
+PR #4 squash-merged to canonical `main` as:
+
+`bd4ea0fc21fa5f93db68a8df93a9f12f296c03f5` — `Repair early-triad profile migration`
+
+Post-merge GitHub Actions run `34706293089` passed **138 tests, 2 warnings**.
+
+**Status:** CORE repair IMPLEMENTED / VERIFIED.
+
+**Remaining limit:** the exact user-local database has not yet been re-exported after pulling/restarting the repaired code. A fresh Room export is still required to verify that the observed local stale defaults were migrated in practice. Until then, local adoption is **NEEDS VERIFICATION**.

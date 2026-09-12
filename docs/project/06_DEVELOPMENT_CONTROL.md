@@ -7,21 +7,25 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** A2 completed on 2026-09-12 against the post-D-020 architecture. No material runtime GAP was demonstrated. The pass found strong assurance in repository/reproducibility, identity continuity, execution safety, triad coordination/settlement, recovery, data integrity, and the local privacy boundary; it retained narrower PARTIAL / NEEDS VERIFICATION findings for provider-side profile application, post-D-020 empirical usage efficiency, README drift, and protected institutional composition beneath editable A/B instructions.
-- **What is blocked?** Nothing currently blocks the next planned development phase.
-- **What is next?** **P4 — Deterministic operational tooling** is the next planned phase unless the human principal chooses to address a small A2 follow-up first.
+- **What just changed?** A live post-D-020 smoke exercise verified C-first selective routing, direct A→C return, direct A→B routing with passive C readability, the mechanical `integration_required` wake, and final engaged-participant settlement. The exercise also exposed two operational/profile issues: a desktop-app Codex binary override was incompatible with the pinned Python SDK path, and the local database still held an exact older early-triad A/B/C built-in profile generation. The launcher now defaults to the SDK-pinned runtime, and PR #4 added a conservative exact-hash migration for the observed stale A/B/C profiles.
+- **What is blocked?** No repository/runtime implementation work is blocked. One local verification remains: after pulling/restarting, create a fresh Room and confirm that the actual user database now snapshots the current D-020 A/B/C profiles.
+- **What is next?** Complete that bounded I-006 local verification, then return to **P4 — Deterministic operational tooling** unless the human principal reprioritizes.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
 
-### P4 — Deterministic operational tooling
-**Work state:** PLANNED — READY TO START
+### I-006 — Early-triad default profiles missed D-020 migration
+**Work state:** IN PROGRESS — LOCAL VERIFICATION  
+**Reality:** OBSERVED ISSUE; CORE repair IMPLEMENTED / VERIFIED — 2026-09-12  
+**Evidence:** E-029
 
-A2 completed on 2026-09-12 without demonstrating a material runtime gap that must displace the planned roadmap. P4 is therefore the next planned phase. Candidate scope remains deterministic operational work that removes repeated mechanical/model effort: deployment/restart/activation choreography, diagnostics, health checks, manifests/provenance, profile consistency checks, rollover inspection, and deterministic extraction/validation/deduplication/normalization/statistics.
+The fresh live smoke Room used correct D-020 runtime routing/settlement mechanics but inherited an older built-in A/B/C profile generation that predates selective-invocation wording and D-020 C-integration guidance. The stale profile bytes were exact default-profile snapshots, not Room overrides.
 
-Before implementation, select only demonstrated high-value candidates; do not turn P4 into general tooling expansion.
+PR #4 added a separate `triad_profiles_v2` migration keyed only to the exact observed stale A/B/C SHA-256 values. It updates matching default rows and matching non-archived, unsealed, default-profile Room snapshots with no Room override; custom/default content that does not match those exact hashes, Room overrides, archived Rooms, and sealed predecessors remain untouched.
 
-Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
+PR-head and post-merge canonical-`main` GitHub Actions both passed **138 tests, 2 warnings**. The remaining check is empirical and local: after the human principal pulls and restarts Codex Room, create one fresh Room and export it to confirm that the actual persisted database now supplies the current A/B/C developer instructions. No additional repair is justified unless that check fails.
+
+After this check, restore P4 as Current Focus.
 
 ## Recently completed work
 
@@ -184,4 +188,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question currently blocks P4. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is a verified low-priority README drift issue. The broader A/B protected-institutional-layer question remains a future design concern unless the human principal explicitly promotes it.
+I-006 has one bounded local verification outstanding; no additional implementation is currently indicated. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is a verified low-priority README drift issue. The broader A/B protected-institutional-layer question remains a future design concern unless the human principal explicitly promotes it.

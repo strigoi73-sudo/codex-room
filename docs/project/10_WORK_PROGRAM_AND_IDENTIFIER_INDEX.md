@@ -47,6 +47,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-003` | B SDK-thread/profile continuity residue | Development Control |
 | `I-004` | README conflicts with settled architecture | Development Control / historical evidence after closure |
 | `I-005` | legacy `Agent Personalities.txt` dependency question | Development Control / historical evidence after closure |
+| `I-006` | Early-triad default profiles missed D-020 migration | Development Control |
 
 ## 4. Decision and evidence identifiers
 
