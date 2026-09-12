@@ -7,9 +7,9 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.3a — Generic bounded capability-result telemetry** is IMPLEMENTED / VERIFIED. Registered capabilities can now declare which result fields are safe for durable Room evidence; the adapter persists only those fields, preserves legacy `assert_file` telemetry, rejects malformed declarations, and explicitly truncates declared evidence above 64 KiB. PR #12 merged as `2b697de8597bc06cfe21044854869273fb0cceee`; canonical-main run `34721368173` passed **167 tests, 2 warnings**.
+- **What just changed?** **P4.3b — `find_files`** is IMPLEMENTED / VERIFIED. CORE now has a read-only, workspace-confined deterministic file-discovery primitive with glob/hidden/size filters, symlink exclusion, explicit traversal errors, bounded result count/bytes/scan work, deterministic ordering, and durable structured evidence. PR #13 merged as `56d08cd733fdc4598fc878b3778bce664e193aca`; canonical-main run `34721893200` passed **186 tests, 2 warnings**.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **What is next?** **P4.3b — `find_files`**: add the first new CORE primitive as a read-only, workspace-confined, bounded, deterministic file-discovery capability using the P4.2 registry and P4.3a durable-result path.
+- **What is next?** **P4.3c — `search_text`**: add a bounded literal-text search primitive that composes the existing file-discovery behavior, exposes useful transient excerpts to the agent, and durably records only safe structured search evidence.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -94,8 +94,8 @@ Select the smallest set of broadly useful deterministic primitives that should e
 Current sequence:
 
 - **P4.3a — Generic bounded capability-result telemetry: COMPLETE / IMPLEMENTED / VERIFIED.** Each capability may declare `durable_result_fields`; safe invocation telemetry persists only common identity/status fields plus those declared result fields. Invalid declarations are not promoted, arbitrary shell output remains excluded, legacy `assert_file` results remain compatible, and durable evidence above 64 KiB is replaced by explicit truncation metadata. PR #12 exact head `e35d835d54a7af72e4040d5ef86dc0dcaae918b8` passed **167 tests, 2 warnings**; squash merge `2b697de8597bc06cfe21044854869273fb0cceee` passed canonical-main run `34721368173` with **167 tests, 2 warnings**.
-- **P4.3b — `find_files`: IN PROGRESS.** First new CORE primitive.
-- **P4.3c — `search_text`: PLANNED.**
+- **P4.3b — `find_files`: COMPLETE / IMPLEMENTED / VERIFIED.** Registered CORE version `1`; read-only/workspace-confined; regular files only; symlinks never followed; traversal errors fail visibly; POSIX-style include/exclude globs with Windows backslash normalization; hidden files opt in; optional size bounds; 100 results by default / 200 maximum; 48 KiB match-evidence ceiling; 100,000-entry scan ceiling; explicit truncation reason; stable sorted depth-first ordering. PR #13 exact head `4f5c244437c99130362f3e86e9f618198acb18c9` and squash merge `56d08cd733fdc4598fc878b3778bce664e193aca` both passed **186 tests, 2 warnings**.
+- **P4.3c — `search_text`: IN PROGRESS.**
 - **P4.3d — `compare_files`: PLANNED.**
 - **P4.3e — bounded live evaluation of the four-capability CORE library: PLANNED.**
 
