@@ -693,4 +693,41 @@ This final Room independently proves agent recognition of a deterministic subpro
 
 Because PR #9 changed tests only, the original P4.2 registry/runtime implementation source bytes were introduced by PR #8; PR #10 later changed only the institutional selection guidance in `orchestrator.py` plus its regression test.
 
+### E-032 — P4.3 minimal CORE standard library
+**Date:** 2026-09-12  
+**Kind:** Current-source implementation + GitHub PR/CI + planned bounded live verification
+
+P4.3 is implementing the smallest broadly useful CORE deterministic standard library under D-022. The initial admitted sequence is substrate generalization, then `find_files`, `search_text`, `compare_files`, followed by bounded live evaluation before any further CORE promotion.
+
+#### P4.3a — Generic bounded capability-result telemetry
+
+Before adding capabilities whose useful results are not shaped like `assert_file`, current source review showed that `CodexAgentAdapter._safe_capability_activity()` durably whitelisted only the common capability envelope plus `subject`, `checks`, and `error`. A future capability could execute successfully yet lose its capability-specific structured evidence in Room telemetry.
+
+PR #12 added a generic bounded declaration path:
+
+- `CapabilitySpec` now declares `durable_result_fields`;
+- the declaration is included in the capability manifest and exact implementation SHA-256 calculation;
+- generic registered invocation results carry the declaration;
+- the adapter persists only the common identity/status envelope plus explicitly declared result fields;
+- results without a declaration retain the P4.1/P4.2 legacy `subject` / `checks` path;
+- malformed declarations are not promoted to deterministic-capability telemetry;
+- arbitrary shell stdout/stderr remains excluded;
+- declared durable evidence above **64 KiB** is replaced by explicit truncation metadata rather than persisted unbounded;
+- registry inspect telemetry includes the declaration.
+
+Exact PR #12 head:
+
+`e35d835d54a7af72e4040d5ef86dc0dcaae918b8`
+
+GitHub Actions PR run `34721307863`: **167 passed, 2 warnings**.
+
+PR #12 squash-merged as:
+
+`2b697de8597bc06cfe21044854869273fb0cceee` — `P4.3a: generalize bounded capability telemetry`
+
+Canonical-main GitHub Actions run `34721368173`: **167 passed, 2 warnings**.
+
+**P4.3a status:** IMPLEMENTED / VERIFIED.
+
+**Remaining P4.3 limit:** the broader CORE library is still incomplete. `find_files`, `search_text`, and `compare_files` remain to be implemented and the resulting four-capability library requires bounded live evaluation before P4.3 can close.
 
