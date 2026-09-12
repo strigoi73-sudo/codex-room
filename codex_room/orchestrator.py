@@ -99,6 +99,16 @@ class RoomRuntime:
         "where you left off, using the existing Room/thread context. Do not redo "
         "completed work solely because this is a continuation wake."
     )
+    DETERMINISTIC_CAPABILITY_INSTRUCTION = (
+        "<deterministic_capabilities>\n"
+        "For exact read-only file assertions inside this Room workspace, prefer "
+        "codex-room-cap assert-file RELATIVE_PATH [--exists] [--sha256 HEX] "
+        "[--json-valid] [--required-key KEY]. It returns one structured JSON result "
+        "and cannot read outside the Room workspace. You choose what should be "
+        "asserted and interpret the result; do not use this mechanical capability "
+        "as a substitute for judgment.\n"
+        "</deterministic_capabilities>"
+    )
 
     def __init__(self, db: Database, adapter: AgentAdapter, data_root: Path) -> None:
         self.db = db
@@ -2719,6 +2729,8 @@ Unread event count: {len(events)}
 {chr(10).join(context_parts)}
 
 {chr(10).join(event_parts)}
+
+{self.DETERMINISTIC_CAPABILITY_INSTRUCTION}
 
 Respond to this event according to your own judgment. Your final response must satisfy the Room's structured schema: outcome MESSAGE, PASS, or FINISH; message text; and invoke_targets. For MESSAGE, invoke_targets may be {available_peer_targets}, or ["all"] for every peer. The message remains public/readable to every authorized peer, but only invoke_targets become runnable. Use null to retain legacy all-peer invocation. For PASS or FINISH, set invoke_targets to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
 
