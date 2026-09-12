@@ -647,8 +647,28 @@ Post-merge canonical-`main` GitHub Actions run `34718498032`: pytest step passed
 
 The live evidence therefore supports **OBSERVED ISSUE → IMPLEMENTED / VERIFIED deterministic repair**, while live registry-first behavior still requires one rerun.
 
+A post-PR-#10 fresh live Room then changed its execution pattern: C alone created the probe file, executed **two** commands, FINISHed exactly `P4.2-DISCOVERY-OK`, and closed normally. Both command tool events were still exported only as generic `command_execution`. Because arbitrary command text is intentionally excluded from exports, this evidence does not prove what those commands were; it does establish that the P4.2 end-to-end telemetry stop condition still was not met and is consistent with capability commands arriving only in an outer Windows shell representation.
+
+Inspection of the exact pinned `openai-codex==0.147.0` SDK source confirmed all parsed `CommandAction` variants carry a `command` string, which the adapter already inspects. The remaining unhandled safe fallback was therefore a completed command item whose useful provenance is present only in the outer PowerShell command string.
+
+PR #11 preserved the existing direct capability executable restriction and added a narrow fallback: if direct parsing fails, Codex Room may unwrap a known `powershell` / `powershell.exe` / `pwsh` / `pwsh.exe` `-Command` or `-c` wrapper and then re-apply the same direct, non-chained capability parser to the entire inner script. Chained `;`, `|`, or `&&` forms remain unpromoted. Regression tests cover registry list, registered invoke, and forged/chained rejection with empty `command_actions`.
+
+Exact PR #11 head:
+
+`8304d0a46cab644cb5069a03730af1de057ff1ad`
+
+GitHub Actions run `34719562400`: **164 passed, 2 warnings**.
+
+PR #11 squash-merged as:
+
+`80654078567cbdc997c09586994f1d67a1cc784c` — `P4.2: recognize direct capability calls through PowerShell wrappers`
+
+The first canonical-main run `34719622155` failed only the pre-existing `tests/test_orchestrator.py::test_stop_before_lease_expiry_cancels_without_false_error_or_retry` timing test after 163 other tests passed; no P4.2 parser/provenance regression test failed. A rerun of the exact same merged commit passed **164 tests, 2 warnings**. This is recorded as a hosted test flake, not as evidence that the failed attempt itself was green.
+
+The PR #11 provenance repair is therefore **IMPLEMENTED / VERIFIED deterministically**. End-to-end live telemetry still needs one fresh Room rerun.
+
 Because PR #9 changed tests only, the original P4.2 registry/runtime implementation source bytes were introduced by PR #8; PR #10 later changed only the institutional selection guidance in `orchestrator.py` plus its regression test.
 
 **Status:** P4.2 CORE implementation IMPLEMENTED / VERIFIED deterministically.
 
-**Remaining limit:** rerun the same bounded live probe on the post-PR-#10 runtime. P4.2 becomes COMPLETE only if a live Room, without being given the capability name, recognizes the exact mechanical subproblem, records registry discovery, invokes the suitable registered capability, and produces the expected structured verification result. End-to-end discovery behavior remains **NEEDS VERIFICATION**.
+**Remaining limit:** rerun the same bounded live probe on the post-PR-#11 runtime. P4.2 becomes COMPLETE only if a live Room, without being given the capability name, recognizes the exact mechanical subproblem, records registry discovery, invokes the suitable registered capability, and produces the expected structured verification result. End-to-end discovery behavior remains **NEEDS VERIFICATION**.
