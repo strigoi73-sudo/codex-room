@@ -187,9 +187,13 @@ def find_files(
     scanned_entries = 0
     truncation_reason: str | None = None
 
+    def raise_walk_error(exc: OSError) -> None:
+        raise CapabilityUsageError(f"find_files could not scan workspace: {exc}") from exc
+
     for current_raw, dirs, files in os.walk(
         scan_root,
         topdown=True,
+        onerror=raise_walk_error,
         followlinks=False,
     ):
         current = Path(current_raw)
