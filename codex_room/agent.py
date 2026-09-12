@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shlex
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -771,18 +772,35 @@ class CodexAgentAdapter:
     @staticmethod
     def _parse_direct_capability_command(command: str) -> tuple[str, str | None] | None:
         normalized = str(command).strip()
+        direct = CodexAgentAdapter._parse_capability_script(normalized)
+        if direct is not None:
+            return direct
+
+        inner = CodexAgentAdapter._unwrap_powershell_command(normalized)
+        if inner is None:
+            return None
+        return CodexAgentAdapter._parse_capability_script(inner)
+
+    @staticmethod
+    def _parse_capability_script(command: str) -> tuple[str, str | None] | None:
+        normalized = str(command).strip()
         if any(separator in normalized for separator in ("&&", ";", "|")):
             return None
-        parts = normalized.split()
+        try:
+            parts = shlex.split(normalized, posix=False)
+        except ValueError:
+            return None
         if parts and parts[0] == "&":
             parts = parts[1:]
         if len(parts) < 2:
             return None
-        executable = parts[0].strip('"').strip("'").lower()
+
+        executable = parts[0].strip('"').strip("'").replace("\\", "/")
+        executable = executable.rsplit("/", 1)[-1].lower()
         if executable not in {"codex-room-cap", "codex-room-cap.cmd"}:
             return None
 
-        operation = parts[1].lower()
+        operation = parts[1].strip('"').strip("'").lower()
         if operation == "list":
             return ("list", None) if len(parts) == 2 else None
         if operation in {"inspect", "invoke"}:
@@ -792,3 +810,37 @@ class CodexAgentAdapter:
         if operation == "assert-file":
             return "invoke", "assert_file"
         return None
+
+    @staticmethod
+    def _unwrap_powershell_command(command: str) -> str | None:
+        try:
+            parts = shlex.split(str(command).strip(), posix=False)
+        except ValueError:
+            return None
+        if not parts:
+            return None
+
+        executable = parts[0].strip('"').strip("'").replace("\\", "/")
+        executable = executable.rsplit("/", 1)[-1].lower()
+        if executable not in {"powershell", "powershell.exe", "pwsh", "pwsh.exe"}:
+            return None
+
+        command_index = next(
+            (
+                index
+                for index, part in enumerate(parts[1:], start=1)
+                if part.strip('"').strip("'").lower() in {"-command", "-c"}
+            ),
+            None,
+        )
+        if command_index is None or command_index + 1 >= len(parts):
+            return None
+
+        inner = " ".join(parts[command_index + 1 :]).strip()
+        if (
+            len(inner) >= 2
+            and inner[0] == inner[-1]
+            and inner[0] in {"'", '"'}
+        ):
+            inner = inner[1:-1].strip()
+        return inner or None
