@@ -567,4 +567,23 @@ PR #7 squash-merged to canonical `main` as:
 
 Post-merge GitHub Actions run `34711878505`: **152 passed, 2 warnings**.
 
-**Remaining limit:** one final repeat of the same live Room smoke is required. P4.1 is complete only if the export independently records a `tool_activity` event with `type: deterministic_capability`, `capability: assert_file`, and `ok: true`. Until then, the end-to-end capability path remains **NEEDS VERIFICATION** and P4.1 remains IN PROGRESS.
+A third fresh live Room smoke on the PR #7 build closed the remaining verification gap.
+
+Observed export evidence:
+
+- Room `room_a28f1dc7eb2d450bb081f6cddc7bddb0`, Round `round_fef49b49d92f46bd8d8d1170db31400d`;
+- C was the designated starter and sole invoked/consuming participant; A/B had `context_consumed_at = null` and `last_outcome = null`;
+- the Round executed exactly **one** agent turn;
+- a completed `file_change` tool-activity event recorded creation work;
+- the next tool-activity event recorded:
+  - `type: deterministic_capability`;
+  - `status: completed`;
+  - `capability: assert_file`;
+  - `ok: true`;
+- the structured capability result recorded `p4_probe.json` with `exists: true`, `is_file: true`, and all four requested checks true: regular-file existence, JSON validity, required key `probe`, and required key `status`;
+- C FINISHed exactly `P4.1-CAPABILITY-OK`;
+- the Round closed normally with reason `mutual_finish`.
+
+This independently proves agent discovery/invocation, inherited launcher/wrapper execution, exact deterministic result capture, safe promotion into durable Room telemetry, and C-only settlement on the merged implementation.
+
+**Status:** P4.1 COMPLETE — IMPLEMENTED / VERIFIED end to end on 2026-09-12.

@@ -7,9 +7,9 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** A live post-D-020 smoke exercise verified C-first selective routing, direct A→C return, direct A→B routing with passive C readability, the mechanical `integration_required` wake, and final engaged-participant settlement. The exercise also exposed two operational/profile issues: a desktop-app Codex binary override was incompatible with the pinned Python SDK path, and the local database still held an exact older early-triad A/B/C built-in profile generation. The launcher now defaults to the SDK-pinned runtime, and PR #4 added a conservative exact-hash migration for the observed stale A/B/C profiles.
-- **What is blocked?** Nothing currently blocks the next planned development phase.
-- **What is next?** **P4 — Deterministic Room and agent capabilities** is again the next planned phase unless the human principal reprioritizes.
+- **What just changed?** **P4.1 — Deterministic assertions** completed end-to-end live verification. A fresh C-only Room created `p4_probe.json`, invoked the Room-owned `assert_file` capability, exported durable `deterministic_capability` telemetry with `capability: assert_file` and `ok: true`, and closed normally after one C turn. The two earlier live attempts usefully exposed and repaired SDK activity-type normalization and Windows shell-wrapper provenance recognition.
+- **What is blocked?** Nothing currently blocks continued P4 work.
+- **What is next?** Select the next bounded P4 capability slice from demonstrated product needs; no successor slice is yet committed.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -22,17 +22,24 @@ P4 is product/runtime work: hard-wire deterministic capabilities that Codex Room
 Admission rule: given the same explicit inputs and underlying state, a correct deterministic capability should return substantially the same factual result without requiring judgment. Agents remain responsible for choosing what to test and interpreting significance.
 
 #### P4.1 — Deterministic assertions
-**Work state:** IN PROGRESS — LIVE VERIFICATION  
-**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-12  
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-12  
 **Evidence:** E-030
 
-The first vertical slice is now merged: a read-only, Room-workspace-confined `assert_file` capability for exact existence, SHA-256, JSON-validity, and required-key assertions. The capability returns typed JSON; recognized direct capability results are eligible for durable Room telemetry, while arbitrary command output remains hidden. The current implementation path uses the agent's existing command tool rather than the provider's experimental dynamic-tool API.
+The first deterministic-capability vertical slice is complete. Codex Room now provides a read-only, Room-workspace-confined `assert_file` capability for exact regular-file existence, SHA-256, JSON-validity, and required-key assertions. It returns typed JSON; recognized direct capability results are persisted as `deterministic_capability` telemetry while arbitrary command output remains hidden. The current transport uses the agent's existing command tool rather than the provider's experimental dynamic-tool API.
 
-PR #5 and the post-merge canonical-`main` run both passed **149 tests, 2 warnings**. The first bounded live Room attempt reached a one-turn C-only `P4.1-CAPABILITY-OK` finish but exported no `tool_activity` / `deterministic_capability` event. Exact inspection of pinned `openai-codex==0.147.0` showed the adapter was filtering snake_case activity names while the SDK's completed ThreadItems use camelCase types such as `commandExecution` and `fileChange`. PR #6 repaired that translation boundary; its PR-head and post-merge canonical-`main` runs both passed **150 tests, 2 warnings**.
+Deterministic verification progressed through PRs #5–#7. The final code-bearing canonical-`main` run passed **152 tests, 2 warnings**. Three bounded live attempts then established the full path: the first exposed dropped SDK tool activity because pinned Codex emits camelCase ThreadItem types; the second verified activity normalization but exposed Windows shell-wrapper provenance handling; the third exported the exact structured capability result.
 
-A second live Room attempt on the camelCase-normalization repair restored real tool telemetry: the export preserved C's `file_change` and `command_execution` events and again closed C-only with `P4.1-CAPABILITY-OK`. The command still was not promoted to `deterministic_capability`. Pinned Codex parsing shows Windows shell presentation wraps the outer command while `command_actions` exposes the inner PowerShell script. PR #7 now authenticates the capability against that parsed inner command while continuing to reject chained/forged invocations; its PR-head and post-merge canonical-`main` runs both passed **152 tests, 2 warnings**.
+Final live export evidence:
 
-Remaining work is one final repeat of the same bounded live Room check. P4.1 closes only when the export independently shows `type: deterministic_capability`, `capability: assert_file`, and `ok: true`; do not expand the capability set before then.
+- C was the sole invoked/consuming participant; A/B remained unengaged;
+- C created `p4_probe.json`;
+- Room telemetry recorded `type: deterministic_capability`, `capability: assert_file`, `status: completed`, and `ok: true`;
+- the structured result independently recorded regular-file existence, valid JSON, and presence of both required keys (`probe`, `status`) as true;
+- C FINISHed exactly `P4.1-CAPABILITY-OK`;
+- the Round closed normally after exactly one agent turn.
+
+P4.1 is closed. Do not broaden this slice merely because the substrate now exists; select the next capability only from demonstrated product value.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
@@ -152,7 +159,7 @@ GitHub Actions runs the canonical Python suite on pushes to `main` and pull requ
 ### P4 — Deterministic Room and agent capabilities
 **Work state:** IN PROGRESS
 
-Start with P4.1 deterministic assertions. Later candidates include deterministic extraction/filtering/grouping/deduplication/normalization/statistics, exact artifact inspection, structured work/evidence state, and Room-native introspection. Do not treat repository/CI/deployment automation as P4 product scope unless it becomes a normal Room/agent capability.
+P4.1 deterministic assertions is complete. The next bounded P4 slice has not yet been selected. Candidate families remain deterministic extraction/filtering/grouping/deduplication/normalization/statistics, exact artifact inspection, structured work/evidence state, and Room-native introspection. Do not treat repository/CI/deployment automation as P4 product scope unless it becomes a normal Room/agent capability.
 
 ## Approved planned development
 
