@@ -72,15 +72,19 @@ def test_markdown_export_keeps_two_agent_snapshots_two_agent() -> None:
     assert "Agent C thread" not in markdown
 
 
-def test_static_ui_exposes_explicit_addition_and_dynamic_membership_hooks() -> None:
+def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     html = (ROOT / "codex_room" / "static" / "index.html").read_text(encoding="utf-8")
     javascript = (ROOT / "codex_room" / "static" / "app.js").read_text(encoding="utf-8")
-    assert 'name="include_agent_c"' in html
+    assert 'name="include_agent_c"' not in html
+    assert "Agent C · The Integrator" in html
+    assert "Permanent participant · fixed profile" in html
     assert 'id="add-agent-c"' in html
+    assert "Upgrade legacy Room to triad" in html
     assert 'id="agent-strip"' in html
     assert '<option value="all">All agents</option>' in html
     assert 'roomAction("agents", { agent_key: "agent_c" })' in javascript
     assert 'new Option("All participants independently", "either")' in javascript
+    assert 'hasC ? "agent_c"' in javascript
     assert "without running any agent" in html
     assert "without running either agent" not in html
     assert "renderAgentStrip(room.agents || [])" in javascript
@@ -91,7 +95,7 @@ def test_static_ui_exposes_explicit_addition_and_dynamic_membership_hooks() -> N
     assert 'setAttribute("aria-label", `${execution.text}. ${execution.title}`)' in javascript
 
 
-def test_http_join_snapshot_and_ui_contract_integrate_without_activation(tmp_path: Path) -> None:
+def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Path) -> None:
     adapter = FakeAgentAdapter()
     app = create_app(
         database_path=tmp_path / "ui-integration.db",
@@ -104,25 +108,22 @@ def test_http_join_snapshot_and_ui_contract_integrate_without_activation(tmp_pat
 
         created = client.post(
             "/api/rooms",
-            json={"title": "Expandable", "topic": "Old topic", "auto_start": False},
+            json={"title": "Triad", "topic": "New objective", "auto_start": False},
         ).json()
-        original_ids = {agent["agent_key"]: agent["thread_id"] for agent in created["agents"]}
-        assert set(original_ids) == {"agent_a", "agent_b"}
+        ids = {agent["agent_key"]: agent["thread_id"] for agent in created["agents"]}
+        assert set(ids) == {"agent_a", "agent_b", "agent_c"}
+        assert len(set(ids.values())) == 3
+        assert created["active_round"]["starting_agent"] == "agent_c"
+        assert adapter.calls["agent_c"] == []
 
-        joined_response = client.post(
+        duplicate_c = client.post(
             f"/api/rooms/{created['id']}/agents", json={"agent_key": "agent_c"}
         )
-        assert joined_response.status_code == 201
-        joined = joined_response.json()
-        joined_ids = {agent["agent_key"]: agent["thread_id"] for agent in joined["agents"]}
-        assert joined_ids["agent_a"] == original_ids["agent_a"]
-        assert joined_ids["agent_b"] == original_ids["agent_b"]
-        assert joined_ids["agent_c"] not in set(original_ids.values())
-        assert adapter.calls["agent_c"] == []
+        assert duplicate_c.status_code == 400
 
         markdown = client.get(
             f"/api/rooms/{created['id']}/export?format=markdown"
         ).text
-        assert f"- Agent C thread: `{joined_ids['agent_c']}`" in markdown
+        assert f"- Agent C thread: `{ids['agent_c']}`" in markdown
         assert client.get("/").status_code == 200
         assert client.get("/app.js").status_code == 200
