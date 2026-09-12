@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import codex_room.capabilities as capabilities
 from codex_room.capabilities import (
     CapabilityUsageError,
     assert_file,
@@ -192,6 +193,24 @@ def test_find_files_reports_explicit_result_truncation(tmp_path: Path) -> None:
     assert result["evidence"]["returned_count"] == 2
     assert result["evidence"]["truncated"] is True
     assert result["evidence"]["truncation_reason"] == "max_results"
+
+
+def test_find_files_reports_explicit_scan_limit_truncation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    for name in ("a.txt", "b.txt", "c.txt"):
+        (tmp_path / name).write_text(name, encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_FIND_FILES_SCANNED_ENTRIES", 2)
+
+    result = find_files(tmp_path, include_globs=["*.txt"], max_results=10)
+
+    assert [item["path"] for item in result["evidence"]["matches"]] == [
+        "a.txt",
+        "b.txt",
+    ]
+    assert result["evidence"]["scanned_entries"] == 2
+    assert result["evidence"]["truncated"] is True
+    assert result["evidence"]["truncation_reason"] == "scan_limit"
 
 
 @pytest.mark.parametrize("path", ["../outside", "/tmp/outside"])
