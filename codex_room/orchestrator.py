@@ -893,7 +893,7 @@ class RoomRuntime:
     async def new_topic(self, room_id: str, request: NewTopicRequest) -> dict[str, Any]:
         prepared = await self.prepare_round(
             room_id,
-            PrepareRoundRequest(title="New topic", prompt=request.topic, starting_agent="either"),
+            PrepareRoundRequest(title="New topic", prompt=request.topic),
         )
         round_id = prepared["active_round_id"]
         return await self.start_round(room_id, round_id)
@@ -2002,8 +2002,8 @@ class RoomRuntime:
                         "mutual_finish" if all_finished else (
                             "reactions_settled" if causal else "finish_and_pass"
                         ),
-                        "Discussion closed after every participant independently or causally "
-                        "settled with FINISH or PASS.",
+                        "Discussion closed after every engaged participant independently or "
+                        "causally settled with FINISH or PASS.",
                     )
             elif decision.outcome == Outcome.FINISH:
                 blockers = sorted(set(open_keys) | set(pending_keys))
