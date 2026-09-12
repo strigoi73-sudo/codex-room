@@ -15,6 +15,7 @@ from codex_room.capabilities import (
     invoke_capability,
     list_capabilities,
     main,
+    search_text,
 )
 
 
@@ -104,6 +105,7 @@ def test_registry_exposes_assert_file_as_versioned_core_capability() -> None:
     assert [item["id"] for item in registry["capabilities"]] == [
         "assert_file",
         "find_files",
+        "search_text",
     ]
     manifest = registry["capabilities"][0]
     assert manifest["id"] == "assert_file"
@@ -319,6 +321,225 @@ def test_registered_find_files_rejects_invalid_inputs(
 ) -> None:
     with pytest.raises(CapabilityUsageError, match=match):
         invoke_capability(tmp_path, "find_files", inputs)
+
+
+def test_search_text_returns_literal_matches_and_private_runtime_excerpts(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "root.txt").write_text(
+        "Needle one\nneedle two\nx.needlex\n",
+        encoding="utf-8",
+    )
+    (tmp_path / ".hidden.txt").write_text("needle hidden", encoding="utf-8")
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "ignored.txt").write_text("needle ignored", encoding="utf-8")
+
+    result = search_text(
+        tmp_path,
+        "needle",
+        include_globs=["**/*.txt"],
+        exclude_globs=["docs/**"],
+        case_sensitive=False,
+    )
+
+    assert result["ok"] is True
+    assert result["evidence"]["query_sha256"] == hashlib.sha256(b"needle").hexdigest()
+    assert result["evidence"]["query_length"] == 6
+    assert result["evidence"]["case_sensitive"] is False
+    assert result["evidence"]["truncated"] is False
+    assert result["evidence"]["locations"] == [
+        {"path": "root.txt", "line": 1, "column": 1},
+        {"path": "root.txt", "line": 2, "column": 1},
+        {"path": "root.txt", "line": 3, "column": 3},
+    ]
+    assert [match["excerpt"] for match in result["matches"]] == [
+        "Needle one",
+        "needle two",
+        "x.needlex",
+    ]
+    assert all("excerpt" not in item for item in result["evidence"]["locations"])
+    assert "query" not in result["evidence"]
+
+
+def test_search_text_treats_query_as_literal_not_regex(tmp_path: Path) -> None:
+    (tmp_path / "data.txt").write_text("a.b\naxb\n", encoding="utf-8")
+
+    result = search_text(tmp_path, ".", include_globs=["*.txt"])
+
+    assert result["evidence"]["locations"] == [
+        {"path": "data.txt", "line": 1, "column": 2}
+    ]
+
+
+def test_search_text_case_sensitive_by_default(tmp_path: Path) -> None:
+    (tmp_path / "data.txt").write_text("Needle\nneedle\n", encoding="utf-8")
+
+    result = search_text(tmp_path, "needle", include_globs=["*.txt"])
+
+    assert result["evidence"]["locations"] == [
+        {"path": "data.txt", "line": 2, "column": 1}
+    ]
+
+
+def test_search_text_skips_non_utf8_and_nul_files(tmp_path: Path) -> None:
+    (tmp_path / "good.txt").write_text("needle", encoding="utf-8")
+    (tmp_path / "bad.txt").write_bytes(b"\xffneedle")
+    (tmp_path / "nul.txt").write_bytes(b"needle\x00rest")
+
+    result = search_text(tmp_path, "needle", include_globs=["*.txt"])
+
+    assert [item["path"] for item in result["evidence"]["locations"]] == ["good.txt"]
+    assert result["evidence"]["files_searched"] == 1
+    assert result["evidence"]["skipped_non_text"] == 2
+    assert result["evidence"]["bytes_read"] == (
+        len(b"\xffneedle") + len(b"needle") + len(b"needle\x00rest")
+    )
+
+
+def test_search_text_reports_candidate_truncation(tmp_path: Path) -> None:
+    (tmp_path / "a.txt").write_text("hit", encoding="utf-8")
+    (tmp_path / "b.txt").write_text("hit", encoding="utf-8")
+
+    result = search_text(
+        tmp_path,
+        "hit",
+        include_globs=["*.txt"],
+        max_files=1,
+    )
+
+    assert result["evidence"]["candidate_truncated"] is True
+    assert result["evidence"]["candidate_truncation_reason"] == "max_results"
+    assert result["evidence"]["truncated"] is True
+    assert result["evidence"]["truncation_reason"] == "candidate_max_results"
+    assert result["evidence"]["locations"] == [
+        {"path": "a.txt", "line": 1, "column": 1}
+    ]
+
+
+def test_search_text_reports_match_limit_truncation(tmp_path: Path) -> None:
+    (tmp_path / "data.txt").write_text("x x x", encoding="utf-8")
+
+    result = search_text(
+        tmp_path,
+        "x",
+        include_globs=["*.txt"],
+        max_matches=2,
+    )
+
+    assert result["evidence"]["match_count"] == 2
+    assert result["evidence"]["truncated"] is True
+    assert result["evidence"]["truncation_reason"] == "max_matches"
+
+
+def test_search_text_reports_result_byte_truncation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "data.txt").write_text("needle", encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_SEARCH_TEXT_MATCH_BYTES", 1)
+
+    result = search_text(tmp_path, "needle", include_globs=["*.txt"])
+
+    assert result["evidence"]["match_count"] == 0
+    assert result["evidence"]["truncated"] is True
+    assert result["evidence"]["truncation_reason"] == "result_bytes"
+
+
+def test_search_text_reports_durable_location_byte_truncation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "data.txt").write_text("needle", encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_SEARCH_TEXT_LOCATION_BYTES", 1)
+
+    result = search_text(tmp_path, "needle", include_globs=["*.txt"])
+
+    assert result["evidence"]["match_count"] == 0
+    assert result["evidence"]["truncated"] is True
+    assert result["evidence"]["truncation_reason"] == "durable_bytes"
+
+
+def test_search_text_reports_total_byte_truncation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "a.txt").write_text("aaaa", encoding="utf-8")
+    (tmp_path / "b.txt").write_text("bbbb", encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_SEARCH_TEXT_TOTAL_BYTES", 5)
+
+    result = search_text(tmp_path, "z", include_globs=["*.txt"])
+
+    assert result["evidence"]["bytes_read"] == 4
+    assert result["evidence"]["files_searched"] == 1
+    assert result["evidence"]["truncated"] is True
+    assert result["evidence"]["truncation_reason"] == "total_bytes"
+
+
+@pytest.mark.parametrize("path", ["../outside", "/tmp/outside"])
+def test_search_text_rejects_workspace_escape(tmp_path: Path, path: str) -> None:
+    with pytest.raises(CapabilityUsageError, match="Room workspace"):
+        search_text(tmp_path, "needle", path)
+
+
+def test_registered_search_text_exposes_safe_durable_contract(tmp_path: Path) -> None:
+    (tmp_path / "probe.txt").write_text("prefix needle suffix", encoding="utf-8")
+
+    inspected = inspect_capability("search_text")["capability"]
+    invoked = invoke_capability(
+        tmp_path,
+        "search_text",
+        {
+            "query": "needle",
+            "include_globs": ["*.txt"],
+        },
+    )
+
+    assert inspected["origin"] == "core"
+    assert inspected["scope"] == "core"
+    assert inspected["version"] == "1"
+    assert inspected["durable_result_fields"] == ["evidence"]
+    assert inspected["permissions"] == {
+        "workspace_read": True,
+        "workspace_write": False,
+        "network": False,
+        "external_process": False,
+    }
+    assert inspected["verification"] == {"status": "verified", "evidence": ["E-032"]}
+    assert invoked["capability_version"] == inspected["version"]
+    assert invoked["implementation_sha256"] == inspected["implementation_sha256"]
+    assert invoked["durable_result_fields"] == ["evidence"]
+    assert invoked["matches"][0]["excerpt"] == "prefix needle suffix"
+    assert invoked["evidence"]["locations"] == [
+        {"path": "probe.txt", "line": 1, "column": 8}
+    ]
+    assert "query" not in invoked["evidence"]
+
+
+@pytest.mark.parametrize(
+    ("inputs", "match"),
+    [
+        ({"query": "x", "invented": True}, "unknown search_text input field"),
+        ({}, "query"),
+        ({"query": ""}, "query"),
+        ({"query": "a\nb"}, "single-line"),
+        ({"query": "x", "include_globs": "*.txt"}, "include_globs"),
+        ({"query": "x", "exclude_globs": ["../*.txt"]}, "workspace-relative glob"),
+        ({"query": "x", "include_hidden": 1}, "include_hidden"),
+        ({"query": "x", "case_sensitive": 1}, "case_sensitive"),
+        ({"query": "x", "max_files": 0}, "max_files"),
+        ({"query": "x", "max_files": 201}, "max_files"),
+        ({"query": "x", "max_matches": 0}, "max_matches"),
+        ({"query": "x", "max_matches": 101}, "max_matches"),
+        ({"query": "x", "max_file_bytes": 0}, "max_file_bytes"),
+        (
+            {"query": "x", "max_file_bytes": 10 * 1024 * 1024 + 1},
+            "max_file_bytes",
+        ),
+    ],
+)
+def test_registered_search_text_rejects_invalid_inputs(
+    tmp_path: Path, inputs: dict[str, object], match: str
+) -> None:
+    with pytest.raises(CapabilityUsageError, match=match):
+        invoke_capability(tmp_path, "search_text", inputs)
 
 
 def test_inspect_and_invoke_share_exact_registered_version(tmp_path: Path) -> None:
