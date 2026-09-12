@@ -633,6 +633,7 @@ class CodexAgentAdapter:
                     getattr(item, "command", ""),
                     getattr(item, "aggregated_output", ""),
                     status_value,
+                    getattr(item, "command_actions", []),
                 )
                 if capability is not None:
                     activities.append(capability)
@@ -642,21 +643,28 @@ class CodexAgentAdapter:
 
     @staticmethod
     def _safe_capability_activity(
-        command: str, aggregated_output: str, status: str
+        command: str,
+        aggregated_output: str,
+        status: str,
+        command_actions: list[Any] | None = None,
     ) -> dict[str, Any] | None:
         """Persist structured capability evidence without arbitrary shell output."""
-        normalized = str(command).strip()
-        if any(separator in normalized for separator in ("&&", ";", "|")):
-            return None
-        parts = normalized.split()
-        if parts and parts[0] == "&":
-            parts = parts[1:]
-        if len(parts) < 2:
-            return None
-        executable = parts[0].strip('"').lower()
-        if executable not in {"codex-room-cap", "codex-room-cap.cmd"}:
-            return None
-        if parts[1].lower() != "assert-file":
+        candidates = [str(command)]
+        for wrapped in command_actions or []:
+            action = getattr(wrapped, "root", wrapped)
+            action_command = getattr(action, "command", None)
+            if isinstance(action_command, str):
+                candidates.append(action_command)
+
+        direct_invocation = next(
+            (
+                candidate
+                for candidate in candidates
+                if CodexAgentAdapter._is_direct_capability_invocation(candidate)
+            ),
+            None,
+        )
+        if direct_invocation is None:
             return None
         lines = [line.strip() for line in str(aggregated_output).splitlines() if line.strip()]
         if not lines:
@@ -683,3 +691,18 @@ class CodexAgentAdapter:
             "ok": bool(payload.get("ok")),
             "result": safe_payload,
         }
+
+    @staticmethod
+    def _is_direct_capability_invocation(command: str) -> bool:
+        normalized = str(command).strip()
+        if any(separator in normalized for separator in ("&&", ";", "|")):
+            return False
+        parts = normalized.split()
+        if parts and parts[0] == "&":
+            parts = parts[1:]
+        if len(parts) < 2:
+            return False
+        executable = parts[0].strip('"').strip("'").lower()
+        if executable not in {"codex-room-cap", "codex-room-cap.cmd"}:
+            return False
+        return parts[1].lower() == "assert-file"
