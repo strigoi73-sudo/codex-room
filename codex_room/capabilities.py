@@ -29,6 +29,7 @@ class CapabilitySpec:
     version: str
     input_schema: dict[str, Any]
     output_schema: dict[str, Any]
+    durable_result_fields: tuple[str, ...]
     permissions: dict[str, bool]
     side_effects: str
     verification: dict[str, Any]
@@ -38,6 +39,13 @@ class CapabilitySpec:
     def implementation_sha256(self) -> str:
         digest = hashlib.sha256()
         digest.update(f"{self.capability_id}\n{self.version}\n".encode("utf-8"))
+        digest.update(
+            json.dumps(
+                self.durable_result_fields,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+        digest.update(b"\n")
         for component in self.implementation_components:
             if callable(component):
                 text = inspect.getsource(component)
@@ -63,6 +71,7 @@ class CapabilitySpec:
             **self.summary(),
             "input_schema": self.input_schema,
             "output_schema": self.output_schema,
+            "durable_result_fields": list(self.durable_result_fields),
             "permissions": self.permissions,
             "side_effects": self.side_effects,
             "verification": self.verification,
@@ -260,6 +269,10 @@ ASSERT_FILE_OUTPUT_SCHEMA: dict[str, Any] = {
         "checks": {"type": "array"},
         "capability_version": {"type": "string"},
         "implementation_sha256": {"type": "string"},
+        "durable_result_fields": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
     },
 }
 
@@ -276,6 +289,7 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
         version="1",
         input_schema=ASSERT_FILE_INPUT_SCHEMA,
         output_schema=ASSERT_FILE_OUTPUT_SCHEMA,
+        durable_result_fields=("subject", "checks"),
         permissions={
             "workspace_read": True,
             "workspace_write": False,
@@ -328,6 +342,7 @@ def invoke_capability(
     result = spec.handler(root, inputs)
     result["capability_version"] = spec.version
     result["implementation_sha256"] = spec.implementation_sha256()
+    result["durable_result_fields"] = list(spec.durable_result_fields)
     return result
 
 
