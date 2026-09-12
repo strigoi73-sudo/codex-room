@@ -4,15 +4,21 @@ import argparse
 import hashlib
 import inspect
 import json
+import os
 import re
+import stat
 import sys
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
 CAPABILITY_MARKER = 1
 REGISTRY_MARKER = 1
 MAX_JSON_BYTES = 50 * 1024 * 1024
+MAX_FIND_FILES_RESULTS = 200
+DEFAULT_FIND_FILES_RESULTS = 100
+MAX_FIND_FILES_SCANNED_ENTRIES = 100_000
+MAX_FIND_FILES_MATCH_BYTES = 48 * 1024
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
@@ -107,6 +113,261 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _normalize_glob_patterns(raw_patterns: list[str], field_name: str) -> list[str]:
+    normalized: list[str] = []
+    for raw in raw_patterns:
+        pattern = raw.replace("\\", "/")
+        while pattern.startswith("./"):
+            pattern = pattern[2:]
+        if (
+            not pattern
+            or pattern.startswith("/")
+            or any(part == ".." for part in pattern.split("/"))
+        ):
+            raise CapabilityUsageError(
+                f"find_files input '{field_name}' must contain non-empty "
+                "workspace-relative glob patterns"
+            )
+        normalized.append(pattern)
+    return normalized
+
+
+def _glob_variants(pattern: str) -> tuple[str, ...]:
+    variants = {pattern}
+    pending = [pattern]
+    while pending:
+        current = pending.pop()
+        search_from = 0
+        while True:
+            index = current.find("**/", search_from)
+            if index < 0:
+                break
+            without_zero_depth = current[:index] + current[index + 3 :]
+            if without_zero_depth not in variants:
+                variants.add(without_zero_depth)
+                pending.append(without_zero_depth)
+            search_from = index + 1
+    return tuple(sorted(variants))
+
+
+def _matches_globs(relative_path: str, patterns: list[str]) -> bool:
+    path = PurePosixPath(relative_path)
+    return any(
+        path.match(variant)
+        for pattern in patterns
+        for variant in _glob_variants(pattern)
+    )
+
+
+def _is_hidden_relative(relative_path: str) -> bool:
+    return any(part.startswith(".") for part in PurePosixPath(relative_path).parts)
+
+
+def find_files(
+    root: Path,
+    raw_path: str = ".",
+    *,
+    include_globs: list[str] | None = None,
+    exclude_globs: list[str] | None = None,
+    include_hidden: bool = False,
+    min_size_bytes: int | None = None,
+    max_size_bytes: int | None = None,
+    max_results: int = DEFAULT_FIND_FILES_RESULTS,
+) -> dict[str, Any]:
+    include_globs = list(include_globs or [])
+    exclude_globs = list(exclude_globs or [])
+    scan_root, relative_root = _workspace_path(root, raw_path)
+    if not scan_root.exists() or not scan_root.is_dir():
+        raise CapabilityUsageError("find_files path must be an existing directory")
+
+    workspace_root = root.resolve()
+    matches: list[dict[str, Any]] = []
+    scanned_entries = 0
+    truncation_reason: str | None = None
+
+    def raise_walk_error(exc: OSError) -> None:
+        raise CapabilityUsageError(f"find_files could not scan workspace: {exc}") from exc
+
+    for current_raw, dirs, files in os.walk(
+        scan_root,
+        topdown=True,
+        onerror=raise_walk_error,
+        followlinks=False,
+    ):
+        current = Path(current_raw)
+        dirs.sort()
+        files.sort()
+
+        kept_dirs: list[str] = []
+        for dirname in dirs:
+            if scanned_entries >= MAX_FIND_FILES_SCANNED_ENTRIES:
+                truncation_reason = "scan_limit"
+                break
+            scanned_entries += 1
+            candidate = current / dirname
+            relative_to_scan = candidate.relative_to(scan_root).as_posix()
+            if candidate.is_symlink():
+                continue
+            if not include_hidden and _is_hidden_relative(relative_to_scan):
+                continue
+            if exclude_globs and _matches_globs(relative_to_scan, exclude_globs):
+                continue
+            kept_dirs.append(dirname)
+        if truncation_reason is not None:
+            dirs[:] = []
+            break
+        dirs[:] = kept_dirs
+
+        for filename in files:
+            if scanned_entries >= MAX_FIND_FILES_SCANNED_ENTRIES:
+                truncation_reason = "scan_limit"
+                break
+            scanned_entries += 1
+            candidate = current / filename
+            relative_to_scan = candidate.relative_to(scan_root).as_posix()
+            try:
+                metadata = candidate.lstat()
+            except OSError as exc:
+                raise CapabilityUsageError(
+                    f"find_files could not inspect '{relative_to_scan}': {exc}"
+                ) from exc
+            if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+                continue
+            if not include_hidden and _is_hidden_relative(relative_to_scan):
+                continue
+            if include_globs and not _matches_globs(relative_to_scan, include_globs):
+                continue
+            if exclude_globs and _matches_globs(relative_to_scan, exclude_globs):
+                continue
+            if min_size_bytes is not None and metadata.st_size < min_size_bytes:
+                continue
+            if max_size_bytes is not None and metadata.st_size > max_size_bytes:
+                continue
+            if len(matches) >= max_results:
+                truncation_reason = "max_results"
+                break
+            match = {
+                "path": candidate.relative_to(workspace_root).as_posix(),
+                "size_bytes": metadata.st_size,
+            }
+            prospective_match_bytes = len(
+                json.dumps(
+                    [*matches, match],
+                    ensure_ascii=True,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            )
+            if prospective_match_bytes > MAX_FIND_FILES_MATCH_BYTES:
+                truncation_reason = "result_bytes"
+                break
+            matches.append(match)
+        if truncation_reason is not None:
+            break
+
+    return {
+        "codex_room_capability": CAPABILITY_MARKER,
+        "capability": "find_files",
+        "ok": True,
+        "evidence": {
+            "path": relative_root,
+            "matches": matches,
+            "returned_count": len(matches),
+            "scanned_entries": scanned_entries,
+            "scan_limit_entries": MAX_FIND_FILES_SCANNED_ENTRIES,
+            "match_byte_limit": MAX_FIND_FILES_MATCH_BYTES,
+            "truncated": truncation_reason is not None,
+            "truncation_reason": truncation_reason,
+            "ordering": "sorted_depth_first",
+            "symlinks_followed": False,
+        },
+    }
+
+
+def _invoke_find_files(root: Path, inputs: dict[str, Any]) -> dict[str, Any]:
+    allowed = {
+        "path",
+        "include_globs",
+        "exclude_globs",
+        "include_hidden",
+        "min_size_bytes",
+        "max_size_bytes",
+        "max_results",
+    }
+    unknown = sorted(set(inputs) - allowed)
+    if unknown:
+        raise CapabilityUsageError(
+            "unknown find_files input field(s): " + ", ".join(unknown)
+        )
+
+    raw_path = inputs.get("path", ".")
+    include_globs = inputs.get("include_globs", [])
+    exclude_globs = inputs.get("exclude_globs", [])
+    include_hidden = inputs.get("include_hidden", False)
+    min_size_bytes = inputs.get("min_size_bytes")
+    max_size_bytes = inputs.get("max_size_bytes")
+    max_results = inputs.get("max_results", DEFAULT_FIND_FILES_RESULTS)
+
+    if not isinstance(raw_path, str) or not raw_path:
+        raise CapabilityUsageError("find_files input 'path' must be a non-empty string")
+    if not isinstance(include_globs, list) or any(
+        not isinstance(pattern, str) for pattern in include_globs
+    ):
+        raise CapabilityUsageError(
+            "find_files input 'include_globs' must be a list of strings"
+        )
+    if not isinstance(exclude_globs, list) or any(
+        not isinstance(pattern, str) for pattern in exclude_globs
+    ):
+        raise CapabilityUsageError(
+            "find_files input 'exclude_globs' must be a list of strings"
+        )
+    if not isinstance(include_hidden, bool):
+        raise CapabilityUsageError(
+            "find_files input 'include_hidden' must be true or false"
+        )
+    for field_name, value in (
+        ("min_size_bytes", min_size_bytes),
+        ("max_size_bytes", max_size_bytes),
+    ):
+        if value is not None and (
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+        ):
+            raise CapabilityUsageError(
+                f"find_files input '{field_name}' must be a non-negative integer or null"
+            )
+    if (
+        min_size_bytes is not None
+        and max_size_bytes is not None
+        and min_size_bytes > max_size_bytes
+    ):
+        raise CapabilityUsageError(
+            "find_files input 'min_size_bytes' must not exceed 'max_size_bytes'"
+        )
+    if (
+        not isinstance(max_results, int)
+        or isinstance(max_results, bool)
+        or not 1 <= max_results <= MAX_FIND_FILES_RESULTS
+    ):
+        raise CapabilityUsageError(
+            f"find_files input 'max_results' must be an integer from 1 "
+            f"to {MAX_FIND_FILES_RESULTS}"
+        )
+
+    normalized_include = _normalize_glob_patterns(include_globs, "include_globs")
+    normalized_exclude = _normalize_glob_patterns(exclude_globs, "exclude_globs")
+    return find_files(
+        root,
+        raw_path,
+        include_globs=normalized_include,
+        exclude_globs=normalized_exclude,
+        include_hidden=include_hidden,
+        min_size_bytes=min_size_bytes,
+        max_size_bytes=max_size_bytes,
+        max_results=max_results,
+    )
 
 
 def assert_file(
@@ -276,6 +537,54 @@ ASSERT_FILE_OUTPUT_SCHEMA: dict[str, Any] = {
     },
 }
 
+FIND_FILES_INPUT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "path": {
+            "type": "string",
+            "default": ".",
+            "description": "Room-workspace-relative directory to scan.",
+        },
+        "include_globs": {
+            "type": "array",
+            "items": {"type": "string"},
+            "default": [],
+        },
+        "exclude_globs": {
+            "type": "array",
+            "items": {"type": "string"},
+            "default": [],
+        },
+        "include_hidden": {"type": "boolean", "default": False},
+        "min_size_bytes": {"type": ["integer", "null"], "minimum": 0},
+        "max_size_bytes": {"type": ["integer", "null"], "minimum": 0},
+        "max_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": MAX_FIND_FILES_RESULTS,
+            "default": DEFAULT_FIND_FILES_RESULTS,
+        },
+    },
+}
+
+FIND_FILES_OUTPUT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["codex_room_capability", "capability", "ok", "evidence"],
+    "properties": {
+        "codex_room_capability": {"const": CAPABILITY_MARKER},
+        "capability": {"const": "find_files"},
+        "ok": {"type": "boolean"},
+        "evidence": {"type": "object"},
+        "capability_version": {"type": "string"},
+        "implementation_sha256": {"type": "string"},
+        "durable_result_fields": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+    },
+}
+
 CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
     "assert_file": CapabilitySpec(
         capability_id="assert_file",
@@ -307,7 +616,45 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
             assert_file,
             _invoke_assert_file,
         ),
-    )
+    ),
+    "find_files": CapabilitySpec(
+        capability_id="find_files",
+        description=(
+            "Find regular files under one Room-workspace directory using bounded, "
+            "deterministic glob and size filters without following symlinks; return "
+            f"at most {MAX_FIND_FILES_RESULTS} files, cap match evidence at "
+            f"{MAX_FIND_FILES_MATCH_BYTES} bytes, and scan at most "
+            f"{MAX_FIND_FILES_SCANNED_ENTRIES} entries."
+        ),
+        origin="core",
+        scope="core",
+        version="1",
+        input_schema=FIND_FILES_INPUT_SCHEMA,
+        output_schema=FIND_FILES_OUTPUT_SCHEMA,
+        durable_result_fields=("evidence",),
+        permissions={
+            "workspace_read": True,
+            "workspace_write": False,
+            "network": False,
+            "external_process": False,
+        },
+        side_effects="none",
+        verification={"status": "verified", "evidence": ["E-032"]},
+        handler=_invoke_find_files,
+        implementation_components=(
+            MAX_FIND_FILES_RESULTS,
+            DEFAULT_FIND_FILES_RESULTS,
+            MAX_FIND_FILES_SCANNED_ENTRIES,
+            MAX_FIND_FILES_MATCH_BYTES,
+            _workspace_path,
+            _normalize_glob_patterns,
+            _glob_variants,
+            _matches_globs,
+            _is_hidden_relative,
+            find_files,
+            _invoke_find_files,
+        ),
+    ),
 }
 
 
