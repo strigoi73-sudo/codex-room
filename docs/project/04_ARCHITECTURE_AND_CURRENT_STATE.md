@@ -66,28 +66,51 @@ Persistent SDK threads remain a major context-cost driver; invocation frequency 
 
 ## 5. Deterministic Room capability substrate
 
-**IMPLEMENTED / VERIFIED — 2026-09-12**
+**IMPLEMENTED / VERIFIED deterministically — 2026-09-12; P4.1 live invocation VERIFIED; P4.2 live discovery NEEDS VERIFICATION**
 
-P4.1 introduces the first Codex Room-owned deterministic capability without relying on the provider's experimental dynamic-tool API.
+Codex Room owns a deterministic capability substrate without relying on the provider's experimental dynamic-tool API.
 
-Current capability:
+### Capability execution and safety
 
-- `assert_file` performs read-only assertions against a Room-workspace-relative path;
-- supported assertions are regular-file existence, SHA-256 equality, JSON validity, and required top-level JSON keys;
-- path resolution rejects absolute paths and traversal outside the invocation workspace;
-- the capability emits one machine-readable JSON result with a stable marker, capability name, overall result, subject metadata, and individual check results;
-- assertion failure is a normal factual result rather than a capability execution failure;
-- the launcher exposes `codex-room-cap` to agent command execution, and the delivery prompt tells agents to prefer it for supported exact checks;
-- only a direct, non-chained `codex-room-cap assert-file` command with a recognized structured result is promoted into durable `tool_activity` metadata;
-- arbitrary command stdout/stderr remains excluded from Room telemetry.
+The first CORE capability remains `assert_file`, which performs read-only assertions against a Room-workspace-relative file: regular-file existence, SHA-256 equality, JSON validity, and required top-level JSON keys. Workspace resolution rejects absolute paths and traversal outside the Room workspace. Assertion failure is a normal factual result rather than an execution failure.
 
-The agent still chooses what should be asserted and interprets significance. This preserves the P4 boundary: deterministic software computes exact facts; model cognition supplies judgment.
+The agent chooses what should be asserted and interprets significance. Deterministic software computes exact facts; it does not replace agent judgment.
 
-PR #5 exact head `ae5a57b6d5ae4a046e36bf81064875375fec4cc6` passed **149 tests, 2 warnings**. The squash merge `40afe50b97bf7333a397f1b06dd7a4e3492bdb4b` passed the post-merge canonical-`main` suite with **149 tests, 2 warnings**.
+P4.1 live verification established the end-to-end execution path, including safe Windows shell-wrapper recognition and durable `deterministic_capability` telemetry. See E-030.
 
-The first live Room attempt then exposed a pre-existing adapter mismatch: pinned `openai-codex==0.147.0` emits completed ThreadItem type discriminators in camelCase (`commandExecution`, `fileChange`, `mcpToolCall`, etc.), while Codex Room's activity filter matched snake_case. The agent finished `P4.1-CAPABILITY-OK`, but the export contained no tool/capability telemetry, so exact invocation evidence was not independently preserved.
+### Capability registry and discovery
 
-PR #6 normalizes both SDK camelCase and legacy/test snake_case item names into Codex Room's stable snake_case telemetry vocabulary. Exact PR head `92a9fcefbbcb9228a98cc8074415e32af6ffe116` passed **150 tests, 2 warnings**; squash merge `d54565afc459b251fa084910086e74123810dce0` passed the canonical-`main` suite with **150 tests, 2 warnings**. The second live Room invocation on the type-normalization repair preserved both the file-change and command-execution tool events, confirming the SDK activity translation repair. It still did not promote the command to `deterministic_capability` because the SDK's client-facing Windows command is shell-wrapped. The pinned parser's `command_actions` retains the inner PowerShell script as the normalized unknown command, so PR #7 now authenticates the direct capability invocation against that parsed inner command while retaining chain/forgery rejection. Exact PR head `0cdf2293f4f036c5557dd8bae800de2cb88c112c` passed **152 tests, 2 warnings**; squash merge `9909d1525a4ddef495a783c340cfd6bddf54c90d` passed the canonical-`main` suite with **152 tests, 2 warnings**. The final repeated live Room invocation verified the end-to-end path. C was the sole invoked participant; the export recorded a completed `file_change` followed by `tool_activity` metadata with `type: deterministic_capability`, `capability: assert_file`, and `ok: true`. The structured result independently recorded `p4_probe.json` as an existing regular file, valid JSON, and containing both required top-level keys `probe` and `status`; every asserted check returned `ok: true`. C then FINISHed exactly `P4.1-CAPABILITY-OK`, and the Round closed after one turn with A/B unengaged. P4.1 is therefore live-verified end to end.
+P4.2 adds a static CORE registry and a common manifest model.
+
+Each registered capability currently exposes:
+
+- stable capability ID;
+- description;
+- origin and scope;
+- explicit version;
+- SHA-256 over the registered implementation components;
+- typed input/output contracts;
+- declared workspace/network/external-process permissions;
+- side-effect declaration;
+- verification metadata;
+- inspect/invoke guidance.
+
+Current command surface:
+
+- `codex-room-cap list` — compact summaries only, intentionally avoiding full schemas to control model context cost;
+- `codex-room-cap inspect CAPABILITY_ID` — detailed manifest;
+- `codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT` — registered invocation;
+- `codex-room-cap assert-file ...` — retained P4.1 compatibility alias.
+
+The ordinary agent delivery instruction no longer names `assert_file`. It tells agents to consider deterministic software when inputs are explicit, outputs are objectively checkable, and fresh judgment is unnecessary for each execution; agents then discover capabilities through list/inspect/invoke.
+
+Adapter telemetry recognizes direct or safely parsed shell-wrapped registry commands. Registry list/inspect activity is recorded as `deterministic_capability_registry`; registered execution remains `deterministic_capability` and includes capability version and implementation hash when emitted by the registry. Arbitrary command stdout/stderr remains excluded.
+
+The registry is intentionally static in P4.2. D-022 settles the future unified CORE/lineage/Personal model and rollover-continuity requirement, but custom capability registration, persistence, inheritance, promotion, and the broader CORE standard library are not implemented yet.
+
+PR #8 introduced the runtime implementation. Its first post-merge run exposed only a stale test assertion after list was deliberately made compact. PR #9 changed tests only. Canonical `main` at `78dd8da418f2c29c37b94324d66bbe8c99da39b3` passed GitHub Actions run `34714080693` with **161 tests, 2 warnings**.
+
+**Remaining limit:** no real Room has yet demonstrated discovery of a capability without the user naming it. That one live check remains before P4.2 is complete.
 
 ## 6. Selective invocation and routing
 

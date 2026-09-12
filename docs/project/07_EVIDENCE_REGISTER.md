@@ -587,3 +587,50 @@ Observed export evidence:
 This independently proves agent discovery/invocation, inherited launcher/wrapper execution, exact deterministic result capture, safe promotion into durable Room telemetry, and C-only settlement on the merged implementation.
 
 **Status:** P4.1 COMPLETE — IMPLEMENTED / VERIFIED end to end on 2026-09-12.
+
+
+### E-031 — P4.2 capability registry and discovery
+**Date:** 2026-09-12  
+**Kind:** Current-source implementation + exact-diff review + GitHub PR/CI
+
+P4.2 makes deterministic capabilities first-class discoverable CORE objects rather than hard-coded prompt knowledge.
+
+Implemented:
+
+- `CapabilitySpec` manifest model with stable ID, description, origin/scope, version, implementation SHA-256, input/output schemas, permission/side-effect declaration, verification metadata, and invocation guidance;
+- static `CORE_CAPABILITIES` registry, initially containing the already verified `assert_file`;
+- compact `codex-room-cap list` output so inventory growth does not automatically inject every full schema into model context;
+- detailed `codex-room-cap inspect CAPABILITY_ID`;
+- generic `codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT`;
+- backward-compatible P4.1 `assert-file` alias routed through the registered implementation;
+- invocation results carry capability version and implementation SHA-256;
+- safe telemetry distinguishes `deterministic_capability_registry` discovery from `deterministic_capability` execution;
+- agent prompt guidance now expresses the judgment boundary for deterministic software and tells agents to discover the current registry rather than hard-coding a known tool.
+
+D-022 separately settles the future direction: a small default CORE library plus agent-created registered capabilities, lineage rollover continuity, and possible Personal/CORE promotion. Those later lifecycle/persistence features are not claimed as P4.2 implementation.
+
+PR #8 squash-merged to canonical `main` as:
+
+`aeed9d93d16e4933730b1bbea04b54581dbe62d7` — `P4.2: Add capability registry and discovery`
+
+The first post-merge GitHub Actions run `34713909186` failed one newly added regression assertion with `KeyError: 'permissions'`. The list response had intentionally been made compact immediately before merge, but the new test still expected detailed permission fields there. Inspection showed the detail remained available through `inspect`; no production runtime source change was required.
+
+PR #9 changed only `tests/test_capabilities.py` to require that detailed fields are absent from the compact list and present in the inspected manifest.
+
+Exact PR #9 head:
+
+`d4e04e190eac2c594dcd2c8745135f61484c4367`
+
+GitHub Actions run `34714005661`: **161 passed, 2 warnings**.
+
+PR #9 squash-merged as:
+
+`78dd8da418f2c29c37b94324d66bbe8c99da39b3` — `P4.2: Fix compact-list regression test`
+
+Post-merge canonical-`main` GitHub Actions run `34714080693`: **161 passed, 2 warnings**.
+
+Because PR #9 changed tests only, the P4.2 runtime source bytes on the green canonical main are the runtime bytes introduced by PR #8.
+
+**Status:** P4.2 CORE implementation IMPLEMENTED / VERIFIED deterministically.
+
+**Remaining limit:** a live Room has not yet shown that an agent, without being given the capability name, recognizes an exact mechanical subproblem, discovers the registry, and invokes the suitable capability. That end-to-end discovery behavior remains **NEEDS VERIFICATION** before P4.2 is COMPLETE.

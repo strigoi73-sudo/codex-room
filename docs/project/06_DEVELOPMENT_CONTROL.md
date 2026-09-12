@@ -7,9 +7,9 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.1 — Deterministic assertions** completed end-to-end live verification. A fresh C-only Room created `p4_probe.json`, invoked the Room-owned `assert_file` capability, exported durable `deterministic_capability` telemetry with `capability: assert_file` and `ok: true`, and closed normally after one C turn. The two earlier live attempts usefully exposed and repaired SDK activity-type normalization and Windows shell-wrapper provenance recognition.
+- **What just changed?** **P4.2 — Capability registry and discovery** is merged and deterministically verified. Deterministic capabilities are now first-class CORE manifests with compact list, detailed inspect, registered invoke, implementation identity, and discovery/invocation telemetry. The agent prompt now teaches when to consider deterministic software and how to discover what exists rather than naming `assert_file` directly.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **What is next?** **P4.2 — Capability registry and discovery** is in progress: make deterministic capabilities first-class discoverable objects before adding the default library or custom-capability lifecycle.
+- **What is next?** Run one bounded live P4.2 discovery test: C should recognize an exact mechanical check, discover the available capability without being given its name, and invoke it through the registry path.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -42,35 +42,33 @@ Final live export evidence:
 P4.1 is closed. Do not broaden this slice merely because the substrate now exists; select the next capability only from demonstrated product value.
 
 #### P4.2 — Capability registry and discovery
-**Work state:** IN PROGRESS  
-**Reality / evidence:** IMPLEMENTATION IN REVIEW
+**Work state:** IN PROGRESS — LIVE VERIFICATION  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-12  
+**Decision:** D-022  
+**Evidence:** E-031
 
-Bounded scope:
+P4.2 makes deterministic capabilities first-class discoverable objects before custom registration or rollover inheritance is implemented.
 
-- first-class manifests with stable ID, origin/scope, version, implementation digest, typed contracts, permissions/side effects, and verification metadata;
-- one discovery surface to list, inspect, and invoke registered capabilities;
-- migrate the already verified `assert_file` capability behind the registry while retaining its compatibility command;
-- replace the hard-coded tool prompt with general agent guidance for deciding when deterministic software is warranted and discovering what exists;
-- preserve structured discovery/invocation telemetry;
-- implement only the static CORE registry here. Custom registration, lineage persistence, rollover inheritance, Personal promotion, and the broader default library remain later P4 work.
+Implemented behavior:
 
-Stop condition: deterministic tests plus one bounded live Room should show an agent recognizing a mechanical subproblem, discovering the available capability without being given its name, and invoking it through the registry path with durable telemetry.
+- each registered capability has a stable ID, description, origin/scope, version, implementation SHA-256, typed input/output contracts, permissions/side effects, verification metadata, and invocation guidance;
+- `codex-room-cap list` returns a compact inventory to control context cost;
+- `codex-room-cap inspect CAPABILITY_ID` returns the detailed manifest;
+- `codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT` invokes by registered ID;
+- the already live-verified `assert_file` capability is registered as the first CORE capability; its P4.1 `assert-file` command remains as a compatibility alias;
+- normal agent prompts no longer hard-code `assert_file`; they teach the decision boundary for deterministic software and the list/inspect/invoke discovery workflow;
+- registry list/inspect and capability invocation produce bounded structured telemetry, while arbitrary shell output remains excluded;
+- this slice implements only a static CORE registry. Custom registration, lineage persistence, rollover inheritance, Personal promotion, and the broader default library remain **DECIDED / NOT IMPLEMENTED** under D-022.
 
-#### P4.2 — Capability registry and discovery
-**Work state:** IN PROGRESS  
-**Reality / evidence:** IMPLEMENTATION IN REVIEW  
-**Decision:** D-022
+Verification history:
 
-Bounded scope:
+- the substantive P4.2 branch passed **161 tests, 2 warnings** before the final compact-list refinement;
+- PR #8 squash-merged as `aeed9d93d16e4933730b1bbea04b54581dbe62d7`;
+- the first post-merge run exposed one stale new-test assertion that still expected detailed fields in the intentionally compact list response; runtime source was not implicated;
+- PR #9 changed only `tests/test_capabilities.py` to assert the compact-list boundary and obtain details through inspect; exact PR-head run `34714005661` passed **161 tests, 2 warnings**;
+- PR #9 squash-merged as `78dd8da418f2c29c37b94324d66bbe8c99da39b3`; canonical-`main` run `34714080693` passed **161 tests, 2 warnings**.
 
-- represent deterministic capabilities as first-class manifests with stable ID, origin/scope, version, implementation digest, typed input/output contracts, permissions/side effects, and verification metadata;
-- expose one discovery surface: list registered capabilities, inspect one manifest, and invoke a capability by registered ID;
-- migrate the already verified `assert_file` capability behind that registry while retaining its P4.1 compatibility command;
-- replace the hard-coded `assert_file` agent prompt with general guidance for deciding when deterministic software is warranted and discovering available capabilities;
-- preserve safe structured telemetry for both registry discovery and deterministic invocation;
-- implement only the static CORE registry in this slice. Custom registration, lineage persistence, rollover inheritance, Personal promotion, and the broader default-tool library remain later P4 work.
-
-Stop condition: deterministic tests plus one bounded live Room should show an agent recognizing a mechanical subproblem, discovering the available capability without being given its name, inspecting/invoking it through the registry path, and producing durable discovery/invocation telemetry.
+Remaining stop condition: one fresh live Room must show an agent deciding a deterministic check is appropriate, using registry discovery without being told the capability name, and producing durable registry plus invocation telemetry. Do not start the default-library or custom-capability implementation until this is inspected.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
