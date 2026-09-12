@@ -214,6 +214,21 @@ def test_find_files_reports_explicit_scan_limit_truncation(
     assert result["evidence"]["truncation_reason"] == "scan_limit"
 
 
+def test_find_files_reports_explicit_match_byte_truncation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "a.txt").write_text("a", encoding="utf-8")
+    (tmp_path / "b.txt").write_text("b", encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_FIND_FILES_MATCH_BYTES", 45)
+
+    result = find_files(tmp_path, include_globs=["*.txt"], max_results=10)
+
+    assert [item["path"] for item in result["evidence"]["matches"]] == ["a.txt"]
+    assert result["evidence"]["match_byte_limit"] == 45
+    assert result["evidence"]["truncated"] is True
+    assert result["evidence"]["truncation_reason"] == "result_bytes"
+
+
 @pytest.mark.parametrize("path", ["../outside", "/tmp/outside"])
 def test_find_files_rejects_workspace_escape(tmp_path: Path, path: str) -> None:
     with pytest.raises(CapabilityUsageError, match="Room workspace"):
@@ -262,7 +277,7 @@ def test_registered_find_files_exposes_bounded_read_only_contract(tmp_path: Path
         ({"min_size_bytes": -1}, "min_size_bytes"),
         ({"min_size_bytes": 10, "max_size_bytes": 5}, "must not exceed"),
         ({"max_results": 0}, "max_results"),
-        ({"max_results": 1001}, "max_results"),
+        ({"max_results": 201}, "max_results"),
     ],
 )
 def test_registered_find_files_rejects_invalid_inputs(
