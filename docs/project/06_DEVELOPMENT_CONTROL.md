@@ -1,29 +1,29 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-11  
+**Last updated:** 2026-09-12  
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.  
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
-- **Where are we?** Pre-refresh hold. The minimum Engineering Foundation and the GPT Project review are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The human principal promoted the permanent Personal triad / C-integration migration under D-020 and placed it ahead of A2. I-001 remains fixed and verified, the Project-source review remains complete, and the Personal daily usage pacing limit remains approved planned development under D-019.
-- **What is blocked?** Nothing is blocking the planned path.
-- **What is next?** The **permanent Personal triad / C-integration migration** is the first major post-refresh task. After it is implemented and adequately verified, **A2 — Assurance Pass 2** follows immediately.
-- **What are we deliberately not doing?** No triad-migration implementation before the 2026-09-15 refresh unless explicitly started early by the human principal; no Assurance Pass 2 before that migration is verified; no new in-Room A/B/C exercises; no P4 implementation; no archive/retrieval work; no adjacent refactoring.
+- **Where are we?** The weekly model-usage allowance refreshed early on 2026-09-12, so the pre-refresh hold is over. The minimum Engineering Foundation and the GPT Project review are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
+- **What just changed?** The anticipated 2026-09-15 usage-refresh constraint cleared early. D-020 remains the next implementation priority ahead of A2. I-001 remains fixed and verified, the Project-source review remains complete, and the Personal daily usage pacing limit remains approved planned development under D-019.
+- **What is blocked?** Nothing is blocking the planned D-020 implementation.
+- **What is next?** The **permanent Personal triad / C-integration migration** is ready to begin. After it is implemented and adequately verified, **A2 — Assurance Pass 2** follows immediately.
+- **What are we deliberately not doing?** No Assurance Pass 2 before the D-020 migration is verified; no new in-Room A/B/C exercises; no P4 implementation; no archive/retrieval work; no adjacent refactoring.
 
 ## Current Focus
 
-### Pre-refresh hold with triad migration queued ahead of A2
-**Work state:** MONITOR
+### D-020 triad migration ready ahead of A2
+**Work state:** PLANNED
 
-The minimum Engineering Foundation is complete and the targeted GPT Project review is complete. D-020 now makes the permanent Personal triad / C-integration migration the first major post-refresh implementation task. No implementation needs to start before the weekly model-usage refresh unless the human principal explicitly starts it early.
+The minimum Engineering Foundation and targeted GPT Project review are complete. The weekly model-usage allowance refreshed early on 2026-09-12, so the former pre-refresh hold no longer applies. D-020 makes the permanent Personal triad / C-integration migration the next implementation task.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
 I-001 is closed: bounded live snapshots now expose the newest 2,000-event window and explicit truncation metadata, while Room exports request complete event history. See E-025 for the exact implementation commit and verification evidence.
 
-Until **2026-09-15**, prefer no-op/monitoring over manufacturing work unless the human principal explicitly starts the triad migration early. On or after the refresh, implement and verify the D-020 migration before beginning A2. The default external development workflow remains D-018: reason where relevant context exists, execute through the cheapest capable authorized layer, exchange exact evidence through Git/GitHub, and use deterministic verification where model cognition is unnecessary.
+Implement and verify the D-020 migration before beginning A2. The default external development workflow remains D-018: reason where relevant context exists, execute through the cheapest capable authorized layer, exchange exact evidence through Git/GitHub, and use deterministic verification where model cognition is unnecessary.
 
 ## Recently completed operating-economics work
 
@@ -94,10 +94,10 @@ GitHub Actions runs the canonical Python suite on pushes to `main` and pull requ
 
 ### Permanent Personal triad / C-integration migration
 **Scope:** [CORE + ROOM migration]  
-**Work state:** DEFERRED — until 2026-09-15 unless explicitly started early by the human principal  
+**Work state:** PLANNED — ready to start  
 **Reality:** DECIDED / NOT IMPLEMENTED  
 **Decision:** D-020  
-**Priority:** first major post-refresh implementation task; complete before A2
+**Priority:** next implementation task; complete before A2
 
 Align the runtime with the settled Personal production triad and the new C-first coordination contract:
 
@@ -112,7 +112,7 @@ Align the runtime with the settled Personal production triad and the new C-first
 Verification should include targeted triad-routing/settlement/restart tests, the canonical full Python suite, the specialized browser transcript/UI check because creation controls change, and hosted CI. Do not call the migration implemented or verified until exact-version evidence supports those claims.
 
 ### A2 — Assurance Pass 2
-**Work state:** DEFERRED — until the D-020 triad migration is implemented and adequately verified; not before 2026-09-15 unless explicitly changed by the human principal  
+**Work state:** DEFERRED — until the D-020 triad migration is implemented and adequately verified  
 **Dependencies:** Engineering Foundation — SATISFIED; D-020 triad migration — PENDING
 
 Use deterministic repository/config inspection first, then existing tests/reproducible checks, runtime/database evidence where needed, and model reasoning only for interpretation. Use adversarial review only where the risk justifies it.
@@ -177,4 +177,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question is currently blocking the pre-refresh hold. I-003 remains low priority and should be revisited only when profile/thread continuity work makes it relevant.
+No high-priority open question is currently blocking D-020. I-003 remains low priority and should be revisited only when profile/thread continuity work makes it relevant.
