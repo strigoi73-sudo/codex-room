@@ -2225,6 +2225,7 @@ class RoomRuntime:
         pending_keys: list[str] = []
         all_finished = True
         engaged_count = 0
+        triad_room = any(item["agent_key"] == "agent_c" for item in agents)
         for item in agents:
             state = states.get(item["id"], {})
             finished = item["status"] == AgentStatus.READY_TO_FINISH
@@ -2237,7 +2238,8 @@ class RoomRuntime:
             )
             counts = participation[item["agent_key"]]
             never_engaged_member = (
-                counts["readable_count"] == 0
+                triad_room
+                and counts["readable_count"] == 0
                 and not state.get("last_outcome")
                 and item["agent_key"] not in open_keys
                 and item["status"] != AgentStatus.RUNNING

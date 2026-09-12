@@ -238,7 +238,8 @@ async def test_rollover_copies_only_stable_configuration_and_checkpoint(tmp_path
             assert canary not in exported
 
         await runtime.start_round(successor["id"], successor["active_round_id"])
-        await wait_until(lambda: len(adapter.calls["agent_a"]) >= 2)
+        await wait_until(lambda: len(adapter.calls["agent_c"]) >= 1)
+        assert checkpoint in adapter.calls["agent_c"][-1]["prompt"]
         prompt = adapter.calls["agent_a"][-1]["prompt"]
         assert prompt.count(checkpoint) == 1
         for canary in (
@@ -776,7 +777,7 @@ async def test_predecessor_thread_collision_is_audited_but_never_archived(tmp_pa
 
 @pytest.mark.asyncio
 async def test_provisioning_failure_rolls_back_and_audits_orphans(tmp_path):
-    adapter = FailingStartAdapter(fail_at=4)
+    adapter = FailingStartAdapter(fail_at=5)
     runtime = RoomRuntime(Database(tmp_path / "failure.db"), adapter, tmp_path / "data")
     await runtime.initialize()
     try:

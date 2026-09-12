@@ -215,6 +215,7 @@ async def test_new_room_is_permanent_triad_and_c_is_default_starter(runtime_fact
 async def test_peer_exchange_keeps_c_passive_then_integrates_once(runtime_factory):
     adapter = FakeAgentAdapter(
         {
+            "agent_a": [],
             "agent_b": [(Outcome.PASS, "")],
             "agent_c": [(Outcome.FINISH, "Integrated")],
         },
@@ -254,7 +255,12 @@ async def test_peer_exchange_keeps_c_passive_then_integrates_once(runtime_factor
 
 @pytest.mark.asyncio
 async def test_direct_peer_return_to_c_needs_no_synthetic_integration(runtime_factory):
-    adapter = FakeAgentAdapter({"agent_c": [(Outcome.FINISH, "Integrated directly")]})
+    adapter = FakeAgentAdapter(
+        {
+            "agent_a": [],
+            "agent_c": [(Outcome.FINISH, "Integrated directly")],
+        }
+    )
     adapter.decisions["agent_a"].append(
         AgentDecision(
             outcome=Outcome.MESSAGE,
@@ -284,6 +290,7 @@ async def test_b_to_a_direct_exchange_also_defers_c_until_integration(runtime_fa
     adapter = FakeAgentAdapter(
         {
             "agent_a": [(Outcome.PASS, "")],
+            "agent_b": [],
             "agent_c": [(Outcome.FINISH, "Integrated B result")],
         },
         blocked_calls={"agent_a": {1}},
@@ -317,7 +324,13 @@ async def test_b_to_a_direct_exchange_also_defers_c_until_integration(runtime_fa
 
 @pytest.mark.asyncio
 async def test_c_can_redelegate_from_integration_and_receive_direct_followup(runtime_factory):
-    adapter = FakeAgentAdapter({"agent_b": [(Outcome.PASS, "")]})
+    adapter = FakeAgentAdapter(
+        {
+            "agent_a": [],
+            "agent_b": [(Outcome.PASS, "")],
+            "agent_c": [],
+        }
+    )
     adapter.decisions["agent_a"].extend(
         [
             AgentDecision(

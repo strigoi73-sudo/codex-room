@@ -119,7 +119,7 @@ def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Pa
         duplicate_c = client.post(
             f"/api/rooms/{created['id']}/agents", json={"agent_key": "agent_c"}
         )
-        assert duplicate_c.status_code == 400
+        assert duplicate_c.status_code == 409
 
         markdown = client.get(
             f"/api/rooms/{created['id']}/export?format=markdown"
