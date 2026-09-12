@@ -9,7 +9,7 @@
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
 - **What just changed?** **P4.1 — Deterministic assertions** completed end-to-end live verification. A fresh C-only Room created `p4_probe.json`, invoked the Room-owned `assert_file` capability, exported durable `deterministic_capability` telemetry with `capability: assert_file` and `ok: true`, and closed normally after one C turn. The two earlier live attempts usefully exposed and repaired SDK activity-type normalization and Windows shell-wrapper provenance recognition.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **What is next?** Select the next bounded P4 capability slice from demonstrated product needs; no successor slice is yet committed.
+- **What is next?** **P4.2 — Capability registry and discovery** is in progress: make deterministic capabilities first-class discoverable objects before adding the default library or custom-capability lifecycle.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -40,6 +40,22 @@ Final live export evidence:
 - the Round closed normally after exactly one agent turn.
 
 P4.1 is closed. Do not broaden this slice merely because the substrate now exists; select the next capability only from demonstrated product value.
+
+#### P4.2 — Capability registry and discovery
+**Work state:** IN PROGRESS  
+**Reality / evidence:** IMPLEMENTATION IN REVIEW  
+**Decision:** D-022
+
+Bounded scope:
+
+- represent deterministic capabilities as first-class manifests with stable ID, origin/scope, version, implementation digest, typed input/output contracts, permissions/side effects, and verification metadata;
+- expose one discovery surface: list registered capabilities, inspect one manifest, and invoke a capability by registered ID;
+- migrate the already verified `assert_file` capability behind that registry while retaining its P4.1 compatibility command;
+- replace the hard-coded `assert_file` agent prompt with general guidance for deciding when deterministic software is warranted and discovering available capabilities;
+- preserve safe structured telemetry for both registry discovery and deterministic invocation;
+- implement only the static CORE registry in this slice. Custom registration, lineage persistence, rollover inheritance, Personal promotion, and the broader default-tool library remain later P4 work.
+
+Stop condition: deterministic tests plus one bounded live Room should show an agent recognizing a mechanical subproblem, discovering the available capability without being given its name, inspecting/invoking it through the registry path, and producing durable discovery/invocation telemetry.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
@@ -159,7 +175,7 @@ GitHub Actions runs the canonical Python suite on pushes to `main` and pull requ
 ### P4 — Deterministic Room and agent capabilities
 **Work state:** IN PROGRESS
 
-P4.1 deterministic assertions is complete. The next bounded P4 slice has not yet been selected. Candidate families remain deterministic extraction/filtering/grouping/deduplication/normalization/statistics, exact artifact inspection, structured work/evidence state, and Room-native introspection. Do not treat repository/CI/deployment automation as P4 product scope unless it becomes a normal Room/agent capability.
+P4.1 deterministic assertions is complete. P4.2 capability registry/discovery is now the active bounded slice. After P4.2, build the small default CORE library and then the agent-directed custom-capability lifecycle with rollover inheritance; do not pre-fill a speculative domain-specific tool catalog.
 
 ## Approved planned development
 
