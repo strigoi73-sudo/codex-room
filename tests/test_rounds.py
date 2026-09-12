@@ -446,6 +446,118 @@ async def test_known_pair_profile_migration_repairs_only_live_unmodified_snapsho
 
 
 @pytest.mark.asyncio
+async def test_early_triad_profile_migration_repairs_exact_observed_builtins(
+    tmp_path, monkeypatch
+):
+    database = Database(tmp_path / "early-triad-profile-migration.db")
+    await database.initialize()
+    active_id = await database.create_room(
+        CreateRoomRequest(topic="active stale triad", auto_start=False)
+    )
+    archived_id = await database.create_room(
+        CreateRoomRequest(topic="archived stale triad", auto_start=False)
+    )
+    sealed_id = await database.create_room(
+        CreateRoomRequest(topic="sealed stale triad", auto_start=False)
+    )
+    overridden_id = await database.create_room(
+        CreateRoomRequest(topic="overridden stale triad", auto_start=False)
+    )
+    stale = {
+        "agent_a": "observed early triad A",
+        "agent_b": "observed early triad B",
+        "agent_c": "observed early triad C",
+    }
+    stale_hashes = {
+        key: hashlib.sha256(value.encode("utf-8")).hexdigest()
+        for key, value in stale.items()
+    }
+    monkeypatch.setattr(db_module, "_EARLY_TRIAD_PROFILE_SHA256", stale_hashes)
+
+    async with database.connect() as connection:
+        for key, text in stale.items():
+            await connection.execute(
+                "UPDATE agent_profiles SET developer_instructions=? WHERE default_slot=?",
+                (text, key),
+            )
+            await connection.execute(
+                """UPDATE agents SET profile_snapshot=?, developer_instructions=?
+                   WHERE agent_key=? AND room_id IN (?, ?, ?, ?)""",
+                (text, text, key, active_id, archived_id, sealed_id, overridden_id),
+            )
+        await connection.execute(
+            "UPDATE rooms SET status=?, metadata_json='{}' WHERE id=?",
+            (RoomStatus.ARCHIVED, archived_id),
+        )
+        await connection.execute(
+            "UPDATE rooms SET metadata_json=? WHERE id=?",
+            ('{"sealed":true}', sealed_id),
+        )
+        await connection.execute(
+            """UPDATE agents SET room_override='customized'
+               WHERE room_id=? AND agent_key='agent_a'""",
+            (overridden_id,),
+        )
+        await connection.commit()
+
+    await database.initialize()
+
+    defaults = await database.get_default_profiles()
+    assert defaults["agent_a"]["developer_instructions"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
+    assert defaults["agent_b"]["developer_instructions"] == AGENT_B_VERIFIER_INSTRUCTIONS
+    async with database.connect() as connection:
+        c_default = await database._fetchone(
+            connection,
+            "SELECT developer_instructions FROM agent_profiles WHERE default_slot='agent_c'",
+        )
+    assert c_default is not None
+    assert c_default["developer_instructions"] == AGENT_C_INTEGRATOR_INSTRUCTIONS
+
+    active = {item["agent_key"]: item for item in await database.get_agents(active_id)}
+    assert active["agent_a"]["profile_snapshot"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
+    assert active["agent_b"]["profile_snapshot"] == AGENT_B_VERIFIER_INSTRUCTIONS
+    assert active["agent_c"]["profile_snapshot"] == AGENT_C_INTEGRATOR_INSTRUCTIONS
+
+    archived = {item["agent_key"]: item for item in await database.get_agents(archived_id)}
+    sealed = {item["agent_key"]: item for item in await database.get_agents(sealed_id)}
+    for key, text in stale.items():
+        assert archived[key]["profile_snapshot"] == text
+        assert sealed[key]["profile_snapshot"] == text
+
+    overridden = {
+        item["agent_key"]: item for item in await database.get_agents(overridden_id)
+    }
+    assert overridden["agent_a"]["profile_snapshot"] == stale["agent_a"]
+    assert overridden["agent_a"]["developer_instructions"] == stale["agent_a"]
+
+    active_room = await database.get_room(active_id)
+    assert active_room is not None
+    migrations = active_room["metadata"]["profile_migrations"]
+    assert [item["id"] for item in migrations] == ["triad_profiles_v2"]
+    assert migrations[0]["agents"] == ["agent_a", "agent_b", "agent_c"]
+    assert migrations[0]["previous_sha256"] == stale_hashes
+
+    fresh_id = await database.create_room(
+        CreateRoomRequest(topic="fresh after migration", auto_start=False)
+    )
+    fresh = {item["agent_key"]: item for item in await database.get_agents(fresh_id)}
+    assert fresh["agent_a"]["profile_snapshot"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
+    assert fresh["agent_b"]["profile_snapshot"] == AGENT_B_VERIFIER_INSTRUCTIONS
+    assert fresh["agent_c"]["profile_snapshot"] == AGENT_C_INTEGRATOR_INSTRUCTIONS
+
+    await database.initialize()
+    active_room = await database.get_room(active_id)
+    assert active_room is not None
+    assert len(
+        [
+            item
+            for item in active_room["metadata"]["profile_migrations"]
+            if item["id"] == "triad_profiles_v2"
+        ]
+    ) == 1
+
+
+@pytest.mark.asyncio
 async def test_room_override_does_not_mutate_persistent_profile(runtime_factory):
     adapter = FakeAgentAdapter()
     runtime = await runtime_factory(adapter, "overrides.db")
