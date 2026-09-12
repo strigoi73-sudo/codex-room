@@ -7,17 +7,19 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, and D-020 permanent Personal triad / C-integration migration are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** D-020 was implemented through PR #3 and verified on 2026-09-12. New Personal Rooms are permanent A/B/C triads with C-first defaults and a mechanical integration-before-closure barrier. I-001 remains fixed and verified, and the Personal daily usage pacing limit remains approved planned development under D-019.
-- **What is blocked?** Nothing currently blocks **A2 — Assurance Pass 2**.
-- **What is next?** Begin **A2 — Assurance Pass 2** against the intended post-D-020 architecture.
+- **What just changed?** D-020 was implemented and verified, and the human principal explicitly started **A2 — Assurance Pass 2** on 2026-09-12. A2 is assessing the intended post-D-020 architecture rather than the superseded optional-C model.
+- **What is blocked?** Nothing currently blocks the bounded A2 assessment.
+- **What is next?** Complete A2 by establishing an evidence-backed assurance matrix, recording material gaps or verification limits without turning the audit into opportunistic implementation.
 - **What are we deliberately not doing?** No P4 implementation, archive/retrieval work, new in-Room A/B/C exercises, or adjacent refactoring before the bounded A2 pass unless the human principal changes priorities.
 
 ## Current Focus
 
-### A2 ready after verified D-020 migration
-**Work state:** PLANNED — READY TO START
+### A2 — Assurance Pass 2
+**Work state:** IN PROGRESS
 
-The minimum Engineering Foundation and targeted GPT Project review are complete, and D-020 was implemented and verified on 2026-09-12. A2 should assess the intended permanent-triad architecture rather than the superseded optional-C coordination model.
+The human principal explicitly started A2 on 2026-09-12. The minimum Engineering Foundation and targeted GPT Project review are complete, and D-020 was implemented and verified before the pass began. A2 is assessing the intended permanent-triad architecture rather than the superseded optional-C coordination model.
+
+Audit method: use fresh repository/config inspection first, map existing exact-version tests/evidence to assurance claims, run new deterministic checks only where existing evidence is insufficient, and use model interpretation or independent adversarial review only where consequence and ambiguity justify the extra cognition. Record findings before deciding on remediation.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
@@ -102,7 +104,7 @@ Canonical routine command: `python -m pytest -q`. Clean-environment verification
 GitHub Actions runs the canonical Python suite on pushes to `main` and pull requests targeting `main`, installing through `constraints-test.txt`. The latest hosted verification on canonical `main` (`34abd391ecbb861d7661541e4a716a5152a2049d`) completed successfully with **130 passed, 2 warnings**.
 
 ### A2 — Assurance Pass 2
-**Work state:** PLANNED — READY TO START  
+**Work state:** IN PROGRESS  
 **Dependencies:** Engineering Foundation — SATISFIED; D-020 triad migration — SATISFIED
 
 Use deterministic repository/config inspection first, then existing tests/reproducible checks, runtime/database evidence where needed, and model reasoning only for interpretation. Use adversarial review only where the risk justifies it.
