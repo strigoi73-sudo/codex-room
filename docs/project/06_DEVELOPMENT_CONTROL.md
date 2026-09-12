@@ -7,9 +7,9 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The first **P4.3e** fresh-Room probe discovered all four CORE capabilities but did **not** satisfy the live stop condition: C alone completed the Round and FINISHed correctly, yet the export recorded only generic command activity after registry discovery and no durable `deterministic_capability` invocation events. PR #17 therefore tightened only agent guidance so registry operations and capability invocations run as separate auditable command executions and multiple mechanical subproblems compose registered capabilities instead of collapsing into one ad hoc script. PR #17 and merged canonical-main bytes both passed **235 tests, 2 warnings**.
+- **What just changed?** **P4.3 — Minimal CORE standard library is COMPLETE / IMPLEMENTED / VERIFIED end to end.** A fresh post-PR-#17 Room discovered and inspected all four CORE capabilities without capability names in the user prompt, then durably invoked `find_files`, `search_text`, `compare_files`, and `assert_file` with matching version/hash identities and correct structured evidence. C alone handled the mechanical work, FINISHed exactly `P4.3-LIBRARY-OK`, and the one-turn Round closed normally.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **What is next?** Repeat the unchanged **P4.3e** probe in one fresh post-PR-#17 Room and inspect the first export. P4.3 closes only if all four registered invocations are durably visible with correct structured evidence.
+- **What is next?** **P4.4 — Agent-created capability registration and verification**: design and implement the bounded path by which A/B/C can create deterministic software when CORE is insufficient, validate it, and register it as a first-class capability with the same identity/contract/permission/provenance surface. Rollover inheritance remains P4.5.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -84,8 +84,8 @@ Final live verification on the post-PR-#11 runtime satisfied the stop condition:
 P4.2 is closed.
 
 #### P4.3 — Minimal CORE standard library
-**Work state:** IN PROGRESS  
-**Reality / evidence:** PARTIALLY IMPLEMENTED / VERIFIED  
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED end to end — 2026-09-12  
 **Decision:** D-022  
 **Evidence:** E-032
 
@@ -97,15 +97,26 @@ Current sequence:
 - **P4.3b — `find_files`: COMPLETE / IMPLEMENTED / VERIFIED.** Registered CORE version `1`; read-only/workspace-confined; regular files only; symlinks never followed; traversal errors fail visibly; POSIX-style include/exclude globs with Windows backslash normalization; hidden files opt in; optional size bounds; 100 results by default / 200 maximum; 48 KiB match-evidence ceiling; 100,000-entry scan ceiling; explicit truncation reason; stable sorted depth-first ordering. PR #13 exact head `4f5c244437c99130362f3e86e9f618198acb18c9` and squash merge `56d08cd733fdc4598fc878b3778bce664e193aca` both passed **186 tests, 2 warnings**.
 - **P4.3c — `search_text`: COMPLETE / IMPLEMENTED / VERIFIED.** Registered CORE version `1`; literal single-line search only; composes bounded `find_files` discovery; UTF-8/NUL-free text only; case and file-glob controls; 100 candidate files default / 200 maximum; 50 matches default / 100 maximum; 2 MiB default / 10 MiB maximum per file; 20 MiB aggregate byte ceiling; bounded excerpts returned only transiently; durable evidence retains query SHA-256/length, exact locations, counts, and truncation metadata. PR #14 exact head `0afb3b7a4b2dc52e451543ba1a25d51cf015155b` and squash merge `eb6c29f346081affa61eb412006f460426bafc40` both passed **216 tests, 2 warnings**.
 - **P4.3d — `compare_files`: COMPLETE / IMPLEMENTED / VERIFIED.** Registered CORE version `1`; exact byte comparison plus SHA-256/size evidence; 50 MiB per-file ceiling; small unequal UTF-8 text may produce a bounded unified diff with 2 MiB / 20,000-line eligibility limits and 200-line / 32 KiB diff ceilings; binary/oversized/line-heavy cases retain exact byte comparison and report explicit text-diff status; diff content is transient while durable evidence retains only paths, hashes, sizes, equality, and diff status/count metadata. PR #16 exact head `6e5b7161dd2d75c33e1527db5d51ce552d0e4888` and squash merge `260431ad7ca64ed0c9f1f3b3bf0122ca98e4de6c` both passed **235 tests, 2 warnings**.
-- **P4.3e — bounded live evaluation of the four-capability CORE library: IN PROGRESS — LIVE VERIFICATION.**
+- **P4.3e — bounded live evaluation of the four-capability CORE library: COMPLETE / VERIFIED end to end.**
 
 Live stop condition: one fresh post-P4.3d Room must receive a probe that names no capability or registry command, keep C as the sole consuming participant unless peer judgment is genuinely needed, durably record registry discovery, and invoke all four initial CORE capabilities (`find_files`, `search_text`, `compare_files`, `assert_file`) for naturally corresponding mechanical subproblems. Each invocation must carry version/implementation identity and a successful structured result; the evidence must match the known probe fixtures; C must FINISH exactly `P4.3-LIBRARY-OK`; and the Round should close normally.
 
 First live attempt (Room `room_0b855adf7e3f49ef870b6a6f6b60bc24`) **did not satisfy this stop condition**. The user prompt named no capability. C was the sole consuming participant; A/B remained unconsumed. Durable telemetry recorded a successful registry `list` containing all four CORE version-1 capabilities and their implementation hashes, then two completed generic command executions, one file change, one failed generic command execution, and one completed generic command execution. It recorded **no** `deterministic_capability` invocation events. C still FINISHed exactly `P4.3-LIBRARY-OK` and the one-turn Round closed normally. Because exports intentionally omit arbitrary generic command text/output, this evidence cannot establish whether C used ad hoc verification or batched/chained registered operations that were not safely promotable.
 
-PR #17 repaired the behavioral/provenance guidance rather than weakening telemetry safety. Agents are now instructed to run each registry list/inspect and each capability invocation as its own command execution, not chain capability operations with shell commands or each other, and compose multiple adequate registered capabilities separately for multiple independent mechanical subproblems. Exact PR head `ab578295ae9da339983d8f59079a0683a795e9f8`, run `34723435009`: **235 passed, 2 warnings**. Squash merge `d65da0bd1399b0cd5511cf0653162e48af7ae546`; canonical-main run `34723499027`: **235 passed, 2 warnings**. The repair is IMPLEMENTED / VERIFIED deterministically; end-to-end P4.3e remains **NEEDS LIVE VERIFICATION**.
+PR #17 repaired the behavioral/provenance guidance rather than weakening telemetry safety. Agents are now instructed to run each registry list/inspect and each capability invocation as its own command execution, not chain capability operations with shell commands or each other, and compose multiple adequate registered capabilities separately for multiple independent mechanical subproblems. Exact PR head `ab578295ae9da339983d8f59079a0683a795e9f8`, run `34723435009`: **235 passed, 2 warnings**. Squash merge `d65da0bd1399b0cd5511cf0653162e48af7ae546`; canonical-main run `34723499027`: **235 passed, 2 warnings**.
+
+Final post-repair live verification used fresh Room `room_2077937c86524ac3aaced1918dbe6050`, Round `round_a65e1ca8eb3d48248c06e1730e21923e`. The prompt named no capability or registry command. C alone consumed context; A/B remained unconsumed. C durably recorded registry `list`, inspected all four capability manifests, created the fixtures, surfaced one malformed `find_files` invocation as structured `invalid_request`, corrected it, and then successfully invoked all four capabilities with version `1` and implementation identities matching registry discovery. `find_files` returned exactly the three expected sorted text files; `search_text` returned exactly the two expected line-2/column-1 locations; `compare_files` reported the two files byte-unequal with exact hashes/sizes; and `assert_file` verified regular-file existence, valid JSON, and required keys `probe` / `status`. C FINISHed exactly `P4.3-LIBRARY-OK`; the one-turn Round closed normally.
+
+P4.3 is closed.
 
 `query_data` remains a post-evaluation candidate, not part of the initial P4.3 implementation commitment.
+
+#### P4.4 — Agent-created capability registration and verification
+**Work state:** PLANNED  \
+**Reality / evidence:** DECIDED / NOT IMPLEMENTED  \
+**Decision:** D-022
+
+Implement the bounded path for A/B/C to turn a newly warranted deterministic procedure into a registered first-class capability when the existing CORE library is inadequate. Registration must bind stable identity, version/implementation identity, typed contracts, permissions/side effects, provenance, and verification evidence to the executable implementation. The verification gate must prevent ordinary ad hoc scripts from silently becoming trusted registered capabilities. P4.4 does not yet claim rollover inheritance or Personal/CORE promotion; those remain later slices under D-022.
 
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
