@@ -965,6 +965,43 @@ def test_safe_activity_drops_search_text_runtime_excerpts_from_durable_evidence(
     assert "secret needle context" not in json.dumps(result)
 
 
+def test_safe_activity_drops_compare_files_diff_from_durable_evidence() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "compare_files",
+        "capability_version": "1",
+        "implementation_sha256": "d" * 64,
+        "ok": True,
+        "durable_result_fields": ["evidence"],
+        "evidence": {
+            "left": {"path": "a.txt", "sha256": "a" * 64, "size_bytes": 6},
+            "right": {"path": "b.txt", "sha256": "b" * 64, "size_bytes": 5},
+            "byte_equal": False,
+            "text_diff": {"status": "available", "returned_diff_lines": 2},
+        },
+        "diff": ["-secret before", "+secret after"],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap invoke compare_files "
+            "--input-json '{\"left_path\":\"a.txt\",\"right_path\":\"b.txt\"}'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    result = activity[0]["result"]
+    assert activity[0]["type"] == "deterministic_capability"
+    assert activity[0]["capability"] == "compare_files"
+    assert result["evidence"] == payload["evidence"]
+    assert "diff" not in result
+    assert "secret before" not in json.dumps(result)
+
+
 def test_safe_activity_rejects_invalid_durable_result_field_declaration() -> None:
     payload = {
         "codex_room_capability": 1,

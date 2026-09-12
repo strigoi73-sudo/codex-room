@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import inspect
 import json
@@ -30,6 +31,13 @@ MAX_SEARCH_TEXT_MATCH_BYTES = 32 * 1024
 MAX_SEARCH_TEXT_LOCATION_BYTES = 16 * 1024
 SEARCH_TEXT_EXCERPT_CHARS = 240
 MAX_SEARCH_TEXT_QUERY_CHARS = 4096
+MAX_COMPARE_FILE_BYTES = 50 * 1024 * 1024
+MAX_COMPARE_TEXT_BYTES = 2 * 1024 * 1024
+MAX_COMPARE_TEXT_LINES = 20_000
+MAX_COMPARE_DIFF_LINES = 200
+MAX_COMPARE_DIFF_BYTES = 32 * 1024
+DEFAULT_COMPARE_CONTEXT_LINES = 3
+MAX_COMPARE_CONTEXT_LINES = 10
 _SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
@@ -699,6 +707,224 @@ def _invoke_search_text(root: Path, inputs: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def _compare_regular_file(
+    root: Path, raw_path: str, field_name: str
+) -> tuple[Path, str, int]:
+    path, relative = _workspace_path(root, raw_path)
+    try:
+        metadata = path.stat()
+    except OSError as exc:
+        raise CapabilityUsageError(
+            f"compare_files could not inspect '{raw_path}': {exc}"
+        ) from exc
+    if not path.is_file():
+        raise CapabilityUsageError(
+            f"compare_files input '{field_name}' must name an existing regular file"
+        )
+    if metadata.st_size > MAX_COMPARE_FILE_BYTES:
+        raise CapabilityUsageError(
+            f"compare_files input '{field_name}' exceeds the "
+            f"{MAX_COMPARE_FILE_BYTES}-byte file limit"
+        )
+    return path, relative, metadata.st_size
+
+
+def _compare_file_bytes(
+    left: Path, right: Path
+) -> tuple[bool, str, str]:
+    left_digest = hashlib.sha256()
+    right_digest = hashlib.sha256()
+    equal = True
+    try:
+        with left.open("rb") as left_handle, right.open("rb") as right_handle:
+            while True:
+                left_chunk = left_handle.read(1024 * 1024)
+                right_chunk = right_handle.read(1024 * 1024)
+                if left_chunk:
+                    left_digest.update(left_chunk)
+                if right_chunk:
+                    right_digest.update(right_chunk)
+                if left_chunk != right_chunk:
+                    equal = False
+                if not left_chunk and not right_chunk:
+                    break
+    except OSError as exc:
+        raise CapabilityUsageError(f"compare_files could not read input: {exc}") from exc
+    return equal, left_digest.hexdigest(), right_digest.hexdigest()
+
+
+def _bounded_unified_diff(
+    left_lines: list[str],
+    right_lines: list[str],
+    left_name: str,
+    right_name: str,
+    context_lines: int,
+) -> tuple[list[str], bool, str | None]:
+    diff_lines: list[str] = []
+    truncation_reason: str | None = None
+    for line in difflib.unified_diff(
+        left_lines,
+        right_lines,
+        fromfile=left_name,
+        tofile=right_name,
+        n=context_lines,
+        lineterm="",
+    ):
+        if len(diff_lines) >= MAX_COMPARE_DIFF_LINES:
+            truncation_reason = "line_limit"
+            break
+        prospective_bytes = len(
+            json.dumps(
+                [*diff_lines, line],
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+        if prospective_bytes > MAX_COMPARE_DIFF_BYTES:
+            truncation_reason = "byte_limit"
+            break
+        diff_lines.append(line)
+    return diff_lines, truncation_reason is not None, truncation_reason
+
+
+def compare_files(
+    root: Path,
+    left_path: str,
+    right_path: str,
+    *,
+    context_lines: int = DEFAULT_COMPARE_CONTEXT_LINES,
+) -> dict[str, Any]:
+    left, left_relative, left_size = _compare_regular_file(
+        root, left_path, "left_path"
+    )
+    right, right_relative, right_size = _compare_regular_file(
+        root, right_path, "right_path"
+    )
+    byte_equal, left_sha256, right_sha256 = _compare_file_bytes(left, right)
+
+    text_status = "not_needed_equal" if byte_equal else "size_limit"
+    text_lines_equal: bool | None = None
+    diff_lines: list[str] = []
+    diff_truncated = False
+    diff_truncation_reason: str | None = None
+    left_line_count: int | None = None
+    right_line_count: int | None = None
+
+    if not byte_equal and left_size <= MAX_COMPARE_TEXT_BYTES and right_size <= MAX_COMPARE_TEXT_BYTES:
+        try:
+            left_bytes = left.read_bytes()
+            right_bytes = right.read_bytes()
+        except OSError as exc:
+            raise CapabilityUsageError(
+                f"compare_files could not read bounded text input: {exc}"
+            ) from exc
+
+        if b"\x00" in left_bytes or b"\x00" in right_bytes:
+            text_status = "non_text"
+        else:
+            try:
+                left_text = left_bytes.decode("utf-8")
+                right_text = right_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                text_status = "non_text"
+            else:
+                left_lines = left_text.splitlines()
+                right_lines = right_text.splitlines()
+                left_line_count = len(left_lines)
+                right_line_count = len(right_lines)
+                text_lines_equal = left_lines == right_lines
+                if (
+                    left_line_count > MAX_COMPARE_TEXT_LINES
+                    or right_line_count > MAX_COMPARE_TEXT_LINES
+                ):
+                    text_status = "line_limit"
+                else:
+                    text_status = "available"
+                    diff_lines, diff_truncated, diff_truncation_reason = (
+                        _bounded_unified_diff(
+                            left_lines,
+                            right_lines,
+                            left_relative,
+                            right_relative,
+                            context_lines,
+                        )
+                    )
+
+    return {
+        "codex_room_capability": CAPABILITY_MARKER,
+        "capability": "compare_files",
+        "ok": True,
+        "evidence": {
+            "left": {
+                "path": left_relative,
+                "size_bytes": left_size,
+                "sha256": left_sha256,
+            },
+            "right": {
+                "path": right_relative,
+                "size_bytes": right_size,
+                "sha256": right_sha256,
+            },
+            "byte_equal": byte_equal,
+            "file_byte_limit": MAX_COMPARE_FILE_BYTES,
+            "text_diff": {
+                "status": text_status,
+                "text_byte_limit": MAX_COMPARE_TEXT_BYTES,
+                "text_line_limit": MAX_COMPARE_TEXT_LINES,
+                "left_line_count": left_line_count,
+                "right_line_count": right_line_count,
+                "text_lines_equal": text_lines_equal,
+                "context_lines": context_lines,
+                "returned_diff_lines": len(diff_lines),
+                "diff_line_limit": MAX_COMPARE_DIFF_LINES,
+                "diff_byte_limit": MAX_COMPARE_DIFF_BYTES,
+                "truncated": diff_truncated,
+                "truncation_reason": diff_truncation_reason,
+            },
+        },
+        "diff": diff_lines,
+    }
+
+
+def _invoke_compare_files(root: Path, inputs: dict[str, Any]) -> dict[str, Any]:
+    allowed = {"left_path", "right_path", "context_lines"}
+    unknown = sorted(set(inputs) - allowed)
+    if unknown:
+        raise CapabilityUsageError(
+            "unknown compare_files input field(s): " + ", ".join(unknown)
+        )
+
+    left_path = inputs.get("left_path")
+    right_path = inputs.get("right_path")
+    context_lines = inputs.get("context_lines", DEFAULT_COMPARE_CONTEXT_LINES)
+
+    for field_name, value in (
+        ("left_path", left_path),
+        ("right_path", right_path),
+    ):
+        if not isinstance(value, str) or not value:
+            raise CapabilityUsageError(
+                f"compare_files input '{field_name}' must be a non-empty string"
+            )
+    if (
+        not isinstance(context_lines, int)
+        or isinstance(context_lines, bool)
+        or not 0 <= context_lines <= MAX_COMPARE_CONTEXT_LINES
+    ):
+        raise CapabilityUsageError(
+            "compare_files input 'context_lines' must be an integer from 0 "
+            f"to {MAX_COMPARE_CONTEXT_LINES}"
+        )
+
+    return compare_files(
+        root,
+        left_path,
+        right_path,
+        context_lines=context_lines,
+    )
+
+
 def assert_file(
     root: Path,
     raw_path: str,
@@ -987,6 +1213,53 @@ SEARCH_TEXT_OUTPUT_SCHEMA: dict[str, Any] = {
     },
 }
 
+COMPARE_FILES_INPUT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["left_path", "right_path"],
+    "properties": {
+        "left_path": {
+            "type": "string",
+            "description": "First Room-workspace-relative regular file.",
+        },
+        "right_path": {
+            "type": "string",
+            "description": "Second Room-workspace-relative regular file.",
+        },
+        "context_lines": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": MAX_COMPARE_CONTEXT_LINES,
+            "default": DEFAULT_COMPARE_CONTEXT_LINES,
+        },
+    },
+}
+
+COMPARE_FILES_OUTPUT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": [
+        "codex_room_capability",
+        "capability",
+        "ok",
+        "evidence",
+        "diff",
+    ],
+    "properties": {
+        "codex_room_capability": {"const": CAPABILITY_MARKER},
+        "capability": {"const": "compare_files"},
+        "ok": {"type": "boolean"},
+        "evidence": {"type": "object"},
+        "diff": {"type": "array", "items": {"type": "string"}},
+        "capability_version": {"type": "string"},
+        "implementation_sha256": {"type": "string"},
+        "durable_result_fields": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+    },
+}
+
+
 CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
     "assert_file": CapabilitySpec(
         capability_id="assert_file",
@@ -1017,6 +1290,45 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
             _sha256,
             assert_file,
             _invoke_assert_file,
+        ),
+    ),
+    "compare_files": CapabilitySpec(
+        capability_id="compare_files",
+        description=(
+            "Compare two bounded Room-workspace regular files exactly by bytes and "
+            "SHA-256. For small UTF-8 text differences, return a bounded unified "
+            "diff transiently while durable evidence retains only identities, "
+            "hashes, sizes, and diff status/count metadata."
+        ),
+        origin="core",
+        scope="core",
+        version="1",
+        input_schema=COMPARE_FILES_INPUT_SCHEMA,
+        output_schema=COMPARE_FILES_OUTPUT_SCHEMA,
+        durable_result_fields=("evidence",),
+        permissions={
+            "workspace_read": True,
+            "workspace_write": False,
+            "network": False,
+            "external_process": False,
+        },
+        side_effects="none",
+        verification={"status": "verified", "evidence": ["E-032"]},
+        handler=_invoke_compare_files,
+        implementation_components=(
+            MAX_COMPARE_FILE_BYTES,
+            MAX_COMPARE_TEXT_BYTES,
+            MAX_COMPARE_TEXT_LINES,
+            MAX_COMPARE_DIFF_LINES,
+            MAX_COMPARE_DIFF_BYTES,
+            DEFAULT_COMPARE_CONTEXT_LINES,
+            MAX_COMPARE_CONTEXT_LINES,
+            _workspace_path,
+            _compare_regular_file,
+            _compare_file_bytes,
+            _bounded_unified_diff,
+            compare_files,
+            _invoke_compare_files,
         ),
     ),
     "find_files": CapabilitySpec(

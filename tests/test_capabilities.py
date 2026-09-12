@@ -10,6 +10,7 @@ import codex_room.capabilities as capabilities
 from codex_room.capabilities import (
     CapabilityUsageError,
     assert_file,
+    compare_files,
     find_files,
     inspect_capability,
     invoke_capability,
@@ -104,6 +105,7 @@ def test_registry_exposes_assert_file_as_versioned_core_capability() -> None:
     assert registry["operation"] == "list"
     assert [item["id"] for item in registry["capabilities"]] == [
         "assert_file",
+        "compare_files",
         "find_files",
         "search_text",
     ]
@@ -574,6 +576,194 @@ def test_registered_search_text_rejects_invalid_inputs(
 ) -> None:
     with pytest.raises(CapabilityUsageError, match=match):
         invoke_capability(tmp_path, "search_text", inputs)
+
+
+def test_compare_files_reports_exact_equal_bytes_and_hashes(tmp_path: Path) -> None:
+    content = b"same\nbytes\n"
+    (tmp_path / "left.txt").write_bytes(content)
+    (tmp_path / "right.txt").write_bytes(content)
+
+    result = compare_files(tmp_path, "left.txt", "right.txt")
+
+    expected_hash = hashlib.sha256(content).hexdigest()
+    assert result["ok"] is True
+    assert result["evidence"]["byte_equal"] is True
+    assert result["evidence"]["left"]["sha256"] == expected_hash
+    assert result["evidence"]["right"]["sha256"] == expected_hash
+    assert result["evidence"]["left"]["size_bytes"] == len(content)
+    assert result["evidence"]["right"]["size_bytes"] == len(content)
+    assert result["evidence"]["text_diff"]["status"] == "not_needed_equal"
+    assert result["diff"] == []
+
+
+def test_compare_files_returns_bounded_transient_text_diff(tmp_path: Path) -> None:
+    (tmp_path / "left.txt").write_text(
+        "alpha\nbefore\nomega\n", encoding="utf-8"
+    )
+    (tmp_path / "right.txt").write_text(
+        "alpha\nafter\nomega\n", encoding="utf-8"
+    )
+
+    result = compare_files(tmp_path, "left.txt", "right.txt", context_lines=1)
+
+    assert result["evidence"]["byte_equal"] is False
+    text_diff = result["evidence"]["text_diff"]
+    assert text_diff["status"] == "available"
+    assert text_diff["text_lines_equal"] is False
+    assert text_diff["context_lines"] == 1
+    assert text_diff["truncated"] is False
+    assert any(line == "-before" for line in result["diff"])
+    assert any(line == "+after" for line in result["diff"])
+    assert all("before" not in json.dumps(value) for value in [result["evidence"]])
+
+
+def test_compare_files_distinguishes_line_ending_only_changes(tmp_path: Path) -> None:
+    (tmp_path / "left.txt").write_bytes(b"alpha\r\nbeta\r\n")
+    (tmp_path / "right.txt").write_bytes(b"alpha\nbeta\n")
+
+    result = compare_files(tmp_path, "left.txt", "right.txt")
+
+    assert result["evidence"]["byte_equal"] is False
+    assert result["evidence"]["text_diff"]["status"] == "available"
+    assert result["evidence"]["text_diff"]["text_lines_equal"] is True
+    assert result["diff"] == []
+
+
+def test_compare_files_does_not_diff_binary_inputs(tmp_path: Path) -> None:
+    (tmp_path / "left.bin").write_bytes(b"a\x00b")
+    (tmp_path / "right.bin").write_bytes(b"a\x00c")
+
+    result = compare_files(tmp_path, "left.bin", "right.bin")
+
+    assert result["evidence"]["byte_equal"] is False
+    assert result["evidence"]["text_diff"]["status"] == "non_text"
+    assert result["diff"] == []
+
+
+def test_compare_files_skips_text_diff_above_text_size_limit(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "left.txt").write_text("abcdef", encoding="utf-8")
+    (tmp_path / "right.txt").write_text("abcdeg", encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_COMPARE_TEXT_BYTES", 5)
+
+    result = compare_files(tmp_path, "left.txt", "right.txt")
+
+    assert result["evidence"]["byte_equal"] is False
+    assert result["evidence"]["text_diff"]["status"] == "size_limit"
+    assert result["diff"] == []
+
+
+def test_compare_files_skips_diff_above_text_line_limit(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "left.txt").write_text("a\nb\nc\n", encoding="utf-8")
+    (tmp_path / "right.txt").write_text("a\nb\nd\n", encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_COMPARE_TEXT_LINES", 2)
+
+    result = compare_files(tmp_path, "left.txt", "right.txt")
+
+    text_diff = result["evidence"]["text_diff"]
+    assert text_diff["status"] == "line_limit"
+    assert text_diff["left_line_count"] == 3
+    assert text_diff["right_line_count"] == 3
+    assert result["diff"] == []
+
+
+def test_compare_files_reports_diff_line_truncation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "left.txt").write_text("a\nb\nc\n", encoding="utf-8")
+    (tmp_path / "right.txt").write_text("x\ny\nz\n", encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_COMPARE_DIFF_LINES", 3)
+
+    result = compare_files(tmp_path, "left.txt", "right.txt", context_lines=0)
+
+    text_diff = result["evidence"]["text_diff"]
+    assert text_diff["status"] == "available"
+    assert text_diff["truncated"] is True
+    assert text_diff["truncation_reason"] == "line_limit"
+    assert text_diff["returned_diff_lines"] == 3
+
+
+def test_compare_files_reports_diff_byte_truncation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "left.txt").write_text("before\n", encoding="utf-8")
+    (tmp_path / "right.txt").write_text("after\n", encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_COMPARE_DIFF_BYTES", 1)
+
+    result = compare_files(tmp_path, "left.txt", "right.txt")
+
+    text_diff = result["evidence"]["text_diff"]
+    assert text_diff["truncated"] is True
+    assert text_diff["truncation_reason"] == "byte_limit"
+    assert result["diff"] == []
+
+
+@pytest.mark.parametrize("path", ["../outside.txt", "/tmp/outside.txt"])
+def test_compare_files_rejects_workspace_escape(tmp_path: Path, path: str) -> None:
+    (tmp_path / "inside.txt").write_text("inside", encoding="utf-8")
+
+    with pytest.raises(CapabilityUsageError, match="Room workspace"):
+        compare_files(tmp_path, path, "inside.txt")
+
+
+def test_compare_files_enforces_file_size_limit(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "left.txt").write_text("large", encoding="utf-8")
+    (tmp_path / "right.txt").write_text("small", encoding="utf-8")
+    monkeypatch.setattr(capabilities, "MAX_COMPARE_FILE_BYTES", 4)
+
+    with pytest.raises(CapabilityUsageError, match="file limit"):
+        compare_files(tmp_path, "left.txt", "right.txt")
+
+
+def test_registered_compare_files_exposes_safe_durable_contract(tmp_path: Path) -> None:
+    (tmp_path / "left.txt").write_text("before", encoding="utf-8")
+    (tmp_path / "right.txt").write_text("after", encoding="utf-8")
+
+    inspected = inspect_capability("compare_files")["capability"]
+    invoked = invoke_capability(
+        tmp_path,
+        "compare_files",
+        {"left_path": "left.txt", "right_path": "right.txt"},
+    )
+
+    assert inspected["origin"] == "core"
+    assert inspected["scope"] == "core"
+    assert inspected["version"] == "1"
+    assert inspected["durable_result_fields"] == ["evidence"]
+    assert inspected["permissions"] == {
+        "workspace_read": True,
+        "workspace_write": False,
+        "network": False,
+        "external_process": False,
+    }
+    assert inspected["side_effects"] == "none"
+    assert inspected["verification"] == {"status": "verified", "evidence": ["E-032"]}
+    assert invoked["capability_version"] == inspected["version"]
+    assert invoked["implementation_sha256"] == inspected["implementation_sha256"]
+    assert invoked["durable_result_fields"] == ["evidence"]
+    assert invoked["evidence"]["byte_equal"] is False
+    assert invoked["diff"]
+
+
+@pytest.mark.parametrize(
+    ("inputs", "match"),
+    [
+        ({"left_path": "a", "right_path": "b", "invented": True}, "unknown compare_files"),
+        ({"right_path": "b"}, "left_path"),
+        ({"left_path": "a"}, "right_path"),
+        ({"left_path": "a", "right_path": "b", "context_lines": -1}, "context_lines"),
+        ({"left_path": "a", "right_path": "b", "context_lines": 11}, "context_lines"),
+        ({"left_path": "a", "right_path": "b", "context_lines": True}, "context_lines"),
+    ],
+)
+def test_registered_compare_files_rejects_invalid_inputs(
+    tmp_path: Path, inputs: dict[str, object], match: str
+) -> None:
+    with pytest.raises(CapabilityUsageError, match=match):
+        invoke_capability(tmp_path, "compare_files", inputs)
 
 
 def test_inspect_and_invoke_share_exact_registered_version(tmp_path: Path) -> None:
