@@ -101,12 +101,15 @@ class RoomRuntime:
     )
     DETERMINISTIC_CAPABILITY_INSTRUCTION = (
         "<deterministic_capabilities>\n"
-        "For exact read-only file assertions inside this Room workspace, prefer "
-        "codex-room-cap assert-file RELATIVE_PATH [--exists] [--sha256 HEX] "
-        "[--json-valid] [--required-key KEY]. It returns one structured JSON result "
-        "and cannot read outside the Room workspace. You choose what should be "
-        "asserted and interpret the result; do not use this mechanical capability "
-        "as a substitute for judgment.\n"
+        "When a subproblem has explicit inputs, objectively checkable outputs, and "
+        "does not require fresh judgment for each execution, consider using deterministic "
+        "software instead of reasoning through the mechanics. Discover the currently "
+        "registered capabilities with 'codex-room-cap list'. Inspect one with "
+        "'codex-room-cap inspect CAPABILITY_ID'. Invoke a suitable capability with "
+        "'codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT' using the "
+        "manifest's input contract. Prefer an existing capability when it is adequate. "
+        "You remain responsible for deciding when a deterministic capability is warranted "
+        "and for interpreting its result; deterministic software does not replace judgment.\n"
         "</deterministic_capabilities>"
     )
 
