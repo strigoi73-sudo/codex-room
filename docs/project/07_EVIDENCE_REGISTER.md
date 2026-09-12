@@ -366,7 +366,17 @@ The reviewed PR head and the squash-merge commit both resolve to Git tree:
 
 `8f3348fd5688361a0a516ea88d76cf394d5c7944`
 
-so the merged source bytes are exactly the bytes covered by the PR-head Python and browser verification.
+so the merged production source bytes are exactly the bytes covered by the PR-head Python and browser verification.
+
+The first push-triggered `main` run after merge, `34703228720`, passed **135 tests** and failed one legacy-upgrade regression assertion because the test required `delivery_start_sequence == max_before`. Source inspection showed that `reserve_agent_c()` correctly captures the actual pre-join watermark inside its `BEGIN IMMEDIATE` transaction, while an active legacy worker can append another legitimate pre-join event after the test's earlier unsynchronized `max_before` observation. The production behavior was therefore unchanged; the test assertion was too strict for the documented concurrency boundary.
+
+Commit:
+
+`749b31ba73bb9e7f64e41ac4f4bf81519fc4ba97` — `Stabilize legacy C-upgrade regression`
+
+changed only `tests/test_three_agents.py` and `docs/project/06_DEVELOPMENT_CONTROL.md`: the test now requires the actual join watermark to be **at or after** the last sequence observed before the join request, while retaining the stronger behavioral checks that no pre-join public/private/overlay content reaches C. No production runtime file changed.
+
+GitHub Actions run `34703409739` on that canonical-`main` stabilization commit completed successfully with **136 passed, 2 warnings**.
 
 **Status:** IMPLEMENTED / VERIFIED.
 
