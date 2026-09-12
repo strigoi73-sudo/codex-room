@@ -877,5 +877,40 @@ Canonical-main GitHub Actions run `34723499027`: **235 passed, 2 warnings**.
 
 **PR #17 repair status:** IMPLEMENTED / VERIFIED deterministically.
 
-**P4.3e status:** NEEDS LIVE VERIFICATION. One fresh post-PR-#17 Room must repeat the unchanged probe and durably show all four registered capability invocations with correct structured evidence before P4.3 can close.
+**P4.3e final live verification**
+
+Fresh post-PR-#17 Room `room_2077937c86524ac3aaced1918dbe6050`, Round `round_a65e1ca8eb3d48248c06e1730e21923e`, repeated the unchanged prescribed probe.
+
+Observed durable export evidence:
+
+- the user prompt named no capability or registry command;
+- C was the designated starter and sole consuming participant;
+- A and B retained `context_consumed_at: null` and no outcome;
+- registry `list` durably identified all four CORE capabilities as version `1` with implementation SHA-256 identities:
+  - `assert_file` — `c79294869ae9b3d31b0e307dea5cc67d1f23d00f7ac0ff8385f3273206fde5cd`;
+  - `compare_files` — `d5dba06167ef60cdb037792a6c329bc59cb5a46668173fd54ec0b88d4cedee1b`;
+  - `find_files` — `8e377fef5c9a31d3e9183cddfa3c27bab9a6c1aae0b35949b6570f7250b60f31`;
+  - `search_text` — `d04df21b054865016ab726646ef5f1fdfedc6adef8a1aade79bfa0b75499c4d9`;
+- C separately inspected all four manifests, preserving CORE scope, read-only/no-network/no-external-process permissions, side effects `none`, and the same version/hash identities;
+- fixture creation recorded one completed `file_change`;
+- the first `find_files` invocation had malformed JSON and returned a structured `invalid_request`; C corrected the call without ad hoc fallback;
+- successful `find_files` invocation returned exactly three sorted matches:
+  - `p4_core_probe/alpha.txt`;
+  - `p4_core_probe/beta.txt`;
+  - `p4_core_probe/nested/gamma.txt`;
+  with `returned_count: 3`, no truncation, and the expected implementation identity;
+- successful `search_text` invocation returned exactly two matches for the probe literal:
+  - `p4_core_probe/alpha.txt`, line 2, column 1;
+  - `p4_core_probe/beta.txt`, line 2, column 1;
+  with `match_count: 2`, no truncation, and the expected implementation identity;
+- successful `compare_files` invocation reported `byte_equal: false`, exact per-file SHA-256/size evidence, bounded text-diff status `available`, and the expected implementation identity;
+- successful `assert_file` invocation reported `p4_core_probe/data.json` as an existing regular file, valid JSON, with required top-level keys `probe` and `status` all true, plus the expected implementation identity;
+- C FINISHed exactly `P4.3-LIBRARY-OK`;
+- the one-turn Round closed normally with `mutual_finish`.
+
+The malformed first `find_files` call is a recoverable call-construction error, analogous to the accepted P4.2 malformed-input proof: it was durably observable, corrected within the same turn, and followed by the required successful registered invocation. It does not weaken the successful end-to-end result.
+
+**P4.3e status:** COMPLETE / VERIFIED end to end — 2026-09-12.
+
+**P4.3 status:** COMPLETE / IMPLEMENTED / VERIFIED end to end — 2026-09-12.
 
