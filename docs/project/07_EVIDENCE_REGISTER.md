@@ -665,10 +665,32 @@ PR #11 squash-merged as:
 
 The first canonical-main run `34719622155` failed only the pre-existing `tests/test_orchestrator.py::test_stop_before_lease_expiry_cancels_without_false_error_or_retry` timing test after 163 other tests passed; no P4.2 parser/provenance regression test failed. A rerun of the exact same merged commit passed **164 tests, 2 warnings**. This is recorded as a hosted test flake, not as evidence that the failed attempt itself was green.
 
-The PR #11 provenance repair is therefore **IMPLEMENTED / VERIFIED deterministically**. End-to-end live telemetry still needs one fresh Room rerun.
+The PR #11 provenance repair is therefore **IMPLEMENTED / VERIFIED deterministically**.
+
+A final fresh live Room on the post-PR-#11 runtime satisfied the P4.2 end-to-end stop condition.
+
+Observed export evidence:
+
+- Room `room_db9f70efd99d4307a4410e22a8908ea5`, Round `round_cf33e6b2894e4b309b2071aa565e3aee`;
+- the user prompt required exact file/JSON/key verification but did **not** name `assert_file` or any registry command;
+- C was the designated starter and sole invoked/consuming participant; A/B both had `context_consumed_at = null` and `last_outcome = null`;
+- the Round executed exactly one agent turn;
+- telemetry recorded completed `deterministic_capability_registry` `list`, returning `assert_file` with origin/scope `core`, version `1`, and implementation SHA-256 `6f34376f64110d61d18f278597196b69c1214bba1a8c048c951c3332f049f7b3`;
+- telemetry then recorded completed registry `inspect` for `assert_file`, including its description, read-only/no-network/no-external-process permissions, no side effects, version/hash identity, and verified evidence `E-030`;
+- C created `p4_discovery_probe.json`;
+- the first registered invocation was safely surfaced as a failed `deterministic_capability` event with structured `invalid_request` because its input JSON was malformed;
+- C corrected the request within the same turn and retried through the registry path;
+- the successful `deterministic_capability` event recorded `capability: assert_file`, `capability_version: "1"`, the same implementation SHA-256, and `ok: true`;
+- the structured result independently recorded the subject as an existing regular file and all requested checks true: existence, JSON validity, required key `probe`, and required key `status`;
+- C FINISHed exactly `P4.2-DISCOVERY-OK`;
+- the Round closed normally with reason `mutual_finish`.
+
+The malformed first invocation is a recoverable call-construction error, not a failure of the capability or discovery path: the error was explicit and structured, no unsupported fallback was used, and the corrected registered invocation produced the required exact result.
+
+This final Room independently proves agent recognition of a deterministic subproblem, registry discovery without user-supplied capability identity, manifest inspection, registered invocation, exact version/hash continuity across discovery and execution, structured error observability, successful retry, durable result telemetry, and C-only settlement.
+
+**Status:** P4.2 COMPLETE — IMPLEMENTED / VERIFIED end to end on 2026-09-12.
 
 Because PR #9 changed tests only, the original P4.2 registry/runtime implementation source bytes were introduced by PR #8; PR #10 later changed only the institutional selection guidance in `orchestrator.py` plus its regression test.
 
-**Status:** P4.2 CORE implementation IMPLEMENTED / VERIFIED deterministically.
 
-**Remaining limit:** rerun the same bounded live probe on the post-PR-#11 runtime. P4.2 becomes COMPLETE only if a live Room, without being given the capability name, recognizes the exact mechanical subproblem, records registry discovery, invokes the suitable registered capability, and produces the expected structured verification result. End-to-end discovery behavior remains **NEEDS VERIFICATION**.
