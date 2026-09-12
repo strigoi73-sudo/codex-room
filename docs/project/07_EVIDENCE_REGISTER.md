@@ -765,5 +765,41 @@ Canonical-main GitHub Actions run `34721893200`: **186 passed, 2 warnings**.
 
 **P4.3b status:** IMPLEMENTED / VERIFIED.
 
-**Remaining P4.3 limit:** the broader CORE library is still incomplete. `search_text` and `compare_files` remain to be implemented and the resulting four-capability library requires bounded live evaluation before P4.3 can close.
+#### P4.3c — `search_text`
+
+PR #14 added registered CORE `search_text` version `1` as a bounded literal text-search primitive.
+
+Implemented/verified properties:
+
+- candidate discovery composes the already verified `find_files` path and propagates any candidate truncation;
+- queries are single-line literal UTF-8 strings rather than regex programs;
+- case sensitivity is explicit and defaults to true;
+- search roots remain workspace-confined, with the inherited file-glob/hidden/symlink protections from `find_files`;
+- only UTF-8, NUL-free text is searched; non-text candidates are counted and skipped;
+- oversized candidates are explicitly reported as incomplete rather than silently excluded;
+- candidate files are 100 by default / 200 maximum;
+- matches are 50 by default / 100 maximum;
+- per-file search size is 2 MiB by default / 10 MiB maximum;
+- aggregate reads are capped at 20 MiB;
+- runtime match excerpts are capped to 240 characters each and total transient match evidence to 32 KiB;
+- durable match locations are independently capped at 16 KiB;
+- the raw query is not persisted in durable Room telemetry; durable evidence carries its SHA-256, length, exact locations, counts, limits, and truncation status;
+- runtime excerpts are deliberately outside `durable_result_fields`, and adapter regression coverage proves excerpt content is dropped from durable telemetry;
+- permissions are workspace-read only, with no workspace write, network, or external process.
+
+Exact PR #14 head:
+
+`0afb3b7a4b2dc52e451543ba1a25d51cf015155b`
+
+GitHub Actions PR run `34722267899`: **216 passed, 2 warnings**.
+
+PR #14 squash-merged as:
+
+`eb6c29f346081affa61eb412006f460426bafc40` — `P4.3c: add bounded search_text capability`
+
+Canonical-main GitHub Actions run `34722497151`: **216 passed, 2 warnings**.
+
+**P4.3c status:** IMPLEMENTED / VERIFIED.
+
+**Remaining P4.3 limit:** `compare_files` remains to be implemented and the resulting four-capability library requires bounded live evaluation before P4.3 can close.
 
