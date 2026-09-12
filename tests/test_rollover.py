@@ -64,6 +64,10 @@ def test_rollover_http_endpoint_leaves_successor_preparing(tmp_path):
         successor = response.json()
         assert successor["status"] == RoomStatus.PREPARING
         assert successor["active_round"]["prompt"] == "visible API checkpoint"
+        assert successor["active_round"]["starting_agent"] == "agent_c"
+        assert {agent["agent_key"] for agent in successor["agents"]} == {
+            "agent_a", "agent_b", "agent_c"
+        }
 
 
 async def _finished_source(
@@ -76,11 +80,18 @@ async def _finished_source(
         CreateRoomRequest(
             title="Long-lived source",
             topic=topic,
-            include_agent_c=include_c,
             starting_agent="agent_a",
             max_consecutive_passes=1,
+            auto_start=False,
         )
     )
+    if not include_c:
+        c = await runtime.db.get_agent(snapshot["id"], "agent_c")
+        assert c is not None
+        await runtime.db.remove_agent(snapshot["id"], "agent_c")
+        if c.get("thread_id"):
+            await runtime.adapter.archive_thread(c["thread_id"])
+    await runtime.start_round(snapshot["id"], snapshot["active_round_id"])
     await wait_until(
         lambda: _room_has_status(runtime, snapshot["id"], RoomStatus.FINISHED)
     )
@@ -804,7 +815,10 @@ async def test_duplicate_rollover_requests_resolve_to_one_successor(tmp_path):
         assert first["id"] == second["id"]
         rooms = await runtime.db.list_rooms(include_archived=True)
         assert len(rooms) == 2
-        assert len(await runtime.db.get_agents(first["id"])) == 2
+        assert len(await runtime.db.get_agents(source["id"])) == 2
+        assert len(await runtime.db.get_agents(first["id"])) == 3
+        assert first["active_round"]["starting_agent"] == "agent_c"
+        assert first["metadata"]["lineage"]["successor_added_participants"] == ["agent_c"]
     finally:
         await runtime.close()
 
