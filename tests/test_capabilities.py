@@ -362,6 +362,19 @@ def test_search_text_returns_literal_matches_and_private_runtime_excerpts(
     assert "query" not in result["evidence"]
 
 
+def test_search_text_bounds_long_line_excerpts(tmp_path: Path) -> None:
+    line = ("a" * 500) + "needle" + ("b" * 500)
+    (tmp_path / "long.txt").write_text(line, encoding="utf-8")
+
+    result = search_text(tmp_path, "needle", include_globs=["*.txt"])
+
+    match = result["matches"][0]
+    assert len(match["excerpt"]) == capabilities.SEARCH_TEXT_EXCERPT_CHARS
+    assert "needle" in match["excerpt"]
+    assert match["column"] == 501
+    assert match["excerpt_start_column"] > 1
+
+
 def test_search_text_treats_query_as_literal_not_regex(tmp_path: Path) -> None:
     (tmp_path / "data.txt").write_text("a.b\naxb\n", encoding="utf-8")
 
