@@ -729,5 +729,41 @@ Canonical-main GitHub Actions run `34721368173`: **167 passed, 2 warnings**.
 
 **P4.3a status:** IMPLEMENTED / VERIFIED.
 
-**Remaining P4.3 limit:** the broader CORE library is still incomplete. `find_files`, `search_text`, and `compare_files` remain to be implemented and the resulting four-capability library requires bounded live evaluation before P4.3 can close.
+#### P4.3b — `find_files`
+
+PR #13 added registered CORE `find_files` version `1` as the first new standard-library primitive.
+
+Implemented/verified properties:
+
+- scan roots are resolved inside the Room workspace; escapes are rejected;
+- only regular files are returned;
+- file and directory symlinks are never followed;
+- directory traversal errors fail visibly instead of silently dropping subtrees;
+- include/exclude glob filters use host-independent POSIX-style matching with zero-depth `**/` support and normalize Windows backslashes at the registered-input boundary;
+- hidden files/directories are excluded unless explicitly requested;
+- optional minimum/maximum size filters are exact byte comparisons;
+- results use deterministic sorted depth-first traversal;
+- one invocation returns 100 matches by default and at most 200;
+- match payload is capped at **48 KiB** with explicit `result_bytes` truncation;
+- traversal is capped at **100,000 entries** with explicit `scan_limit` truncation;
+- exceeding the requested result count reports explicit `max_results` truncation;
+- the result carries only structured path/size evidence and declares `evidence` as its durable result field;
+- JSON byte accounting uses escaped JSON representation so POSIX surrogate-escaped filenames cannot break telemetry sizing;
+- permissions are workspace-read only, with no workspace write, network, or external process.
+
+Exact PR #13 head:
+
+`4f5c244437c99130362f3e86e9f618198acb18c9`
+
+GitHub Actions PR run `34721808859`: **186 passed, 2 warnings**.
+
+PR #13 squash-merged as:
+
+`56d08cd733fdc4598fc878b3778bce664e193aca` — `P4.3b: add bounded find_files capability`
+
+Canonical-main GitHub Actions run `34721893200`: **186 passed, 2 warnings**.
+
+**P4.3b status:** IMPLEMENTED / VERIFIED.
+
+**Remaining P4.3 limit:** the broader CORE library is still incomplete. `search_text` and `compare_files` remain to be implemented and the resulting four-capability library requires bounded live evaluation before P4.3 can close.
 
