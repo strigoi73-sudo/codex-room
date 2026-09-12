@@ -801,5 +801,42 @@ Canonical-main GitHub Actions run `34722497151`: **216 passed, 2 warnings**.
 
 **P4.3c status:** IMPLEMENTED / VERIFIED.
 
-**Remaining P4.3 limit:** `compare_files` remains to be implemented and the resulting four-capability library requires bounded live evaluation before P4.3 can close.
+#### P4.3d — `compare_files`
+
+PR #16 added registered CORE `compare_files` version `1` as the fourth initial standard-library primitive.
+
+Implemented/verified properties:
+
+- both inputs are Room-workspace-relative regular files;
+- exact byte equality is computed independently of the text-diff path;
+- SHA-256 and exact byte size are reported for both files;
+- each comparable file is capped at **50 MiB**;
+- equal files avoid unnecessary text-diff work;
+- unequal files up to **2 MiB** each may receive a UTF-8 text comparison;
+- UTF-8 text comparison is capped at **20,000 lines per file**;
+- runtime unified diff output is capped at **200 lines** and **32 KiB**;
+- diff context is configurable from 0 through 10 lines, defaulting to 3;
+- binary/NUL or invalid UTF-8 inputs retain exact byte comparison and report text status `non_text`;
+- oversized text-diff candidates retain exact byte comparison and report `size_limit`;
+- line-heavy text retains exact byte comparison and reports `line_limit`;
+- line-ending-only differences are explicitly distinguishable as `byte_equal: false` with `text_lines_equal: true`;
+- transient unified-diff content is deliberately outside `durable_result_fields`; durable Room evidence retains only paths, sizes, SHA-256 values, byte equality, and bounded text-diff status/count metadata;
+- adapter regression coverage proves diff content is dropped from durable telemetry;
+- permissions are workspace-read only, with no workspace write, network, or external process.
+
+Exact PR #16 head:
+
+`6e5b7161dd2d75c33e1527db5d51ce552d0e4888`
+
+GitHub Actions PR run `34722624669`: **235 passed, 2 warnings**.
+
+PR #16 squash-merged as:
+
+`260431ad7ca64ed0c9f1f3b3bf0122ca98e4de6c` — `P4.3d: add bounded compare_files capability`
+
+Canonical-main GitHub Actions run `34722758182`: **235 passed, 2 warnings**.
+
+**P4.3d status:** IMPLEMENTED / VERIFIED.
+
+**Remaining P4.3 limit:** the initial four-capability CORE library is code-complete but still requires one bounded fresh-Room live evaluation before P4.3 can close.
 
