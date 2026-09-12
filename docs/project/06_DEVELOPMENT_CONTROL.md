@@ -7,9 +7,9 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.2 — Capability registry and discovery** is COMPLETE. A fresh post-PR-#11 Room, without being given the capability name, recorded registry `list` and `inspect`, created the probe file, recovered from one malformed invocation request, then successfully invoked registered `assert_file` with version/hash identity and all requested checks true. C alone FINISHed exactly `P4.2-DISCOVERY-OK` and the Round closed normally.
+- **What just changed?** **P4.3a — Generic bounded capability-result telemetry** is IMPLEMENTED / VERIFIED. Registered capabilities can now declare which result fields are safe for durable Room evidence; the adapter persists only those fields, preserves legacy `assert_file` telemetry, rejects malformed declarations, and explicitly truncates declared evidence above 64 KiB. PR #12 merged as `2b697de8597bc06cfe21044854869273fb0cceee`; canonical-main run `34721368173` passed **167 tests, 2 warnings**.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **What is next?** **P4.3 — Minimal CORE standard library**: choose and implement the smallest broadly useful default capability set that earns its permanent cost, using the P4.2 registry/discovery path rather than hard-coding tool knowledge into agents.
+- **What is next?** **P4.3b — `find_files`**: add the first new CORE primitive as a read-only, workspace-confined, bounded, deterministic file-discovery capability using the P4.2 registry and P4.3a durable-result path.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -84,11 +84,22 @@ Final live verification on the post-PR-#11 runtime satisfied the stop condition:
 P4.2 is closed.
 
 #### P4.3 — Minimal CORE standard library
-**Work state:** PLANNED  
-**Reality / evidence:** DECIDED / NOT IMPLEMENTED  
-**Decision:** D-022
+**Work state:** IN PROGRESS  
+**Reality / evidence:** PARTIALLY IMPLEMENTED / VERIFIED  
+**Decision:** D-022  
+**Evidence:** E-032
 
 Select the smallest set of broadly useful deterministic primitives that should exist in every new Personal Room. Add only capabilities with clear recurring value, compact contracts, bounded permissions/side effects, and deterministic verification. Built-in capabilities must use the same registry/discovery/invocation surface proven by P4.2.
+
+Current sequence:
+
+- **P4.3a — Generic bounded capability-result telemetry: COMPLETE / IMPLEMENTED / VERIFIED.** Each capability may declare `durable_result_fields`; safe invocation telemetry persists only common identity/status fields plus those declared result fields. Invalid declarations are not promoted, arbitrary shell output remains excluded, legacy `assert_file` results remain compatible, and durable evidence above 64 KiB is replaced by explicit truncation metadata. PR #12 exact head `e35d835d54a7af72e4040d5ef86dc0dcaae918b8` passed **167 tests, 2 warnings**; squash merge `2b697de8597bc06cfe21044854869273fb0cceee` passed canonical-main run `34721368173` with **167 tests, 2 warnings**.
+- **P4.3b — `find_files`: IN PROGRESS.** First new CORE primitive.
+- **P4.3c — `search_text`: PLANNED.**
+- **P4.3d — `compare_files`: PLANNED.**
+- **P4.3e — bounded live evaluation of the four-capability CORE library: PLANNED.**
+
+`query_data` remains a post-evaluation candidate, not part of the initial P4.3 implementation commitment.
 
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
