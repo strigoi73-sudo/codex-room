@@ -235,6 +235,19 @@ def test_find_files_rejects_workspace_escape(tmp_path: Path, path: str) -> None:
         find_files(tmp_path, path)
 
 
+def test_find_files_does_not_silently_ignore_walk_errors(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def broken_walk(*args, **kwargs):
+        kwargs["onerror"](OSError("denied"))
+        return []
+
+    monkeypatch.setattr(capabilities.os, "walk", broken_walk)
+
+    with pytest.raises(CapabilityUsageError, match="could not scan workspace"):
+        find_files(tmp_path)
+
+
 def test_registered_find_files_exposes_bounded_read_only_contract(tmp_path: Path) -> None:
     artifact = tmp_path / "probe.json"
     artifact.write_text('{"probe": true}', encoding="utf-8")
