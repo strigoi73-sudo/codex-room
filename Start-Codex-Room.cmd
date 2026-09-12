@@ -6,13 +6,16 @@ if not exist ".venv\Scripts\python.exe" (
   pause
   exit /b 1
 )
-if not defined CODEX_ROOM_CODEX_BIN set "CODEX_ROOM_CODEX_BIN=%LOCALAPPDATA%\OpenAI\Codex\bin\codex.exe"
-if not exist "%CODEX_ROOM_CODEX_BIN%" (
-  echo Configured Codex runtime is missing: %CODEX_ROOM_CODEX_BIN%
-  echo Set CODEX_ROOM_CODEX_BIN to a current codex.exe and try again.
-  pause
-  exit /b 1
+if defined CODEX_ROOM_CODEX_BIN (
+  if not exist "%CODEX_ROOM_CODEX_BIN%" (
+    echo Configured Codex runtime override is missing: %CODEX_ROOM_CODEX_BIN%
+    echo Clear CODEX_ROOM_CODEX_BIN or point it to a compatible codex.exe and try again.
+    pause
+    exit /b 1
+  )
+  echo Using Codex runtime override: %CODEX_ROOM_CODEX_BIN%
+) else (
+  echo Using SDK-pinned Codex runtime.
 )
-echo Using Codex runtime: %CODEX_ROOM_CODEX_BIN%
 echo Codex Room agents: gpt-5.6-terra with high reasoning
 ".venv\Scripts\python.exe" -m codex_room
