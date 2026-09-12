@@ -437,7 +437,6 @@ def search_text(
         include_globs=include_globs,
         exclude_globs=exclude_globs,
         include_hidden=include_hidden,
-        max_size_bytes=max_file_bytes,
         max_results=max_files,
     )
     candidate_evidence = candidates_result["evidence"]
@@ -453,11 +452,14 @@ def search_text(
     bytes_read = 0
     text_bytes_searched = 0
     skipped_non_text = 0
-    skipped_oversize_after_discovery = 0
+    skipped_oversize_files = 0
     truncation_reason: str | None = None
 
     for candidate in candidates:
         candidate_size = int(candidate["size_bytes"])
+        if candidate_size > max_file_bytes:
+            skipped_oversize_files += 1
+            continue
         if bytes_read + candidate_size > MAX_SEARCH_TEXT_TOTAL_BYTES:
             truncation_reason = "total_bytes"
             break
@@ -476,7 +478,7 @@ def search_text(
             break
         bytes_read += len(data)
         if len(data) > max_file_bytes:
-            skipped_oversize_after_discovery += 1
+            skipped_oversize_files += 1
             continue
 
         if b"\x00" in data:
@@ -547,6 +549,8 @@ def search_text(
             if candidate_truncation_reason
             else "candidate_limit"
         )
+    if truncation_reason is None and skipped_oversize_files:
+        truncation_reason = "oversize_files"
 
     return {
         "codex_room_capability": CAPABILITY_MARKER,
@@ -566,7 +570,7 @@ def search_text(
             "bytes_read": bytes_read,
             "text_bytes_searched": text_bytes_searched,
             "skipped_non_text": skipped_non_text,
-            "skipped_oversize_after_discovery": skipped_oversize_after_discovery,
+            "skipped_oversize_files": skipped_oversize_files,
             "max_file_bytes": max_file_bytes,
             "total_byte_limit": MAX_SEARCH_TEXT_TOTAL_BYTES,
             "match_byte_limit": MAX_SEARCH_TEXT_MATCH_BYTES,
@@ -621,6 +625,12 @@ def _invoke_search_text(root: Path, inputs: dict[str, Any]) -> dict[str, Any]:
             "search_text input 'query' must be a non-empty single-line string "
             f"of at most {MAX_SEARCH_TEXT_QUERY_CHARS} characters"
         )
+    try:
+        query.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise CapabilityUsageError(
+            "search_text input 'query' must be valid UTF-8 text"
+        ) from exc
     if not isinstance(include_globs, list) or any(
         not isinstance(pattern, str) for pattern in include_globs
     ):
