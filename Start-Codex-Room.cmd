@@ -1,6 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
+title Codex Room Server
 if not exist ".venv\Scripts\python.exe" (
   echo Codex Room environment is missing. Re-run the project setup.
   pause
