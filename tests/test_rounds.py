@@ -509,6 +509,7 @@ async def test_early_triad_profile_migration_repairs_exact_observed_builtins(
         c_default = await database._fetchone(
             connection,
             "SELECT developer_instructions FROM agent_profiles WHERE default_slot='agent_c'",
+            (),
         )
     assert c_default is not None
     assert c_default["developer_instructions"] == AGENT_C_INTEGRATOR_INSTRUCTIONS
