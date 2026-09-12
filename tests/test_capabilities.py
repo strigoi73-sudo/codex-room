@@ -113,8 +113,9 @@ def test_registry_exposes_assert_file_as_versioned_core_capability() -> None:
         "external_process": False,
     }
     assert manifest["side_effects"] == "none"
-    assert manifest["verification"]["status"] == "verified"
-    assert manifest["input_schema"]["required"] == ["path"]
+    inspected = inspect_capability("assert_file")["capability"]
+    assert inspected["verification"]["status"] == "verified"
+    assert inspected["input_schema"]["required"] == ["path"]
 
 
 def test_inspect_and_invoke_share_exact_registered_version(tmp_path: Path) -> None:
