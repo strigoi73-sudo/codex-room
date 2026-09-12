@@ -545,4 +545,26 @@ PR #6 squash-merged to canonical `main` as:
 
 Post-merge GitHub Actions run `34709822193`: **150 passed, 2 warnings**.
 
-**Remaining limit:** repeat the same live Room smoke on the repaired build and confirm that the export contains the direct `deterministic_capability` result. Until that export is inspected, the end-to-end capability path remains **NEEDS VERIFICATION** and P4.1 remains IN PROGRESS.
+A second live Room smoke on the activity-type repair then showed:
+
+- C was again the only invoked/consuming participant;
+- the Round closed after one C FINISH with exactly `P4.1-CAPABILITY-OK`;
+- a `file_change` tool-activity event was exported;
+- a `command_execution` tool-activity event was exported;
+- no `deterministic_capability` event was exported.
+
+This proves the camelCase activity-type normalization repaired the broader telemetry loss, while isolating the remaining issue to capability provenance recognition. The pinned Codex command presentation is shell-wrapped on Windows; its parsed `command_actions` preserve the inner PowerShell script. PR #7 therefore authenticates capability invocations against those parsed inner commands, still requiring a direct `codex-room-cap assert-file` call and rejecting pipes, semicolons, `&&`, and forged `echo` forms.
+
+Exact PR #7 head:
+
+`0cdf2293f4f036c5557dd8bae800de2cb88c112c`
+
+GitHub Actions run `34711798262`: **152 passed, 2 warnings**.
+
+PR #7 squash-merged to canonical `main` as:
+
+`9909d1525a4ddef495a783c340cfd6bddf54c90d` — `P4.1: Recognize shell-wrapped capability calls`
+
+Post-merge GitHub Actions run `34711878505`: **152 passed, 2 warnings**.
+
+**Remaining limit:** one final repeat of the same live Room smoke is required. P4.1 is complete only if the export independently records a `tool_activity` event with `type: deterministic_capability`, `capability: assert_file`, and `ok: true`. Until then, the end-to-end capability path remains **NEEDS VERIFICATION** and P4.1 remains IN PROGRESS.
