@@ -154,11 +154,14 @@ Implementation details such as warning thresholds, UI presentation, carry-forwar
 The README's **First run** section still says the user may choose whether a new Room includes Agent C. Current source and D-020 instead make every new Personal Room an A/B/C triad. The later README **Adding Agent C** section correctly describes the new architecture, so the document is internally inconsistent. This is documentation/intent drift, not evidence of a runtime defect.
 
 ### I-003 — B SDK-thread/profile continuity residue
+**Reality:** OBSERVED ISSUE — historical provider-side residue; current recurrence not demonstrated  
 **Evidence qualifier:** NEEDS VERIFICATION  
 **Priority:** LOW  
-**Last known evidence:** 2026-09-08
+**Fresh evidence:** 2026-09-12 A2 source/test inspection
 
-An older B thread appeared to retain pair-era developer-header residue. Do not assume this is current. Recheck only when profile/thread continuity work makes it relevant.
+A2 found that the current implementation repairs only the known stale pair-era A/B default/snapshot hashes in live unmodified Rooms, preserves archived/sealed/custom state, and records the migration once. Adapter/runtime tests show that a targeted profile rebind evicts only the selected cache entry, resumes the same persistent SDK thread ID with the current developer instructions, fails closed if the SDK returns another identity, and quarantines the worker on a failed resume without changing the durable thread ID.
+
+The remaining uncertainty is narrower than the original observation: current deterministic evidence does **not** independently prove that the provider-side persistent thread has actually adopted the replacement developer instructions after same-thread resume. The runtime's own audit event therefore says instruction application “awaits participant verification.” Keep I-003 open as low-priority **NEEDS VERIFICATION** unless A2 later determines that a live provider-side check is worth its model cost.
 
 ## Deferred work
 
