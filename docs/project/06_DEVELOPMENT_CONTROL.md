@@ -43,6 +43,21 @@ P4.1 is closed. Do not broaden this slice merely because the substrate now exist
 
 #### P4.2 — Capability registry and discovery
 **Work state:** IN PROGRESS  
+**Reality / evidence:** IMPLEMENTATION IN REVIEW
+
+Bounded scope:
+
+- first-class manifests with stable ID, origin/scope, version, implementation digest, typed contracts, permissions/side effects, and verification metadata;
+- one discovery surface to list, inspect, and invoke registered capabilities;
+- migrate the already verified `assert_file` capability behind the registry while retaining its compatibility command;
+- replace the hard-coded tool prompt with general agent guidance for deciding when deterministic software is warranted and discovering what exists;
+- preserve structured discovery/invocation telemetry;
+- implement only the static CORE registry here. Custom registration, lineage persistence, rollover inheritance, Personal promotion, and the broader default library remain later P4 work.
+
+Stop condition: deterministic tests plus one bounded live Room should show an agent recognizing a mechanical subproblem, discovering the available capability without being given its name, and invoking it through the registry path with durable telemetry.
+
+#### P4.2 — Capability registry and discovery
+**Work state:** IN PROGRESS  
 **Reality / evidence:** IMPLEMENTATION IN REVIEW  
 **Decision:** D-022
 
