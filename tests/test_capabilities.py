@@ -72,3 +72,15 @@ def test_cli_emits_one_machine_readable_result(tmp_path: Path, monkeypatch, caps
     assert payload["codex_room_capability"] == 1
     assert payload["capability"] == "assert_file"
     assert payload["ok"] is True
+
+
+def test_exists_assertion_requires_regular_file(tmp_path: Path) -> None:
+    directory = tmp_path / "artifact"
+    directory.mkdir()
+
+    result = assert_file(tmp_path, "artifact", exists=True)
+
+    assert result["ok"] is False
+    assert result["subject"]["exists"] is True
+    assert result["subject"]["is_file"] is False
+    assert result["checks"][0]["actual"] is False
