@@ -1,7 +1,7 @@
 # Codex Room — Evidence Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-11  
+**Last updated:** 2026-09-12  
 **Scope:** Compact empirical record supporting important project claims.  
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
@@ -330,3 +330,44 @@ At 0.147.0, the high-level public `AsyncCodex` convenience API exposes account/l
 **Evidence qualification:** VERIFIED for existence and shape of the 0.147.0 app-server rate-limit protocol; NEEDS VERIFICATION for the eventual Codex Room integration implementation and runtime behavior.
 
 **Significance:** D-019 can be developed against provider-reported structured usage data rather than an internally estimated weekly allowance.
+
+
+### E-027 — D-020 permanent-triad and C-integration migration
+**Date:** 2026-09-12  
+**Kind:** Current-source inspection + targeted regression coverage + GitHub PR/CI + local browser verification + exact-tree identity
+
+D-020 was implemented through GitHub PR #3. The exact reviewed/tested PR head was:
+
+`2748e2900024d99463eacf2b9e9398a0718c5f74`
+
+Implemented behavior at that version includes:
+
+- new Personal Rooms always create A/B/C with distinct persistent threads;
+- C is the ordinary default starter, while explicit participant or `either` starts remain available;
+- historical A/B Rooms remain unchanged unless explicitly upgraded; rollover successors become triads even when the predecessor is a historical pair;
+- direct A↔B selective routing remains supported while public peer work is passively readable by C;
+- triad settlement excludes genuinely unengaged participants rather than forcing unnecessary model calls;
+- unread passive A/B MESSAGE material for C is detected mechanically before closure and produces one durable runnable `integration_required` trigger when no existing C opportunity is already open;
+- C receives pending peer material and the integration trigger through normal ordered delivery coalescing and may finish or redelegate;
+- restart/idempotence, direct peer return to C, symmetric A↔B routing, legacy upgrade, rollover, API, and static UI behavior have targeted regression coverage;
+- inactivity closure respects open deliveries so a pending C integration trigger cannot be closed out by the watchdog.
+
+Verification on the exact PR head:
+
+- GitHub Actions run `34701476286`: **136 passed, 2 warnings** using the canonical Python suite;
+- local `C:\Codex Room\test-transcript-stability.ps1` on the detached exact PR head: **3 passed (11.5s)**;
+- the local workspace was then returned to a clean `main` state before the PR merge.
+
+PR #3 was squash-merged to canonical `main` as:
+
+`12b156853c9c8b053eaae63aec44f44fc83618af` — `D-020: Permanent Personal triad and C integration barrier`
+
+The reviewed PR head and the squash-merge commit both resolve to Git tree:
+
+`8f3348fd5688361a0a516ea88d76cf394d5c7944`
+
+so the merged source bytes are exactly the bytes covered by the PR-head Python and browser verification.
+
+**Status:** IMPLEMENTED / VERIFIED.
+
+**Limit:** this verification establishes the deterministic runtime/UI contract and exact merged bytes. It is not a new live multi-agent production exercise against a long-running real Room; A2 should evaluate the post-D-020 architecture using the evidence appropriate to each assurance claim.

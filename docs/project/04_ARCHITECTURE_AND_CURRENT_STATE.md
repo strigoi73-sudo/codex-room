@@ -1,6 +1,6 @@
 # Codex Room — Architecture & Current State
 
-**Last synthesized:** 2026-09-11  
+**Last synthesized:** 2026-09-12  
 **Scope:** Best current technical synthesis from the canonical source baseline, dated implementation/test evidence, and current repository state.  
 **Freshness:** Moderate to high volatility. Verify consequential current-state claims against newer source, tests, or runtime evidence when available.
 
@@ -68,7 +68,7 @@ Current semantics:
 - `["all"]` deliberately invokes all peers;
 - omitted/null targets preserve legacy all-peer fan-out for compatibility;
 - a targeted public message remains readable to authorized non-target peers;
-- passive readable deliveries do not initiate turns and do not block settlement;
+- passive readable deliveries do not initiate turns; ordinary passive delivery remains non-runnable, while unread passive A/B MESSAGE material delivered to C participates in D-020's integration-before-closure barrier;
 - a later legitimate trigger consumes earlier passive readable information in sequence order;
 - passive information newer than the trigger remains pending;
 - running agents retain serialized backlog behavior rather than receiving concurrent turns;
@@ -169,7 +169,28 @@ Hosted verification for the merged repair passed **130 tests, 2 warnings** on ca
 
 **Operational note:** complete exports intentionally scale with total Room history; later scalability work may revisit streaming/pagination if demonstrated Room sizes make full materialization expensive.
 
-## 12. Runtime-state and work-queue caution
+## 12. Permanent Personal triad and integration-before-closure
+
+**IMPLEMENTED / VERIFIED — 2026-09-12**
+
+D-020 aligned Personal runtime behavior with the settled three-agent production architecture.
+
+Current behavior:
+
+- every new Personal Room is created with A — Implementer, B — Verifier, and C — Integrator, each on a distinct persistent SDK thread;
+- C is the default starter for new Rooms, prepared Rounds without an explicit starter, new-topic compatibility flow, and rollover successor Rooms; explicit A, B, C, or `either` starts remain available where deliberately requested;
+- historical A/B Rooms remain valid and are not silently upgraded; the explicit legacy upgrade path adds a fresh C while preserving A/B identities and pre-join history boundaries;
+- rollover from a historical A/B predecessor creates a new triad successor and records that C was added in successor lineage metadata;
+- A and B may route MESSAGE outcomes directly to each other. Public peer messages remain readable to authorized non-target peers, so C can accumulate passive A/B context without a model invocation;
+- settlement follows actual engagement in triad Rooms, allowing C to solve a task without forcing unused A/B turns;
+- if C has unread passive A/B `agent_message` deliveries when a Round would otherwise close, the runtime creates one durable runnable `integration_required` event for C. C consumes that trigger together with the pending passive peer material through normal ordered batch coalescing;
+- an already-open or running C turn counts as an integration opportunity; the barrier does not create a second simultaneous C invocation;
+- the integration trigger survives restart through ordinary durable deliveries, and inactivity closure now respects any open delivery so it cannot race a pending integration turn;
+- after integration, C may finish, synthesize, or redelegate. Coordination responsibility does not give C superior judgment over A or B.
+
+Verification evidence is recorded in E-027. On the exact reviewed PR head, GitHub Actions passed **136 tests, 2 warnings** and the specialized local Playwright suite passed **3 tests**. The squash-merge commit on `main` has the same Git tree as the reviewed/tested PR head.
+
+## 13. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 

@@ -6,26 +6,37 @@
 
 ## Operator summary
 
-- **Where are we?** The weekly model-usage allowance refreshed early on 2026-09-12, so the pre-refresh hold is over. The minimum Engineering Foundation and the GPT Project review are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The anticipated 2026-09-15 usage-refresh constraint cleared early, and the human principal explicitly started D-020 on 2026-09-12. D-020 is now in progress ahead of A2. I-001 remains fixed and verified, the Project-source review remains complete, and the Personal daily usage pacing limit remains approved planned development under D-019.
-- **What is blocked?** Nothing is blocking the planned D-020 implementation.
-- **What is next?** Complete and verify the **permanent Personal triad / C-integration migration**. After it is implemented and adequately verified, **A2 — Assurance Pass 2** follows immediately.
-- **What are we deliberately not doing?** No Assurance Pass 2 before the D-020 migration is verified; no new in-Room A/B/C exercises; no P4 implementation; no archive/retrieval work; no adjacent refactoring.
+- **Where are we?** The minimum Engineering Foundation, GPT Project review, and D-020 permanent Personal triad / C-integration migration are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
+- **What just changed?** D-020 was implemented through PR #3 and verified on 2026-09-12. New Personal Rooms are permanent A/B/C triads with C-first defaults and a mechanical integration-before-closure barrier. I-001 remains fixed and verified, and the Personal daily usage pacing limit remains approved planned development under D-019.
+- **What is blocked?** Nothing currently blocks **A2 — Assurance Pass 2**.
+- **What is next?** Begin **A2 — Assurance Pass 2** against the intended post-D-020 architecture.
+- **What are we deliberately not doing?** No P4 implementation, archive/retrieval work, new in-Room A/B/C exercises, or adjacent refactoring before the bounded A2 pass unless the human principal changes priorities.
 
 ## Current Focus
 
-### D-020 triad migration ready ahead of A2
-**Work state:** IN PROGRESS
+### A2 ready after verified D-020 migration
+**Work state:** PLANNED — READY TO START
 
-The human principal explicitly started D-020 on 2026-09-12. The minimum Engineering Foundation and targeted GPT Project review are complete. The weekly model-usage allowance refreshed early on 2026-09-12, so the former pre-refresh hold no longer applies. D-020 makes the permanent Personal triad / C-integration migration the next implementation task.
+The minimum Engineering Foundation and targeted GPT Project review are complete, and D-020 was implemented and verified on 2026-09-12. A2 should assess the intended permanent-triad architecture rather than the superseded optional-C coordination model.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
-I-001 is closed: bounded live snapshots now expose the newest 2,000-event window and explicit truncation metadata, while Room exports request complete event history. See E-025 for the exact implementation commit and verification evidence.
+The default external development workflow remains D-018: reason where relevant context exists, execute through the cheapest capable authorized layer, exchange exact evidence through Git/GitHub, and use deterministic verification where model cognition is unnecessary.
 
-Implement and verify the D-020 migration before beginning A2. The default external development workflow remains D-018: reason where relevant context exists, execute through the cheapest capable authorized layer, exchange exact evidence through Git/GitHub, and use deterministic verification where model cognition is unnecessary.
+## Recently completed work
 
-## Recently completed operating-economics work
+### D-020 — Permanent Personal triad / C-integration migration
+**Scope:** [CORE + ROOM migration]  
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-12  
+**Decision:** D-020  
+**Evidence:** E-027
+
+Implemented mandatory A/B/C creation for new Personal Rooms, C-first default Round initiation, direct A↔B selective communication with passive C readability, explicit legacy A/B upgrade behavior, triad rollover successors, engaged-participant settlement, and a mechanical integration-before-closure barrier for unread passive A/B MESSAGE material awaiting C integration.
+
+Verification on the exact reviewed PR head passed **136 Python tests, 2 warnings** in GitHub Actions and **3 Playwright browser tests** locally. PR #3 squash-merged to canonical `main`; the merge tree exactly matched the reviewed/tested head tree.
+
+### P0 — Selective invocation
 
 ### P0 — Selective invocation
 **Work state:** COMPLETE  
@@ -92,28 +103,9 @@ Canonical routine command: `python -m pytest -q`. Clean-environment verification
 
 GitHub Actions runs the canonical Python suite on pushes to `main` and pull requests targeting `main`, installing through `constraints-test.txt`. The latest hosted verification on canonical `main` (`34abd391ecbb861d7661541e4a716a5152a2049d`) completed successfully with **130 passed, 2 warnings**.
 
-### Permanent Personal triad / C-integration migration
-**Scope:** [CORE + ROOM migration]  
-**Work state:** IN PROGRESS  
-**Reality:** DECIDED / NOT IMPLEMENTED  
-**Decision:** D-020  
-**Priority:** next implementation task; complete before A2
-
-Align the runtime with the settled Personal production triad and the new C-first coordination contract:
-
-- create A/B/C in every new Personal Room;
-- remove optional-C behavior from ordinary new-Room creation while preserving an explicit migration path for historical A/B Rooms;
-- make C the default initial contact / ordinary Round starter;
-- preserve direct A↔B communication without routing through C;
-- preserve passive readability so C stays durably informed without unnecessary invocation;
-- add a mechanical integration-before-closure barrier so material A/B work cannot settle globally without a subsequent C integration opportunity when needed;
-- preserve peer judgment, selective invocation, serialized execution, restart recovery, stale-result protection, and token-efficiency guarantees.
-
-Verification should include targeted triad-routing/settlement/restart tests, the canonical full Python suite, the specialized browser transcript/UI check because creation controls change, and hosted CI. Do not call the migration implemented or verified until exact-version evidence supports those claims.
-
 ### A2 — Assurance Pass 2
-**Work state:** DEFERRED — until the D-020 triad migration is implemented and adequately verified  
-**Dependencies:** Engineering Foundation — SATISFIED; D-020 triad migration — PENDING
+**Work state:** PLANNED — READY TO START  
+**Dependencies:** Engineering Foundation — SATISFIED; D-020 triad migration — SATISFIED
 
 Use deterministic repository/config inspection first, then existing tests/reproducible checks, runtime/database evidence where needed, and model reasoning only for interpretation. Use adversarial review only where the risk justifies it.
 
@@ -139,7 +131,7 @@ High-value candidates include deployment/restart/activation choreography, diagno
 **Reality:** DECIDED / NOT IMPLEMENTED  
 **Decision:** D-019  
 **Feasibility evidence:** E-026  
-**Scheduling:** approved for development but not yet sequenced relative to P4; it does not displace the D-020 triad migration or A2.
+**Scheduling:** approved for development but not yet sequenced relative to P4; it does not displace A2.
 
 Core approved behavior:
 
@@ -163,7 +155,7 @@ An older B thread appeared to retain pair-era developer-header residue. Do not a
 
 ## Deferred work
 
-Keep these behind Assurance Pass 2 unless the human principal changes priorities. The D-020 triad migration is the explicit pre-A2 exception:
+Keep these behind Assurance Pass 2 unless the human principal changes priorities:
 
 - archive retrieval/indexing;
 - broader deterministic-tooling expansion;
@@ -177,4 +169,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question is currently blocking D-020. I-003 remains low priority and should be revisited only when profile/thread continuity work makes it relevant.
+No high-priority open question is currently blocking A2. I-003 remains low priority and should be revisited only when profile/thread continuity work makes it relevant.

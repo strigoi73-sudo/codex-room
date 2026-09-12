@@ -228,9 +228,9 @@ Settled architecture and behavior:
 
 The implementation scope is **[CORE + ROOM migration]**: CORE changes establish mandatory triad, C-first defaults, passive C awareness, and the integration-before-closure barrier for new operation; legacy A/B Rooms receive deliberate migration behavior rather than silent mutation.
 
-**Reality:** DECIDED / NOT IMPLEMENTED.
+**Reality:** IMPLEMENTED / VERIFIED — 2026-09-12. See E-027.
 
-**Development order:** this migration is the first major post-refresh implementation task and must be implemented and adequately verified before **A2 — Assurance Pass 2**. A2 remains the next assurance milestone immediately afterward. This changes the prior near-term sequencing without superseding A2 itself or D-014's requirement that the Engineering Foundation precede A2.
+**Development order:** the migration was completed and adequately verified before A2. **A2 — Assurance Pass 2** is now the next assurance milestone, preserving D-014's requirement that the Engineering Foundation precede A2.
 
 
 ### D-021 — Repository `docs/project/` is the canonical home for maintained Project sources
