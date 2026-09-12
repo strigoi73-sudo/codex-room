@@ -280,6 +280,139 @@ async def test_direct_peer_return_to_c_needs_no_synthetic_integration(runtime_fa
 
 
 @pytest.mark.asyncio
+async def test_b_to_a_direct_exchange_also_defers_c_until_integration(runtime_factory):
+    adapter = FakeAgentAdapter(
+        {
+            "agent_a": [(Outcome.PASS, "")],
+            "agent_c": [(Outcome.FINISH, "Integrated B result")],
+        },
+        blocked_calls={"agent_a": {1}},
+    )
+    adapter.decisions["agent_b"].append(
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="B material result for A to inspect",
+            invoke_targets=["agent_a"],
+        )
+    )
+    runtime = await runtime_factory(adapter)
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="B to A then C",
+            starting_agent="agent_b",
+            max_consecutive_passes=10,
+        )
+    )
+
+    await wait_until(lambda: len(adapter.calls["agent_a"]) == 1)
+    assert not adapter.calls["agent_c"]
+    adapter.release_call("agent_a", 1)
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+    assert "B material result for A to inspect" in adapter.calls["agent_c"][0]["prompt"]
+    events = await runtime.db.get_events(snapshot["id"])
+    integration = [event for event in events if event["event_type"] == "integration_required"]
+    assert len(integration) == 1
+    assert integration[0]["metadata"]["pending_peer_sources"] == ["agent_b"]
+
+
+@pytest.mark.asyncio
+async def test_c_can_redelegate_from_integration_and_receive_direct_followup(runtime_factory):
+    adapter = FakeAgentAdapter({"agent_b": [(Outcome.PASS, "")]})
+    adapter.decisions["agent_a"].extend(
+        [
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="A first result for B",
+                invoke_targets=["agent_b"],
+            ),
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="A follow-up result returned to C",
+                invoke_targets=["agent_c"],
+            ),
+        ]
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="C requests one focused follow-up from A",
+                invoke_targets=["agent_a"],
+            ),
+            AgentDecision(outcome=Outcome.FINISH, message="Integrated after follow-up"),
+        ]
+    )
+    runtime = await runtime_factory(adapter)
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Integrate then redelegate",
+            starting_agent="agent_a",
+            max_consecutive_passes=10,
+        )
+    )
+
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 2)
+    assert "A first result for B" in adapter.calls["agent_c"][0]["prompt"]
+    assert "C requests one focused follow-up from A" in adapter.calls["agent_a"][1]["prompt"]
+    assert "A follow-up result returned to C" in adapter.calls["agent_c"][1]["prompt"]
+    await wait_until(lambda: _room_has_status(runtime, snapshot["id"], RoomStatus.FINISHED))
+    events = await runtime.db.get_events(snapshot["id"])
+    assert len([event for event in events if event["event_type"] == "integration_required"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_pending_integration_trigger_is_idempotent_and_survives_restart(runtime_factory):
+    first = await runtime_factory(FakeAgentAdapter(), "integration-restart.db")
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Durable integration trigger",
+            starting_agent="agent_a",
+            auto_start=False,
+        )
+    )
+    room_id = snapshot["id"]
+    round_id = snapshot["active_round_id"]
+    await first.db.start_round(room_id, round_id)
+    await first.db.set_room_status(room_id, RoomStatus.PAUSED)
+    peer_message = await first.db.create_event(
+        room_id,
+        "agent_message",
+        "agent_a",
+        "all",
+        "Persisted passive A result",
+        deliver_to=("agent_b", "agent_c"),
+        runnable_to=("agent_b",),
+        discussion_id=round_id,
+        round_id=round_id,
+    )
+    # The A->B runnable leg is irrelevant to this durability test; mark it consumed
+    # so the only pending work is C's passive copy plus the integration trigger.
+    b_delivery = next(
+        item for item in peer_message["deliveries"] if item["agent_key"] == "agent_b"
+    )
+    await first.db.complete_deliveries([b_delivery["id"]])
+
+    assert await first._schedule_c_integration_if_needed(room_id, round_id)
+    assert await first._schedule_c_integration_if_needed(room_id, round_id)
+    events = await first.db.get_events(room_id)
+    assert len([event for event in events if event["event_type"] == "integration_required"]) == 1
+    assert not first.adapter.calls["agent_c"]
+    await first.close()
+
+    second_adapter = FakeAgentAdapter({"agent_c": [(Outcome.FINISH, "Integrated after restart")]})
+    second = await runtime_factory(second_adapter, "integration-restart.db")
+    await second.resume(room_id)
+    await wait_until(lambda: len(second_adapter.calls["agent_c"]) == 1)
+    assert "Persisted passive A result" in second_adapter.calls["agent_c"][0]["prompt"]
+    assert "Integrate the unread peer work" in second_adapter.calls["agent_c"][0]["prompt"]
+    await wait_until(lambda: _room_has_status(second, room_id, RoomStatus.FINISHED))
+    restarted_events = await second.db.get_events(room_id)
+    assert len(
+        [event for event in restarted_events if event["event_type"] == "integration_required"]
+    ) == 1
+
+
+@pytest.mark.asyncio
 async def test_agent_c_compaction_keeps_its_thread_identity(runtime_factory):
     adapter = FakeAgentAdapter(
         {"agent_c": [(Outcome.PASS, "")]},
