@@ -106,14 +106,16 @@ def test_registry_exposes_assert_file_as_versioned_core_capability() -> None:
     assert manifest["scope"] == "core"
     assert manifest["version"] == "1"
     assert len(manifest["implementation_sha256"]) == 64
-    assert manifest["permissions"] == {
+    assert "permissions" not in manifest
+    assert "input_schema" not in manifest
+    inspected = inspect_capability("assert_file")["capability"]
+    assert inspected["permissions"] == {
         "workspace_read": True,
         "workspace_write": False,
         "network": False,
         "external_process": False,
     }
-    assert manifest["side_effects"] == "none"
-    inspected = inspect_capability("assert_file")["capability"]
+    assert inspected["side_effects"] == "none"
     assert inspected["verification"]["status"] == "verified"
     assert inspected["input_schema"]["required"] == ["path"]
 
