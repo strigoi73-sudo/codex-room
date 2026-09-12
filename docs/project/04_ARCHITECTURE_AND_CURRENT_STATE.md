@@ -66,7 +66,7 @@ Persistent SDK threads remain a major context-cost driver; invocation frequency 
 
 ## 5. Deterministic Room capability substrate
 
-**IMPLEMENTED / VERIFIED deterministically — 2026-09-12; P4.1 live invocation VERIFIED; P4.2 live discovery NEEDS VERIFICATION**
+**IMPLEMENTED / VERIFIED end to end — 2026-09-12; P4.1 live invocation VERIFIED; P4.2 live registry discovery/invocation VERIFIED**
 
 Codex Room owns a deterministic capability substrate without relying on the provider's experimental dynamic-tool API.
 
@@ -102,15 +102,15 @@ Current command surface:
 - `codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT` — registered invocation;
 - `codex-room-cap assert-file ...` — retained P4.1 compatibility alias.
 
-The ordinary agent delivery instruction no longer names `assert_file`. It tells agents to consider deterministic software when inputs are explicit, outputs are objectively checkable, and fresh judgment is unnecessary for each execution; agents then discover capabilities through list/inspect/invoke.
+The ordinary agent delivery instruction no longer names `assert_file`. It tells agents to consider deterministic software when inputs are explicit, outputs are objectively checkable, and fresh judgment is unnecessary for each execution; before ad hoc mechanical execution, agents check the registry and use an adequate registered capability when one exists, while retaining justified ad hoc fallback when the registry is inadequate or materially less suitable.
 
-Adapter telemetry recognizes direct or safely parsed shell-wrapped registry commands. Registry list/inspect activity is recorded as `deterministic_capability_registry`; registered execution remains `deterministic_capability` and includes capability version and implementation hash when emitted by the registry. Arbitrary command stdout/stderr remains excluded.
+Adapter telemetry recognizes direct registry commands plus bounded Windows PowerShell/pwsh wrapper forms, while rejecting chained command forms. Registry list/inspect activity is recorded as `deterministic_capability_registry`; registered execution remains `deterministic_capability` and includes capability version and implementation hash when emitted by the registry. Structured invocation errors are also safely surfaced without exposing arbitrary command stdout/stderr.
 
 The registry is intentionally static in P4.2. D-022 settles the future unified CORE/lineage/Personal model and rollover-continuity requirement, but custom capability registration, persistence, inheritance, promotion, and the broader CORE standard library are not implemented yet.
 
-PR #8 introduced the runtime implementation. Its first post-merge run exposed only a stale test assertion after list was deliberately made compact. PR #9 changed tests only. Canonical `main` at `78dd8da418f2c29c37b94324d66bbe8c99da39b3` passed GitHub Actions run `34714080693` with **161 tests, 2 warnings**.
+PRs #8–#11 established the registry/discovery path and then repaired two live-only integration gaps: agents initially preferred ad hoc mechanical execution, and later safe telemetry could miss capability commands exposed only through an outer PowerShell wrapper. Exact PR-head and merged-byte verification is recorded in E-031; the final code-bearing merged bytes passed **164 tests, 2 warnings** on rerun after one unrelated pre-existing timing flake.
 
-**Remaining limit:** no real Room has yet demonstrated discovery of a capability without the user naming it. That one live check remains before P4.2 is complete.
+Final live verification used a fresh Room whose prompt did not name any capability. C alone recorded registry `list` and `inspect`, created the file, surfaced one malformed-input invocation as a structured `invalid_request`, corrected it, then successfully invoked `assert_file` version `1` with matching implementation SHA-256 and all requested checks true before FINISHing exactly `P4.2-DISCOVERY-OK`. P4.2 is therefore verified end to end; see E-031.
 
 ## 6. Selective invocation and routing
 
