@@ -2357,6 +2357,24 @@ class Database:
         }
         return result
 
+    async def get_pending_integration_material(
+        self, room_id: str, round_id: str, integrator_key: str = "agent_c"
+    ) -> list[dict[str, Any]]:
+        """Return unread passive peer MESSAGE deliveries awaiting integration."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT e.id, e.source, e.sequence_no
+                   FROM deliveries d
+                   JOIN events e ON e.id=d.event_id
+                   JOIN agents a ON a.id=d.agent_id
+                   WHERE e.room_id=? AND e.round_id=? AND a.agent_key=?
+                     AND d.status='pending' AND d.runnable=0
+                     AND e.event_type='agent_message' AND e.source<>?
+                   ORDER BY e.sequence_no""",
+                (room_id, round_id, integrator_key, integrator_key),
+            )
+        return [dict(row) for row in rows]
+
     async def get_delivery_participation(
         self, room_id: str, agent_key: str, round_id: str
     ) -> dict[str, int]:
