@@ -9,19 +9,24 @@
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
 - **What just changed?** A live post-D-020 smoke exercise verified C-first selective routing, direct A→C return, direct A→B routing with passive C readability, the mechanical `integration_required` wake, and final engaged-participant settlement. The exercise also exposed two operational/profile issues: a desktop-app Codex binary override was incompatible with the pinned Python SDK path, and the local database still held an exact older early-triad A/B/C built-in profile generation. The launcher now defaults to the SDK-pinned runtime, and PR #4 added a conservative exact-hash migration for the observed stale A/B/C profiles.
 - **What is blocked?** Nothing currently blocks the next planned development phase.
-- **What is next?** **P4 — Deterministic operational tooling** is again the next planned phase unless the human principal reprioritizes.
+- **What is next?** **P4 — Deterministic Room and agent capabilities** is again the next planned phase unless the human principal reprioritizes.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
 
-### P4 — Deterministic operational tooling
-**Work state:** PLANNED — READY TO START
+### P4 — Deterministic Room and agent capabilities
+**Work state:** IN PROGRESS
 
-The bounded live-runtime verification and I-006 repair are complete. P4 is again the next planned phase.
+P4 is product/runtime work: hard-wire deterministic capabilities that Codex Room or its agents can use during normal operation to replace mechanical model cognition. Development/production automation remains supporting engineering work unless it is deliberately exposed as product functionality.
 
-Candidate scope remains deterministic operational work that removes repeated mechanical/model effort: deployment/restart/activation choreography, diagnostics, health checks, manifests/provenance, profile consistency checks, rollover inspection, and deterministic extraction/validation/deduplication/normalization/statistics.
+Admission rule: given the same explicit inputs and underlying state, a correct deterministic capability should return substantially the same factual result without requiring judgment. Agents remain responsible for choosing what to test and interpreting significance.
 
-Before implementation, select only demonstrated high-value candidates; do not turn P4 into general tooling expansion.
+#### P4.1 — Deterministic assertions
+**Work state:** IN PROGRESS
+
+First vertical slice: a read-only, Room-workspace-confined `assert_file` capability for exact existence, SHA-256, JSON-validity, and required-key assertions. The capability returns typed JSON; capability results are eligible for durable Room telemetry, while arbitrary command output remains hidden. The current implementation path uses the agent's existing command tool rather than the provider's experimental dynamic-tool API.
+
+This slice is intended to prove the capability boundary, not establish a general plugin framework. After verification, decide whether the contract is sufficient before expanding to data operations or structured organizational state.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
@@ -138,10 +143,10 @@ Canonical routine command: `python -m pytest -q`. Clean-environment verification
 
 GitHub Actions runs the canonical Python suite on pushes to `main` and pull requests targeting `main`, installing through `constraints-test.txt`. The latest hosted verification on canonical `main` (`34abd391ecbb861d7661541e4a716a5152a2049d`) completed successfully with **130 passed, 2 warnings**.
 
-### P4 — Deterministic operational tooling
-**Work state:** PLANNED — READY TO START
+### P4 — Deterministic Room and agent capabilities
+**Work state:** IN PROGRESS
 
-High-value candidates include deployment/restart/activation choreography, diagnostics, health checks, manifests/provenance, profile consistency, rollover inspection, deterministic extraction/validation/deduplication/normalization/statistics, and review-hash checks.
+Start with P4.1 deterministic assertions. Later candidates include deterministic extraction/filtering/grouping/deduplication/normalization/statistics, exact artifact inspection, structured work/evidence state, and Room-native introspection. Do not treat repository/CI/deployment automation as P4 product scope unless it becomes a normal Room/agent capability.
 
 ## Approved planned development
 

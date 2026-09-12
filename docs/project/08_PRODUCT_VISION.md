@@ -46,19 +46,25 @@ Preferred direction:
 
 This allows broad retention with narrow active-context loading and reduces the risk of stale history silently becoming current belief.
 
-## 5. Tooling direction
+## 5. Deterministic capability direction
 
-Repeated procedures that become stable and deterministic should migrate from expensive recurring model cognition into local tools/state machines when doing so improves total operating economics and reliability.
+Repeated procedures that become stable and deterministic should migrate from expensive recurring model cognition into Codex Room-owned local capabilities/state machines when doing so improves total operating economics and reliability.
 
-Potential domains include:
+The product boundary is important: these are capabilities Codex Room or its agents can use during normal operation. Git/CI/deployment/restart automation used only to build or maintain Codex Room is supporting engineering work, not itself a product phase.
 
-- diagnostics and health checks;
-- deployment/restart workflows;
-- manifests and provenance;
-- profile consistency checks;
-- rollover inspection;
-- extraction, validation, deduplication, normalization, and statistics;
-- review/version checks.
+Preferred principle:
+
+**agents formulate claims and choose actions → deterministic software computes exact facts → agents interpret significance**
+
+Candidate product domains include:
+
+- exact assertions and validation;
+- extraction, filtering, sorting, grouping, deduplication, normalization, and statistics;
+- artifact hashing, structural comparison, manifests, and version/provenance checks;
+- structured work/evidence state;
+- Room-state and resource introspection.
+
+Hard-wire functions, not judgment. Goal interpretation, relevance, decomposition, evidence significance, peer invocation, synthesis, and closure remain agent cognition unless later evidence demonstrates a genuinely deterministic procedure.
 
 ## 6. Personal usage pacing direction
 
