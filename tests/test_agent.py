@@ -1181,3 +1181,28 @@ def test_safe_activity_records_compact_custom_authoring_reference() -> None:
         }
     ]
 
+def test_safe_activity_promotes_file_input_capability_invocation() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "assert_file",
+        "capability_version": "1",
+        "implementation_sha256": "a" * 64,
+        "ok": True,
+        "subject": {"path": "probe.json", "exists": True, "is_file": True},
+        "checks": [],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command="codex-room-cap invoke assert_file --input-file invoke-input.json",
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    assert activity[0]["type"] == "deterministic_capability"
+    assert activity[0]["status"] == "completed"
+    assert activity[0]["capability"] == "assert_file"
+    assert activity[0]["result"]["ok"] is True
+

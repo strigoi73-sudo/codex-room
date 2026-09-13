@@ -33,6 +33,7 @@ from .custom_registry import (
 CAPABILITY_MARKER = 1
 REGISTRY_MARKER = 1
 MAX_JSON_BYTES = 50 * 1024 * 1024
+MAX_INVOCATION_INPUT_FILE_BYTES = 1024 * 1024
 MAX_FIND_FILES_RESULTS = 200
 DEFAULT_FIND_FILES_RESULTS = 100
 MAX_FIND_FILES_SCANNED_ENTRIES = 100_000
@@ -123,6 +124,10 @@ class CapabilitySpec:
                     f"codex-room-cap invoke {self.capability_id} "
                     "--input-json JSON_OBJECT"
                 ),
+                "invoke_file": (
+                    f"codex-room-cap invoke {self.capability_id} "
+                    "--input-file WORKSPACE_RELATIVE_JSON"
+                ),
             },
         }
 
@@ -141,6 +146,33 @@ def _workspace_path(root: Path, raw_path: str) -> tuple[Path, str]:
     if candidate != root_resolved and root_resolved not in candidate.parents:
         raise CapabilityUsageError("path must stay inside the Room workspace")
     return candidate, supplied.as_posix()
+
+
+def _load_invocation_input_file(root: Path, raw_path: str) -> dict[str, Any]:
+    path, _ = _workspace_path(root, raw_path)
+    try:
+        metadata = path.lstat()
+    except OSError as exc:
+        raise CapabilityUsageError(f"input file could not be inspected: {exc}") from exc
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        raise CapabilityUsageError("input file must be a regular workspace file")
+    if metadata.st_size > MAX_INVOCATION_INPUT_FILE_BYTES:
+        raise CapabilityUsageError("input file exceeds the size limit")
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise CapabilityUsageError(f"input file could not be read: {exc}") from exc
+    if len(raw) > MAX_INVOCATION_INPUT_FILE_BYTES:
+        raise CapabilityUsageError("input file exceeds the size limit")
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise CapabilityUsageError(
+            "input file must contain one UTF-8 JSON object"
+        ) from exc
+    if not isinstance(value, dict):
+        raise CapabilityUsageError("input file must contain one JSON object")
+    return value
 
 
 def _sha256(path: Path) -> str:
@@ -1693,10 +1725,17 @@ def build_parser() -> argparse.ArgumentParser:
         "invoke", help="Invoke one registered deterministic capability."
     )
     invoke_parser.add_argument("capability_id")
-    invoke_parser.add_argument(
+    invoke_inputs = invoke_parser.add_mutually_exclusive_group(required=True)
+    invoke_inputs.add_argument(
         "--input-json",
-        required=True,
         help="One JSON object matching the capability input schema.",
+    )
+    invoke_inputs.add_argument(
+        "--input-file",
+        help=(
+            "Workspace-relative UTF-8 JSON object file. Prefer this when command-line "
+            "JSON quoting would be fragile."
+        ),
     )
 
     # Backward-compatible P4.1 command. New agent prompts use registry discovery/invoke.
@@ -1735,10 +1774,15 @@ def main(argv: list[str] | None = None) -> int:
                 args.cases_file,
             )
         elif args.command == "invoke":
-            try:
-                inputs = json.loads(args.input_json)
-            except json.JSONDecodeError as exc:
-                raise CapabilityUsageError(f"input JSON is invalid: {exc}") from exc
+            if args.input_file is not None:
+                inputs = _load_invocation_input_file(Path.cwd(), args.input_file)
+            else:
+                try:
+                    inputs = json.loads(args.input_json)
+                except json.JSONDecodeError as exc:
+                    raise CapabilityUsageError(f"input JSON is invalid: {exc}") from exc
+            if not isinstance(inputs, dict):
+                raise CapabilityUsageError("capability input must be a JSON object")
             result = invoke_capability(Path.cwd(), args.capability_id, inputs)
         elif args.command == "assert-file":
             result = invoke_capability(

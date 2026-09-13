@@ -1565,6 +1565,11 @@ async def test_agent_prompt_advertises_capability_discovery_not_one_hard_coded_t
     assert "codex-room-cap list" in prompt
     assert "codex-room-cap inspect CAPABILITY_ID" in prompt
     assert "codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT" in prompt
+    assert "fragile shell quoting" in prompt
+    assert (
+        "codex-room-cap invoke CAPABILITY_ID --input-file WORKSPACE_RELATIVE_JSON"
+        in prompt
+    )
     assert "explicit inputs, objectively checkable outputs" in prompt
     assert "Before implementing or running an ad hoc mechanical command" in prompt
     assert "If an adequate registered capability exists, use it." in prompt
