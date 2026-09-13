@@ -148,6 +148,33 @@ def _workspace_path(root: Path, raw_path: str) -> tuple[Path, str]:
     return candidate, supplied.as_posix()
 
 
+def _load_invocation_input_file(root: Path, raw_path: str) -> dict[str, Any]:
+    path, _ = _workspace_path(root, raw_path)
+    try:
+        metadata = path.lstat()
+    except OSError as exc:
+        raise CapabilityUsageError(f"input file could not be inspected: {exc}") from exc
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        raise CapabilityUsageError("input file must be a regular workspace file")
+    if metadata.st_size > MAX_INVOCATION_INPUT_FILE_BYTES:
+        raise CapabilityUsageError("input file exceeds the size limit")
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise CapabilityUsageError(f"input file could not be read: {exc}") from exc
+    if len(raw) > MAX_INVOCATION_INPUT_FILE_BYTES:
+        raise CapabilityUsageError("input file exceeds the size limit")
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise CapabilityUsageError(
+            "input file must contain one UTF-8 JSON object"
+        ) from exc
+    if not isinstance(value, dict):
+        raise CapabilityUsageError("input file must contain one JSON object")
+    return value
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
