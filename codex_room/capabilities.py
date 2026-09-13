@@ -1575,7 +1575,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     register_parser = subparsers.add_parser(
         "register",
-        help="Verify, publish, and bind one custom capability draft to this Room.",
+        help=(
+            "Verify one custom capability draft and request protected host registration "
+            "when the agent turn settles."
+        ),
     )
     register_parser.add_argument("capability_id")
     register_parser.add_argument(
