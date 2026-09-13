@@ -877,3 +877,56 @@ def test_cli_authoring_emits_one_machine_readable_reference(capsys) -> None:
     assert payload["schema_version"] == 1
     assert payload["register_command"].startswith("codex-room-cap register ")
 
+def test_registry_cli_invokes_from_workspace_input_file(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    artifact = tmp_path / "probe.json"
+    artifact.write_text('{"probe":"P4.4e"}', encoding="utf-8")
+    input_file = tmp_path / "invoke-input.json"
+    input_file.write_text(
+        json.dumps(
+            {
+                "path": "probe.json",
+                "exists": True,
+                "json_valid": True,
+                "required_keys": ["probe"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(
+        [
+            "invoke",
+            "assert_file",
+            "--input-file",
+            "invoke-input.json",
+        ]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["capability"] == "assert_file"
+    assert payload["ok"] is True
+
+
+def test_registry_cli_rejects_non_object_or_escaping_input_file(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    outside = tmp_path.parent / "outside-invoke-input.json"
+    outside.write_text('{"path":"probe.json"}', encoding="utf-8")
+    local = tmp_path / "array.json"
+    local.write_text("[]", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert main(["invoke", "assert_file", "--input-file", "../outside-invoke-input.json"]) == 2
+    escaped = json.loads(capsys.readouterr().out.strip())
+    assert escaped["error"]["code"] == "invalid_request"
+    assert "workspace" in escaped["error"]["message"]
+
+    assert main(["invoke", "assert_file", "--input-file", "array.json"]) == 2
+    non_object = json.loads(capsys.readouterr().out.strip())
+    assert non_object["error"]["code"] == "invalid_request"
+    assert "JSON object" in non_object["error"]["message"]
+
