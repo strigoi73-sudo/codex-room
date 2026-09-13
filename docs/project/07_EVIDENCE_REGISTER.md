@@ -1259,4 +1259,60 @@ Canonical-main GitHub Actions run `34766882490`: **301 passed, 2 warnings**.
 
 **P4.5a status:** COMPLETE / IMPLEMENTED / VERIFIED deterministically.
 
-**Remaining P4.5 boundary:** obtain a fresh live Room proof that a registered lineage-scoped custom capability survives an actual rollover and is rediscovered, inspected, and invoked by the successor at the same exact identity while the predecessor remains historical and unchanged. Personal/CORE promotion remains outside this slice.
+**P4.5a deterministic boundary:** satisfied. E-040 records the fresh live Room rollover proof required for end-to-end P4.5 closeout. Personal/CORE promotion remains outside this slice.
+
+### E-040 — P4.5 live lineage-capability rollover proof
+**Date:** 2026-09-13  
+**Scope:** Fresh live source→successor Room rollover verification plus direct predecessor/successor binding inspection. Complements E-039 deterministic/hosted verification.
+
+Source Room:
+
+- Room ID: `room_8b85b75a868f4077bc44f465ee2d9439`;
+- capability: `normalize_ascii_label`, version `1`, scope `lineage`;
+- implementation SHA-256: `25142f348f9532321a9547a15d6253bfdf5e858ed5126e93b7bdd12bb3c6ed7a`;
+- package SHA-256: `92c6e493f278f21680ddb7fcde20c4c49fe327381fcf4d63e6de215e9abf90ca`;
+- registration SHA-256: `1adfeb4be3095104402f4cc5b1fd8f1331253dd1712e5eafb5b025afb5ec8a39`;
+- verification SHA-256: `7a016e4aa8e6ad5d79333a5c38f398a02e56cf1a2320b38518a7d2d8a281c1cb`;
+- manifest SHA-256: `d2b07a93ca8b8ccec295cdc27ae7bb403df02462836fd505e9cfed17a64b50df`;
+- direct schema-v1 binding SHA-256: `e6386581c2bd1ebe63d8e427b90c7ea51474350b44d6bf1f8776e0d9dd3f9bc8`.
+
+The source completed its baseline registry/list/inspect/invoke proof before rollover. A malformed inline JSON invocation was rejected visibly and then corrected through the existing file-input path; final source invocation succeeded without capability mutation or re-registration.
+
+Rollover:
+
+- operation ID: `rollover_5cc48f0927fe469cbfc52f9f9e6767cc`;
+- successor Room ID: `room_d5d2462daff04c62bcf00468bf90606a`;
+- successor was created in `preparing` state with fresh A/B/C persistent thread IDs and lineage metadata naming the exact predecessor;
+- no successor capability registration/republication operation occurred.
+
+Direct successor binding inspection before the live Round showed:
+
+- binding schema version `2`;
+- current Room `room_d5d2462daff04c62bcf00468bf90606a`;
+- successor binding SHA-256 `4a5e91e2c8c4fe47f24cf919fba9fee28597cd8535290b130b74c49bfc6632b9`;
+- original registration Room `room_8b85b75a868f4077bc44f465ee2d9439`;
+- immediate predecessor Room `room_8b85b75a868f4077bc44f465ee2d9439`;
+- inherited predecessor binding SHA-256 `e6386581c2bd1ebe63d8e427b90c7ea51474350b44d6bf1f8776e0d9dd3f9bc8`;
+- exact implementation/package/registration/verification/manifest identities matching the source.
+
+Successor live Round evidence:
+
+- C alone consumed the Round; A/B remained unconsumed;
+- normal registry `list` rediscovered `normalize_ascii_label` as custom / lineage / version `1` with exact implementation/package/registration identity;
+- registry `inspect` returned the same implementation/package/registration identities, verification status `verified`, verification SHA-256 `7a016e4a...`, five verified cases, and the same case-plan identity;
+- the first inline registered invocation returned structured `invalid_request` because the JSON transport was malformed;
+- C then used the existing workspace file-input transport and the normal registered invocation completed successfully;
+- durable invocation evidence reported the exact source version/implementation/package/registration/verification identities with `ok:true`, `normalized:"p4_5_live_lineage_verification"`, and `length:30`;
+- C FINISHed after one turn and the Round closed normally;
+- the export contains no authoring, verification, publication, or registration event for a replacement capability.
+
+Post-rollover predecessor stability check:
+
+- the source Room reports `status: archived`, `sealed: true`, and a committed rollover record naming the successor;
+- direct inspection from the predecessor workspace still returns schema-v1 binding SHA-256 `e6386581c2bd1ebe63d8e427b90c7ea51474350b44d6bf1f8776e0d9dd3f9bc8`;
+- original registration Room and all immutable capability identities remain unchanged.
+
+**P4.5 status:** COMPLETE / IMPLEMENTED / VERIFIED end to end.
+
+This live proof satisfies the remaining E-039 boundary: a fresh registered lineage-scoped custom capability survived an actual Room rollover, remained discoverable/inspectable/invokable at the exact inherited identity in the successor, and left the historical predecessor's original binding unchanged.
+
