@@ -953,3 +953,50 @@ Canonical-main GitHub Actions run `34760790346`: **261 passed, 2 warnings**.
 
 **Remaining P4.4 boundary:** a structurally valid draft is still ordinary unregistered Room code. P4.4b must define adequate deterministic verification evidence and immutable content-addressed publication before any custom package becomes a registered capability.
 
+### E-034 — P4.4b custom capability verification and immutable publication
+**Date:** 2026-09-13  
+**Scope:** P4.4b verification/publication substrate only; ordinary capability discovery/invocation remains CORE-only.
+
+PR #20 added the trust transition between a structurally valid P4.4a draft and immutable published registration evidence.
+
+Verification boundary:
+
+- 1–16 exact deterministic cases per verification run;
+- each case supplies a JSON-object input, exact JSON-object expected output, and optional bounded UTF-8 workspace fixture files;
+- expected outputs must include boolean `ok` and every declared durable-result field;
+- case JSON is bounded to 64 KiB each; fixture inventory is capped at 32 files, 64 KiB per file, and 256 KiB total;
+- exact copied `capability.py` bytes run through the current Python interpreter in isolated mode with a fresh case workspace;
+- default per-case wall time is 5 seconds;
+- stdout/stderr use temporary-file capture with live size monitoring; a process crossing the 64 KiB output bound is killed rather than allowed to accumulate unbounded captured output;
+- success requires zero exit, empty stderr, one UTF-8 JSON object with boolean `ok`, and exact equality to the expected output;
+- verification re-loads/re-hashes the draft after execution and fails if package identity changed during the test run;
+- the durable receipt records package/manifest/implementation identity, case-plan SHA-256, case names, and input/expected/observed/fixture SHA-256 values without retaining raw test content;
+- the receipt itself has an exact verification SHA-256 and reparses with self-hash validation.
+
+Publication boundary:
+
+- host-side publication never executes candidate code;
+- exact verified package bytes publish under `data/custom-capabilities/packages/<package_sha256>/`;
+- verification receipts publish under content-addressed verification SHA-256 filenames;
+- registration records publish under content-addressed registration SHA-256 filenames;
+- registration identity binds Room ID, capability ID/version, package SHA-256, manifest SHA-256, implementation SHA-256, and verification SHA-256;
+- existing content-addressed objects are re-verified byte-for-byte; corruption/conflict fails visibly;
+- repeating the same exact publication is idempotent;
+- publication does not yet bind the custom capability into normal Room `list` / `inspect` / `invoke`.
+
+Exact reviewed PR #20 head:
+
+`617c41e95cdbb775b065a8bb47c4ced5c71f0f4c`
+
+GitHub Actions PR run `34761184584`: **277 passed, 2 warnings**.
+
+PR #20 squash-merged as:
+
+`7ecf05f206043116cf77a9f6a8581b6eb85136be` — `P4.4b: verify and publish custom capabilities`
+
+Canonical-main GitHub Actions run `34761250928`: **277 passed, 2 warnings**.
+
+**P4.4b status:** COMPLETE / IMPLEMENTED / VERIFIED.
+
+**Remaining P4.4 boundary:** published registrations are durable provenance objects but are not yet active Room registry bindings. P4.4c must resolve verified immutable custom registrations through the same normal discovery/invocation vocabulary as CORE while rejecting collisions/ambiguity and preserving safe telemetry.
+
