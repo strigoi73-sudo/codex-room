@@ -13,6 +13,17 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
+from .custom_capability_registration import (
+    CustomCapabilityVerificationError,
+    verify_custom_capability_draft,
+)
+from .custom_registry import (
+    CustomCapabilityRegistryError,
+    invoke_bound_custom_capability,
+    load_room_custom_capabilities,
+    resolve_room_capability_context,
+)
+
 CAPABILITY_MARKER = 1
 REGISTRY_MARKER = 1
 MAX_JSON_BYTES = 50 * 1024 * 1024
@@ -1420,8 +1431,27 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
 }
 
 
-def list_capabilities() -> dict[str, Any]:
+def _room_custom_capabilities(root: Path) -> tuple[Any | None, dict[str, Any]]:
+    context = resolve_room_capability_context(root)
+    if context is None:
+        return None, {}
+    try:
+        custom = load_room_custom_capabilities(
+            context.data_root,
+            context.room_id,
+            reserved_capability_ids=frozenset(CORE_CAPABILITIES),
+        )
+    except CustomCapabilityRegistryError as exc:
+        raise CapabilityUsageError(str(exc)) from exc
+    return context, custom
+
+
+def list_capabilities(root: Path | None = None) -> dict[str, Any]:
     summaries = [CORE_CAPABILITIES[key].summary() for key in sorted(CORE_CAPABILITIES)]
+    if root is not None:
+        _, custom = _room_custom_capabilities(root)
+        summaries.extend(custom[key].summary() for key in sorted(custom))
+    summaries.sort(key=lambda item: item["id"])
     return {
         "codex_room_registry": REGISTRY_MARKER,
         "operation": "list",
@@ -1429,14 +1459,22 @@ def list_capabilities() -> dict[str, Any]:
     }
 
 
-def inspect_capability(capability_id: str) -> dict[str, Any]:
+def inspect_capability(capability_id: str, root: Path | None = None) -> dict[str, Any]:
     spec = CORE_CAPABILITIES.get(capability_id)
-    if spec is None:
-        raise CapabilityUsageError(f"unknown capability: {capability_id}")
+    if spec is not None:
+        manifest = spec.manifest()
+    else:
+        custom = {}
+        if root is not None:
+            _, custom = _room_custom_capabilities(root)
+        binding = custom.get(capability_id)
+        if binding is None:
+            raise CapabilityUsageError(f"unknown capability: {capability_id}")
+        manifest = binding.manifest()
     return {
         "codex_room_registry": REGISTRY_MARKER,
         "operation": "inspect",
-        "capability": spec.manifest(),
+        "capability": manifest,
     }
 
 
@@ -1444,21 +1482,69 @@ def invoke_capability(
     root: Path, capability_id: str, inputs: dict[str, Any]
 ) -> dict[str, Any]:
     spec = CORE_CAPABILITIES.get(capability_id)
-    if spec is None:
+    if spec is not None:
+        if not isinstance(inputs, dict):
+            raise CapabilityUsageError("capability input must be a JSON object")
+        result = spec.handler(root, inputs)
+        result["capability_version"] = spec.version
+        result["implementation_sha256"] = spec.implementation_sha256()
+        result["durable_result_fields"] = list(spec.durable_result_fields)
+        return result
+
+    context, custom = _room_custom_capabilities(root)
+    binding = custom.get(capability_id)
+    if context is None or binding is None:
         raise CapabilityUsageError(f"unknown capability: {capability_id}")
-    if not isinstance(inputs, dict):
-        raise CapabilityUsageError("capability input must be a JSON object")
-    result = spec.handler(root, inputs)
-    result["capability_version"] = spec.version
-    result["implementation_sha256"] = spec.implementation_sha256()
-    result["durable_result_fields"] = list(spec.durable_result_fields)
-    return result
+    try:
+        return invoke_bound_custom_capability(context, binding, inputs)
+    except CustomCapabilityRegistryError as exc:
+        raise CapabilityUsageError(str(exc)) from exc
+
+
+def register_custom_capability(
+    root: Path,
+    capability_id: str,
+    cases_file: str,
+) -> dict[str, Any]:
+    context = resolve_room_capability_context(root)
+    if context is None:
+        raise CapabilityUsageError(
+            "custom capability registration requires a canonical Room workspace"
+        )
+    cases_path, _ = _workspace_path(root, cases_file)
+    try:
+        metadata = cases_path.lstat()
+    except OSError as exc:
+        raise CapabilityUsageError(f"verification cases file could not be inspected: {exc}") from exc
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        raise CapabilityUsageError("verification cases file must be a regular workspace file")
+    if metadata.st_size > 1024 * 1024:
+        raise CapabilityUsageError("verification cases file exceeds the size limit")
+    try:
+        raw_cases = json.loads(cases_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise CapabilityUsageError("verification cases file must be valid UTF-8 JSON") from exc
+    try:
+        receipt = verify_custom_capability_draft(root, capability_id, raw_cases)
+    except CustomCapabilityVerificationError as exc:
+        raise CapabilityUsageError(str(exc)) from exc
+    return {
+        "codex_room_registry": REGISTRY_MARKER,
+        "operation": "register",
+        "ok": True,
+        "state": "verification_passed_host_pending",
+        "capability_id": capability_id,
+        "registration_request": {
+            "capability_id": capability_id,
+            "receipt": receipt.as_dict(),
+        },
+    }
 
 
 def _error_payload(
     message: str, *, capability_id: str | None = None, operation: str = "invoke"
 ) -> dict[str, Any]:
-    if operation in {"list", "inspect"}:
+    if operation in {"list", "inspect", "register"}:
         payload: dict[str, Any] = {
             "codex_room_registry": REGISTRY_MARKER,
             "operation": operation,
@@ -1486,6 +1572,20 @@ def build_parser() -> argparse.ArgumentParser:
         "inspect", help="Inspect one registered capability manifest."
     )
     inspect_parser.add_argument("capability_id")
+
+    register_parser = subparsers.add_parser(
+        "register",
+        help=(
+            "Verify one custom capability draft and request protected host registration "
+            "when the agent turn settles."
+        ),
+    )
+    register_parser.add_argument("capability_id")
+    register_parser.add_argument(
+        "--cases-file",
+        required=True,
+        help="Workspace-relative UTF-8 JSON verification case file.",
+    )
 
     invoke_parser = subparsers.add_parser(
         "invoke", help="Invoke one registered deterministic capability."
@@ -1521,9 +1621,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "list":
-            result = list_capabilities()
+            result = list_capabilities(Path.cwd())
         elif args.command == "inspect":
-            result = inspect_capability(args.capability_id)
+            result = inspect_capability(args.capability_id, Path.cwd())
+        elif args.command == "register":
+            result = register_custom_capability(
+                Path.cwd(),
+                args.capability_id,
+                args.cases_file,
+            )
         elif args.command == "invoke":
             try:
                 inputs = json.loads(args.input_json)
@@ -1546,7 +1652,7 @@ def main(argv: list[str] | None = None) -> int:
             raise CapabilityUsageError(f"unsupported command: {args.command}")
     except CapabilityUsageError as exc:
         capability_id = getattr(args, "capability_id", None)
-        operation = args.command if args.command in {"list", "inspect"} else "invoke"
+        operation = args.command if args.command in {"list", "inspect", "register"} else "invoke"
         _print_result(
             _error_payload(
                 str(exc), capability_id=capability_id, operation=operation

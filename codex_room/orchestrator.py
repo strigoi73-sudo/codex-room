@@ -19,6 +19,19 @@ from .agent import (
     AgentTurnStateUnknownError,
     InterruptOutcome,
 )
+from .capabilities import CORE_CAPABILITIES
+from .custom_capabilities import CustomCapabilityPackageError
+from .custom_capability_registration import (
+    CustomCapabilityPublicationError,
+    CustomCapabilityVerificationError,
+    VerificationReceipt,
+    publish_verified_custom_capability,
+)
+from .custom_registry import (
+    CustomCapabilityRegistryError,
+    bind_custom_registration,
+    load_room_custom_capabilities,
+)
 from .db import Database, utc_now
 from .institutional import (
     InstitutionalRelease,
@@ -1729,6 +1742,36 @@ class RoomRuntime:
                 )
                 return
             await self.db.mark_round_context_consumed(batch["round_id"], agent["id"])
+            registration_outcomes = self._settle_custom_capability_registration_requests(
+                room_id, result.activity
+            )
+            for outcome in registration_outcomes:
+                capability_name = outcome.get("capability") or "unknown"
+                host_event = await self.db.create_event(
+                    room_id,
+                    "tool_activity",
+                    agent_key,
+                    "observer",
+                    (
+                        f"{agent['name']}: custom capability registration "
+                        f"({outcome['status']}) — {capability_name}"
+                    ),
+                    related_event_id=first_event["id"],
+                    status=(
+                        "recorded" if outcome["status"] == "completed" else "error"
+                    ),
+                    metadata={
+                        **outcome,
+                        "input_event_ids": input_ids,
+                        "batch_id": batch["batch_id"],
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                    event_id=(
+                        f"event_{batch['batch_id']}_customreg_{outcome['index']}"
+                    ),
+                )
+                self._publish_event(host_event)
             for item in result.activity:
                 tool_event = await self.db.create_event(
                     room_id,
@@ -1768,6 +1811,97 @@ class RoomRuntime:
                 self._publish_event(continued)
 
         await self._maybe_compact_context(batch, agent, result)
+
+    def _settle_custom_capability_registration_requests(
+        self,
+        room_id: str,
+        activity: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Publish/bind verified registration requests outside the agent sandbox."""
+        outcomes: list[dict[str, Any]] = []
+        for index, item in enumerate(activity):
+            if (
+                item.get("type") != "deterministic_capability_registry"
+                or item.get("operation") != "register"
+                or item.get("status") != "completed"
+            ):
+                continue
+            capability_id = item.get("capability")
+            request = item.get("registration_request")
+            try:
+                if (
+                    not isinstance(capability_id, str)
+                    or not isinstance(request, dict)
+                    or request.get("capability_id") != capability_id
+                ):
+                    raise CustomCapabilityRegistryError(
+                        "Custom capability registration request is malformed"
+                    )
+                receipt = VerificationReceipt.from_dict(request.get("receipt"))
+                existing = load_room_custom_capabilities(
+                    self.data_root,
+                    room_id,
+                    reserved_capability_ids=frozenset(CORE_CAPABILITIES),
+                ).get(capability_id)
+                if (
+                    existing is not None
+                    and existing.receipt.verification_sha256
+                    == receipt.verification_sha256
+                    and existing.package.package_sha256 == receipt.package_sha256
+                    and existing.package.manifest_sha256 == receipt.manifest_sha256
+                    and existing.package.implementation_sha256
+                    == receipt.implementation_sha256
+                ):
+                    registration = existing.registration
+                    binding = existing
+                else:
+                    registration = publish_verified_custom_capability(
+                        self.workspace(room_id),
+                        self.data_root,
+                        room_id,
+                        capability_id,
+                        receipt,
+                    )
+                    binding = bind_custom_registration(
+                        self.data_root,
+                        room_id,
+                        registration.registration_sha256,
+                        reserved_capability_ids=frozenset(CORE_CAPABILITIES),
+                    )
+                outcomes.append(
+                    {
+                        "index": index,
+                        "type": "custom_capability_registration",
+                        "status": "completed",
+                        "capability": capability_id,
+                        "registration_sha256": registration.registration_sha256,
+                        "verification_sha256": receipt.verification_sha256,
+                        "package_sha256": binding.package.package_sha256,
+                        "implementation_sha256": binding.package.implementation_sha256,
+                        "binding_sha256": binding.binding_sha256,
+                    }
+                )
+            except (
+                CustomCapabilityPackageError,
+                CustomCapabilityVerificationError,
+                CustomCapabilityPublicationError,
+                CustomCapabilityRegistryError,
+                ValueError,
+                OSError,
+            ) as exc:
+                diagnostic = " ".join(str(exc).split()) or type(exc).__name__
+                if len(diagnostic) > 500:
+                    diagnostic = diagnostic[:497] + "..."
+                outcomes.append(
+                    {
+                        "index": index,
+                        "type": "custom_capability_registration",
+                        "status": "error",
+                        "capability": capability_id if isinstance(capability_id, str) else None,
+                        "error": diagnostic,
+                    }
+                )
+        return outcomes
 
     async def _maybe_compact_context(
         self, batch: dict[str, Any], agent: dict[str, Any], result: AgentRunResult

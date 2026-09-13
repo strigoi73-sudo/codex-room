@@ -15,6 +15,7 @@ from codex_room.agent import (
     ROOM_MODEL,
     ROOM_REASONING_EFFORT,
 )
+from codex_room.custom_capability_registration import VerificationReceipt
 from codex_room.models import Outcome
 
 
@@ -1056,3 +1057,103 @@ def test_safe_activity_bounds_declared_capability_result_evidence() -> None:
     assert result["durable_result_truncated"] is True
     assert result["durable_result_original_bytes"] > 64 * 1024
     assert "evidence" not in result
+
+def test_safe_activity_records_custom_registration_request_without_raw_cases() -> None:
+    package = SimpleNamespace(
+        package_sha256="b" * 64,
+        manifest_sha256="a" * 64,
+        implementation_sha256="c" * 64,
+    )
+    receipt = VerificationReceipt.create(
+        package,
+        case_plan_sha256="d" * 64,
+        cases=[
+            {
+                "name": "basic",
+                "input_sha256": "e" * 64,
+                "expected_output_sha256": "f" * 64,
+                "observed_output_sha256": "f" * 64,
+                "fixtures_sha256": "0" * 64,
+            }
+        ],
+    )
+    payload = {
+        "codex_room_registry": 1,
+        "operation": "register",
+        "ok": True,
+        "state": "verification_passed_host_pending",
+        "capability_id": "count_lines",
+        "registration_request": {
+            "capability_id": "count_lines",
+            "receipt": receipt.as_dict(),
+        },
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap register count_lines "
+            "--cases-file .codex-room/count_lines_cases.json"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    assert activity == [
+        {
+            "type": "deterministic_capability_registry",
+            "status": "completed",
+            "operation": "register",
+            "capability": "count_lines",
+            "registration_state": "verification_passed_host_pending",
+            "registration_request": {
+                "capability_id": "count_lines",
+                "receipt": receipt.as_dict(),
+            },
+        }
+    ]
+    serialized = json.dumps(activity)
+    assert "verification_passed_host_pending" in serialized
+    assert "basic" in serialized
+    assert "expected_output_sha256" in serialized
+
+
+def test_safe_activity_preserves_custom_invocation_provenance_and_declared_result() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "count_lines",
+        "capability_version": "1",
+        "implementation_sha256": "a" * 64,
+        "package_sha256": "b" * 64,
+        "registration_sha256": "c" * 64,
+        "verification_sha256": "d" * 64,
+        "durable_result_fields": ["count"],
+        "ok": True,
+        "count": 3,
+        "transient_detail": "do not persist",
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap invoke count_lines "
+            "--input-json '{\"text\":\"a\\nb\\nc\\n\"}'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+    result = activity[0]["result"]
+
+    assert activity[0]["type"] == "deterministic_capability"
+    assert activity[0]["capability"] == "count_lines"
+    assert result["implementation_sha256"] == "a" * 64
+    assert result["package_sha256"] == "b" * 64
+    assert result["registration_sha256"] == "c" * 64
+    assert result["verification_sha256"] == "d" * 64
+    assert result["count"] == 3
+    assert "transient_detail" not in result
+
