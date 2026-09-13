@@ -1,16 +1,16 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-12  
+**Last updated:** 2026-09-13  
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.  
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.4b — Verification and immutable registration is COMPLETE / IMPLEMENTED / VERIFIED.** Exact custom drafts can now be exercised against bounded deterministic test vectors under the caller's ambient Room sandbox, re-hashed after execution, and published as immutable content-addressed package/verification/registration records. PR #20 and merged canonical-main bytes both passed **277 tests, 2 warnings**.
+- **What just changed?** **P4.4c — Room binding and dynamic registry overlay is COMPLETE / IMPLEMENTED / VERIFIED.** Verified custom capabilities can now be host-bound to one Room and discovered/invoked through the same `list` / `inspect` / `invoke` vocabulary as CORE, while preserving exact package / verification / registration / implementation identities. PR #21 and merged canonical-main bytes both passed **291 tests, 2 warnings**.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **Where is P4.4?** **IN PROGRESS.** P4.4a established exact draft package identity; P4.4b established bounded verification and immutable publication. Published custom registrations are still not visible through ordinary capability discovery/invocation.
-- **What is next?** **P4.4c — Room binding and dynamic CORE + custom registry overlay**: make a Room's verified custom registration discoverable through the same `list` / `inspect` / `invoke` surface as CORE while preserving exact registration/package identity and current telemetry safety. Rollover inheritance remains P4.5.
+- **Where is P4.4?** **IN PROGRESS.** P4.4a established exact draft identity; P4.4b established bounded verification and immutable publication; P4.4c established lifecycle-safe Room binding plus the unified CORE + custom registry overlay.
+- **What is next?** **P4.4d — agent authoring / selection behavior**: teach A/B/C the bounded custom-capability workflow, including when a custom deterministic capability is warranted, how to construct the package/test vector files, and the fact that sandbox verification requests protected host registration only after turn settlement. Then run one bounded live proof under P4.4e. Rollover inheritance remains P4.5.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -163,12 +163,42 @@ PR #20 exact reviewed head `617c41e95cdbb775b065a8bb47c4ced5c71f0f4c` and squash
 P4.4b publication is still **not a Room registry binding**. Ordinary `codex-room-cap list / inspect / invoke` remains CORE-only.
 
 ##### P4.4c — Room binding and dynamic registry overlay
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-13  
+**Evidence:** E-035
+
+Implemented Room activation boundary:
+
+- `codex-room-cap register <id> --cases-file <path>` runs inside the existing agent `workspace_write` sandbox, verifies the exact draft through the P4.4b deterministic test gate, and emits a bounded self-hashed registration request;
+- the sandboxed command does **not** write protected `data/custom-capabilities/` state;
+- after the exact agent turn is lifecycle-valid and delivery settlement succeeds, `RoomRuntime` host settlement reparses the verification receipt, re-checks exact draft/package identity, publishes the protected immutable package / verification / registration objects, and creates one protected Room binding;
+- replay first recognizes an already-bound exact registration, so a recovered result does not depend on later mutable draft state and does not duplicate registration;
+- schema-v1 Room binding is single-assignment per capability ID: same exact binding is idempotent; a different registration for the same ID fails visibly rather than silently replacing it;
+- CORE/custom ID collisions fail visibly;
+- canonical Room workspaces overlay explicitly bound custom capabilities onto the same `list` / `inspect` / `invoke` vocabulary as CORE;
+- custom invocation executes immutable published package bytes, not the mutable draft;
+- successful custom results preserve implementation, package, registration, and verification identities plus only declared durable result fields through the existing safe capability telemetry path;
+- registration requests and host-settlement results are durably observable without persisting raw verification fixture/input/output content.
+
+The original pre-CI implementation briefly attempted protected publication directly from the sandboxed `register` command. Exact-diff review caught that authority-boundary error before verification; PR #21 was corrected so publication/binding occurs only in host settlement.
+
+PR #21 exact reviewed head `8ebfad68e1210d7191f7274a450ed76d29ae2e8e` passed **291 tests, 2 warnings** in GitHub Actions run `34762414175`. It squash-merged as `5e2d90b92197ce58866af0ddaceff922d2b16c9e`; canonical-main run `34762490876` also passed **291 tests, 2 warnings**.
+
+P4.4c does **not** implement rollover inheritance; that remains P4.5.
+
+##### P4.4d — Agent authoring and selection behavior
 **Work state:** PLANNED  
 **Reality / evidence:** DECIDED / NOT IMPLEMENTED
 
-Next, bind verified custom registrations to a Room and resolve them through the same discovery/invocation vocabulary as CORE. The overlay must preserve exact registration/package/implementation identities, reject CORE/custom ID collisions and ambiguous custom bindings, execute the immutable published bytes rather than mutable drafts, and emit the same bounded durable capability telemetry shape already proven for CORE.
+Teach A/B/C the bounded custom-capability workflow without hard-wiring task-specific software choices. Agents should create a custom capability only when the current registered library is inadequate and the subproblem has explicit inputs, objectively checkable outputs, and meaningful reuse/reliability/provenance value. Guidance must cover the package-v1 draft location/shape, exact verification-case file, separate registration command execution, host-pending settlement boundary, later rediscovery through ordinary registry operations, and the continuing rule that declared permissions are not per-capability OS enforcement.
 
-P4.4c does not implement rollover inheritance; that remains P4.5. Later P4.4 work will add agent authoring/selection guidance and a bounded live proof.
+##### P4.4e — Bounded live custom-capability proof
+**Work state:** PLANNED  
+**Reality / evidence:** NOT YET VERIFIED LIVE
+
+After P4.4d, run one fresh Room exercise in which the prompt names no implementation command, the engaged agent independently concludes that CORE is inadequate, authors one narrow deterministic capability plus verification cases, submits the registration request, and on a later turn rediscovers and successfully invokes the host-bound custom capability through the ordinary registry path. The proof must preserve exact package / verification / registration / implementation identities in durable evidence. A/B/C delegation should remain judgment-driven rather than mandatory.
+
+P4.5 remains responsible for rollover inheritance; Personal/CORE promotion remains later work under D-022.
 
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
