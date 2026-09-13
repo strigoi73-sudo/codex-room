@@ -8,6 +8,22 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
+from codex_room.capabilities import (
+    CORE_CAPABILITIES,
+    inspect_capability,
+    invoke_capability,
+    list_capabilities,
+)
+from codex_room.custom_capabilities import DRAFTS_PATH
+from codex_room.custom_capability_registration import (
+    publish_verified_custom_capability,
+    verify_custom_capability_draft,
+)
+from codex_room.custom_registry import (
+    bind_custom_registration,
+    inherit_room_custom_capabilities,
+    load_room_custom_capabilities,
+)
 from codex_room.db import Database
 from codex_room.institutional import publish_institutional_release
 from codex_room.main import create_app
@@ -157,6 +173,80 @@ def _publish_test_release(
     return publish_institutional_release(workspace, runtime.data_root)
 
 
+def _bind_rollover_custom_capability(runtime: RoomRuntime, room_id: str):
+    workspace = runtime.workspace(room_id)
+    capability_id = "rollover_echo"
+    draft = workspace.joinpath(*DRAFTS_PATH.parts, capability_id)
+    draft.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "schema_version": 1,
+        "id": capability_id,
+        "version": "1",
+        "description": "Echo explicit text for rollover continuity tests.",
+        "scope": "lineage",
+        "runtime": {
+            "kind": "python",
+            "entrypoint": "capability.py",
+            "protocol": "stdio-json-v1",
+        },
+        "input_schema": {
+            "type": "object",
+            "required": ["text"],
+            "properties": {"text": {"type": "string"}},
+        },
+        "output_schema": {
+            "type": "object",
+            "required": ["ok", "text"],
+            "properties": {
+                "ok": {"type": "boolean"},
+                "text": {"type": "string"},
+            },
+        },
+        "durable_result_fields": ["text"],
+        "permissions": {
+            "workspace_read": False,
+            "workspace_write": False,
+            "network": False,
+            "external_process": False,
+        },
+        "side_effects": "none",
+    }
+    (draft / "manifest.json").write_text(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    (draft / "capability.py").write_text(
+        "import json, sys\n"
+        "request = json.load(sys.stdin)\n"
+        "print(json.dumps({'ok': True, 'text': request['text']}, sort_keys=True))\n",
+        encoding="utf-8",
+    )
+    receipt = verify_custom_capability_draft(
+        workspace,
+        capability_id,
+        [
+            {
+                "name": "basic",
+                "input": {"text": "alpha"},
+                "expected_output": {"ok": True, "text": "alpha"},
+            }
+        ],
+    )
+    registration = publish_verified_custom_capability(
+        workspace,
+        runtime.data_root,
+        room_id,
+        capability_id,
+        receipt,
+    )
+    return bind_custom_registration(
+        runtime.data_root,
+        room_id,
+        registration.registration_sha256,
+        reserved_capability_ids=frozenset(CORE_CAPABILITIES),
+    )
+
+
 @pytest.mark.asyncio
 async def test_rollover_copies_only_stable_configuration_and_checkpoint(tmp_path):
     adapter = FakeAgentAdapter({"agent_a": [(Outcome.PASS, "")]})
@@ -248,6 +338,77 @@ async def test_rollover_copies_only_stable_configuration_and_checkpoint(tmp_path
             "OLD_SUMMARY_CANARY",
         ):
             assert canary not in prompt
+    finally:
+        await runtime.close()
+
+
+@pytest.mark.asyncio
+async def test_rollover_inherits_exact_custom_capability_binding_and_preserves_predecessor(
+    tmp_path,
+):
+    runtime = RoomRuntime(
+        Database(tmp_path / "custom-inheritance.db"),
+        FakeAgentAdapter({"agent_a": [(Outcome.PASS, "")]}),
+        tmp_path / "data",
+    )
+    await runtime.initialize()
+    try:
+        source = await _finished_source(runtime)
+        source_binding = _bind_rollover_custom_capability(runtime, source["id"])
+        source_binding_path = (
+            runtime.data_root
+            / "custom-capabilities"
+            / "bindings"
+            / source["id"]
+            / "rollover_echo.json"
+        )
+        source_binding_bytes = source_binding_path.read_bytes()
+
+        successor = await runtime.rollover(
+            source["id"],
+            RolloverRoomRequest(checkpoint="custom capability continuity"),
+        )
+
+        inherited = load_room_custom_capabilities(
+            runtime.data_root,
+            successor["id"],
+            reserved_capability_ids=frozenset(CORE_CAPABILITIES),
+        )["rollover_echo"]
+        assert inherited.binding_schema_version == 2
+        assert inherited.registration.registration_sha256 == (
+            source_binding.registration.registration_sha256
+        )
+        assert inherited.registration.room_id == source["id"]
+        assert inherited.package.package_sha256 == source_binding.package.package_sha256
+        assert inherited.package.implementation_sha256 == (
+            source_binding.package.implementation_sha256
+        )
+        assert inherited.receipt.verification_sha256 == (
+            source_binding.receipt.verification_sha256
+        )
+        assert inherited.inherited_from_room_id == source["id"]
+        assert inherited.inherited_from_binding_sha256 == source_binding.binding_sha256
+        assert source_binding_path.read_bytes() == source_binding_bytes
+
+        custom = next(
+            item
+            for item in list_capabilities(runtime.workspace(successor["id"]))["capabilities"]
+            if item["id"] == "rollover_echo"
+        )
+        assert custom["registration_sha256"] == source_binding.registration.registration_sha256
+        inspected = inspect_capability(
+            "rollover_echo", runtime.workspace(successor["id"])
+        )["capability"]
+        assert inspected["binding"]["registration_room_id"] == source["id"]
+        assert inspected["binding"]["inherited_from"]["room_id"] == source["id"]
+        result = invoke_capability(
+            runtime.workspace(successor["id"]),
+            "rollover_echo",
+            {"text": "successor-use"},
+        )
+        assert result["ok"] is True
+        assert result["text"] == "successor-use"
+        assert result["registration_sha256"] == source_binding.registration.registration_sha256
     finally:
         await runtime.close()
 
@@ -781,6 +942,7 @@ async def test_provisioning_failure_rolls_back_and_audits_orphans(tmp_path):
     await runtime.initialize()
     try:
         source = await _finished_source(runtime)
+        _bind_rollover_custom_capability(runtime, source["id"])
         old_ids = {item["thread_id"] for item in source["agents"]}
         with pytest.raises(RuntimeError, match="injected"):
             await runtime.rollover(
@@ -793,6 +955,12 @@ async def test_provisioning_failure_rolls_back_and_audits_orphans(tmp_path):
         assert len(audit["orphaned_thread_ids"]) == 1
         assert audit["orphaned_thread_ids"][0] in adapter.archived
         assert {item["thread_id"] for item in await runtime.db.get_agents(source["id"])} == old_ids
+        assert not (
+            runtime.data_root
+            / "custom-capabilities"
+            / "bindings"
+            / audit["successor_room_id"]
+        ).exists()
     finally:
         await runtime.close()
 
@@ -858,12 +1026,20 @@ async def test_restart_recovers_staged_rollover_without_split_brain(
     runtime = RoomRuntime(Database(path), adapter, tmp_path / "data")
     await runtime.initialize()
     source = await _finished_source(runtime)
+    source_binding = _bind_rollover_custom_capability(runtime, source["id"])
     reservation = await runtime.db.reserve_rollover(
         source["id"], RolloverRoomRequest(checkpoint="restart checkpoint")
     )
     successor_id = reservation["successor_room_id"]
     runtime._materialize_rollover_workspace(  # noqa: SLF001 - exercise saga crash boundary
         reservation["operation_id"], successor_id, None
+    )
+    inherit_room_custom_capabilities(
+        runtime.data_root,
+        source["id"],
+        successor_id,
+        reservation["operation_id"],
+        reserved_capability_ids=frozenset(CORE_CAPABILITIES),
     )
     successor_agents = await runtime.db.get_agents(successor_id)
     provision_count = len(successor_agents) if fully_provisioned else 1
@@ -893,10 +1069,25 @@ async def test_restart_recovers_staged_rollover_without_split_brain(
                     if event["event_type"] == "rollover_checkpoint"
                 ]
             ) == 1
+            inherited = load_room_custom_capabilities(
+                recovered.data_root,
+                successor_id,
+                reserved_capability_ids=frozenset(CORE_CAPABILITIES),
+            )["rollover_echo"]
+            assert inherited.registration.registration_sha256 == (
+                source_binding.registration.registration_sha256
+            )
+            assert inherited.inherited_from_room_id == source["id"]
         else:
             assert predecessor and predecessor["status"] == RoomStatus.FINISHED
             assert successor is None
             assert "thr_recovery_1_False" in recovered_adapter.archived
+            assert not (
+                recovered.data_root
+                / "custom-capabilities"
+                / "bindings"
+                / successor_id
+            ).exists()
     finally:
         await recovered.close()
 
