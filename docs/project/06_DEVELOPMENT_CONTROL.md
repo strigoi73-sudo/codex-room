@@ -6,21 +6,30 @@
 
 ## Operator summary
 
-- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.5 — rollover persistence / lineage inheritance is COMPLETE / IMPLEMENTED / VERIFIED end to end.** Fresh live Room evidence now proves that a lineage-scoped custom capability survives rollover through a schema-v2 successor binding, remains discoverable/inspectable/invokable at the exact inherited immutable identity, and leaves the archived predecessor's original schema-v1 binding unchanged.
-- **What is blocked?** Nothing currently blocks continued P4 work.
-- **Where is P4.5?** **COMPLETE.** P4.5a remains the deterministic/hosted implementation basis; E-040 records the fresh live source→successor rollover proof and predecessor-stability check.
-- **What is next?** No further bounded P4 slice is currently selected. Personal/CORE promotion remains the documented later direction under D-022; select the next slice explicitly before implementation.
+- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
+- **What just changed?** **P4 is closed COMPLETE / IMPLEMENTED / VERIFIED end to end.** P4.1 through P4.5 established deterministic assertions, registry/discovery, the minimal CORE library, agent-created custom capability registration/verification, and exact lineage rollover inheritance.
+- **What is blocked?** Nothing currently blocks selection of the next work item.
+- **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
+- **What is next?** No new active implementation slice is selected. Personal/CORE capability promotion remains later direction under D-022, and the Personal daily usage pacing limit remains approved planned development under D-019; choose the next priority explicitly before implementation.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
 
+No active implementation slice is selected. Select the next priority explicitly rather than extending a completed phase by default.
+
+## Recently completed work
+
 ### P4 — Deterministic Room and agent capabilities
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED end to end — 2026-09-13  
+**Decision:** D-022  
+**Evidence:** E-030 through E-040
 
 P4 is product/runtime work: hard-wire deterministic capabilities that Codex Room or its agents can use during normal operation to replace mechanical model cognition. Development/production automation remains supporting engineering work unless it is deliberately exposed as product functionality.
 
 Admission rule: given the same explicit inputs and underlying state, a correct deterministic capability should return substantially the same factual result without requiring judgment. Agents remain responsible for choosing what to test and interpreting significance.
+
+**P4 closure:** P4.1 through P4.5 are complete and verified end to end. Personal/CORE promotion remains a future deliberately selected capability-lifecycle extension under D-022; it is not required to keep P4 open.
 
 #### P4.1 — Deterministic assertions
 **Work state:** COMPLETE  
@@ -323,8 +332,6 @@ P4.5 is closed. Personal/CORE promotion remains later work under D-022.
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
 
-## Recently completed work
-
 ### I-006 — Early-triad default profiles missed D-020 migration
 **Work state:** COMPLETE  
 **Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-12  
@@ -437,9 +444,10 @@ Canonical routine command: `python -m pytest -q`. Clean-environment verification
 GitHub Actions runs the canonical Python suite on pushes to `main` and pull requests targeting `main`, installing through `constraints-test.txt`. The latest hosted verification on canonical `main` (`34abd391ecbb861d7661541e4a716a5152a2049d`) completed successfully with **130 passed, 2 warnings**.
 
 ### P4 — Deterministic Room and agent capabilities
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED end to end — 2026-09-13
 
-P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, the minimal CORE library, agent-created custom capability registration/verification, and lineage rollover inheritance have all been verified end to end. No further bounded P4 slice is currently selected. Personal/CORE promotion remains later work under D-022; do not pre-fill a speculative domain-specific tool catalog or begin promotion work without explicit prioritization.
+P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, the minimal CORE library, agent-created custom capability registration/verification, and lineage rollover inheritance have all been verified end to end. P4 is closed. Personal/CORE promotion remains later work under D-022 and requires separate explicit prioritization.
 
 ## Approved planned development
 
@@ -448,7 +456,7 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 **Reality:** DECIDED / NOT IMPLEMENTED  
 **Decision:** D-019  
 **Feasibility evidence:** E-026  
-**Scheduling:** approved for development but not yet sequenced relative to P4; it does not displace A2.
+**Scheduling:** approved for development; P4 is complete, but this item has not yet been selected as the next active implementation slice.
 
 Core approved behavior:
 
@@ -496,4 +504,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question currently blocks P4. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is a verified low-priority README drift issue. The broader A/B protected-institutional-layer question remains a future design concern unless the human principal explicitly promotes it.
+No high-priority open question currently blocks selection of the next work item. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is a verified low-priority README drift issue. The broader A/B protected-institutional-layer question remains a future design concern unless the human principal explicitly promotes it.
