@@ -1045,3 +1045,46 @@ Canonical-main GitHub Actions run `34762490876`: **291 passed, 2 warnings**.
 
 **Remaining P4.4 boundary:** A/B/C do not yet receive explicit package-authoring / verification / host-pending guidance, and no fresh Room has yet demonstrated autonomous custom-capability creation, later rediscovery, and registered invocation. Those are P4.4d / P4.4e.
 
+### E-036 — P4.4d token-efficient agent custom-capability authoring behavior
+**Date:** 2026-09-13  
+**Scope:** P4.4d deterministic authoring reference and runtime guidance. No live Room creation/invocation proof is claimed here.
+
+PR #22 added the agent behavior needed to use the P4.4a–c custom-capability substrate without hard-wiring task-specific software or injecting the full package schema into every model turn.
+
+Implemented behavior:
+
+- existing guidance still requires agents to check registered capability inventory before ad hoc mechanical work;
+- custom capability creation is selective: it is suggested only when no adequate registered capability exists and reusable deterministic software is justified by reuse, reliability, provenance, or mechanical-complexity value;
+- the always-loaded instruction points to standalone `codex-room-cap authoring` instead of repeating the full authoring contract on every turn;
+- `authoring` returns registry operation/schema identity plus:
+  - draft root `.codex-room/capability-drafts/<id>`;
+  - package files `manifest.json` and `capability.py`;
+  - portable lowercase ID pattern plus Windows-reserved-name warning;
+  - manifest/code byte limits derived from `MAX_MANIFEST_BYTES` / `MAX_ENTRYPOINT_BYTES`;
+  - all required manifest fields and fixed lineage/Python/`stdio-json-v1` values;
+  - object input/output contract rules, required boolean `ok`, reserved registry-envelope output names, durable-result-field rules, exact permission declaration keys, and side-effect declaration requirement;
+  - verification case count/JSON/fixture bounds derived from P4.4b implementation constants;
+  - exact registration command shape;
+  - explicit host-pending settlement semantics;
+  - explicit statement that permission declarations are not per-capability OS enforcement;
+- safe Room telemetry promotes an authoring lookup only as compact registry evidence with `authoring_schema_version: 1`, omitting the detailed reference payload;
+- runtime guidance requires `authoring` and `register` to run as standalone auditable commands;
+- after successful `register`, the agent is told not to treat the capability as active until the turn settles;
+- a later turn must rediscover the custom capability through normal `list` / `inspect` before invoking it.
+
+Exact reviewed PR #22 head:
+
+`167cb4361ac8d1c36d858fb9d6dbd5fb18d65747`
+
+GitHub Actions PR run `34762737011`: **294 passed, 2 warnings**.
+
+PR #22 squash-merged as:
+
+`8afa54e23850441690a6071cb7fff01e32a2ab46` — `P4.4d: teach agents bounded custom capability authoring`
+
+Canonical-main GitHub Actions run `34762827607`: **294 passed, 2 warnings**.
+
+**P4.4d status:** COMPLETE / IMPLEMENTED / VERIFIED deterministically.
+
+**Remaining P4.4 boundary:** P4.4e must provide fresh-Room evidence that an agent independently chooses this path, produces a valid custom package/test suite, reaches host-bound registration after settlement, then later rediscovers and invokes the immutable registered capability correctly.
+
