@@ -1000,3 +1000,48 @@ Canonical-main GitHub Actions run `34761250928`: **277 passed, 2 warnings**.
 
 **Remaining P4.4 boundary:** published registrations are durable provenance objects but are not yet active Room registry bindings. P4.4c must resolve verified immutable custom registrations through the same normal discovery/invocation vocabulary as CORE while rejecting collisions/ambiguity and preserving safe telemetry.
 
+### E-035 — P4.4c lifecycle-safe Room binding and dynamic custom registry
+**Date:** 2026-09-13  
+**Scope:** P4.4c Room binding / unified CORE + custom discovery and invocation. Rollover inheritance and live agent authoring behavior are outside this evidence item.
+
+PR #21 completed the activation boundary from a verified custom draft to one Room's ordinary capability registry.
+
+Authority-boundary result:
+
+- the sandboxed `codex-room-cap register <id> --cases-file <path>` command verifies exact draft bytes using the P4.4b gate and emits a bounded self-hashed registration request;
+- the command does not publish or bind protected `data/custom-capabilities/` state itself;
+- exact-diff review caught and removed an earlier pre-CI implementation that attempted protected publication directly from the agent's `workspace_write` sandbox;
+- after the agent turn passes lifecycle/staleness checks and delivery settlement, `RoomRuntime` host settlement reparses the receipt, requires the current draft/package hashes to match, publishes immutable package / verification / registration objects, and writes the protected Room binding;
+- host settlement first recognizes an already-bound exact receipt/package identity, making recovered-result replay idempotent even if mutable draft files later change;
+- a draft changed between sandbox verification and first host settlement fails registration rather than publishing different bytes.
+
+Registry/invocation result:
+
+- binding schema v1 is single-assignment per Room/capability ID;
+- same exact binding is idempotent; a different registration for an already-bound ID fails visibly;
+- CORE/custom ID collisions fail visibly;
+- only canonical `data/rooms/<room_id>/shared` workspaces receive the custom overlay;
+- bound custom capabilities appear in the same sorted `codex-room-cap list` inventory and expose normal `inspect` / `invoke` operations;
+- custom inspection reports lineage scope, exact implementation/package/registration identity, verification receipt identity/case-plan metadata, declared permissions/side effects, and the explicit no-per-capability-enforcement boundary;
+- custom invocation executes immutable published `capability.py` bytes rather than mutable draft bytes;
+- published package/registration/verification records are revalidated before use;
+- custom invocation returns the normal capability envelope with capability version, implementation SHA-256, package SHA-256, registration SHA-256, verification SHA-256, and declared durable-result fields;
+- safe Room telemetry preserves those bounded provenance fields and only manifest-declared durable result fields, dropping undeclared transient output;
+- registration-request telemetry preserves only the bounded receipt identity/hash evidence required for host settlement, not raw verification fixture/input/output bodies.
+
+Exact reviewed PR #21 head:
+
+`8ebfad68e1210d7191f7274a450ed76d29ae2e8e`
+
+GitHub Actions PR run `34762414175`: **291 passed, 2 warnings**.
+
+PR #21 squash-merged as:
+
+`5e2d90b92197ce58866af0ddaceff922d2b16c9e` — `P4.4c: bind verified custom capabilities into Room registry`
+
+Canonical-main GitHub Actions run `34762490876`: **291 passed, 2 warnings**.
+
+**P4.4c status:** COMPLETE / IMPLEMENTED / VERIFIED deterministically.
+
+**Remaining P4.4 boundary:** A/B/C do not yet receive explicit package-authoring / verification / host-pending guidance, and no fresh Room has yet demonstrated autonomous custom-capability creation, later rediscovery, and registered invocation. Those are P4.4d / P4.4e.
+
