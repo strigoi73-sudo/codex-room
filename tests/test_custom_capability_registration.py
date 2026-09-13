@@ -182,6 +182,24 @@ def test_verifier_timeout_is_bounded(tmp_path: Path, monkeypatch) -> None:
         verify_custom_capability_draft(tmp_path, "count_lines", [_cases()[0]])
 
 
+def test_verifier_kills_output_flood_at_bound(tmp_path: Path, monkeypatch) -> None:
+    _write_draft(
+        tmp_path,
+        code=(
+            "import json, sys, time\n"
+            "json.load(sys.stdin)\n"
+            "while True:\n"
+            "    print('x' * 100, flush=True)\n"
+            "    time.sleep(0.01)\n"
+        ),
+    )
+    monkeypatch.setattr(registration, "MAX_PROCESS_OUTPUT_BYTES", 128)
+    monkeypatch.setattr(registration, "CASE_TIMEOUT_SECONDS", 1.0)
+
+    with pytest.raises(CustomCapabilityVerificationError, match="output size limit"):
+        verify_custom_capability_draft(tmp_path, "count_lines", [_cases()[0]])
+
+
 def test_verifier_detects_draft_mutation_during_execution(tmp_path: Path) -> None:
     mutating = """import json
 import sys
