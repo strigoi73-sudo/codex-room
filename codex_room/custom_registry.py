@@ -80,6 +80,7 @@ class BoundCustomCapability:
             "implementation_sha256": self.package.implementation_sha256,
             "package_sha256": self.package.package_sha256,
             "registration_sha256": self.registration.registration_sha256,
+            "inspect": f"codex-room-cap inspect {self.package.capability_id}",
         }
 
     def manifest(self) -> dict[str, Any]:
