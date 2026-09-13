@@ -165,7 +165,7 @@ def test_manifest_rejects_identity_and_runtime_drift(
         ),
         (
             lambda value: value["output_schema"]["properties"].pop("ok"),
-            "boolean property 'ok'",
+            "undeclared properties",
         ),
         (
             lambda value: value["output_schema"].update(required=["count"]),
