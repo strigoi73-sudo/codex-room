@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.4a — Custom capability package and identity is COMPLETE / IMPLEMENTED / VERIFIED.** Codex Room now has a bounded lineage-scoped draft package model with exact manifest, implementation, and combined package identities; symlink/path and size hardening; typed contract declarations; and an explicit no-false-claim boundary around per-capability permission enforcement. PR #19 and merged canonical-main bytes both passed **261 tests, 2 warnings**.
+- **What just changed?** **P4.4b — Verification and immutable registration is COMPLETE / IMPLEMENTED / VERIFIED.** Exact custom drafts can now be exercised against bounded deterministic test vectors under the caller's ambient Room sandbox, re-hashed after execution, and published as immutable content-addressed package/verification/registration records. PR #20 and merged canonical-main bytes both passed **277 tests, 2 warnings**.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **What just resumed?** **P4.4 — Agent-created capability registration and verification** is IN PROGRESS. P4.4a established and verified the bounded custom-capability draft package/identity model without yet granting registration or execution status.
-- **What is next?** **P4.4b — verification and immutable registration**: define deterministic verification evidence, publish exact validated package bytes into an immutable content-addressed custom-capability registry, and bind registration provenance without claiming per-capability OS enforcement. Rollover inheritance remains P4.5.
+- **Where is P4.4?** **IN PROGRESS.** P4.4a established exact draft package identity; P4.4b established bounded verification and immutable publication. Published custom registrations are still not visible through ordinary capability discovery/invocation.
+- **What is next?** **P4.4c — Room binding and dynamic CORE + custom registry overlay**: make a Room's verified custom registration discoverable through the same `list` / `inspect` / `invoke` surface as CORE while preserving exact registration/package identity and current telemetry safety. Rollover inheritance remains P4.5.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -141,12 +141,34 @@ PR #19 exact repaired head `39ead0212319774b987b00bc661b773e6b99c807` and squash
 P4.4a does **not** register, publish, discover, inherit, or invoke custom capabilities.
 
 ##### P4.4b — Verification and immutable registration
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-13  
+**Evidence:** E-034
+
+Implemented verification/publication boundary:
+
+- verification accepts 1–16 exact JSON-object input / exact JSON-object expected-output cases plus optional bounded UTF-8 workspace fixture files;
+- each case runs exact copied `capability.py` bytes through Python isolated mode under the caller's existing ambient Room execution boundary;
+- case execution has a 5-second default timeout, bounded fixture/input/expected sizes, and a live stdout/stderr size cutoff that kills output floods rather than buffering them without bound;
+- successful cases require zero exit, quiet stderr, one UTF-8 JSON object with boolean `ok`, exact expected output, and expected coverage of every declared durable-result field;
+- the verifier re-loads and re-hashes the original draft after execution and fails if exact package bytes changed during verification;
+- durable verification receipts retain case names plus input/expected/observed/fixture hashes and case-plan identity, not raw test contents;
+- host-side publication **never executes candidate code**;
+- accepted exact bytes publish under content-addressed package, verification, and registration identities below protected `data/custom-capabilities/`;
+- repeated publication of the same exact registration is idempotent; corrupt/conflicting content-addressed bytes fail visibly;
+- the registration record binds Room ID, custom ID/version, package SHA-256, manifest SHA-256, implementation SHA-256, and verification SHA-256.
+
+PR #20 exact reviewed head `617c41e95cdbb775b065a8bb47c4ced5c71f0f4c` and squash merge `7ecf05f206043116cf77a9f6a8581b6eb85136be` both passed **277 tests, 2 warnings**.
+
+P4.4b publication is still **not a Room registry binding**. Ordinary `codex-room-cap list / inspect / invoke` remains CORE-only.
+
+##### P4.4c — Room binding and dynamic registry overlay
 **Work state:** PLANNED  
 **Reality / evidence:** DECIDED / NOT IMPLEMENTED
 
-Next, define the deterministic verification gate and immutable publication path. The gate must verify exact draft bytes and declared contracts, produce durable verification/provenance evidence, and publish accepted packages into a content-addressed custom-capability registry. Registration must not silently elevate ordinary scripts or claim per-capability sandbox guarantees that the execution layer does not actually enforce.
+Next, bind verified custom registrations to a Room and resolve them through the same discovery/invocation vocabulary as CORE. The overlay must preserve exact registration/package/implementation identities, reject CORE/custom ID collisions and ambiguous custom bindings, execute the immutable published bytes rather than mutable drafts, and emit the same bounded durable capability telemetry shape already proven for CORE.
 
-Later P4.4 slices will add the dynamic CORE + custom registry overlay, agent authoring/selection behavior, and a bounded live proof. P4.5 remains responsible for rollover inheritance; Personal/CORE promotion remains later work under D-022.
+P4.4c does not implement rollover inheritance; that remains P4.5. Later P4.4 work will add agent authoring/selection guidance and a bounded live proof.
 
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
