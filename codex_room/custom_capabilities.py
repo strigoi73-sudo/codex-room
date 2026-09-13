@@ -20,8 +20,16 @@ MAX_MANIFEST_BYTES = 64 * 1024
 MAX_ENTRYPOINT_BYTES = 256 * 1024
 MAX_DESCRIPTION_CHARS = 1000
 MAX_SIDE_EFFECTS_CHARS = 1000
-_CAPABILITY_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
+_CAPABILITY_ID_RE = re.compile(r"[a-z][a-z0-9_]{0,63}")
 _VERSION_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+_WINDOWS_RESERVED = {
+    "con",
+    "prn",
+    "aux",
+    "nul",
+    *(f"com{index}" for index in range(1, 10)),
+    *(f"lpt{index}" for index in range(1, 10)),
+}
 _PERMISSION_KEYS = {
     "workspace_read",
     "workspace_write",
@@ -103,6 +111,7 @@ def load_custom_capability_draft(
 ) -> CustomCapabilityPackage:
     """Load and structurally verify one bounded custom capability draft package."""
     package_root = draft_path(workspace, capability_id)
+    _assert_safe_draft_directory_chain(workspace, package_root)
     manifest_path = package_root / MANIFEST_NAME
     entrypoint_path = package_root / ENTRYPOINT_NAME
 
@@ -206,6 +215,7 @@ def load_custom_capability_draft(
     implementation_sha256 = hashlib.sha256(entrypoint_bytes).hexdigest()
     package_digest = hashlib.sha256()
     package_digest.update(b"codex-room-custom-capability-package-v1\x00")
+    package_digest.update(b"manifest.json\x00")
     package_digest.update(manifest_bytes)
     package_digest.update(b"\x00capability.py\x00")
     package_digest.update(entrypoint_bytes)
@@ -232,6 +242,26 @@ def load_custom_capability_draft(
 def _validate_identifier(value: Any, label: str, pattern: re.Pattern[str]) -> None:
     if not isinstance(value, str) or not pattern.fullmatch(value):
         raise CustomCapabilityPackageError(f"Custom capability {label} is invalid")
+    if label in {"capability id", "manifest id"} and value.casefold() in _WINDOWS_RESERVED:
+        raise CustomCapabilityPackageError(f"Custom capability {label} is reserved on Windows")
+
+
+def _assert_safe_draft_directory_chain(workspace: Path, package_root: Path) -> None:
+    current = workspace
+    for part in (*DRAFTS_PATH.parts, package_root.name):
+        current = current / part
+        if not os.path.lexists(current):
+            continue
+        try:
+            metadata = current.lstat()
+        except OSError as exc:
+            raise CustomCapabilityPackageError(
+                f"Custom capability draft path could not be inspected: {exc}"
+            ) from exc
+        if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+            raise CustomCapabilityPackageError(
+                "Custom capability draft path must use real directories without symlinks"
+            )
 
 
 def _read_regular_file(path: Path, label: str, byte_limit: int) -> bytes:
@@ -246,9 +276,12 @@ def _read_regular_file(path: Path, label: str, byte_limit: int) -> bytes:
     if metadata.st_size > byte_limit:
         raise CustomCapabilityPackageError(f"{label} exceeds the size limit")
     try:
-        return path.read_bytes()
+        data = path.read_bytes()
     except OSError as exc:
         raise CustomCapabilityPackageError(f"{label} could not be read: {exc}") from exc
+    if len(data) > byte_limit:
+        raise CustomCapabilityPackageError(f"{label} exceeds the size limit")
+    return data
 
 
 def _validate_object_schema(value: Any, label: str) -> dict[str, Any]:
