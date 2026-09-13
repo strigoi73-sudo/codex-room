@@ -14,14 +14,11 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
 from .custom_capability_registration import (
-    CustomCapabilityPublicationError,
     CustomCapabilityVerificationError,
-    publish_verified_custom_capability,
     verify_custom_capability_draft,
 )
 from .custom_registry import (
     CustomCapabilityRegistryError,
-    bind_custom_registration,
     invoke_bound_custom_capability,
     load_room_custom_capabilities,
     resolve_room_capability_context,
@@ -1529,33 +1526,18 @@ def register_custom_capability(
         raise CapabilityUsageError("verification cases file must be valid UTF-8 JSON") from exc
     try:
         receipt = verify_custom_capability_draft(root, capability_id, raw_cases)
-        registration = publish_verified_custom_capability(
-            root,
-            context.data_root,
-            context.room_id,
-            capability_id,
-            receipt,
-        )
-        binding = bind_custom_registration(
-            context.data_root,
-            context.room_id,
-            registration.registration_sha256,
-            reserved_capability_ids=frozenset(CORE_CAPABILITIES),
-        )
-    except (
-        CustomCapabilityVerificationError,
-        CustomCapabilityPublicationError,
-        CustomCapabilityRegistryError,
-    ) as exc:
+    except CustomCapabilityVerificationError as exc:
         raise CapabilityUsageError(str(exc)) from exc
     return {
         "codex_room_registry": REGISTRY_MARKER,
         "operation": "register",
         "ok": True,
-        "capability": binding.manifest(),
-        "registration_sha256": registration.registration_sha256,
-        "verification_sha256": receipt.verification_sha256,
-        "package_sha256": binding.package.package_sha256,
+        "state": "verification_passed_host_pending",
+        "capability_id": capability_id,
+        "registration_request": {
+            "capability_id": capability_id,
+            "receipt": receipt.as_dict(),
+        },
     }
 
 
