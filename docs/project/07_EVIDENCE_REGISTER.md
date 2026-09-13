@@ -1160,3 +1160,44 @@ Canonical-main GitHub Actions run `34763920318`: **297 passed, 2 warnings**.
 
 **Status:** Round 1 IMPLEMENTED / VERIFIED live. PR #23 IMPLEMENTED / VERIFIED deterministically. P4.4e as a whole remains **IN PROGRESS / NEEDS LIVE VERIFICATION** until a later Round in the same preserved Room produces a successful durable registered invocation on new input.
 
+### E-038 — P4.4e repaired live reuse proof closes custom capability registration
+**Date:** 2026-09-13  
+**Scope:** Same-Room post-PR-#23 reuse proof for the already-host-bound custom capability. Closes P4.4e and P4.4 end to end.
+
+Live Room:
+
+- Room `room_857d95aa75c14dd0b939f43baf9a9e17`
+- repaired reuse Round `round_3f88ad9c33fa4079aec29364681749ae`
+- one C turn; A/B remained unconsumed
+- normal `mutual_finish` closure.
+
+The user prompt named neither the custom capability nor any registry/invocation command. It asked only to reuse the deterministic facility already available in the Room for the new input:
+
+`  Alpha / Beta__99  `
+
+Durable evidence establishes the full registered reuse path:
+
+- registry `list` rediscovered `ascii_text_slug` as `origin: custom`, `scope: lineage`, version `1`;
+- listed identities matched the original host binding:
+  - implementation SHA-256 `3333ecd6e0af62de3a87a679acbc320e57e6cf82cc9561a189871712aca6add5`;
+  - package SHA-256 `af1ed4105a432ff0f1b0faab7bcb63c90e1bb86eeaf0a7e2463babd35b9d53d5`;
+  - registration SHA-256 `abfbeb96bee8d24621f2c1666d9bf9b11c5ce9f952cfe3ba5ec5eb750c614d2e`;
+- registry `inspect` returned the same implementation/package/registration identities, verification status `verified`, verification SHA-256 `8eca83c2e7d9fa439d8e60e9fe3f97598af0d575015120d99c4555ae83c1b023`, the original four-case plan, and durable result fields `slug` / `length`;
+- one workspace file change occurred before invocation, consistent with the repaired bounded file-input transport introduced by PR #23;
+- the subsequent normal deterministic capability invocation completed with:
+  - `capability: ascii_text_slug`;
+  - version `1`;
+  - the same implementation/package/registration/verification identities;
+  - `ok: true`;
+  - `slug: "alpha-beta-99"`;
+  - `length: 13`;
+- C FINISHed exactly `P4.4-CUSTOM-OK`.
+
+This satisfies the outstanding P4.4e stop condition that the already-bound immutable custom capability be rediscovered and successfully invoked on a new input without relying on the mutable draft or re-registration.
+
+**P4.4e status:** COMPLETE / IMPLEMENTED / VERIFIED live.
+
+**P4.4 status:** COMPLETE / IMPLEMENTED / VERIFIED end to end.
+
+**Next boundary:** P4.5 must preserve registered lineage-scoped custom capabilities across Room rollover at the exact inherited version. Personal/CORE promotion remains later work under D-022.
+
