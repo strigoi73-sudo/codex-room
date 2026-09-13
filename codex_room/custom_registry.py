@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -34,8 +35,10 @@ from .custom_capability_registration import (
 
 
 BINDINGS_PATH = Path("custom-capabilities") / "bindings"
+ROLLOVER_BINDING_STAGING_PATH = Path("custom-capabilities") / ".rollover-binding-staging"
 MAX_REGISTRY_RECORD_BYTES = 256 * 1024
 _ROOM_ID = re.compile(r"room_[A-Za-z0-9_-]{1,128}")
+_ROLLOVER_ID = re.compile(r"rollover_[A-Za-z0-9_-]{1,128}")
 _CAPABILITY_ID = re.compile(r"[a-z][a-z0-9_]{0,63}")
 _HEX_SHA256 = re.compile(r"[0-9a-f]{64}")
 _RESERVED_RESULT_FIELDS = {
@@ -64,7 +67,10 @@ class RoomCapabilityContext:
 @dataclass(frozen=True, slots=True)
 class BoundCustomCapability:
     room_id: str
+    binding_schema_version: int
     binding_sha256: str
+    inherited_from_room_id: str | None
+    inherited_from_binding_sha256: str | None
     registration: CustomCapabilityRegistration
     receipt: VerificationReceipt
     package: CustomCapabilityPackage
@@ -84,8 +90,20 @@ class BoundCustomCapability:
         }
 
     def manifest(self) -> dict[str, Any]:
+        binding = {
+            "schema_version": self.binding_schema_version,
+            "room_id": self.room_id,
+            "binding_sha256": self.binding_sha256,
+            "registration_room_id": self.registration.room_id,
+        }
+        if self.inherited_from_room_id is not None:
+            binding["inherited_from"] = {
+                "room_id": self.inherited_from_room_id,
+                "binding_sha256": self.inherited_from_binding_sha256,
+            }
         return {
             **self.package.manifest(),
+            "binding": binding,
             "verification": {
                 "status": "verified",
                 "verification_sha256": self.receipt.verification_sha256,
@@ -180,12 +198,142 @@ def bind_custom_registration(
         _write_exclusive(binding_path, exact_bytes, "custom capability binding")
     return BoundCustomCapability(
         room_id=room_id,
+        binding_schema_version=1,
         binding_sha256=binding_sha256,
+        inherited_from_room_id=None,
+        inherited_from_binding_sha256=None,
         registration=resolved.registration,
         receipt=resolved.receipt,
         package=resolved.package,
         package_root=resolved.package_root,
     )
+
+
+def inherit_room_custom_capabilities(
+    data_root: Path,
+    source_room_id: str,
+    successor_room_id: str,
+    operation_id: str,
+    *,
+    reserved_capability_ids: set[str] | frozenset[str] = frozenset(),
+) -> dict[str, BoundCustomCapability]:
+    """Publish an exact inherited binding set for one staged rollover successor.
+
+    The original registration remains tied to the Room that registered it. Schema-v2
+    bindings authorize the successor by pointing to the immediate predecessor binding,
+    so multi-generation rollover preserves both origin provenance and lineage continuity.
+    """
+    _validate_room_id(source_room_id)
+    _validate_room_id(successor_room_id)
+    _validate_rollover_id(operation_id)
+    if source_room_id == successor_room_id:
+        raise CustomCapabilityRegistryError("Rollover successor must differ from predecessor")
+
+    source = load_room_custom_capabilities(
+        data_root,
+        source_room_id,
+        reserved_capability_ids=reserved_capability_ids,
+    )
+    final_root = data_root / BINDINGS_PATH / successor_room_id
+    stage_operation_root = data_root / ROLLOVER_BINDING_STAGING_PATH / operation_id
+    if os.path.lexists(final_root):
+        if not source:
+            raise CustomCapabilityRegistryError(
+                "Rollover successor has unexpected custom capability binding state"
+            )
+        existing = load_room_custom_capabilities(
+            data_root,
+            successor_room_id,
+            reserved_capability_ids=reserved_capability_ids,
+        )
+        _validate_inherited_binding_set(source_room_id, source, existing)
+        cleanup_error = _remove_registry_tree(
+            stage_operation_root, "rollover custom capability staging directory"
+        )
+        if cleanup_error is not None:
+            raise CustomCapabilityRegistryError(cleanup_error)
+        return existing
+
+    cleanup_error = _remove_registry_tree(
+        stage_operation_root, "rollover custom capability staging directory"
+    )
+    if cleanup_error is not None:
+        raise CustomCapabilityRegistryError(cleanup_error)
+    if not source:
+        return {}
+
+    _ensure_real_registry_directory(data_root, data_root / "custom-capabilities")
+    _ensure_real_registry_directory(data_root, data_root / BINDINGS_PATH)
+    _ensure_real_registry_directory(data_root, data_root / ROLLOVER_BINDING_STAGING_PATH)
+    _ensure_real_registry_directory(data_root, stage_operation_root)
+    staged_room_root = stage_operation_root / successor_room_id
+    _ensure_real_registry_directory(data_root, staged_room_root)
+
+    published_final = False
+    try:
+        for capability_id, predecessor in sorted(source.items()):
+            payload = {
+                "schema_version": 2,
+                "room_id": successor_room_id,
+                "id": capability_id,
+                "registration_sha256": predecessor.registration.registration_sha256,
+                "registration_room_id": predecessor.registration.room_id,
+                "inherited_from_room_id": source_room_id,
+                "inherited_from_binding_sha256": predecessor.binding_sha256,
+            }
+            binding_sha256 = hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
+            _write_exclusive(
+                staged_room_root / f"{capability_id}.json",
+                _canonical_json_bytes(
+                    {
+                        **payload,
+                        "binding_sha256": binding_sha256,
+                    }
+                ),
+                "inherited custom capability binding",
+            )
+        os.replace(staged_room_root, final_root)
+        published_final = True
+        stage_operation_root.rmdir()
+        inherited = load_room_custom_capabilities(
+            data_root,
+            successor_room_id,
+            reserved_capability_ids=reserved_capability_ids,
+        )
+        _validate_inherited_binding_set(source_room_id, source, inherited)
+        return inherited
+    except BaseException:
+        if published_final:
+            _remove_registry_tree(final_root, "successor custom capability binding directory")
+        _remove_registry_tree(
+            stage_operation_root, "rollover custom capability staging directory"
+        )
+        raise
+
+
+def discard_rollover_custom_capabilities(
+    data_root: Path,
+    operation_id: str,
+    successor_room_id: str,
+) -> str | None:
+    """Remove only custom-binding state allocated to one aborted staged successor."""
+    _validate_rollover_id(operation_id)
+    _validate_room_id(successor_room_id)
+    errors: list[str] = []
+    for path, label in (
+        (
+            data_root / ROLLOVER_BINDING_STAGING_PATH / operation_id,
+            "rollover custom capability staging directory",
+        ),
+        (
+            data_root / BINDINGS_PATH / successor_room_id,
+            "successor custom capability binding directory",
+        ),
+    ):
+        error = _remove_registry_tree(path, label)
+        if error is not None:
+            errors.append(error)
+    return "; ".join(errors) or None
 
 
 def load_room_custom_capabilities(
@@ -212,57 +360,179 @@ def load_room_custom_capabilities(
             raise CustomCapabilityRegistryError(
                 f"Room custom capability binding directory contains unsupported entry: {path.name}"
             )
-        raw = _read_json_record(path, "custom capability binding")
-        required = {
-            "schema_version",
-            "room_id",
-            "id",
-            "registration_sha256",
-            "binding_sha256",
-        }
-        if set(raw) != required or raw.get("schema_version") != 1:
-            raise CustomCapabilityRegistryError("Custom capability binding schema is invalid")
-        if raw.get("room_id") != room_id:
-            raise CustomCapabilityRegistryError("Custom capability binding Room identity is invalid")
-        capability_id = raw.get("id")
-        if (
-            not isinstance(capability_id, str)
-            or not _CAPABILITY_ID.fullmatch(capability_id)
-            or path.name != f"{capability_id}.json"
-        ):
-            raise CustomCapabilityRegistryError("Custom capability binding id is invalid")
-        if capability_id in reserved_capability_ids:
-            raise CustomCapabilityRegistryError(
-                f"Custom capability id collides with reserved CORE capability: {capability_id}"
-            )
-        registration_sha256 = raw.get("registration_sha256")
-        _validate_sha(registration_sha256, "binding registration SHA-256")
+        item = _load_bound_custom_binding(
+            data_root,
+            room_id,
+            path,
+            reserved_capability_ids,
+            frozenset(),
+        )
+        resolved[item.package.capability_id] = item
+    return resolved
+
+
+def _load_bound_custom_binding(
+    data_root: Path,
+    room_id: str,
+    path: Path,
+    reserved_capability_ids: set[str] | frozenset[str],
+    lineage_stack: frozenset[tuple[str, str]],
+) -> BoundCustomCapability:
+    raw = _read_json_record(path, "custom capability binding")
+    schema_version = raw.get("schema_version")
+    v1_fields = {
+        "schema_version",
+        "room_id",
+        "id",
+        "registration_sha256",
+        "binding_sha256",
+    }
+    v2_fields = {
+        "schema_version",
+        "room_id",
+        "id",
+        "registration_sha256",
+        "registration_room_id",
+        "inherited_from_room_id",
+        "inherited_from_binding_sha256",
+        "binding_sha256",
+    }
+    if schema_version == 1 and set(raw) == v1_fields:
         payload = {
             "schema_version": 1,
-            "room_id": room_id,
-            "id": capability_id,
-            "registration_sha256": registration_sha256,
+            "room_id": raw.get("room_id"),
+            "id": raw.get("id"),
+            "registration_sha256": raw.get("registration_sha256"),
         }
-        expected_binding_sha = hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
-        if raw.get("binding_sha256") != expected_binding_sha:
-            raise CustomCapabilityRegistryError(
-                "Custom capability binding hash does not match exact binding payload"
-            )
+    elif schema_version == 2 and set(raw) == v2_fields:
+        payload = {
+            "schema_version": 2,
+            "room_id": raw.get("room_id"),
+            "id": raw.get("id"),
+            "registration_sha256": raw.get("registration_sha256"),
+            "registration_room_id": raw.get("registration_room_id"),
+            "inherited_from_room_id": raw.get("inherited_from_room_id"),
+            "inherited_from_binding_sha256": raw.get("inherited_from_binding_sha256"),
+        }
+    else:
+        raise CustomCapabilityRegistryError("Custom capability binding schema is invalid")
+
+    if raw.get("room_id") != room_id:
+        raise CustomCapabilityRegistryError("Custom capability binding Room identity is invalid")
+    capability_id = raw.get("id")
+    if (
+        not isinstance(capability_id, str)
+        or not _CAPABILITY_ID.fullmatch(capability_id)
+        or path.name != f"{capability_id}.json"
+    ):
+        raise CustomCapabilityRegistryError("Custom capability binding id is invalid")
+    if capability_id in reserved_capability_ids:
+        raise CustomCapabilityRegistryError(
+            f"Custom capability id collides with reserved CORE capability: {capability_id}"
+        )
+    registration_sha256 = raw.get("registration_sha256")
+    _validate_sha(registration_sha256, "binding registration SHA-256")
+    _validate_sha(raw.get("binding_sha256"), "binding SHA-256")
+    expected_binding_sha = hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
+    if raw["binding_sha256"] != expected_binding_sha:
+        raise CustomCapabilityRegistryError(
+            "Custom capability binding hash does not match exact binding payload"
+        )
+
+    inherited_from_room_id: str | None = None
+    inherited_from_binding_sha256: str | None = None
+    if schema_version == 1:
         item = _resolve_registration(
             data_root,
             registration_sha256,
             expected_room_id=room_id,
             expected_capability_id=capability_id,
         )
-        resolved[capability_id] = BoundCustomCapability(
-            room_id=room_id,
-            binding_sha256=expected_binding_sha,
-            registration=item.registration,
-            receipt=item.receipt,
-            package=item.package,
-            package_root=item.package_root,
+    else:
+        registration_room_id = raw.get("registration_room_id")
+        inherited_from_room_id = raw.get("inherited_from_room_id")
+        inherited_from_binding_sha256 = raw.get("inherited_from_binding_sha256")
+        _validate_room_id(registration_room_id)
+        _validate_room_id(inherited_from_room_id)
+        _validate_sha(
+            inherited_from_binding_sha256,
+            "inherited predecessor binding SHA-256",
         )
-    return resolved
+        if inherited_from_room_id == room_id:
+            raise CustomCapabilityRegistryError(
+                "Inherited custom capability binding cannot name itself as predecessor"
+            )
+        lineage_key = (room_id, capability_id)
+        if lineage_key in lineage_stack:
+            raise CustomCapabilityRegistryError(
+                "Custom capability binding inheritance contains a cycle"
+            )
+        item = _resolve_registration(
+            data_root,
+            registration_sha256,
+            expected_room_id=registration_room_id,
+            expected_capability_id=capability_id,
+        )
+        predecessor_root = data_root / BINDINGS_PATH / inherited_from_room_id
+        _assert_real_directory(
+            predecessor_root, "Inherited custom capability binding directory"
+        )
+        predecessor = _load_bound_custom_binding(
+            data_root,
+            inherited_from_room_id,
+            predecessor_root / f"{capability_id}.json",
+            reserved_capability_ids,
+            lineage_stack | {lineage_key},
+        )
+        if (
+            predecessor.binding_sha256 != inherited_from_binding_sha256
+            or predecessor.registration.registration_sha256 != registration_sha256
+            or predecessor.registration.room_id != registration_room_id
+        ):
+            raise CustomCapabilityRegistryError(
+                "Inherited custom capability binding does not match predecessor binding"
+            )
+
+    return BoundCustomCapability(
+        room_id=room_id,
+        binding_schema_version=schema_version,
+        binding_sha256=expected_binding_sha,
+        inherited_from_room_id=inherited_from_room_id,
+        inherited_from_binding_sha256=inherited_from_binding_sha256,
+        registration=item.registration,
+        receipt=item.receipt,
+        package=item.package,
+        package_root=item.package_root,
+    )
+
+
+def _validate_inherited_binding_set(
+    source_room_id: str,
+    source: dict[str, BoundCustomCapability],
+    successor: dict[str, BoundCustomCapability],
+) -> None:
+    if set(source) != set(successor):
+        raise CustomCapabilityRegistryError(
+            "Rollover successor custom capability set does not match predecessor"
+        )
+    for capability_id, predecessor in source.items():
+        inherited = successor[capability_id]
+        if (
+            inherited.binding_schema_version != 2
+            or inherited.inherited_from_room_id != source_room_id
+            or inherited.inherited_from_binding_sha256 != predecessor.binding_sha256
+            or inherited.registration.registration_sha256
+            != predecessor.registration.registration_sha256
+            or inherited.registration.room_id != predecessor.registration.room_id
+            or inherited.package.package_sha256 != predecessor.package.package_sha256
+            or inherited.package.implementation_sha256
+            != predecessor.package.implementation_sha256
+            or inherited.receipt.verification_sha256
+            != predecessor.receipt.verification_sha256
+        ):
+            raise CustomCapabilityRegistryError(
+                "Rollover successor custom capability identity does not match predecessor"
+            )
 
 
 def invoke_bound_custom_capability(
@@ -667,6 +937,22 @@ def _assert_real_directory(path: Path, label: str) -> None:
 def _validate_room_id(room_id: Any) -> None:
     if not isinstance(room_id, str) or not _ROOM_ID.fullmatch(room_id):
         raise CustomCapabilityRegistryError("Room id is invalid")
+
+
+def _validate_rollover_id(operation_id: Any) -> None:
+    if not isinstance(operation_id, str) or not _ROLLOVER_ID.fullmatch(operation_id):
+        raise CustomCapabilityRegistryError("Rollover operation id is invalid")
+
+
+def _remove_registry_tree(path: Path, label: str) -> str | None:
+    if not os.path.lexists(path):
+        return None
+    try:
+        _assert_real_directory(path, label)
+        shutil.rmtree(path)
+    except (OSError, CustomCapabilityRegistryError) as exc:
+        return f"{label} cleanup failed: {exc}"
+    return None
 
 
 def _validate_sha(value: Any, label: str) -> None:

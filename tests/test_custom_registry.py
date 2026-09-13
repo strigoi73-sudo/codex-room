@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from codex_room.orchestrator import RoomRuntime
 from codex_room.custom_registry import (
     CustomCapabilityRegistryError,
     bind_custom_registration,
+    inherit_room_custom_capabilities,
     invoke_bound_custom_capability,
     load_room_custom_capabilities,
     resolve_room_capability_context,
@@ -214,6 +216,157 @@ def test_binding_is_single_assignment_but_same_exact_binding_is_idempotent(
             second.registration_sha256,
         )
 
+
+
+def test_inherited_binding_preserves_exact_identity_and_normal_registry_availability(
+    tmp_path: Path,
+) -> None:
+    data_root, source_workspace = _make_room(tmp_path, "room_origin")
+    receipt, registration, source_binding = _publish_and_bind(
+        data_root,
+        source_workspace,
+        room_id="room_origin",
+    )
+    source_binding_path = (
+        data_root / "custom-capabilities" / "bindings" / "room_origin" / "count_lines.json"
+    )
+    source_binding_bytes = source_binding_path.read_bytes()
+    successor_workspace = data_root / "rooms" / "room_successor" / "shared"
+    successor_workspace.mkdir(parents=True)
+
+    inherited = inherit_room_custom_capabilities(
+        data_root,
+        "room_origin",
+        "room_successor",
+        "rollover_identity",
+        reserved_capability_ids={"assert_file", "compare_files", "find_files", "search_text"},
+    )
+    repeated = inherit_room_custom_capabilities(
+        data_root,
+        "room_origin",
+        "room_successor",
+        "rollover_identity",
+        reserved_capability_ids={"assert_file", "compare_files", "find_files", "search_text"},
+    )
+
+    binding = inherited["count_lines"]
+    assert repeated["count_lines"].binding_sha256 == binding.binding_sha256
+    assert binding.binding_schema_version == 2
+    assert binding.registration == registration
+    assert binding.receipt == receipt
+    assert binding.package.package_sha256 == source_binding.package.package_sha256
+    assert binding.package.implementation_sha256 == source_binding.package.implementation_sha256
+    assert binding.inherited_from_room_id == "room_origin"
+    assert binding.inherited_from_binding_sha256 == source_binding.binding_sha256
+    assert source_binding_path.read_bytes() == source_binding_bytes
+
+    listed = list_capabilities(successor_workspace)["capabilities"]
+    custom = next(item for item in listed if item["id"] == "count_lines")
+    assert custom["version"] == "1"
+    assert custom["registration_sha256"] == registration.registration_sha256
+    inspected = inspect_capability("count_lines", successor_workspace)["capability"]
+    assert inspected["binding"] == {
+        "schema_version": 2,
+        "room_id": "room_successor",
+        "binding_sha256": binding.binding_sha256,
+        "registration_room_id": "room_origin",
+        "inherited_from": {
+            "room_id": "room_origin",
+            "binding_sha256": source_binding.binding_sha256,
+        },
+    }
+    result = invoke_capability(
+        successor_workspace,
+        "count_lines",
+        {"text": "alpha\nbeta\ngamma\n"},
+    )
+    assert result["ok"] is True
+    assert result["count"] == 3
+    assert result["registration_sha256"] == registration.registration_sha256
+    assert result["verification_sha256"] == receipt.verification_sha256
+
+
+def test_inherited_bindings_preserve_multi_generation_lineage_and_multiple_capabilities(
+    tmp_path: Path,
+) -> None:
+    data_root, origin_workspace = _make_room(tmp_path, "room_generation_one")
+    _, first_registration, first_binding = _publish_and_bind(
+        data_root,
+        origin_workspace,
+        room_id="room_generation_one",
+    )
+    _, second_registration, second_binding = _publish_and_bind(
+        data_root,
+        origin_workspace,
+        room_id="room_generation_one",
+        capability_id="count_words",
+    )
+    (data_root / "rooms" / "room_generation_two" / "shared").mkdir(parents=True)
+    generation_two = inherit_room_custom_capabilities(
+        data_root,
+        "room_generation_one",
+        "room_generation_two",
+        "rollover_generation_two",
+    )
+    assert list(generation_two) == ["count_lines", "count_words"]
+    assert generation_two["count_lines"].registration.registration_sha256 == (
+        first_registration.registration_sha256
+    )
+    assert generation_two["count_words"].registration.registration_sha256 == (
+        second_registration.registration_sha256
+    )
+    assert generation_two["count_lines"].inherited_from_binding_sha256 == first_binding.binding_sha256
+    assert generation_two["count_words"].inherited_from_binding_sha256 == second_binding.binding_sha256
+
+    (data_root / "rooms" / "room_generation_three" / "shared").mkdir(parents=True)
+    generation_three = inherit_room_custom_capabilities(
+        data_root,
+        "room_generation_two",
+        "room_generation_three",
+        "rollover_generation_three",
+    )
+    third = generation_three["count_lines"]
+    assert third.registration.room_id == "room_generation_one"
+    assert third.registration.registration_sha256 == first_registration.registration_sha256
+    assert third.inherited_from_room_id == "room_generation_two"
+    assert (
+        third.inherited_from_binding_sha256
+        == generation_two["count_lines"].binding_sha256
+    )
+
+
+def test_inherited_binding_rejects_false_predecessor_link_even_with_rehashed_record(
+    tmp_path: Path,
+) -> None:
+    data_root, origin_workspace = _make_room(tmp_path, "room_chain_origin")
+    _publish_and_bind(data_root, origin_workspace, room_id="room_chain_origin")
+    (data_root / "rooms" / "room_chain_successor" / "shared").mkdir(parents=True)
+    inherit_room_custom_capabilities(
+        data_root,
+        "room_chain_origin",
+        "room_chain_successor",
+        "rollover_chain",
+    )
+    binding_path = (
+        data_root
+        / "custom-capabilities"
+        / "bindings"
+        / "room_chain_successor"
+        / "count_lines.json"
+    )
+    raw = json.loads(binding_path.read_text(encoding="utf-8"))
+    raw["inherited_from_binding_sha256"] = "0" * 64
+    payload = {key: value for key, value in raw.items() if key != "binding_sha256"}
+    raw["binding_sha256"] = hashlib.sha256(
+        json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    binding_path.write_text(
+        json.dumps(raw, ensure_ascii=True, sort_keys=True, separators=(",", ":")),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(CustomCapabilityRegistryError, match="does not match predecessor"):
+        load_room_custom_capabilities(data_root, "room_chain_successor")
 
 def test_binding_rejects_core_id_collision(tmp_path: Path) -> None:
     data_root, workspace = _make_room(tmp_path)

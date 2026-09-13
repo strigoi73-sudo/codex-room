@@ -30,6 +30,8 @@ from .custom_capability_registration import (
 from .custom_registry import (
     CustomCapabilityRegistryError,
     bind_custom_registration,
+    discard_rollover_custom_capabilities,
+    inherit_room_custom_capabilities,
     load_room_custom_capabilities,
 )
 from .db import Database, utc_now
@@ -312,6 +314,13 @@ class RoomRuntime:
             }
             try:
                 self._materialize_rollover_workspace(operation_id, successor_id, release)
+                inherit_room_custom_capabilities(
+                    self.data_root,
+                    source_room_id,
+                    successor_id,
+                    operation_id,
+                    reserved_capability_ids=frozenset(CORE_CAPABILITIES),
+                )
                 successor_agents = await self.db.get_agents(successor_id)
                 known_ids: set[str] = set()
                 for agent in successor_agents:
@@ -341,6 +350,9 @@ class RoomRuntime:
                     suspicious_thread_ids,
                 )
                 cleanup_error = self._discard_rollover_workspace(operation_id, successor_id)
+                capability_cleanup_error = discard_rollover_custom_capabilities(
+                    self.data_root, operation_id, successor_id
+                )
                 await asyncio.gather(
                     *(self.adapter.archive_thread(thread_id) for thread_id in orphaned),
                     return_exceptions=True,
@@ -356,6 +368,7 @@ class RoomRuntime:
                         "orphaned_thread_ids": orphaned,
                         "checkpoint_sha256": reservation["checkpoint_sha256"],
                         "workspace_cleanup_error": cleanup_error,
+                        "custom_capability_cleanup_error": capability_cleanup_error,
                     },
                 )
                 self._publish_event(aborted)
@@ -535,6 +548,13 @@ class RoomRuntime:
                         self.workspace(successor_id),
                         require_exact_inventory=True,
                     )
+                    inherit_room_custom_capabilities(
+                        self.data_root,
+                        source_id,
+                        successor_id,
+                        operation_id,
+                        reserved_capability_ids=frozenset(CORE_CAPABILITIES),
+                    )
                     await self.db.finalize_rollover(source_id, operation_id, successor_id)
                     await self._record_rollover_events(
                         source_id,
@@ -552,6 +572,9 @@ class RoomRuntime:
                 "Startup aborted an incompletely provisioned rollover",
             )
             self._discard_rollover_workspace(operation_id, successor_id)
+            discard_rollover_custom_capabilities(
+                self.data_root, operation_id, successor_id
+            )
             await asyncio.gather(
                 *(self.adapter.archive_thread(thread_id) for thread_id in orphaned),
                 return_exceptions=True,
