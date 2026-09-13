@@ -164,7 +164,7 @@ def load_custom_capability_package(
     _validate_identifier(manifest_id, "manifest id", _CAPABILITY_ID_RE)
     if expected_id is not None and manifest_id != expected_id:
         raise CustomCapabilityPackageError(
-            "Custom capability manifest id does not match expected package identity"
+            "Custom capability manifest id must match its draft directory or expected package identity"
         )
     version = raw["version"]
     _validate_identifier(version, "version", _VERSION_RE)
