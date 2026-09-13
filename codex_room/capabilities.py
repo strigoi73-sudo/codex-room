@@ -13,7 +13,13 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
+from .custom_capabilities import MAX_ENTRYPOINT_BYTES, MAX_MANIFEST_BYTES
 from .custom_capability_registration import (
+    MAX_CASE_JSON_BYTES,
+    MAX_FIXTURE_FILES,
+    MAX_FIXTURE_FILE_BYTES,
+    MAX_FIXTURE_TOTAL_BYTES,
+    MAX_VERIFICATION_CASES,
     CustomCapabilityVerificationError,
     verify_custom_capability_draft,
 )
@@ -1461,6 +1467,9 @@ def custom_capability_authoring_guide() -> dict[str, Any]:
         "package_v1": {
             "files": ["manifest.json", "capability.py"],
             "id_pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "id_note": "Windows-reserved device names are rejected even if they match the pattern.",
+            "max_manifest_bytes": MAX_MANIFEST_BYTES,
+            "max_entrypoint_bytes": MAX_ENTRYPOINT_BYTES,
             "manifest_required_fields": [
                 "schema_version",
                 "id",
@@ -1486,7 +1495,8 @@ def custom_capability_authoring_guide() -> dict[str, Any]:
             "contract_rules": {
                 "input_schema": "JSON Schema object contract",
                 "output_schema": (
-                    "JSON Schema object contract that declares and requires boolean 'ok'"
+                    "JSON Schema object contract that declares and requires boolean 'ok'; "
+                    "Codex Room registry-envelope property names are reserved"
                 ),
                 "durable_result_fields": (
                     "Unique non-envelope output property names that may persist in Room telemetry"
@@ -1505,7 +1515,11 @@ def custom_capability_authoring_guide() -> dict[str, Any]:
             ),
         },
         "verification_cases_v1": {
-            "format": "JSON array with 1 to 16 cases",
+            "format": f"JSON array with 1 to {MAX_VERIFICATION_CASES} cases",
+            "max_case_json_bytes": MAX_CASE_JSON_BYTES,
+            "max_fixture_files": MAX_FIXTURE_FILES,
+            "max_fixture_file_bytes": MAX_FIXTURE_FILE_BYTES,
+            "max_fixture_total_bytes": MAX_FIXTURE_TOTAL_BYTES,
             "required_fields": ["name", "input", "expected_output"],
             "optional_fields": ["files"],
             "rules": [
