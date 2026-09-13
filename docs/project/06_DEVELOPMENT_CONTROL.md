@@ -8,8 +8,9 @@
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
 - **What just changed?** **P4.3 — Minimal CORE standard library is COMPLETE / IMPLEMENTED / VERIFIED end to end.** A fresh post-PR-#17 Room discovered and inspected all four CORE capabilities without capability names in the user prompt, then durably invoked `find_files`, `search_text`, `compare_files`, and `assert_file` with matching version/hash identities and correct structured evidence. C alone handled the mechanical work, FINISHed exactly `P4.3-LIBRARY-OK`, and the one-turn Round closed normally.
-- **What is blocked?** Nothing technically blocks continued P4 work; development is deliberately paused at the human principal's request after P4.3 closeout and the verified Windows shutdown repair.
-- **What is next when work resumes?** **P4.4 — Agent-created capability registration and verification**: begin with the custom-capability package/trust model and verification gate, then implement the bounded path by which A/B/C can create deterministic software when CORE is insufficient, validate it, and register it as a first-class capability with the same identity/contract/permission/provenance surface. Rollover inheritance remains P4.5.
+- **What is blocked?** Nothing currently blocks continued P4 work.
+- **What just resumed?** **P4.4 — Agent-created capability registration and verification** is IN PROGRESS. P4.4a established and verified the bounded custom-capability draft package/identity model without yet granting registration or execution status.
+- **What is next?** **P4.4b — verification and immutable registration**: define deterministic verification evidence, publish exact validated package bytes into an immutable content-addressed custom-capability registry, and bind registration provenance without claiming per-capability OS enforcement. Rollover inheritance remains P4.5.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -112,14 +113,40 @@ P4.3 is closed.
 `query_data` remains a post-evaluation candidate, not part of the initial P4.3 implementation commitment.
 
 #### P4.4 — Agent-created capability registration and verification
-**Work state:** PLANNED  
-**Reality / evidence:** DECIDED / NOT IMPLEMENTED  
+**Work state:** IN PROGRESS  
+**Reality / evidence:** PARTIALLY IMPLEMENTED / VERIFIED  
 **Decision:** D-022
-**Pause point:** Deliberately paused before P4.4 implementation — 2026-09-12.
+**Evidence:** E-033
 
-No P4.4 implementation has started. When work resumes, start with the custom-capability package/identity model and the registration verification gate, including an explicit distinction between declared permissions and permissions that are mechanically enforced by the execution layer.
+P4.4 is implementing the bounded path for A/B/C to turn newly warranted deterministic procedures into registered first-class capabilities when the CORE library is inadequate. Registered status must remain stronger than ordinary ad hoc code: stable identity, exact implementation bytes, typed contracts, declared permissions/side effects, provenance, and adequate verification evidence are required.
 
-Then implement the bounded path for A/B/C to turn a newly warranted deterministic procedure into a registered first-class capability when the existing CORE library is inadequate. Registration must bind stable identity, version/implementation identity, typed contracts, permissions/side effects, provenance, and verification evidence to the executable implementation. The verification gate must prevent ordinary ad hoc scripts from silently becoming trusted registered capabilities. P4.4 does not yet claim rollover inheritance or Personal/CORE promotion; those remain later slices under D-022.
+##### P4.4a — Custom capability package and identity
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-13
+
+Implemented package-v1 boundary:
+
+- Room drafts live only at `.codex-room/capability-drafts/<id>/`;
+- custom IDs use a portable lowercase `[a-z][a-z0-9_]*` namespace with Windows-reserved names rejected;
+- v1 packages are lineage-scoped and contain exactly `manifest.json` plus one `capability.py` entrypoint;
+- runtime is fixed to Python with protocol `stdio-json-v1`; multi-file packages and other runtimes are intentionally outside this slice;
+- manifest validation requires object-shaped input/output schemas, a required boolean `ok` output, explicit durable-result fields, the four CORE-style permission declarations, and a side-effect declaration;
+- the draft directory chain and package files must be real non-symlink directories/regular files; unsupported extra entries are rejected;
+- manifest and implementation sizes are bounded; the Python entrypoint must be UTF-8, NUL-free, and syntax-valid;
+- exact identity includes manifest SHA-256, executable SHA-256, and a domain-separated combined package SHA-256 over the exact manifest and executable bytes;
+- permission declarations are explicitly **not** represented as per-capability OS enforcement. The package manifest records `ambient_room_sandbox` with `per_capability_enforcement: false`; registration must not grant authority beyond the Room's ambient execution boundary.
+
+PR #19 exact repaired head `39ead0212319774b987b00bc661b773e6b99c807` and squash merge `574edbfeaf5c5ae9053eae1825a0fe8f6fb728aa` both passed **261 tests, 2 warnings**. The first PR-head run failed only one new expected-error-message assertion; the implementation correctly rejected the malformed schema and the test expectation was aligned before the green reviewed head.
+
+P4.4a does **not** register, publish, discover, inherit, or invoke custom capabilities.
+
+##### P4.4b — Verification and immutable registration
+**Work state:** PLANNED  
+**Reality / evidence:** DECIDED / NOT IMPLEMENTED
+
+Next, define the deterministic verification gate and immutable publication path. The gate must verify exact draft bytes and declared contracts, produce durable verification/provenance evidence, and publish accepted packages into a content-addressed custom-capability registry. Registration must not silently elevate ordinary scripts or claim per-capability sandbox guarantees that the execution layer does not actually enforce.
+
+Later P4.4 slices will add the dynamic CORE + custom registry overlay, agent authoring/selection behavior, and a bounded live proof. P4.5 remains responsible for rollover inheritance; Personal/CORE promotion remains later work under D-022.
 
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
