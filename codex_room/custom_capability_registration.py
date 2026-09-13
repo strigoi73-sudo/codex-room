@@ -9,6 +9,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -492,37 +493,65 @@ def _run_case(
     inputs: dict[str, Any],
     case_name: str,
 ) -> dict[str, Any]:
-    try:
-        completed = subprocess.run(
-            [sys.executable, "-I", str(executable)],
-            input=_canonical_json_bytes(inputs),
-            cwd=workspace,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=CASE_TIMEOUT_SECONDS,
-            check=False,
-        )
-    except subprocess.TimeoutExpired as exc:
-        raise CustomCapabilityVerificationError(
-            f"Verification case '{case_name}' exceeded the time limit"
-        ) from exc
-    if (
-        len(completed.stdout) > MAX_PROCESS_OUTPUT_BYTES
-        or len(completed.stderr) > MAX_PROCESS_OUTPUT_BYTES
+    input_bytes = _canonical_json_bytes(inputs)
+    with (
+        tempfile.TemporaryFile() as stdin_file,
+        tempfile.TemporaryFile() as stdout_file,
+        tempfile.TemporaryFile() as stderr_file,
     ):
-        raise CustomCapabilityVerificationError(
-            f"Verification case '{case_name}' exceeded the output size limit"
+        stdin_file.write(input_bytes)
+        stdin_file.seek(0)
+        process = subprocess.Popen(
+            [sys.executable, "-I", str(executable)],
+            stdin=stdin_file,
+            stdout=stdout_file,
+            stderr=stderr_file,
+            cwd=workspace,
         )
-    if completed.returncode != 0:
-        raise CustomCapabilityVerificationError(
-            f"Verification case '{case_name}' exited with code {completed.returncode}"
-        )
-    if completed.stderr:
-        raise CustomCapabilityVerificationError(
-            f"Verification case '{case_name}' wrote to stderr"
-        )
+        started = time.monotonic()
+        failure: str | None = None
+        while process.poll() is None:
+            if time.monotonic() - started > CASE_TIMEOUT_SECONDS:
+                failure = "time"
+                process.kill()
+                break
+            if (
+                os.fstat(stdout_file.fileno()).st_size > MAX_PROCESS_OUTPUT_BYTES
+                or os.fstat(stderr_file.fileno()).st_size > MAX_PROCESS_OUTPUT_BYTES
+            ):
+                failure = "output"
+                process.kill()
+                break
+            time.sleep(0.01)
+        process.wait()
+
+        stdout_size = os.fstat(stdout_file.fileno()).st_size
+        stderr_size = os.fstat(stderr_file.fileno()).st_size
+        if failure == "time":
+            raise CustomCapabilityVerificationError(
+                f"Verification case '{case_name}' exceeded the time limit"
+            )
+        if (
+            failure == "output"
+            or stdout_size > MAX_PROCESS_OUTPUT_BYTES
+            or stderr_size > MAX_PROCESS_OUTPUT_BYTES
+        ):
+            raise CustomCapabilityVerificationError(
+                f"Verification case '{case_name}' exceeded the output size limit"
+            )
+        if process.returncode != 0:
+            raise CustomCapabilityVerificationError(
+                f"Verification case '{case_name}' exited with code {process.returncode}"
+            )
+        if stderr_size:
+            raise CustomCapabilityVerificationError(
+                f"Verification case '{case_name}' wrote to stderr"
+            )
+        stdout_file.seek(0)
+        stdout = stdout_file.read(MAX_PROCESS_OUTPUT_BYTES + 1)
+
     try:
-        observed = json.loads(completed.stdout.decode("utf-8"))
+        observed = json.loads(stdout.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise CustomCapabilityVerificationError(
             f"Verification case '{case_name}' did not emit one UTF-8 JSON result"
