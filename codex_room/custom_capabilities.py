@@ -86,7 +86,6 @@ class CustomCapabilityPackage:
     def summary(self) -> dict[str, Any]:
         return {
             "id": self.capability_id,
-            "description": self.description,
             "origin": "custom",
             "scope": self.scope,
             "version": self.version,
