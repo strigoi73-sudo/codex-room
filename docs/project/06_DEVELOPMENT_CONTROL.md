@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.4c — Room binding and dynamic registry overlay is COMPLETE / IMPLEMENTED / VERIFIED.** Verified custom capabilities can now be host-bound to one Room and discovered/invoked through the same `list` / `inspect` / `invoke` vocabulary as CORE, while preserving exact package / verification / registration / implementation identities. PR #21 and merged canonical-main bytes both passed **291 tests, 2 warnings**.
+- **What just changed?** **P4.4d — Agent authoring and selection behavior is COMPLETE / IMPLEMENTED / VERIFIED.** A/B/C now receive compact guidance for deciding when reusable deterministic software is warranted and can load the exact package/test-vector contract only on demand with `codex-room-cap authoring`. PR #22 and merged canonical-main bytes both passed **294 tests, 2 warnings**.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **Where is P4.4?** **IN PROGRESS.** P4.4a established exact draft identity; P4.4b established bounded verification and immutable publication; P4.4c established lifecycle-safe Room binding plus the unified CORE + custom registry overlay.
-- **What is next?** **P4.4d — agent authoring / selection behavior**: teach A/B/C the bounded custom-capability workflow, including when a custom deterministic capability is warranted, how to construct the package/test vector files, and the fact that sandbox verification requests protected host registration only after turn settlement. Then run one bounded live proof under P4.4e. Rollover inheritance remains P4.5.
+- **Where is P4.4?** **IN PROGRESS only for P4.4e live verification.** P4.4a–d are implemented and deterministically verified.
+- **What is next?** **P4.4e — bounded live custom-capability proof** using one fresh Room and two deliberate rounds: first autonomous creation/verification/registration request, then post-settlement rediscovery and invocation of the host-bound immutable capability. Rollover inheritance remains P4.5.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -187,16 +187,59 @@ PR #21 exact reviewed head `8ebfad68e1210d7191f7274a450ed76d29ae2e8e` passed **2
 P4.4c does **not** implement rollover inheritance; that remains P4.5.
 
 ##### P4.4d — Agent authoring and selection behavior
-**Work state:** PLANNED  
-**Reality / evidence:** DECIDED / NOT IMPLEMENTED
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-13  
+**Evidence:** E-036
 
-Teach A/B/C the bounded custom-capability workflow without hard-wiring task-specific software choices. Agents should create a custom capability only when the current registered library is inadequate and the subproblem has explicit inputs, objectively checkable outputs, and meaningful reuse/reliability/provenance value. Guidance must cover the package-v1 draft location/shape, exact verification-case file, separate registration command execution, host-pending settlement boundary, later rediscovery through ordinary registry operations, and the continuing rule that declared permissions are not per-capability OS enforcement.
+Implemented token-efficient agent guidance:
+
+- the always-loaded deterministic-capability instruction still requires registry discovery before ad hoc mechanical execution;
+- agents are told to create custom software only when no adequate registered capability exists and reuse, reliability, provenance, or mechanical-complexity value justifies reusable software;
+- the full package/test-vector procedure is not injected into every turn. Agents load it only when needed using standalone `codex-room-cap authoring`;
+- the on-demand authoring reference derives numeric package/test limits from implementation constants and exposes package-v1 file shape, portable ID rule, fixed lineage/Python/`stdio-json-v1` values, required manifest fields, contract/durable-field/permission/side-effect requirements, exact verification-case shape and limits, registration command, host-pending settlement rule, and the explicit permission-enforcement caveat;
+- authoring-reference telemetry persists only operation/schema identity, not the full reference payload;
+- agents are told that a successful `register` command proves sandbox verification and requests host registration, but the capability is not active until that turn settles;
+- on a later turn they must rediscover with `list` / `inspect` before invocation rather than relying on memory of the draft.
+
+PR #22 exact reviewed head `167cb4361ac8d1c36d858fb9d6dbd5fb18d65747` passed **294 tests, 2 warnings** in GitHub Actions run `34762737011`. It squash-merged as `8afa54e23850441690a6071cb7fff01e32a2ab46`; canonical-main run `34762827607` also passed **294 tests, 2 warnings**.
 
 ##### P4.4e — Bounded live custom-capability proof
-**Work state:** PLANNED  
+**Work state:** IN PROGRESS — LIVE VERIFICATION  
 **Reality / evidence:** NOT YET VERIFIED LIVE
 
-After P4.4d, run one fresh Room exercise in which the prompt names no implementation command, the engaged agent independently concludes that CORE is inadequate, authors one narrow deterministic capability plus verification cases, submits the registration request, and on a later turn rediscovers and successfully invokes the host-bound custom capability through the ordinary registry path. The proof must preserve exact package / verification / registration / implementation identities in durable evidence. A/B/C delegation should remain judgment-driven rather than mandatory.
+Use one fresh post-P4.4d Room and **two deliberate rounds** because protected registration becomes active only after the creating turn settles.
+
+**Round 1 stop condition — autonomous creation and host registration**
+
+The user prompt must name no capability ID, package filename, authoring command, registration command, or implementation language. It should present one mechanical transformation that is not covered by the initial CORE library and is sufficiently reusable to justify deterministic software. C should remain the sole consuming participant unless peer judgment is genuinely needed.
+
+Successful evidence requires:
+
+- registry `list` showing the initial CORE inventory without an adequate capability;
+- optional but expected on-demand registry `authoring` discovery after C independently decides reusable deterministic software is warranted;
+- workspace creation of one bounded custom package and verification-case file consistent with package schema v1;
+- a standalone `register` operation yielding durable `verification_passed_host_pending` request evidence with exact package / manifest / implementation / verification identities;
+- host-settlement `custom_capability_registration` evidence with `status: completed` and exact registration / verification / package / implementation / binding identities;
+- no custom invocation in Round 1, because activation occurs only after settlement;
+- C FINISH exactly `P4.4-CUSTOM-REGISTERED`;
+- normal Round closure.
+
+**Round 2 stop condition — rediscovery and immutable registered invocation**
+
+Start a new Round in the **same Room**. The prompt should ask C to solve a new input of the same mechanical transformation and to independently verify the result using the Room's available deterministic facilities; it must not name the custom capability or registry commands.
+
+Successful evidence requires:
+
+- C separately runs registry `list` and sees the custom lineage-scoped capability alongside CORE with exact implementation / package / registration identity;
+- C inspects that custom capability before use;
+- C invokes it through normal `codex-room-cap invoke`;
+- durable capability evidence reports matching version, implementation SHA-256, package SHA-256, registration SHA-256, verification SHA-256, `ok: true`, and the correct declared durable result for the new input;
+- the invocation is served from immutable published bytes; the proof must not depend on the mutable draft;
+- A/B remain unconsumed unless genuine judgment is needed;
+- C FINISH exactly `P4.4-CUSTOM-OK`;
+- normal Round closure.
+
+A recoverable malformed call may be acceptable if it is durably visible, corrected without ad hoc fallback, and all required final registered operations succeed. If the live probe exposes a new integration defect, preserve the first-export evidence and repair only the demonstrated gap before rerunning.
 
 P4.5 remains responsible for rollover inheritance; Personal/CORE promotion remains later work under D-022.
 
