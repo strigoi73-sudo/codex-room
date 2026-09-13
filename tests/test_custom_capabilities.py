@@ -206,6 +206,15 @@ def test_manifest_rejects_invalid_contract_or_permission_declarations(
         load_custom_capability_draft(tmp_path, "count_lines")
 
 
+def test_output_schema_rejects_reserved_registry_envelope_properties(tmp_path: Path) -> None:
+    manifest = _manifest()
+    manifest["output_schema"]["properties"]["registration_sha256"] = {"type": "string"}
+    _write_draft(tmp_path, manifest=manifest)
+
+    with pytest.raises(CustomCapabilityPackageError, match="reserved envelope properties"):
+        load_custom_capability_draft(tmp_path, "count_lines")
+
+
 def test_entrypoint_must_be_regular_utf8_syntax_valid_python(tmp_path: Path) -> None:
     _write_draft(tmp_path, code="this is not valid python !!!")
 
