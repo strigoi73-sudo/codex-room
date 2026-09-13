@@ -38,8 +38,8 @@ $env:CODEX_ROOM_CODEX_BIN = "C:\path\to\current\codex.exe"
 
 1. Select **New room**.
 2. Enter an opening topic.
-3. Optionally edit Agent A/B names, reciprocal developer instructions, safety limits, and whether the new Room should include a fresh Agent C.
-4. Create the room. Distinct persistent Codex threads are created for the selected participants and the opening Round remains in `preparing`.
+3. Optionally edit Agent A/B names, reciprocal developer instructions, and safety limits. Agent C is included in every new Personal Room.
+4. Create the room. Distinct persistent Codex threads are created for A, B, and C, and the opening Round remains in `preparing`.
 5. Review the staged Round and select **Start Round**. Only the designated starter is invoked.
 6. Watch the transcript. Observer messages can target all agents or be delivered privately to one.
 
@@ -47,7 +47,7 @@ Use **New Round** to stage a public prompt, per-participant private initializati
 
 Pause stops new queue claims after active turns finish. Stop interrupts active turns best-effort and cancels queued deliveries. Resume never leaves an empty queue falsely marked as running: if Stop left no runnable work, the Round closes immediately and the next observer message reopens it with fresh work on the same threads. The legacy New Topic API now prepares and immediately starts a Round for compatibility. Reset Agents is deliberately destructive to identity: it archives every participant's old Codex thread, records the IDs in the transcript, and creates replacements.
 
-### Adding Agent C
+### Agent C and legacy two-agent Rooms
 
 Every new Personal Room is created as the permanent A/B/C triad. Agent C — the Integrator — is the ordinary default Round starter and human entry point. C may selectively invoke A, B, both, or neither; A and B may communicate directly without routing through C. Public peer messages remain readable to the whole triad while `invoke_targets` controls which peers become runnable.
 
@@ -62,7 +62,7 @@ Browser UI ──HTTP/WebSocket── FastAPI
                               │
                     RoomRuntime (mechanical only)
                      │        │        │
-               agent A queue  │  agent B queue  [agent C queue]
+               agent A queue  │  agent B queue   agent C queue
                      │        │        │
                      └──────── Codex SDK ────────┘
                               │
