@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.4d — Agent authoring and selection behavior is COMPLETE / IMPLEMENTED / VERIFIED.** A/B/C now receive compact guidance for deciding when reusable deterministic software is warranted and can load the exact package/test-vector contract only on demand with `codex-room-cap authoring`. PR #22 and merged canonical-main bytes both passed **294 tests, 2 warnings**.
-- **What is blocked?** Nothing currently blocks continued P4 work.
-- **Where is P4.4?** **IN PROGRESS only for P4.4e live verification.** P4.4a–d are implemented and deterministically verified.
-- **What is next?** **P4.4e — bounded live custom-capability proof** using one fresh Room and two deliberate rounds: first autonomous creation/verification/registration request, then post-settlement rediscovery and invocation of the host-bound immutable capability. Rollover inheritance remains P4.5.
+- **What just changed?** The first **P4.4e** live Room fully passed Round 1 custom creation/verification/host binding, but Round 2 exposed quote-fragile inline JSON invocation on Windows: one durably visible registered invoke failed with malformed JSON, followed by generic command attempts and no successful durable capability result. PR #23 added bounded workspace-file invocation input as the smallest demonstrated transport repair; PR and canonical-main CI both passed **297 tests, 2 warnings**.
+- **What is blocked?** Nothing blocks the repaired live proof; the failed export is preserved as evidence rather than treated as success.
+- **Where is P4.4?** **IN PROGRESS only for repaired P4.4e live verification.** P4.4a–d remain implemented and verified; Round 1 of P4.4e is verified live, while Round 2 still needs one successful registered invocation after PR #23.
+- **What is next?** Pull/restart the repaired runtime, return to the **same P4.4e Room**, and run one new Round 2-style probe. The custom binding already exists durably, so do not recreate or reregister it. Rollover inheritance remains P4.5.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -240,6 +240,31 @@ Successful evidence requires:
 - normal Round closure.
 
 A recoverable malformed call may be acceptable if it is durably visible, corrected without ad hoc fallback, and all required final registered operations succeed. If the live probe exposes a new integration defect, preserve the first-export evidence and repair only the demonstrated gap before rerunning.
+
+**First live attempt — partial pass plus demonstrated input-transport gap**
+
+Room `room_857d95aa75c14dd0b939f43baf9a9e17` provided two one-turn C-only rounds.
+
+Round 1 **passed its stop condition**:
+
+- C first listed only the four CORE capabilities, then loaded the on-demand authoring reference;
+- C authored the custom lineage capability `ascii_text_slug` and four exact verification cases;
+- standalone registration produced `verification_passed_host_pending` evidence with package SHA `af1ed410...`, manifest SHA `d23225a3...`, implementation SHA `3333ecd6...`, and verification SHA `8eca83c2...`;
+- host settlement completed registration `abfbeb96...` and binding `0988e7ef...`;
+- C alone FINISHed exactly `P4.4-CUSTOM-REGISTERED`; the Round closed normally.
+
+Round 2 **did not pass** despite the exact final marker:
+
+- C durably rediscovered `ascii_text_slug` via `list` and `inspect`, with matching package/implementation/registration/verification identity;
+- the first direct registered invocation was promoted correctly but failed `invalid_request` because the inline JSON reached the CLI malformed;
+- six later command executions failed generically and two completed generically, but the export contains **no successful `deterministic_capability` event** and therefore no durable `ok:true`, `slug`, or `length` result;
+- C nevertheless FINISHed `P4.4-CUSTOM-OK`, so the marker alone is insufficient evidence.
+
+Because arbitrary generic command contents/outputs are intentionally excluded from durable telemetry, the export cannot establish what each later command attempted. Current source did establish a narrow product defect relevant to the observed failure: normal invocation offered only `--input-json JSON_OBJECT` and persistent guidance taught that quote-fragile command-line transport.
+
+PR #23 added `--input-file WORKSPACE_RELATIVE_JSON` as a mutually exclusive, workspace-confined, <=1 MiB UTF-8 JSON-object transport while preserving `--input-json`. CORE and custom manifests now advertise the file form, and agent guidance explicitly switches to it when shell quoting is fragile or an inline attempt fails. Safe standalone invocation telemetry remains unchanged. Exact PR head `2a32cd3ef915ff1c064bda49a0303e2a72cbbc04` passed **297 tests, 2 warnings** in run `34763827289`; squash merge `4c10b60c4ef290fc690d39a33c2d5e43d5eece7d` passed **297 tests, 2 warnings** on canonical-main run `34763920318`.
+
+**Repaired rerun requirement:** keep the existing Room/custom binding, pull/restart onto PR #23 merged bytes, and start one new Round with a new slug input. The prompt must not name the capability or command. C must list/inspect the existing custom capability and produce one successful durable registered invocation, preferably using the new file-input transport if inline quoting is unsafe. A/B remain unconsumed unless genuine judgment is needed. Exact FINISH remains `P4.4-CUSTOM-OK`.
 
 P4.5 remains responsible for rollover inheritance; Personal/CORE promotion remains later work under D-022.
 
