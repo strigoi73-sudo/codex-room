@@ -10,6 +10,10 @@ from pathlib import Path
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol
 
+from .custom_capability_registration import (
+    CustomCapabilityVerificationError,
+    VerificationReceipt,
+)
 from .models import AgentDecision, DECISION_SCHEMA
 
 
@@ -716,6 +720,41 @@ class CodexAgentAdapter:
                     "capabilities": summaries,
                 }
 
+            if operation == "register":
+                request = payload.get("registration_request")
+                if (
+                    payload.get("ok") is not True
+                    or payload.get("state") != "verification_passed_host_pending"
+                    or payload.get("capability_id") != requested_capability
+                    or not isinstance(request, dict)
+                    or request.get("capability_id") != requested_capability
+                ):
+                    return None
+                try:
+                    receipt = VerificationReceipt.from_dict(request.get("receipt"))
+                except CustomCapabilityVerificationError:
+                    return None
+                safe_request = {
+                    "capability_id": requested_capability,
+                    "receipt": receipt.as_dict(),
+                }
+                serialized = json.dumps(
+                    safe_request,
+                    ensure_ascii=True,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+                if len(serialized) > MAX_DURABLE_CAPABILITY_RESULT_BYTES:
+                    return None
+                return {
+                    "type": "deterministic_capability_registry",
+                    "status": status,
+                    "operation": "register",
+                    "capability": requested_capability,
+                    "registration_state": "verification_passed_host_pending",
+                    "registration_request": safe_request,
+                }
+
             manifest = payload.get("capability")
             if (
                 not isinstance(manifest, dict)
@@ -740,19 +779,6 @@ class CodexAgentAdapter:
                 )
                 if key in manifest
             }
-            if operation == "register":
-                if payload.get("ok") is not True:
-                    return None
-                return {
-                    "type": "deterministic_capability_registry",
-                    "status": status,
-                    "operation": "register",
-                    "capability": requested_capability,
-                    "manifest": safe_manifest,
-                    "registration_sha256": payload.get("registration_sha256"),
-                    "verification_sha256": payload.get("verification_sha256"),
-                    "package_sha256": payload.get("package_sha256"),
-                }
             return {
                 "type": "deterministic_capability_registry",
                 "status": status,
