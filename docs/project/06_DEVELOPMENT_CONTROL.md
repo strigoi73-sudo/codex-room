@@ -7,7 +7,7 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4 is closed COMPLETE / IMPLEMENTED / VERIFIED end to end.** P4.1 through P4.5 established deterministic assertions, registry/discovery, the minimal CORE library, agent-created custom capability registration/verification, and exact lineage rollover inheritance.
+- **What just changed?** **I-004 is closed.** The README now consistently describes the permanent A/B/C Personal triad for new Rooms, including first-run instructions and the architecture diagram; no runtime behavior changed.
 - **What is blocked?** Nothing currently blocks selection of the next work item.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
 - **What is next?** No new active implementation slice is selected. Personal/CORE capability promotion remains later direction under D-022, and the Personal daily usage pacing limit remains approved planned development under D-019; choose the next priority explicitly before implementation.
@@ -344,6 +344,18 @@ Post-repair local verification used a newly created Room. Its A/B/C `profile_sna
 I-006 is closed.
 
 
+### I-004 — README permanent-triad documentation drift
+**Work state:** COMPLETE  
+**Reality / evidence:** OBSERVED ISSUE / VERIFIED — 2026-09-12; documentation repaired — 2026-09-13  
+**Decision:** D-020
+
+A2 found that the README's **First run** instructions still treated Agent C as optional for new Rooms even though D-020 and current runtime require every new Personal Room to start as the permanent A/B/C triad. The same legacy implication also appeared as `[agent C queue]` in the architecture diagram.
+
+The README now states that C is included in every new Personal Room, that creation provisions distinct persistent A/B/C threads, retitles the C section to distinguish legacy two-agent upgrades from normal new-Room behavior, and removes the optional-C diagram notation. This was documentation-only cleanup; runtime behavior did not change.
+
+I-004 is closed.
+
+
 ### A2 — Assurance Pass 2
 **Work state:** COMPLETE  
 **Evidence:** E-028  
@@ -471,13 +483,6 @@ Implementation details such as warning thresholds, UI presentation, carry-forwar
 
 ## Maintenance issues
 
-### I-004 — README conflicts with permanent-triad behavior
-**Reality:** OBSERVED ISSUE  
-**Evidence qualifier:** VERIFIED — 2026-09-12 repository inspection  
-**Priority:** LOW — record during A2; do not interrupt the audit for repair
-
-The README's **First run** section still says the user may choose whether a new Room includes Agent C. Current source and D-020 instead make every new Personal Room an A/B/C triad. The later README **Adding Agent C** section correctly describes the new architecture, so the document is internally inconsistent. This is documentation/intent drift, not evidence of a runtime defect.
-
 ### I-003 — B SDK-thread/profile continuity residue
 **Reality:** OBSERVED ISSUE — historical provider-side residue; current recurrence not demonstrated  
 **Evidence qualifier:** NEEDS VERIFICATION  
@@ -504,4 +509,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question currently blocks selection of the next work item. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is a verified low-priority README drift issue. The broader A/B protected-institutional-layer question remains a future design concern unless the human principal explicitly promotes it.
+No high-priority open question currently blocks selection of the next work item. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is closed. The broader A/B protected-institutional-layer question remains a future design concern unless the human principal explicitly promotes it.
