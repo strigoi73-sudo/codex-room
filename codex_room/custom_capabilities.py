@@ -49,10 +49,20 @@ _REQUIRED_FIELDS = {
     "permissions",
     "side_effects",
 }
+_RESERVED_OUTPUT_FIELDS = {
+    "codex_room_capability",
+    "capability",
+    "capability_version",
+    "implementation_sha256",
+    "package_sha256",
+    "registration_sha256",
+    "verification_sha256",
+    "durable_result_fields",
+}
 
 
 class CustomCapabilityPackageError(ValueError):
-    """A draft custom capability package is unsafe or structurally invalid."""
+    """A custom capability package is unsafe or structurally invalid."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +86,7 @@ class CustomCapabilityPackage:
     def summary(self) -> dict[str, Any]:
         return {
             "id": self.capability_id,
+            "description": self.description,
             "origin": "custom",
             "scope": self.scope,
             "version": self.version,
@@ -86,7 +97,6 @@ class CustomCapabilityPackage:
     def manifest(self) -> dict[str, Any]:
         return {
             **self.summary(),
-            "description": self.description,
             "runtime": dict(self.runtime),
             "input_schema": self.input_schema,
             "output_schema": self.output_schema,
@@ -112,9 +122,19 @@ def load_custom_capability_draft(
     """Load and structurally verify one bounded custom capability draft package."""
     package_root = draft_path(workspace, capability_id)
     _assert_safe_draft_directory_chain(workspace, package_root)
+    return load_custom_capability_package(package_root, expected_id=capability_id)
+
+
+def load_custom_capability_package(
+    package_root: Path, *, expected_id: str | None = None
+) -> CustomCapabilityPackage:
+    """Load one exact package directory independent of draft/registry location."""
+    if expected_id is not None:
+        _validate_identifier(expected_id, "capability id", _CAPABILITY_ID_RE)
+    _assert_real_directory(package_root, "Custom capability package")
+
     manifest_path = package_root / MANIFEST_NAME
     entrypoint_path = package_root / ENTRYPOINT_NAME
-
     manifest_bytes = _read_regular_file(
         manifest_path, "custom capability manifest", MAX_MANIFEST_BYTES
     )
@@ -143,9 +163,9 @@ def load_custom_capability_draft(
 
     manifest_id = raw["id"]
     _validate_identifier(manifest_id, "manifest id", _CAPABILITY_ID_RE)
-    if manifest_id != capability_id:
+    if expected_id is not None and manifest_id != expected_id:
         raise CustomCapabilityPackageError(
-            "Custom capability manifest id must match its draft directory"
+            "Custom capability manifest id does not match expected package identity"
         )
     version = raw["version"]
     _validate_identifier(version, "version", _VERSION_RE)
@@ -177,6 +197,7 @@ def load_custom_capability_draft(
     input_schema = _validate_object_schema(raw["input_schema"], "input_schema")
     output_schema = _validate_object_schema(raw["output_schema"], "output_schema")
     _validate_output_ok_contract(output_schema)
+    _validate_reserved_output_contract(output_schema)
 
     durable_result_fields = _validate_durable_result_fields(
         raw["durable_result_fields"], output_schema
@@ -252,16 +273,20 @@ def _assert_safe_draft_directory_chain(workspace: Path, package_root: Path) -> N
         current = current / part
         if not os.path.lexists(current):
             continue
-        try:
-            metadata = current.lstat()
-        except OSError as exc:
-            raise CustomCapabilityPackageError(
-                f"Custom capability draft path could not be inspected: {exc}"
-            ) from exc
-        if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
-            raise CustomCapabilityPackageError(
-                "Custom capability draft path must use real directories without symlinks"
-            )
+        _assert_real_directory(current, "Custom capability draft path")
+
+
+def _assert_real_directory(path: Path, label: str) -> None:
+    if not os.path.lexists(path):
+        raise CustomCapabilityPackageError(f"{label} is missing")
+    try:
+        metadata = path.lstat()
+    except OSError as exc:
+        raise CustomCapabilityPackageError(f"{label} could not be inspected: {exc}") from exc
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+        raise CustomCapabilityPackageError(
+            f"{label} must use a real directory without symlinks"
+        )
 
 
 def _read_regular_file(path: Path, label: str, byte_limit: int) -> bytes:
@@ -323,6 +348,15 @@ def _validate_output_ok_contract(output_schema: dict[str, Any]) -> None:
         )
 
 
+def _validate_reserved_output_contract(output_schema: dict[str, Any]) -> None:
+    collisions = sorted(_RESERVED_OUTPUT_FIELDS.intersection(output_schema.get("properties", {})))
+    if collisions:
+        raise CustomCapabilityPackageError(
+            "Custom capability output_schema uses reserved envelope properties: "
+            f"{collisions}"
+        )
+
+
 def _validate_durable_result_fields(
     value: Any, output_schema: dict[str, Any]
 ) -> tuple[str, ...]:
@@ -334,15 +368,7 @@ def _validate_durable_result_fields(
         raise CustomCapabilityPackageError(
             "Custom capability durable_result_fields must be unique field names"
         )
-    reserved = {
-        "codex_room_capability",
-        "capability",
-        "capability_version",
-        "implementation_sha256",
-        "package_sha256",
-        "durable_result_fields",
-        "ok",
-    }
+    reserved = _RESERVED_OUTPUT_FIELDS | {"ok"}
     if reserved.intersection(value):
         raise CustomCapabilityPackageError(
             "Custom capability durable_result_fields contains reserved envelope fields"
