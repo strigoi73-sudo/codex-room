@@ -684,7 +684,7 @@ class CodexAgentAdapter:
             return None
 
         operation, requested_capability = direct
-        if operation in {"list", "inspect", "register"}:
+        if operation in {"list", "authoring", "inspect", "register"}:
             if (
                 payload.get("codex_room_registry") != 1
                 or payload.get("operation") != operation
@@ -718,6 +718,16 @@ class CodexAgentAdapter:
                     "status": status,
                     "operation": "list",
                     "capabilities": summaries,
+                }
+
+            if operation == "authoring":
+                if payload.get("schema_version") != 1:
+                    return None
+                return {
+                    "type": "deterministic_capability_registry",
+                    "status": status,
+                    "operation": "authoring",
+                    "authoring_schema_version": 1,
                 }
 
             if operation == "register":
@@ -880,8 +890,8 @@ class CodexAgentAdapter:
             return None
 
         operation = parts[1].strip('"').strip("'").lower()
-        if operation == "list":
-            return ("list", None) if len(parts) == 2 else None
+        if operation in {"list", "authoring"}:
+            return (operation, None) if len(parts) == 2 else None
         if operation in {"inspect", "invoke", "register"}:
             if len(parts) < 3:
                 return None

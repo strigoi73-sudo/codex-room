@@ -1577,4 +1577,15 @@ async def test_agent_prompt_advertises_capability_discovery_not_one_hard_coded_t
         "Use ad hoc deterministic execution only when no registered capability is adequate"
         in prompt
     )
+    assert "codex-room-cap authoring" in prompt
+    assert "reuse, reliability, provenance, or mechanical-complexity value" in prompt
+    assert (
+        "codex-room-cap register CAPABILITY_ID --cases-file WORKSPACE_RELATIVE_JSON"
+        in prompt
+    )
+    assert "protected host registration is pending" in prompt
+    assert "not active until this agent turn settles" in prompt
+    assert "On a later turn, rediscover the capability with list/inspect" in prompt
+    assert "Custom permission fields are declarations" in prompt
+    assert "not per-capability OS enforcement" in prompt
     assert "codex-room-cap assert-file RELATIVE_PATH" not in prompt

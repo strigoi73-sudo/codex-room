@@ -13,7 +13,13 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
+from .custom_capabilities import MAX_ENTRYPOINT_BYTES, MAX_MANIFEST_BYTES
 from .custom_capability_registration import (
+    MAX_CASE_JSON_BYTES,
+    MAX_FIXTURE_FILES,
+    MAX_FIXTURE_FILE_BYTES,
+    MAX_FIXTURE_TOTAL_BYTES,
+    MAX_VERIFICATION_CASES,
     CustomCapabilityVerificationError,
     verify_custom_capability_draft,
 )
@@ -1446,6 +1452,98 @@ def _room_custom_capabilities(root: Path) -> tuple[Any | None, dict[str, Any]]:
     return context, custom
 
 
+def custom_capability_authoring_guide() -> dict[str, Any]:
+    """Return the bounded package-v1 authoring contract on demand."""
+    return {
+        "codex_room_registry": REGISTRY_MARKER,
+        "operation": "authoring",
+        "schema_version": 1,
+        "admission": (
+            "Create a custom capability only when no adequate registered capability exists "
+            "and the deterministic procedure has enough reuse, reliability, provenance, or "
+            "mechanical-complexity value to justify registration."
+        ),
+        "draft_root": ".codex-room/capability-drafts/<id>",
+        "package_v1": {
+            "files": ["manifest.json", "capability.py"],
+            "id_pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "id_note": "Windows-reserved device names are rejected even if they match the pattern.",
+            "max_manifest_bytes": MAX_MANIFEST_BYTES,
+            "max_entrypoint_bytes": MAX_ENTRYPOINT_BYTES,
+            "manifest_required_fields": [
+                "schema_version",
+                "id",
+                "version",
+                "description",
+                "scope",
+                "runtime",
+                "input_schema",
+                "output_schema",
+                "durable_result_fields",
+                "permissions",
+                "side_effects",
+            ],
+            "fixed_values": {
+                "schema_version": 1,
+                "scope": "lineage",
+                "runtime": {
+                    "kind": "python",
+                    "entrypoint": "capability.py",
+                    "protocol": "stdio-json-v1",
+                },
+            },
+            "contract_rules": {
+                "input_schema": "JSON Schema object contract",
+                "output_schema": (
+                    "JSON Schema object contract that declares and requires boolean 'ok'; "
+                    "Codex Room registry-envelope property names are reserved"
+                ),
+                "durable_result_fields": (
+                    "Unique non-envelope output property names that may persist in Room telemetry"
+                ),
+                "permissions": {
+                    "workspace_read": "boolean",
+                    "workspace_write": "boolean",
+                    "network": "boolean",
+                    "external_process": "boolean",
+                },
+                "side_effects": "Non-empty bounded description",
+            },
+            "entrypoint_protocol": (
+                "Read one JSON object from stdin and write exactly one JSON object to stdout; "
+                "successful output must include boolean 'ok'. Keep stderr empty on success."
+            ),
+        },
+        "verification_cases_v1": {
+            "format": f"JSON array with 1 to {MAX_VERIFICATION_CASES} cases",
+            "max_case_json_bytes": MAX_CASE_JSON_BYTES,
+            "max_fixture_files": MAX_FIXTURE_FILES,
+            "max_fixture_file_bytes": MAX_FIXTURE_FILE_BYTES,
+            "max_fixture_total_bytes": MAX_FIXTURE_TOTAL_BYTES,
+            "required_fields": ["name", "input", "expected_output"],
+            "optional_fields": ["files"],
+            "rules": [
+                "input and expected_output must be JSON objects",
+                "expected_output must include boolean ok and every durable_result_field",
+                "files, when present, maps safe workspace-relative paths to UTF-8 text fixtures",
+                "verification compares observed output to expected_output exactly",
+            ],
+        },
+        "register_command": (
+            "codex-room-cap register CAPABILITY_ID --cases-file WORKSPACE_RELATIVE_JSON"
+        ),
+        "settlement": (
+            "A successful register command means sandbox verification passed and protected "
+            "host registration was requested. The capability is not active until that agent "
+            "turn settles. On a later turn, rediscover it with list/inspect before invoking."
+        ),
+        "permission_enforcement": (
+            "Manifest permissions are declarations. Codex Room does not provide a "
+            "per-capability OS sandbox; execution inherits the ambient Room caller/sandbox."
+        ),
+    }
+
+
 def list_capabilities(root: Path | None = None) -> dict[str, Any]:
     summaries = [CORE_CAPABILITIES[key].summary() for key in sorted(CORE_CAPABILITIES)]
     if root is not None:
@@ -1544,7 +1642,7 @@ def register_custom_capability(
 def _error_payload(
     message: str, *, capability_id: str | None = None, operation: str = "invoke"
 ) -> dict[str, Any]:
-    if operation in {"list", "inspect", "register"}:
+    if operation in {"list", "authoring", "inspect", "register"}:
         payload: dict[str, Any] = {
             "codex_room_registry": REGISTRY_MARKER,
             "operation": operation,
@@ -1567,6 +1665,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("list", help="List registered deterministic capabilities.")
+    subparsers.add_parser(
+        "authoring",
+        help="Show the bounded custom capability package and verification contract.",
+    )
 
     inspect_parser = subparsers.add_parser(
         "inspect", help="Inspect one registered capability manifest."
@@ -1622,6 +1724,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "list":
             result = list_capabilities(Path.cwd())
+        elif args.command == "authoring":
+            result = custom_capability_authoring_guide()
         elif args.command == "inspect":
             result = inspect_capability(args.capability_id, Path.cwd())
         elif args.command == "register":
@@ -1652,7 +1756,11 @@ def main(argv: list[str] | None = None) -> int:
             raise CapabilityUsageError(f"unsupported command: {args.command}")
     except CapabilityUsageError as exc:
         capability_id = getattr(args, "capability_id", None)
-        operation = args.command if args.command in {"list", "inspect", "register"} else "invoke"
+        operation = (
+            args.command
+            if args.command in {"list", "authoring", "inspect", "register"}
+            else "invoke"
+        )
         _print_result(
             _error_payload(
                 str(exc), capability_id=capability_id, operation=operation
