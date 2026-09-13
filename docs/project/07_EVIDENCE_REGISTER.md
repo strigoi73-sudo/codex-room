@@ -1201,3 +1201,62 @@ This satisfies the outstanding P4.4e stop condition that the already-bound immut
 
 **Next boundary:** P4.5 must preserve registered lineage-scoped custom capabilities across Room rollover at the exact inherited version. Personal/CORE promotion remains later work under D-022.
 
+
+### E-039 — P4.5a exact lineage binding inheritance across rollover
+**Date:** 2026-09-13  
+**Scope:** Deterministic P4.5a implementation and hosted verification. Fresh live Room rollover evidence is not claimed here.
+
+PR #24 implemented inherited custom-capability bindings without changing the identity of the registration being inherited.
+
+Binding/provenance result:
+
+- original custom registrations remain content-addressed records tied to the Room that actually registered them;
+- existing direct Room bindings remain schema v1 and are not rewritten;
+- a rollover successor receives schema-v2 bindings that commit to:
+  - the successor Room ID;
+  - capability ID;
+  - exact original registration SHA-256;
+  - truthful original registration Room ID;
+  - immediate predecessor Room ID;
+  - exact predecessor binding SHA-256;
+- inherited binding loading re-resolves and revalidates the original immutable registration, verification receipt, and published package;
+- the predecessor binding chain must match the claimed immediate predecessor hash and the same exact registration/origin identity;
+- no successor registration or verification record is fabricated, and inheritance never performs a newest-version lookup;
+- predecessor binding bytes remain unchanged.
+
+Rollover-saga result:
+
+- the predecessor's complete current custom-binding set is inherited deterministically;
+- protected operation-scoped staging is used before publishing the successor binding directory;
+- replay of the same rollover validates/reuses the already-published exact successor bindings;
+- normal rollover abort removes the operation staging area and successor binding directory;
+- startup recovery for a fully provisioned pending successor validates/reconstructs the same inherited binding set before database finalization;
+- startup recovery for an incomplete successor aborts it and removes inherited successor binding state;
+- a predecessor with no custom binding continues through the existing no-capability rollover path.
+
+Regression coverage additionally proves:
+
+- normal successor registry `list`, `inspect`, and `invoke` use the inherited capability successfully;
+- implementation/package/registration/verification/version identity matches the predecessor exactly;
+- multiple custom capabilities inherit together;
+- multi-generation rollover keeps the original registration Room while each generation records its immediate predecessor binding;
+- a rehashed schema-v2 record with a false predecessor-binding link is rejected;
+- existing CORE/custom collision enforcement remains in the inherited load path.
+
+Exact reviewed PR #24 head:
+
+`888585749cbfe702080005d7211fbc79e758a7a7`
+
+GitHub Actions PR run `34766802808`: **301 passed, 2 warnings**.
+
+PR #24 squash-merged as:
+
+`f1f83357b78399718ed8910f2849763c6c2dbbbb` — `P4.5a: inherit lineage custom capability bindings`
+
+The merge Git tree `c6884247cfc5cdf59126121fb50776140c84ed73` exactly matches the reviewed/tested PR-head tree.
+
+Canonical-main GitHub Actions run `34766882490`: **301 passed, 2 warnings**.
+
+**P4.5a status:** COMPLETE / IMPLEMENTED / VERIFIED deterministically.
+
+**Remaining P4.5 boundary:** obtain a fresh live Room proof that a registered lineage-scoped custom capability survives an actual rollover and is rediscovered, inspected, and invoked by the successor at the same exact identity while the predecessor remains historical and unchanged. Personal/CORE promotion remains outside this slice.

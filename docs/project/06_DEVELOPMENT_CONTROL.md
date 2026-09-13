@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.4 is COMPLETE / IMPLEMENTED / VERIFIED end to end.** After PR #23 repaired quote-fragile inline JSON transport, the preserved live Room successfully rediscovered, inspected, and invoked the already-bound custom capability on a new input, producing durable `ok:true`, `slug:"alpha-beta-99"`, and `length:13` evidence with exact implementation/package/registration/verification identities.
+- **What just changed?** **P4.5a — lineage binding inheritance is COMPLETE / IMPLEMENTED / VERIFIED deterministically.** PR #24 added exact inherited successor bindings without creating a replacement registration: the original registration Room and immutable package/implementation/verification identities remain unchanged, predecessor bindings remain historical, and rollover abort/restart/replay paths now carry protected binding cleanup/recovery.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **Where is P4.4?** **COMPLETE.** P4.4a–d were deterministically verified; P4.4e now has successful live creation/host-binding and later immutable registered reuse evidence.
-- **What is next?** **P4.5 — rollover persistence / lineage inheritance.** The next bounded slice is to make registered lineage-scoped custom capabilities survive Room rollover at the exact inherited version, without yet implementing broader Personal/CORE promotion.
+- **Where is P4.5?** **IN PROGRESS.** P4.5a is complete on canonical `main`; a fresh live rollover proof remains before P4.5 is verified end to end.
+- **What is next?** Run a fresh P4.5 live rollover proof: register a lineage-scoped custom capability in a source Room, roll over, then prove normal successor `list` / `inspect` / `invoke` reuse at the exact inherited identity while the predecessor remains unchanged.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -281,13 +281,30 @@ Durable evidence shows:
 This closes the demonstrated live gap and P4.4 as a whole. The successful reuse proof depended on the already-host-bound immutable capability, not on recreating or reregistering the draft.
 
 #### P4.5 — Rollover persistence / lineage inheritance
-**Work state:** PLANNED  
-**Reality / evidence:** DECIDED / NOT IMPLEMENTED  
-**Decision:** D-022
+**Work state:** IN PROGRESS  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically for P4.5a; live rollover verification pending  
+**Decision:** D-022  
+**Evidence:** E-039
 
-Next bounded objective: when a Personal Room rolls over within the same continuing body of work, registered lineage-scoped custom capabilities must remain discoverable and invokable at the exact inherited version unless deliberately retired or excluded. Historical Rooms must continue to preserve the exact capability versions they used.
+Goal: when a Personal Room rolls over within the same continuing body of work, registered lineage-scoped custom capabilities remain discoverable and invokable at the exact inherited version unless deliberately retired or excluded. Historical Rooms continue to preserve the exact capability versions they used.
 
-P4.5 should reuse the existing registry/binding/identity model rather than invent a parallel persistence mechanism. Before implementation, inspect the current rollover path and custom binding storage to identify the smallest safe inheritance point and deterministic verification boundary.
+**P4.5a — lineage binding inheritance: COMPLETE / IMPLEMENTED / VERIFIED deterministically.**
+
+Implemented behavior:
+
+- direct registrations keep the existing schema-v1 Room binding and truthful original registration Room;
+- a successor receives a schema-v2 inherited binding that retains the exact original registration SHA-256 and registration Room while naming the immediate predecessor Room and predecessor binding SHA-256;
+- inherited bindings resolve the same immutable package, manifest, implementation, and verification identities; rollover does not republish, reverify, or manufacture a successor registration;
+- predecessor binding bytes remain untouched;
+- inherited bindings remain first-class through normal successor `list` / `inspect` / `invoke`;
+- the rollover saga creates the exact successor binding set under protected operation-scoped staging and validates replay idempotently;
+- failed/incomplete rollover removes successor/staged binding state along with the staged successor; fully provisioned restart recovery validates/reconstructs the same exact inherited binding set before finalization;
+- multiple capabilities inherit deterministically, and later generations keep the original registration provenance while linking each successor to its immediate predecessor binding;
+- CORE/custom collision checks remain enforced.
+
+Verification: PR #24 exact reviewed head `888585749cbfe702080005d7211fbc79e758a7a7`; GitHub Actions run `34766802808`: **301 passed, 2 warnings**. Squash merge `f1f83357b78399718ed8910f2849763c6c2dbbbb` has the same Git tree as the reviewed/tested head; canonical-main run `34766882490`: **301 passed, 2 warnings**.
+
+**Remaining P4.5 boundary:** perform a fresh live rollover proof using a new Room rather than mutating the preserved P4.4 evidence Room. The successor must rediscover, inspect, and invoke the inherited capability through the normal registry path with matching version/implementation/package/registration/verification identity, while the predecessor remains historically stable.
 
 Personal/CORE promotion remains later work under D-022.
 
