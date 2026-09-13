@@ -846,3 +846,34 @@ def test_registry_cli_invokes_by_manifest_id(tmp_path: Path, monkeypatch, capsys
     assert len(payload["implementation_sha256"]) == 64
     assert payload["durable_result_fields"] == ["subject", "checks"]
     assert payload["ok"] is True
+
+def test_custom_authoring_guide_is_bounded_and_encodes_host_pending_registration() -> None:
+    guide = capabilities.custom_capability_authoring_guide()
+
+    assert guide["codex_room_registry"] == 1
+    assert guide["operation"] == "authoring"
+    assert guide["schema_version"] == 1
+    assert guide["draft_root"] == ".codex-room/capability-drafts/<id>"
+    assert guide["package_v1"]["files"] == ["manifest.json", "capability.py"]
+    assert guide["package_v1"]["fixed_values"]["scope"] == "lineage"
+    assert guide["package_v1"]["fixed_values"]["runtime"] == {
+        "kind": "python",
+        "entrypoint": "capability.py",
+        "protocol": "stdio-json-v1",
+    }
+    assert guide["verification_cases_v1"]["format"] == "JSON array with 1 to 16 cases"
+    assert "verification_passed" not in json.dumps(guide)
+    assert "not active until that agent turn settles" in guide["settlement"]
+    assert "per-capability OS sandbox" in guide["permission_enforcement"]
+
+
+def test_cli_authoring_emits_one_machine_readable_reference(capsys) -> None:
+    assert main(["authoring"]) == 0
+
+    output = capsys.readouterr().out.strip().splitlines()
+    assert len(output) == 1
+    payload = json.loads(output[0])
+    assert payload["operation"] == "authoring"
+    assert payload["schema_version"] == 1
+    assert payload["register_command"].startswith("codex-room-cap register ")
+
