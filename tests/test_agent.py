@@ -1157,3 +1157,27 @@ def test_safe_activity_preserves_custom_invocation_provenance_and_declared_resul
     assert result["count"] == 3
     assert "transient_detail" not in result
 
+def test_safe_activity_records_compact_custom_authoring_reference() -> None:
+    payload = {
+        "codex_room_registry": 1,
+        "operation": "authoring",
+        "schema_version": 1,
+        "package_v1": {"secret_detail": "not durable"},
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command="codex-room-cap authoring",
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    assert CodexAgentAdapter._safe_activity([item]) == [
+        {
+            "type": "deterministic_capability_registry",
+            "status": "completed",
+            "operation": "authoring",
+            "authoring_schema_version": 1,
+        }
+    ]
+
