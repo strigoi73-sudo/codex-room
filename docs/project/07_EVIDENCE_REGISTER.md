@@ -1088,3 +1088,75 @@ Canonical-main GitHub Actions run `34762827607`: **294 passed, 2 warnings**.
 
 **Remaining P4.4 boundary:** P4.4e must provide fresh-Room evidence that an agent independently chooses this path, produces a valid custom package/test suite, reaches host-bound registration after settlement, then later rediscovers and invokes the immutable registered capability correctly.
 
+### E-037 — P4.4e first live custom-capability exercise and robust input-transport repair
+**Date:** 2026-09-13  
+**Scope:** First live P4.4e Room plus the bounded CORE repair exposed by its second Round. P4.4e is not closed by this evidence item.
+
+Live Room:
+
+- Room `room_857d95aa75c14dd0b939f43baf9a9e17`
+- creation Round `round_9136a696201c4d0b89a99e2059beb543`
+- reuse Round `round_8993b4baccc140f48de28bd51bcaea7e`
+- both Rounds used one C turn; A/B never consumed context.
+
+**Round 1 — PASSED**
+
+C independently followed the custom-capability path from a prompt that named no capability ID, package filename, authoring command, registration command, or implementation language.
+
+Durable evidence shows:
+
+- initial registry `list`: only `assert_file`, `compare_files`, `find_files`, and `search_text`;
+- on-demand `authoring` schema version 1 lookup;
+- custom capability ID `ascii_text_slug`;
+- four verification cases with matching expected/observed output hashes and `passed: true`;
+- package SHA-256 `af1ed4105a432ff0f1b0faab7bcb63c90e1bb86eeaf0a7e2463babd35b9d53d5`;
+- manifest SHA-256 `d23225a3be144d6fbc41f69b4a94971ee22377459f0490e2eda9eb039017fcaa`;
+- implementation SHA-256 `3333ecd6e0af62de3a87a679acbc320e57e6cf82cc9561a189871712aca6add5`;
+- verification SHA-256 `8eca83c2e7d9fa439d8e60e9fe3f97598af0d575015120d99c4555ae83c1b023`;
+- host registration SHA-256 `abfbeb96bee8d24621f2c1666d9bf9b11c5ce9f952cfe3ba5ec5eb750c614d2e`;
+- Room binding SHA-256 `0988e7efccb235a7106dc438cf4074f6d1ddf95b31cc6995d3d9f7d24c40c81c`;
+- exact C FINISH `P4.4-CUSTOM-REGISTERED`;
+- normal `mutual_finish` closure.
+
+**Round 2 — FAILED THE LIVE STOP CONDITION**
+
+C correctly rediscovered `ascii_text_slug` in normal registry `list` as `origin: custom`, `scope: lineage`, version `1`, with implementation/package/registration identity matching Round 1. `inspect` also showed the same verification SHA, four-case plan, durable fields `slug` / `length`, no declared permissions, and no side effects.
+
+The first durable custom invocation then failed:
+
+`invalid_request: input JSON is invalid: Expecting property name enclosed in double quotes`
+
+The Round subsequently recorded six generic failed command executions and two generic completed command executions. By design those events retain no arbitrary command text/output. Crucially, the export contains **no later successful `deterministic_capability` event**, no durable `ok:true`, and no durable `slug` / `length` result. C's exact `P4.4-CUSTOM-OK` FINISH therefore does not satisfy the stop condition.
+
+This evidence does not claim what the generic later commands contained. It does establish that the live product path taught and exposed only inline `--input-json JSON_OBJECT`, and the one auditable registered invocation failed because JSON was not preserved across command-line quoting.
+
+**PR #23 repair**
+
+The smallest demonstrated repair preserved inline compatibility and added a second normal invocation transport:
+
+`codex-room-cap invoke CAPABILITY_ID --input-file WORKSPACE_RELATIVE_JSON`
+
+Properties:
+
+- mutually exclusive with `--input-json`;
+- path must remain inside the Room workspace;
+- input file is bounded to 1 MiB;
+- content must be UTF-8 JSON and one object;
+- both CORE and custom manifests advertise the file-input form;
+- persistent agent guidance tells agents to use file input when shell quoting is fragile or when an inline attempt fails to preserve valid JSON;
+- the command remains a standalone ordinary `invoke`, so existing safe durable capability telemetry applies unchanged.
+
+Exact reviewed PR #23 head:
+
+`2a32cd3ef915ff1c064bda49a0303e2a72cbbc04`
+
+GitHub Actions PR run `34763827289`: **297 passed, 2 warnings**.
+
+PR #23 squash-merged as:
+
+`4c10b60c4ef290fc690d39a33c2d5e43d5eece7d` — `P4.4e: make capability invocation input shell-robust`
+
+Canonical-main GitHub Actions run `34763920318`: **297 passed, 2 warnings**.
+
+**Status:** Round 1 IMPLEMENTED / VERIFIED live. PR #23 IMPLEMENTED / VERIFIED deterministically. P4.4e as a whole remains **IN PROGRESS / NEEDS LIVE VERIFICATION** until a later Round in the same preserved Room produces a successful durable registered invocation on new input.
+
