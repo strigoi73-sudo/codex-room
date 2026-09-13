@@ -399,6 +399,53 @@ def test_cli_register_request_then_host_settlement_activates_one_registry(
     assert len(invoked["registration_sha256"]) == 64
 
 
+def test_host_settlement_replay_uses_existing_exact_binding_without_mutable_draft(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    data_root, workspace = _make_room(tmp_path, "room_replay")
+    draft = _write_draft(workspace)
+    cases_file = workspace / ".codex-room" / "count_lines_cases.json"
+    cases_file.parent.mkdir(exist_ok=True)
+    cases_file.write_text(json.dumps(_cases()), encoding="utf-8")
+    monkeypatch.chdir(workspace)
+
+    assert main(
+        [
+            "register",
+            "count_lines",
+            "--cases-file",
+            ".codex-room/count_lines_cases.json",
+        ]
+    ) == 0
+    registered = json.loads(capsys.readouterr().out.strip())
+    activity = [
+        {
+            "type": "deterministic_capability_registry",
+            "status": "completed",
+            "operation": "register",
+            "capability": "count_lines",
+            "registration_request": registered["registration_request"],
+        }
+    ]
+    runtime = RoomRuntime(db=None, adapter=None, data_root=data_root)
+
+    first = runtime._settle_custom_capability_registration_requests(
+        "room_replay", activity
+    )
+    assert first[0]["status"] == "completed"
+
+    (draft / "capability.py").write_text(_code(99), encoding="utf-8")
+    replay = runtime._settle_custom_capability_registration_requests(
+        "room_replay", activity
+    )
+
+    assert replay[0]["status"] == "completed"
+    assert replay[0]["registration_sha256"] == first[0]["registration_sha256"]
+    assert replay[0]["binding_sha256"] == first[0]["binding_sha256"]
+
+
 def test_host_settlement_rejects_draft_changed_after_sandbox_verification(
     tmp_path: Path,
     monkeypatch,
