@@ -914,3 +914,42 @@ The malformed first `find_files` call is a recoverable call-construction error, 
 
 **P4.3 status:** COMPLETE / IMPLEMENTED / VERIFIED end to end — 2026-09-12.
 
+### E-033 — P4.4a custom capability package and exact identity
+**Date:** 2026-09-13  
+**Scope:** P4.4a package/identity substrate only; no custom registration, publication, discovery, inheritance, or invocation.
+
+PR #19 introduced a deliberately narrow custom-capability draft model before implementing trusted registration.
+
+Implemented evidence boundary:
+
+- fixed Room draft location: `.codex-room/capability-drafts/<id>/`;
+- portable lowercase capability-ID namespace with Windows-reserved names rejected;
+- package schema v1 is lineage-scoped and contains exactly `manifest.json` plus one `capability.py`;
+- runtime declaration is fixed to Python / `stdio-json-v1`;
+- input/output contracts must describe JSON objects; output must require boolean `ok`;
+- `durable_result_fields` must be unique, non-reserved, and declared in the output contract;
+- permissions must declare exactly `workspace_read`, `workspace_write`, `network`, and `external_process` as booleans;
+- side effects require an explicit bounded declaration;
+- draft path components reject symlinks and non-directories; manifest/entrypoint must be bounded regular non-symlink files; extra package entries are rejected;
+- the Python entrypoint must be UTF-8, NUL-free, and syntax-valid without being executed during package validation;
+- exact identity records manifest SHA-256, implementation SHA-256, and a domain-separated combined package SHA-256 over the exact manifest and executable bytes;
+- package inspection explicitly records permission enforcement as `ambient_room_sandbox` with `per_capability_enforcement: false`, preserving the distinction between declared permissions and actual per-capability OS enforcement.
+
+The first PR-head CI run `34760645153` failed one newly added parametrized test because the implementation rejected a malformed output contract one validation stage earlier than the test's expected error text. The implementation behavior was correct: required field `ok` referenced a removed property. Only the expected error-message pattern changed.
+
+Exact repaired PR #19 head:
+
+`39ead0212319774b987b00bc661b773e6b99c807`
+
+GitHub Actions PR run `34760718140`: **261 passed, 2 warnings**.
+
+PR #19 squash-merged as:
+
+`574edbfeaf5c5ae9053eae1825a0fe8f6fb728aa` — `P4.4a: define custom capability package identity`
+
+Canonical-main GitHub Actions run `34760790346`: **261 passed, 2 warnings**.
+
+**P4.4a status:** COMPLETE / IMPLEMENTED / VERIFIED.
+
+**Remaining P4.4 boundary:** a structurally valid draft is still ordinary unregistered Room code. P4.4b must define adequate deterministic verification evidence and immutable content-addressed publication before any custom package becomes a registered capability.
+
