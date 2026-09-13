@@ -680,7 +680,7 @@ class CodexAgentAdapter:
             return None
 
         operation, requested_capability = direct
-        if operation in {"list", "inspect"}:
+        if operation in {"list", "inspect", "register"}:
             if (
                 payload.get("codex_room_registry") != 1
                 or payload.get("operation") != operation
@@ -703,6 +703,8 @@ class CodexAgentAdapter:
                                 "scope",
                                 "version",
                                 "implementation_sha256",
+                                "package_sha256",
+                                "registration_sha256",
                             )
                             if key in manifest
                         }
@@ -729,6 +731,8 @@ class CodexAgentAdapter:
                     "scope",
                     "version",
                     "implementation_sha256",
+                    "package_sha256",
+                    "registration_sha256",
                     "durable_result_fields",
                     "permissions",
                     "side_effects",
@@ -736,6 +740,19 @@ class CodexAgentAdapter:
                 )
                 if key in manifest
             }
+            if operation == "register":
+                if payload.get("ok") is not True:
+                    return None
+                return {
+                    "type": "deterministic_capability_registry",
+                    "status": status,
+                    "operation": "register",
+                    "capability": requested_capability,
+                    "manifest": safe_manifest,
+                    "registration_sha256": payload.get("registration_sha256"),
+                    "verification_sha256": payload.get("verification_sha256"),
+                    "package_sha256": payload.get("package_sha256"),
+                }
             return {
                 "type": "deterministic_capability_registry",
                 "status": status,
@@ -770,6 +787,9 @@ class CodexAgentAdapter:
             "capability",
             "capability_version",
             "implementation_sha256",
+            "package_sha256",
+            "registration_sha256",
+            "verification_sha256",
             "ok",
             "durable_result_fields",
             "error",
@@ -836,7 +856,7 @@ class CodexAgentAdapter:
         operation = parts[1].strip('"').strip("'").lower()
         if operation == "list":
             return ("list", None) if len(parts) == 2 else None
-        if operation in {"inspect", "invoke"}:
+        if operation in {"inspect", "invoke", "register"}:
             if len(parts) < 3:
                 return None
             return operation, parts[2].strip('"').strip("'")
