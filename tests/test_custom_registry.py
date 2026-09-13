@@ -17,6 +17,7 @@ from codex_room.custom_capability_registration import (
     publish_verified_custom_capability,
     verify_custom_capability_draft,
 )
+from codex_room.orchestrator import RoomRuntime
 from codex_room.custom_registry import (
     CustomCapabilityRegistryError,
     bind_custom_registration,
@@ -329,12 +330,12 @@ def test_custom_invocation_enforces_declared_basic_input_type(tmp_path: Path) ->
         invoke_capability(workspace, "count_lines", {"text": 123})
 
 
-def test_cli_register_then_list_inspect_and_invoke_share_one_registry(
+def test_cli_register_request_then_host_settlement_activates_one_registry(
     tmp_path: Path,
     monkeypatch,
     capsys,
 ) -> None:
-    _, workspace = _make_room(tmp_path, "room_cli")
+    data_root, workspace = _make_room(tmp_path, "room_cli")
     _write_draft(workspace)
     cases_file = workspace / ".codex-room" / "count_lines_cases.json"
     cases_file.parent.mkdir(exist_ok=True)
@@ -352,7 +353,29 @@ def test_cli_register_then_list_inspect_and_invoke_share_one_registry(
     registered = json.loads(capsys.readouterr().out.strip())
     assert registered["operation"] == "register"
     assert registered["ok"] is True
-    assert registered["capability"]["id"] == "count_lines"
+    assert registered["state"] == "verification_passed_host_pending"
+    assert registered["capability_id"] == "count_lines"
+
+    assert main(["list"]) == 0
+    listed_before = json.loads(capsys.readouterr().out.strip())
+    assert "count_lines" not in [item["id"] for item in listed_before["capabilities"]]
+
+    runtime = RoomRuntime(db=None, adapter=None, data_root=data_root)
+    outcomes = runtime._settle_custom_capability_registration_requests(
+        "room_cli",
+        [
+            {
+                "type": "deterministic_capability_registry",
+                "status": "completed",
+                "operation": "register",
+                "capability": "count_lines",
+                "registration_request": registered["registration_request"],
+            }
+        ],
+    )
+    assert outcomes[0]["status"] == "completed"
+    assert outcomes[0]["capability"] == "count_lines"
+    assert len(outcomes[0]["registration_sha256"]) == 64
 
     assert main(["list"]) == 0
     listed = json.loads(capsys.readouterr().out.strip())
@@ -374,3 +397,45 @@ def test_cli_register_then_list_inspect_and_invoke_share_one_registry(
     assert invoked["ok"] is True
     assert invoked["count"] == 2
     assert len(invoked["registration_sha256"]) == 64
+
+
+def test_host_settlement_rejects_draft_changed_after_sandbox_verification(
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    data_root, workspace = _make_room(tmp_path, "room_race")
+    draft = _write_draft(workspace)
+    cases_file = workspace / ".codex-room" / "count_lines_cases.json"
+    cases_file.parent.mkdir(exist_ok=True)
+    cases_file.write_text(json.dumps(_cases()), encoding="utf-8")
+    monkeypatch.chdir(workspace)
+
+    assert main(
+        [
+            "register",
+            "count_lines",
+            "--cases-file",
+            ".codex-room/count_lines_cases.json",
+        ]
+    ) == 0
+    registered = json.loads(capsys.readouterr().out.strip())
+    (draft / "capability.py").write_text(_code(99), encoding="utf-8")
+
+    runtime = RoomRuntime(db=None, adapter=None, data_root=data_root)
+    outcomes = runtime._settle_custom_capability_registration_requests(
+        "room_race",
+        [
+            {
+                "type": "deterministic_capability_registry",
+                "status": "completed",
+                "operation": "register",
+                "capability": "count_lines",
+                "registration_request": registered["registration_request"],
+            }
+        ],
+    )
+
+    assert outcomes[0]["status"] == "error"
+    assert "does not match" in outcomes[0]["error"]
+    assert load_room_custom_capabilities(data_root, "room_race") == {}
