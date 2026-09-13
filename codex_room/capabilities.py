@@ -124,6 +124,10 @@ class CapabilitySpec:
                     f"codex-room-cap invoke {self.capability_id} "
                     "--input-json JSON_OBJECT"
                 ),
+                "invoke_file": (
+                    f"codex-room-cap invoke {self.capability_id} "
+                    "--input-file WORKSPACE_RELATIVE_JSON"
+                ),
             },
         }
 
