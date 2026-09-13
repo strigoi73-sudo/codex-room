@@ -20,6 +20,7 @@ from .agent import (
     InterruptOutcome,
 )
 from .capabilities import CORE_CAPABILITIES
+from .custom_capabilities import CustomCapabilityPackageError
 from .custom_capability_registration import (
     CustomCapabilityPublicationError,
     CustomCapabilityVerificationError,
@@ -29,6 +30,7 @@ from .custom_capability_registration import (
 from .custom_registry import (
     CustomCapabilityRegistryError,
     bind_custom_registration,
+    load_room_custom_capabilities,
 )
 from .db import Database, utc_now
 from .institutional import (
@@ -1836,19 +1838,36 @@ class RoomRuntime:
                         "Custom capability registration request is malformed"
                     )
                 receipt = VerificationReceipt.from_dict(request.get("receipt"))
-                registration = publish_verified_custom_capability(
-                    self.workspace(room_id),
+                existing = load_room_custom_capabilities(
                     self.data_root,
                     room_id,
-                    capability_id,
-                    receipt,
-                )
-                binding = bind_custom_registration(
-                    self.data_root,
-                    room_id,
-                    registration.registration_sha256,
                     reserved_capability_ids=frozenset(CORE_CAPABILITIES),
-                )
+                ).get(capability_id)
+                if (
+                    existing is not None
+                    and existing.receipt.verification_sha256
+                    == receipt.verification_sha256
+                    and existing.package.package_sha256 == receipt.package_sha256
+                    and existing.package.manifest_sha256 == receipt.manifest_sha256
+                    and existing.package.implementation_sha256
+                    == receipt.implementation_sha256
+                ):
+                    registration = existing.registration
+                    binding = existing
+                else:
+                    registration = publish_verified_custom_capability(
+                        self.workspace(room_id),
+                        self.data_root,
+                        room_id,
+                        capability_id,
+                        receipt,
+                    )
+                    binding = bind_custom_registration(
+                        self.data_root,
+                        room_id,
+                        registration.registration_sha256,
+                        reserved_capability_ids=frozenset(CORE_CAPABILITIES),
+                    )
                 outcomes.append(
                     {
                         "index": index,
@@ -1863,6 +1882,7 @@ class RoomRuntime:
                     }
                 )
             except (
+                CustomCapabilityPackageError,
                 CustomCapabilityVerificationError,
                 CustomCapabilityPublicationError,
                 CustomCapabilityRegistryError,
