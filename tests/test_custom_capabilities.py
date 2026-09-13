@@ -86,6 +86,7 @@ def test_valid_draft_has_exact_manifest_implementation_and_package_identity(tmp_
     assert package.manifest_sha256 == hashlib.sha256(manifest_bytes).hexdigest()
     digest = hashlib.sha256()
     digest.update(b"codex-room-custom-capability-package-v1\x00")
+    digest.update(b"manifest.json\x00")
     digest.update(manifest_bytes)
     digest.update(b"\x00capability.py\x00")
     digest.update(entrypoint_bytes)
@@ -100,6 +101,28 @@ def test_valid_draft_has_exact_manifest_implementation_and_package_identity(tmp_
 def test_draft_path_rejects_path_traversal_identifiers(tmp_path: Path) -> None:
     with pytest.raises(CustomCapabilityPackageError, match="capability id"):
         draft_path(tmp_path, "../outside")
+
+
+@pytest.mark.parametrize("capability_id", ["Uppercase", "has-dash", "con"])
+def test_draft_path_rejects_nonportable_or_reserved_identifiers(
+    tmp_path: Path, capability_id: str
+) -> None:
+    with pytest.raises(CustomCapabilityPackageError):
+        draft_path(tmp_path, capability_id)
+
+
+def test_draft_directory_chain_rejects_symlink_escape(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    codex_room = tmp_path / ".codex-room"
+    codex_room.mkdir()
+    try:
+        (codex_room / "capability-drafts").symlink_to(outside, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("test platform cannot create directory symlinks")
+
+    with pytest.raises(CustomCapabilityPackageError, match="without symlinks"):
+        load_custom_capability_draft(tmp_path, "count_lines")
 
 
 @pytest.mark.parametrize(
