@@ -1056,3 +1056,112 @@ def test_safe_activity_bounds_declared_capability_result_evidence() -> None:
     assert result["durable_result_truncated"] is True
     assert result["durable_result_original_bytes"] > 64 * 1024
     assert "evidence" not in result
+
+def test_safe_activity_records_custom_registration_without_raw_verification_cases() -> None:
+    payload = {
+        "codex_room_registry": 1,
+        "operation": "register",
+        "ok": True,
+        "capability": {
+            "id": "count_lines",
+            "description": "Count lines.",
+            "origin": "custom",
+            "scope": "lineage",
+            "version": "1",
+            "implementation_sha256": "a" * 64,
+            "package_sha256": "b" * 64,
+            "durable_result_fields": ["count"],
+            "permissions": {"workspace_read": False},
+            "side_effects": "none",
+            "verification": {
+                "status": "verified",
+                "verification_sha256": "c" * 64,
+                "registration_sha256": "d" * 64,
+            },
+            "input_schema": {"type": "object", "secret": "not durable"},
+        },
+        "registration_sha256": "d" * 64,
+        "verification_sha256": "c" * 64,
+        "package_sha256": "b" * 64,
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap register count_lines "
+            "--cases-file .codex-room/count_lines_cases.json"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    assert activity == [
+        {
+            "type": "deterministic_capability_registry",
+            "status": "completed",
+            "operation": "register",
+            "capability": "count_lines",
+            "manifest": {
+                "id": "count_lines",
+                "description": "Count lines.",
+                "origin": "custom",
+                "scope": "lineage",
+                "version": "1",
+                "implementation_sha256": "a" * 64,
+                "package_sha256": "b" * 64,
+                "durable_result_fields": ["count"],
+                "permissions": {"workspace_read": False},
+                "side_effects": "none",
+                "verification": {
+                    "status": "verified",
+                    "verification_sha256": "c" * 64,
+                    "registration_sha256": "d" * 64,
+                },
+            },
+            "registration_sha256": "d" * 64,
+            "verification_sha256": "c" * 64,
+            "package_sha256": "b" * 64,
+        }
+    ]
+    assert "secret" not in json.dumps(activity)
+
+
+def test_safe_activity_preserves_custom_invocation_provenance_and_declared_result() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "count_lines",
+        "capability_version": "1",
+        "implementation_sha256": "a" * 64,
+        "package_sha256": "b" * 64,
+        "registration_sha256": "c" * 64,
+        "verification_sha256": "d" * 64,
+        "durable_result_fields": ["count"],
+        "ok": True,
+        "count": 3,
+        "transient_detail": "do not persist",
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap invoke count_lines "
+            "--input-json '{\"text\":\"a\\nb\\nc\\n\"}'"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+    result = activity[0]["result"]
+
+    assert activity[0]["type"] == "deterministic_capability"
+    assert activity[0]["capability"] == "count_lines"
+    assert result["implementation_sha256"] == "a" * 64
+    assert result["package_sha256"] == "b" * 64
+    assert result["registration_sha256"] == "c" * 64
+    assert result["verification_sha256"] == "d" * 64
+    assert result["count"] == 3
+    assert "transient_detail" not in result
+
