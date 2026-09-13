@@ -1725,10 +1725,17 @@ def build_parser() -> argparse.ArgumentParser:
         "invoke", help="Invoke one registered deterministic capability."
     )
     invoke_parser.add_argument("capability_id")
-    invoke_parser.add_argument(
+    invoke_inputs = invoke_parser.add_mutually_exclusive_group(required=True)
+    invoke_inputs.add_argument(
         "--input-json",
-        required=True,
         help="One JSON object matching the capability input schema.",
+    )
+    invoke_inputs.add_argument(
+        "--input-file",
+        help=(
+            "Workspace-relative UTF-8 JSON object file. Prefer this when command-line "
+            "JSON quoting would be fragile."
+        ),
     )
 
     # Backward-compatible P4.1 command. New agent prompts use registry discovery/invoke.
@@ -1767,10 +1774,15 @@ def main(argv: list[str] | None = None) -> int:
                 args.cases_file,
             )
         elif args.command == "invoke":
-            try:
-                inputs = json.loads(args.input_json)
-            except json.JSONDecodeError as exc:
-                raise CapabilityUsageError(f"input JSON is invalid: {exc}") from exc
+            if args.input_file is not None:
+                inputs = _load_invocation_input_file(Path.cwd(), args.input_file)
+            else:
+                try:
+                    inputs = json.loads(args.input_json)
+                except json.JSONDecodeError as exc:
+                    raise CapabilityUsageError(f"input JSON is invalid: {exc}") from exc
+            if not isinstance(inputs, dict):
+                raise CapabilityUsageError("capability input must be a JSON object")
             result = invoke_capability(Path.cwd(), args.capability_id, inputs)
         elif args.command == "assert-file":
             result = invoke_capability(
