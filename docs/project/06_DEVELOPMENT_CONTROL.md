@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, and **A2 — Assurance Pass 2** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **P4.5a — lineage binding inheritance is COMPLETE / IMPLEMENTED / VERIFIED deterministically.** PR #24 added exact inherited successor bindings without creating a replacement registration: the original registration Room and immutable package/implementation/verification identities remain unchanged, predecessor bindings remain historical, and rollover abort/restart/replay paths now carry protected binding cleanup/recovery.
+- **What just changed?** **P4.5 — rollover persistence / lineage inheritance is COMPLETE / IMPLEMENTED / VERIFIED end to end.** Fresh live Room evidence now proves that a lineage-scoped custom capability survives rollover through a schema-v2 successor binding, remains discoverable/inspectable/invokable at the exact inherited immutable identity, and leaves the archived predecessor's original schema-v1 binding unchanged.
 - **What is blocked?** Nothing currently blocks continued P4 work.
-- **Where is P4.5?** **IN PROGRESS.** P4.5a is complete on canonical `main`; a fresh live rollover proof remains before P4.5 is verified end to end.
-- **What is next?** Run a fresh P4.5 live rollover proof: register a lineage-scoped custom capability in a source Room, roll over, then prove normal successor `list` / `inspect` / `invoke` reuse at the exact inherited identity while the predecessor remains unchanged.
+- **Where is P4.5?** **COMPLETE.** P4.5a remains the deterministic/hosted implementation basis; E-040 records the fresh live source→successor rollover proof and predecessor-stability check.
+- **What is next?** No further bounded P4 slice is currently selected. Personal/CORE promotion remains the documented later direction under D-022; select the next slice explicitly before implementation.
 - **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
 
 ## Current Focus
@@ -281,10 +281,10 @@ Durable evidence shows:
 This closes the demonstrated live gap and P4.4 as a whole. The successful reuse proof depended on the already-host-bound immutable capability, not on recreating or reregistering the draft.
 
 #### P4.5 — Rollover persistence / lineage inheritance
-**Work state:** IN PROGRESS  
-**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically for P4.5a; live rollover verification pending  
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED end to end — 2026-09-13  
 **Decision:** D-022  
-**Evidence:** E-039
+**Evidence:** E-039, E-040
 
 Goal: when a Personal Room rolls over within the same continuing body of work, registered lineage-scoped custom capabilities remain discoverable and invokable at the exact inherited version unless deliberately retired or excluded. Historical Rooms continue to preserve the exact capability versions they used.
 
@@ -304,9 +304,21 @@ Implemented behavior:
 
 Verification: PR #24 exact reviewed head `888585749cbfe702080005d7211fbc79e758a7a7`; GitHub Actions run `34766802808`: **301 passed, 2 warnings**. Squash merge `f1f83357b78399718ed8910f2849763c6c2dbbbb` has the same Git tree as the reviewed/tested head; canonical-main run `34766882490`: **301 passed, 2 warnings**.
 
-**Remaining P4.5 boundary:** perform a fresh live rollover proof using a new Room rather than mutating the preserved P4.4 evidence Room. The successor must rediscover, inspect, and invoke the inherited capability through the normal registry path with matching version/implementation/package/registration/verification identity, while the predecessor remains historically stable.
+**Live rollover proof: COMPLETE / VERIFIED.**
 
-Personal/CORE promotion remains later work under D-022.
+Fresh source Room `room_8b85b75a868f4077bc44f465ee2d9439` registered lineage capability `normalize_ascii_label` version `1`, then rolled over to successor `room_d5d2462daff04c62bcf00468bf90606a`.
+
+Live evidence established:
+
+- the successor received schema-v2 binding `4a5e91e2c8c4fe47f24cf919fba9fee28597cd8535290b130b74c49bfc6632b9`, naming the original registration Room and immediate predecessor plus predecessor binding `e6386581c2bd1ebe63d8e427b90c7ea51474350b44d6bf1f8776e0d9dd3f9bc8`;
+- successor registry `list` rediscovered the custom lineage capability, `inspect` preserved its verified identity, and normal registered invocation succeeded with the same version/implementation/package/registration/verification identities;
+- the successful successor result was `normalized: "p4_5_live_lineage_verification"`, `length: 30`;
+- no successor registration/republication event occurred;
+- the predecessor is archived and sealed with a committed rollover record, and direct post-rollover inspection still shows the original schema-v1 binding SHA `e6386581...` and original registration identity unchanged.
+
+One inline invocation attempt in the successor was rejected as malformed JSON and then retried successfully through the existing file-input transport; this did not alter capability identity or require ad hoc fallback.
+
+P4.5 is closed. Personal/CORE promotion remains later work under D-022.
 
 
 Repository baseline: canonical `main`. Exact current HEAD, hosted CI state, remote-ref agreement, and local working-tree state are intentionally **not maintained in this document**; inspect GitHub and local Git directly when those facts are consequential.
@@ -427,7 +439,7 @@ GitHub Actions runs the canonical Python suite on pushes to `main` and pull requ
 ### P4 — Deterministic Room and agent capabilities
 **Work state:** IN PROGRESS
 
-P4.1 deterministic assertions is complete. P4.2 capability registry/discovery is now the active bounded slice. After P4.2, build the small default CORE library and then the agent-directed custom-capability lifecycle with rollover inheritance; do not pre-fill a speculative domain-specific tool catalog.
+P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, the minimal CORE library, agent-created custom capability registration/verification, and lineage rollover inheritance have all been verified end to end. No further bounded P4 slice is currently selected. Personal/CORE promotion remains later work under D-022; do not pre-fill a speculative domain-specific tool catalog or begin promotion work without explicit prioritization.
 
 ## Approved planned development
 
