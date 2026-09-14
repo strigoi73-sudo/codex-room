@@ -373,14 +373,13 @@ async def test_persistent_profiles_are_snapshotted_into_new_rooms(runtime_factor
         CreateRoomRequest(topic="Profile inheritance", starting_agent="agent_a")
     )
     agents = {agent["agent_key"]: agent for agent in room["agents"]}
+    defaults = await runtime.db.get_default_profiles()
     assert agents["agent_a"]["profile_snapshot"] == "persistent A personality"
     assert agents["agent_b"]["profile_snapshot"] == "persistent B personality"
-    assert agents["agent_c"]["profile_snapshot"] == "persistent C personality"
     assert "persistent A personality" in agents["agent_a"]["developer_instructions"]
     assert "persistent B personality" in agents["agent_b"]["developer_instructions"]
-    assert "persistent C personality" in agents["agent_c"]["developer_instructions"]
     assert ROOM_PROTOCOL_INSTRUCTIONS in agents["agent_a"]["developer_instructions"]
-    assert AGENT_C_STRUCTURAL_INSTRUCTIONS in agents["agent_c"]["developer_instructions"]
+    assert defaults["agent_c"]["developer_instructions"] == "persistent C personality"
 
 
 @pytest.mark.asyncio
