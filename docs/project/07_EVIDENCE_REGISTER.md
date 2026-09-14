@@ -1909,3 +1909,38 @@ No additional personality wording change is justified by this evaluation. The cu
 
 **Status:** OBSERVED ISSUE for behavioral recognizability; calibration objective NOT ESTABLISHED. Active personality calibration should move to **MONITOR / DEFERRED** unless ordinary Codex Room usage later demonstrates a concrete product problem attributable to insufficient personality distinction.
 
+### E-058 — Neutral default agent profiles
+**Date:** 2026-09-14  
+**Scope:** [CORE] D-024 removal of distinguishing startup personality/temperament while preserving persistent identity, protected institutional context, Room protocol, optional profile overrides, and C's protected coordination structure.
+
+PR #49 implements neutral startup profiles:
+
+- `AGENT_A_DEFAULT_PERSONALITY`, `AGENT_B_DEFAULT_PERSONALITY`, and `AGENT_C_DEFAULT_PERSONALITY` now resolve to the same empty default body;
+- fresh Rooms therefore compose no default `PERSONALITY` section;
+- the shared institutional identity/peer layer and Room protocol remain present for A/B/C;
+- C still receives its protected organizer/coordination structural instructions, while A/B receive no special protected structural role;
+- explicit custom profile text and Room-specific overrides remain supported and still compose through the optional profile layer;
+- startup migration adds exact SHA-256 anchors for the E-056 built-in temperament bodies and migrates only those known built-ins to the empty neutral default;
+- non-matching custom default profile text is preserved;
+- existing Room snapshots/effective instructions are deliberately not rewritten, so the neutral default applies to fresh composition rather than retroactively changing historical Rooms.
+
+Exact E-056 migration anchors were derived from the canonical source bytes before replacement:
+
+- A: `5b11450825c124cd423bc99ad8ff8cffd94a89eec0309750b5aa3cba392db8d5`;
+- B: `9532a31035d3c230d44e709d8e0c3ad4ebc94fc6454bfa3eff3c487500ca4ded`;
+- C: `8b689f1894125f106023958d16385c7656287cdfb57b6d3f476406ed164e3993`.
+
+Verification:
+
+- PR #49 exact head: `2627fbd35b14214988a1828f788adb02163b03f8`;
+- tested PR-head Git tree: `be52f9a92655ce28f6c3655fc39f1b72922d7d39`;
+- PR Actions run `34901569309`: **321 passed, 2 warnings** in 54.08s;
+- squash merge: `833d3498c75fe4d7e2a3e76efda362b421341431`;
+- merge Git tree: `be52f9a92655ce28f6c3655fc39f1b72922d7d39`, exactly matching the tested PR-head tree;
+- canonical-main Actions run `34901711440`: **321 passed, 2 warnings** in 53.59s;
+- direct canonical-main source inspection confirmed the neutral default constant is empty, the retired E-056 temperament prose is absent from the active default source, and the E-056 migration anchor remains present.
+
+**Evidence boundary:** E-058 verifies neutral default profile composition and conservative built-in migration deterministically. It does not retroactively rewrite existing Room snapshots and does not implement the proposed dynamic cognitive-posture capability.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically. D-024 neutral startup profiles are COMPLETE.
+
