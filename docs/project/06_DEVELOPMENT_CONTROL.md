@@ -7,40 +7,70 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** A clean V4 café rerun showed that V4 still failed to produce distinct opening trajectories: all three agents immediately converged on essentially the same margin-versus-demand diagnosis. The principal stopped the V4 series and selected a deliberately stronger V5 calibration. V5 is now **IMPLEMENTED / VERIFIED deterministically**. See E-045 and E-046.
-- **What is blocked?** Nothing currently blocks a fresh V5 café calibration rerun.
+- **What just changed?** The clean V5 café gate again showed first-move convergence: A, B, and C all opened with essentially the same margin-versus-demand diagnosis despite the stronger V5 prohibitions. The remaining V5 scenarios were stopped. V6.2 now replaces opening-only calibration with persistent asymmetric cognitive contracts across the full reasoning cycle and is **IMPLEMENTED / VERIFIED deterministically**. See E-047 and E-048.
+- **What is blocked?** Nothing currently blocks a fresh V6.2 café calibration rerun.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Rerun the café scenario once in a fresh V5 Room using the same independent controls. If V5 produces visibly distinct opening reasoning trajectories without obvious pathology, resume the remaining controlled scenarios and blind evaluation.
+- **What is next?** Rerun the café scenario once in a fresh V6.2 Room using the same independent controls. If A/B/C perform visibly complementary cognitive work without obvious pathology, resume the remaining controlled scenarios and blind evaluation.
 - **What are we deliberately not doing?** No adjacent archive/retrieval, capability-promotion, fan-out/join, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this personality slice unless explicitly reprioritized.
 
 ## Current Focus
 
 ### Standard default personality behavioral evaluation
 **Work state:** IN PROGRESS  
-**Reality:** V3 DID NOT MEET BLIND CRITERION; V4 showed an OBSERVED first-move convergence issue in the clean café rerun; V5 implementation IMPLEMENTED / VERIFIED deterministically; V5 behavioral differentiation NOT YET VERIFIED  
+**Reality:** V3 DID NOT MEET BLIND CRITERION; V4 and V5 each showed an OBSERVED first-move convergence issue in clean café gates; V6.2 implementation IMPLEMENTED / VERIFIED deterministically; V6.2 behavioral differentiation NOT YET VERIFIED  
 **Decision:** D-023  
 **Composition evidence:** E-041  
 **V3 implementation evidence:** E-042  
 **V3 behavioral evidence:** E-043  
 **V4 implementation evidence:** E-044  
 **V4 café observation:** E-045  
-**V5 implementation evidence:** E-046
+**V5 implementation evidence:** E-046  
+**V5 café observation:** E-047  
+**V6.2 implementation evidence:** E-048
 
-Current objective: test whether the stronger V5 calibration can overcome the generic convergence observed in V3 and V4 while preserving competence, cooperation, and the ability to converge when evidence warrants it.
+Current objective: test whether persistent asymmetric cognitive contracts can produce complementary cognition from the same underlying model while preserving competence, cooperation, and natural convergence when evidence warrants it.
 
-The implemented V5 cognitive centers of gravity are:
+The implemented V6.2 centers of gravity are:
 
-- **A:** strongly exploratory and generative — first expands the possibility space and resists leading with diagnosis;
-- **B:** strongly skeptical and discriminating — first challenges the epistemic foundation and resists leading with solutions;
-- **C:** strongly contextual and relational — first maps the larger objective, dependencies, constraints, and consequences and resists leading with either local-option generation or fact-by-fact litigation.
+- **A — "What else could we do?"** Expand and improve the option space, then narrow in terms of leverage, reversibility, optionality, useful learning, and changed tradeoffs.
+- **B — "What are we justified in believing?"** Establish what claims deserve confidence, what evidence matters, and when uncertainty is small enough to act.
+- **C — "How do the consequential parts fit together and behave?"** Map objectives, dependencies, bottlenecks, interactions, sequencing, and downstream consequences, while preserving real unresolved conflict.
 
-The V5 self-corrections remain asymmetric: A distrusts the attractiveness of its possibilities; B distrusts the importance of its objections; C distrusts the completeness of its synthesis.
+The orientation is designed to persist through evaluation and recommendation, not only the opening move. The B/C boundary is explicit: B primarily interrogates whether propositions or inferences deserve belief; C primarily interrogates how provisionally usable elements relate and what those relationships cause or constrain. All three carry characteristic anti-duplication "move the frontier" behavior and stopping rules.
 
-V4 calibration evidence is deliberately bounded. Scenario 1 was mechanically clean, but A, B, and C all opened with essentially the same "margin, not demand" framing. Because first-move differentiation was the main V4 intervention, the principal treated that single clean result as sufficient evidence to stop V4 and make a larger calibration move. No claim is made that V4 completed or failed the full four-scenario blind protocol.
+V5 calibration evidence is deliberately bounded. Its single café gate was mechanically clean, yet B opened with "margin problem more clearly than demand problem," while C and A both opened with "margin compression." Later texture differed, but the intended first cognitive trajectories did not. The principal therefore stopped the remaining V5 scenarios and moved to a different mechanism rather than spending additional Rooms on the same failure mode.
 
-**Next gate:** rerun only the café scenario first with V5. If A expands options, B audits the epistemic foundation, and C maps consequential context before they converge, V5 has earned the full controlled evaluation. If all three again enter through the same diagnosis, revise before spending the remaining Rooms.
+**Next gate:** rerun only the café scenario first with V6.2. A should materially expand the option space, B should make the epistemic structure legible, and C should make the load-bearing relationships legible before their recommendations converge. If the same diagnostic entrance still dominates all three, revise again before spending the remaining Rooms.
 
 ## Recently completed work
+
+### V6.2 persistent complementary cognitive contracts
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-048
+
+PR #36 replaced V5's stronger opening priors with persistent cognitive centers of gravity that remain active through narrowing, recommendation, and peer follow-up. A owns option-space expansion, B epistemic justification, and C consequential relationships/system structure. Anti-duplication behavior now explicitly moves each agent toward the frontier of work already performed.
+
+The D-023 protected-layer boundary is unchanged: institutional identity/peer rules, C's structural organizer responsibilities, and Room protocol remain outside the replaceable personality body.
+
+Startup migration now recognizes the exact V5 built-in personality bodies and updates only those defaults to V6.2. Non-matching/custom default text remains preserved, and existing Room snapshots/effective instructions are not silently rewritten.
+
+Exact PR head `8ecfd73104638b49975a6bf134cc3dde16f35468` passed GitHub Actions run `34870235815` with **313 tests, 2 warnings**. PR #36 squash-merged as `6d89465de2bf581a8bce2e44ce569beea224f3df`; merge tree `bc2590ddc11682d51ecf3cb79221259f7acd59ea` exactly matches the tested PR-head tree. Canonical-main run `34870432154` also passed **313 tests, 2 warnings**.
+
+This establishes V6.2 implementation, not behavioral differentiation.
+
+### V5 café calibration gate
+**Work state:** COMPLETE  
+**Reality / evidence:** OBSERVED ISSUE — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-047
+
+The V5 café rerun was mechanically clean under the same independent controls. All three participants nevertheless entered through substantially the same diagnosis: margin compression / margin rather than demand. A, B, and C showed some later texture differences, but V5's explicit first-move prohibitions did not overcome the shared model's common diagnostic entrance strongly enough.
+
+The principal stopped the remaining V5 scenarios and selected a different mechanism for V6.2: persistent asymmetric cognitive contracts rather than further adjective-level strengthening of opening temperament.
+
+
 
 ### V5 strong personality calibration
 **Work state:** COMPLETE  
