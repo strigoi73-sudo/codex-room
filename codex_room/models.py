@@ -180,8 +180,14 @@ class DefaultProfilesUpdate(BaseModel):
     agent_a_instructions: str = Field(min_length=1, max_length=50_000)
     agent_b_name: str = Field(default="Agent B default", min_length=1, max_length=120)
     agent_b_instructions: str = Field(min_length=1, max_length=50_000)
-    agent_c_name: str = Field(default="Agent C default", min_length=1, max_length=120)
-    agent_c_instructions: str = Field(min_length=1, max_length=50_000)
+    agent_c_name: str | None = Field(default=None, min_length=1, max_length=120)
+    agent_c_instructions: str | None = Field(default=None, min_length=1, max_length=50_000)
+
+    @model_validator(mode="after")
+    def validate_agent_c_profile_pair(self) -> "DefaultProfilesUpdate":
+        if (self.agent_c_name is None) != (self.agent_c_instructions is None):
+            raise ValueError("agent_c_name and agent_c_instructions must be supplied together")
+        return self
 
 
 class UpdateRoomRequest(BaseModel):
