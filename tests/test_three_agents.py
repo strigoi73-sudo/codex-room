@@ -211,7 +211,7 @@ async def test_personality_overrides_replace_defaults_but_preserve_protected_lay
         assert agent["profile_snapshot"] == defaults[key]
         assert agent["room_override"] == overrides[key]
         assert overrides[key] in effective
-        assert defaults[key] not in effective
+        assert "PERSONALITY\n" in effective
         assert "INSTITUTIONAL IDENTITY AND PEER RULES" in effective
         assert "ROOM PROTOCOL" in effective
         assert ROOM_PROTOCOL_INSTRUCTIONS in effective
@@ -225,7 +225,7 @@ async def test_personality_overrides_replace_defaults_but_preserve_protected_lay
 
 
 @pytest.mark.asyncio
-async def test_default_personalities_are_snapshotted_and_composed_when_not_overridden(
+async def test_default_profiles_are_neutral_and_not_composed_when_not_overridden(
     runtime_factory,
 ):
     defaults = {
@@ -233,48 +233,31 @@ async def test_default_personalities_are_snapshotted_and_composed_when_not_overr
         "agent_b": AGENT_B_DEFAULT_PERSONALITY,
         "agent_c": AGENT_C_DEFAULT_PERSONALITY,
     }
-    runtime = await runtime_factory(FakeAgentAdapter(), "default-personalities.db")
+    runtime = await runtime_factory(FakeAgentAdapter(), "neutral-default-profiles.db")
     snapshot = await runtime.create_room(
-        CreateRoomRequest(topic="default personalities", auto_start=False)
+        CreateRoomRequest(topic="neutral defaults", auto_start=False)
     )
     agents = {agent["agent_key"]: agent for agent in snapshot["agents"]}
+    assert set(defaults.values()) == {""}
     for key, agent in agents.items():
-        assert agent["profile_snapshot"] == defaults[key]
+        assert agent["profile_snapshot"] == ""
         assert agent["room_override"] is None
-        assert defaults[key] in agent["developer_instructions"]
+        assert "PERSONALITY\n" not in agent["developer_instructions"]
+        assert "INSTITUTIONAL IDENTITY AND PEER RULES" in agent["developer_instructions"]
+        assert "ROOM PROTOCOL" in agent["developer_instructions"]
+
+    assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_a"]["developer_instructions"]
+    assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_b"]["developer_instructions"]
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS in agents["agent_c"]["developer_instructions"]
 
 
-def test_standard_default_personalities_are_general_purpose_and_distinct() -> None:
+def test_standard_default_profiles_are_identically_neutral() -> None:
     defaults = {
         "agent_a": AGENT_A_DEFAULT_PERSONALITY,
         "agent_b": AGENT_B_DEFAULT_PERSONALITY,
         "agent_c": AGENT_C_DEFAULT_PERSONALITY,
     }
-
-    assert "exploratory, imaginative, and forward-moving temperament" in defaults["agent_a"]
-    assert "measured, discriminating, and precise temperament" in defaults["agent_b"]
-    assert "contextual, connective, and organizational temperament" in defaults["agent_c"]
-
-    for personality in defaults.values():
-        assert "fully capable generalist" in personality
-        assert "The task you are assigned governs the work you should do" in personality
-        assert "not through" in personality
-        assert "different conclusion" in personality
-        assert "primary work product" not in personality
-        assert "possibility brief" not in personality
-        assert "evidence audit" not in personality
-        assert "decision map" not in personality
-        assert "The Implementer" not in personality
-        assert "The Verifier" not in personality
-        assert "The Integrator" not in personality
-
-    assert "what if" in defaults["agent_a"]
-    assert "novelty bias" in defaults["agent_a"]
-    assert "clarify before overstating" in defaults["agent_b"]
-    assert "criticism without progress" in defaults["agent_b"]
-    assert "connect pieces that others have separated" in defaults["agent_c"]
-    assert "protected coordination responsibilities" in defaults["agent_c"]
+    assert defaults == {"agent_a": "", "agent_b": "", "agent_c": ""}
 
 
 def test_v3_default_personality_hashes_remain_exact_migration_anchors() -> None:
@@ -315,6 +298,67 @@ def test_v7_default_personality_hashes_remain_exact_migration_anchors() -> None:
         "agent_b": "ca4f58aee7040dccdbfecae94088d2ae88e1eb0366b7a20f234f7a27e0039c34",
         "agent_c": "1c19a8d4d39a7d148c29725f55ee0f8239c45503090f2eb77a143c3df88b1afa",
     }
+
+
+def test_e056_default_personality_hashes_remain_exact_migration_anchors() -> None:
+    assert db_module._E056_DEFAULT_PERSONALITY_SHA256 == {
+        "agent_a": "5b11450825c124cd423bc99ad8ff8cffd94a89eec0309750b5aa3cba392db8d5",
+        "agent_b": "9532a31035d3c230d44e709d8e0c3ad4ebc94fc6454bfa3eff3c487500ca4ded",
+        "agent_c": "8b689f1894125f106023958d16385c7656287cdfb57b6d3f476406ed164e3993",
+    }
+
+
+@pytest.mark.asyncio
+async def test_exact_e056_defaults_migrate_to_neutral_without_overwriting_custom_text(
+    tmp_path, monkeypatch
+):
+    old_defaults = {
+        "agent_a": "Exact E-056 A migration fixture.",
+        "agent_b": "Exact E-056 B migration fixture.",
+        "agent_c": "Exact E-056 C migration fixture.",
+    }
+    monkeypatch.setattr(
+        db_module,
+        "_E056_DEFAULT_PERSONALITY_SHA256",
+        {
+            slot: hashlib.sha256(text.encode("utf-8")).hexdigest()
+            for slot, text in old_defaults.items()
+        },
+    )
+
+    database = Database(tmp_path / "neutral-default-migration.db")
+    await database.initialize()
+    await database.update_default_profiles(
+        "Agent A default",
+        old_defaults["agent_a"],
+        "Agent B default",
+        old_defaults["agent_b"],
+        "Agent C default",
+        old_defaults["agent_c"],
+    )
+    await database.initialize()
+    migrated = await database.get_default_profiles()
+
+    assert migrated["agent_a"]["developer_instructions"] == ""
+    assert migrated["agent_b"]["developer_instructions"] == ""
+    assert migrated["agent_c"]["developer_instructions"] == ""
+
+    custom_b = old_defaults["agent_b"] + "\nCustom principal preference."
+    await database.update_default_profiles(
+        "Agent A default",
+        old_defaults["agent_a"],
+        "Custom B",
+        custom_b,
+        "Agent C default",
+        old_defaults["agent_c"],
+    )
+    await database.initialize()
+    remigrated = await database.get_default_profiles()
+
+    assert remigrated["agent_a"]["developer_instructions"] == ""
+    assert remigrated["agent_b"]["developer_instructions"] == custom_b
+    assert remigrated["agent_b"]["name"] == "Custom B"
+    assert remigrated["agent_c"]["developer_instructions"] == ""
 
 
 @pytest.mark.asyncio
