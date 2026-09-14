@@ -7,33 +7,34 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** D-025 temporary cognitive framing is merged and verified. C now explicitly knows it may assign A/B temporary task-specific postures, perspectives, scopes, constraints, evidence standards, deliverables, or roles/personas without changing their identity or dictating conclusions. See E-059.
+- **What just changed?** The first live D-025 allocation test exposed redundant dual-peer cognition: C invoked A and B with substantially the same analysis and received strongly convergent answers. D-026 now makes peer-count economy explicit and requires meaningful differentiation whenever both peers are invoked. See E-060.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Exercise D-025 in ordinary Room use and observe whether C chooses useful, economical frames before considering any heavier posture subsystem.
+- **What is next?** Verify D-026 on the implementation PR, then run a fresh live task to confirm C uses one peer when one is enough and meaningfully differentiated responsibilities when both are invoked.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
-### C temporary cognitive framing
-**Work state:** COMPLETE for implementation; MONITOR for live usefulness  
-**Reality:** IMPLEMENTED / VERIFIED deterministically  
-**Decision:** D-025  
-**Evidence:** E-059
+### C peer-allocation economy and temporary cognitive framing
+**Work state:** IN PROGRESS  
+**Reality:** D-025 implemented; D-026 DECIDED and implementation pending hosted verification  
+**Decisions:** D-025, D-026  
+**Evidence:** E-059, E-060
 
-C's coordination discretion now explicitly includes assigning temporary task-specific working postures, perspectives, scopes, constraints, evidence standards, expected deliverables, or temporary roles/personas to A/B when useful.
+C retains D-025 authority to assign temporary task-specific working postures, perspectives, scopes, constraints, evidence standards, expected deliverables, or temporary roles/personas to A/B.
 
-Guardrails:
+E-060 showed that optional differentiation was too permissive: in the first live test C invoked both peers for substantially the same analysis, and A/B produced strongly convergent recommendations.
 
-- frames are selected from the objective, not fixed A/B specialties;
-- differentiation is optional rather than mandatory;
-- frames are delegation instructions, not persistent identity/profile changes;
-- C cannot dictate conclusions;
-- A/B remain epistemic peers and may challenge the frame, reject a bad premise, or expand scope when necessary.
+D-026 therefore adds two protected allocation rules:
 
-The implementation uses existing natural-language delegation. PR #51 / E-059 verify the protected instruction and guardrails. No posture registry, new database object, profile mutation, or UI is warranted without evidence that the semantic capability is insufficient.
+- use the fewest peers that can add sufficient value; if one peer is enough, invoke one;
+- if both A and B are invoked in the same delegation, their cognitive responsibilities **must be meaningfully differentiated** along a substantive dimension expected to create complementary value.
 
-Live usefulness remains a MONITOR item: observe whether C selects useful frames in ordinary work, whether the frames reduce redundant cognition, and whether A/B appropriately retain independent judgment.
+Cosmetic role labels and substantially duplicate analyses do not satisfy the rule. Even when independent verification is valuable, C should differentiate the verification method or responsibility rather than duplicating the same assignment.
+
+D-025's identity and judgment guardrails remain: frames are temporary delegation instructions; C cannot dictate conclusions; A/B may challenge the frame or premise and remain epistemic peers.
+
+No posture registry, new database object, profile mutation, or UI is warranted without evidence that natural-language delegation is insufficient.
 
 ### C delegation-cohort timing
 **Work state:** COMPLETE  
@@ -73,6 +74,15 @@ PR #49 and E-058 verify the implementation: fresh standard composition has no de
 D-025 now authorizes an initial semantic form of dynamic cognitive framing through C's protected coordination instructions. A heavier posture registry/data model/UI remains **NOT IMPLEMENTED** and should not be added unless ordinary use demonstrates a need.
 
 ## Recently completed work
+
+### First live D-025 allocation test
+**Work state:** COMPLETE  
+**Reality / evidence:** OBSERVED ISSUE for allocation efficiency — 2026-09-14  
+**Decision:** D-026  
+**Evidence:** E-060
+
+Fresh neutral Room testing showed correct C coordination and cohort timing, but C invoked both peers with substantially the same analysis and received strongly convergent answers. This motivated the D-026 economy/differentiation rule.
+
 
 ### C temporary cognitive framing
 **Work state:** COMPLETE  
