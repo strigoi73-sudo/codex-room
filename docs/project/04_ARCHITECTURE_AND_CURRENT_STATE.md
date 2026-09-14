@@ -282,6 +282,27 @@ A fresh live Personal Room exercise on 2026-09-12 subsequently demonstrated the 
 
 Current startup migration therefore includes a separate `triad_profiles_v2` exact-hash migration for the observed early-triad A/B/C built-ins. Only matching default rows and matching non-archived, unsealed, default-profile Room snapshots with no Room override are replaced with current profile text. Non-matching custom content, Room overrides, archived Rooms, and sealed predecessors are preserved. PR #4 and canonical `main` both passed **138 tests, 2 warnings**. A fresh post-repair local Room export then verified that all three participants inherited the current D-020 profiles. The same Room also verified C-only settlement: C was the sole invoked/consuming participant and the Round closed after one C FINISH. See E-029.
 
+### Agent identity, protected structure, and replaceable personality
+
+**IMPLEMENTED / VERIFIED deterministically — 2026-09-13**
+
+Agent developer instructions are now composed from separate layers rather than treating the editable profile as the entire developer prompt:
+
+1. protected shared institutional identity and peer rules;
+2. protected agent-specific structural responsibilities;
+3. one replaceable personality layer;
+4. protected Room protocol.
+
+A and B currently have no special protected structural role beyond the shared peer/institutional layer. C's protected structural layer carries the ordinary Personal organizer/coordination responsibility: initial organizational contact, selective allocation of peer cognition, integration of substantive delegated work, preservation of material disagreement, and no superior judgment over A/B.
+
+Default profile rows now store the personality body for each slot. When a new Room is created, the runtime composes the protected layers around either the saved default personality or a Room-specific personality override. An override **replaces** the selected default personality; the old additive `profile + ROOM-SPECIFIC OVERRIDE` composition is no longer used for new Rooms. A/B/C all support Room personality overrides, including C.
+
+The migration converts only exact known built-in full-prompt defaults to personality-only default rows. Non-matching custom default content is preserved deliberately, and existing Room snapshots/effective instructions are not silently rewritten. Normal triad rollover continues to carry the exact predecessor agent configuration forward; the legacy add-C path composes C's protected structural/protocol layers around the selected C personality.
+
+The current standard personality bodies intentionally remain the pre-existing Implementer / Verifier / Integrator-derived text pending the separate default-personality redesign. Those labels no longer define the durable institutional architecture; D-023 governs the identity/personality separation.
+
+Verification is recorded in E-041. PR #28 exact head `1265d93e3850b62e03109ef3f6aa5db331ae8e54` and canonical-main squash merge `247aee5f3d6869e0435cadba415ed168b163b345` have the same Git tree; both hosted test runs passed **305 tests, 2 warnings**.
+
 ## 14. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
