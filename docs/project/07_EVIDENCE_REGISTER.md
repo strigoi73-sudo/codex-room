@@ -1982,3 +1982,29 @@ Verification:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically. Live usefulness of C-selected cognitive frames remains to be observed in ordinary Room use.
 
+### E-060 — First live D-025 allocation test exposed redundant dual-peer cognition
+**Date:** 2026-09-14  
+**Scope:** [ROOM] first ordinary-use test of neutral startup plus D-025 temporary cognitive framing.
+
+Fresh Room `room_c9d24cf2010d465482ae47aaf362e341` used neutral default profiles for A/B/C with no Room overrides, task overlay, or participant overlays. C received a real product-architecture question and was explicitly told to use the Room as it judged useful without assuming every participant needed to be involved.
+
+Observed behavior:
+
+- C correctly exercised its coordinator role and chose to invoke both A and B;
+- C described the choice as gathering "two independent assessments";
+- both peers received substantially the same assignment: evaluate the tradeoff between C-led ad hoc delegation and formal temporary-specialization machinery, focusing on the smallest worthwhile increment, operational failure modes, and evidence that would justify more structure;
+- A and B returned highly convergent recommendations: keep C-led delegation, add only a lightweight delegation/task brief, avoid formal role machinery, and wait for observed recurrence before adding structure;
+- the delegation-cohort barrier behaved correctly: A's return did not wake C early, B returned, the cohort settled, and C consumed both returns plus the settlement trigger in one integration turn;
+- C integrated the returns into a coherent final recommendation rather than merely concatenating them.
+
+Interpretation:
+
+- D-025's coordination authority and live delegation mechanics worked;
+- differentiated cognitive framing was **not** demonstrated in this run;
+- the two peer calls bought materially overlapping cognition, consistent with the accumulated evidence that neutral same-model agents tend to converge when given the same task;
+- the run therefore exposed an allocation-economics problem: if C does not need distinct cognitive work from both peers, invoking both is usually not worth the extra token and coordination cost.
+
+This observation motivates D-026: use the fewest peers that add sufficient value, and require meaningfully differentiated cognitive responsibilities whenever C invokes both A and B.
+
+**Status:** OBSERVED ISSUE for dual-peer allocation efficiency; coordination mechanics PASS; differentiated framing NOT DEMONSTRATED.
+

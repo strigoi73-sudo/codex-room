@@ -220,8 +220,10 @@ async def test_personality_overrides_replace_defaults_but_preserve_protected_lay
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_a"]["developer_instructions"]
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_b"]["developer_instructions"]
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS in agents["agent_c"]["developer_instructions"]
+    assert "Every additional peer invocation must be expected to earn its cognitive and token cost" in agents["agent_c"]["developer_instructions"]
+    assert "must give them meaningfully differentiated cognitive responsibilities" in agents["agent_c"]["developer_instructions"]
     assert "temporary task-specific working postures" in agents["agent_c"]["developer_instructions"]
-    assert "temporary role or persona" in agents["agent_c"]["developer_instructions"]
+    assert "temporary roles/personas" in agents["agent_c"]["developer_instructions"]
     assert "do not authorize C to dictate a conclusion" in agents["agent_c"]["developer_instructions"]
     assert "the first return is only a partial result" in agents["agent_c"]["developer_instructions"]
     assert "Wait until every requested contribution has returned" in agents["agent_c"]["developer_instructions"]
@@ -263,19 +265,29 @@ def test_standard_default_profiles_are_identically_neutral() -> None:
     assert defaults == {"agent_a": "", "agent_b": "", "agent_c": ""}
 
 
-def test_c_structural_role_can_assign_temporary_cognitive_frames_without_identity_change() -> None:
+def test_c_structural_role_requires_economical_differentiated_dual_peer_delegation() -> None:
     c_instructions = default_agent_instructions("Agent C", "Agent A")
     a_instructions = default_agent_instructions("Agent A", "Agent C")
     b_instructions = default_agent_instructions("Agent B", "Agent C")
 
+    assert "Every additional peer invocation must be expected to earn its cognitive and token cost" in c_instructions
+    assert "Use the fewest peers that can add sufficient value" in c_instructions
+    assert "If C invokes both A and B in the same delegation" in c_instructions
+    assert "must give them meaningfully differentiated cognitive responsibilities" in c_instructions
+    assert "Do not satisfy this rule with cosmetic labels" in c_instructions
+    assert "substantially the same analysis in substantially the same way" in c_instructions
+    assert "When independent verification is valuable, differentiate how independence is obtained" in c_instructions
     assert "temporary task-specific working postures" in c_instructions
-    assert "temporary role or persona" in c_instructions
+    assert "temporary roles/personas" in c_instructions
     assert "not according to fixed A/B specialties" in c_instructions
     assert "They do not change a participant's persistent identity, saved profile" in c_instructions
     assert "they do not authorize C to dictate a conclusion" in c_instructions
     assert "may challenge the framing" in c_instructions
-    assert "temporary task-specific working postures" not in a_instructions
-    assert "temporary task-specific working postures" not in b_instructions
+
+    assert "Every additional peer invocation must be expected to earn its cognitive and token cost" not in a_instructions
+    assert "Every additional peer invocation must be expected to earn its cognitive and token cost" not in b_instructions
+    assert "must give them meaningfully differentiated cognitive responsibilities" not in a_instructions
+    assert "must give them meaningfully differentiated cognitive responsibilities" not in b_instructions
 
 
 def test_v3_default_personality_hashes_remain_exact_migration_anchors() -> None:
