@@ -86,7 +86,6 @@ This is a small qualitative calibration, not a statistical proof. Do not change 
 
 PR #46 removed V7's mandatory cognitive work products and made A/B/C fully capable generalists whose personalities differ through temperament and interaction rather than required solution method. Exact V7 built-ins migrate conservatively; custom defaults remain preserved. Corrected PR-head and canonical-main suites both passed **319 tests, 2 warnings**.
 
-
 ### Live C delegation-cohort timing verification
 **Work state:** COMPLETE  
 **Reality / evidence:** IMPLEMENTED / LIVE VERIFIED — 2026-09-14  
