@@ -7,7 +7,7 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The principal stopped the personality-testing workstream and redirected development to the demonstrated **coordination timing issue** from CG1. PR #43 now batches returns from one multi-peer C delegation so C is not awakened by whichever peer happens to finish first. See E-052 and E-054.
+- **What just changed?** The D-020 delegation-cohort timing issue is now **LIVE VERIFIED / COMPLETE**. E-055 confirms that the first peer return stays passive to C, the full cohort settles, and C receives one coalesced integration turn before normal closure.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
 - **What is next?** The timing issue is complete. Reassess the roadmap before starting another implementation slice.
@@ -36,6 +36,15 @@ The demonstrated timing issue is complete. No further timing retest is currently
 The principal explicitly stopped further personality testing on 2026-09-14 in order to focus on the coordination timing defect exposed by CG1. Existing V7 defaults remain the current implemented defaults; this status does not claim that the personality calibration target was achieved. Resume only on explicit principal direction.
 
 ## Recently completed work
+
+### Live C delegation-cohort timing verification
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / LIVE VERIFIED — 2026-09-14  
+**Decision:** D-020  
+**Evidence:** E-055
+
+The fresh timing-only Room verified the E-054 mechanism without any personality scoring. One C message invoked A and B together; A returned first and did not wake C; B returned later; one cohort-settled trigger then made C runnable; C consumed both peer returns in one integration batch; causal settlement and normal closure succeeded.
+
 
 ### Deterministic C delegation-cohort batching
 **Work state:** COMPLETE  
