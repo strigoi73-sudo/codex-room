@@ -1,40 +1,68 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-13  
+**Last updated:** 2026-09-14  
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.  
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **The D-023 standard default personalities are now implemented and deterministically verified.** A is exploratory/constructive, B skeptical/discriminating, and C contextual/relational; the old Implementer / Verifier / Integrator-derived defaults are retired. See E-042.
-- **What is blocked?** Nothing currently blocks controlled behavioral evaluation of the new defaults.
+- **What just changed?** The V3 D-023 personalities failed the established blind-distinctiveness criterion despite four mechanically clean trials: **3/12** individual identities and **0/4** complete trios were recovered. A targeted V4 revision is now **IMPLEMENTED / VERIFIED deterministically**. See E-043 and E-044.
+- **What is blocked?** Nothing currently blocks a controlled V4 behavioral rerun.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Run controlled live Room exercises to determine whether the three new defaults actually produce recognizably different, independently useful reasoning paths without manufacturing disagreement. Deterministic implementation is complete; behavioral quality is not yet verified.
+- **What is next?** Rerun the same four controlled independent scenarios in fresh Rooms using V4, then repeat blind classification against the same **3-of-4 complete-trio** success criterion.
 - **What are we deliberately not doing?** No adjacent archive/retrieval, capability-promotion, fan-out/join, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this personality slice unless explicitly reprioritized.
 
 ## Current Focus
 
 ### Standard default personality behavioral evaluation
 **Work state:** IN PROGRESS  
-**Reality:** default personality implementation IMPLEMENTED / VERIFIED deterministically; behavioral differentiation NOT YET VERIFIED  
+**Reality:** V3 behavioral differentiation DID NOT MEET CRITERION; V4 implementation IMPLEMENTED / VERIFIED deterministically; V4 behavioral differentiation NOT YET VERIFIED  
 **Decision:** D-023  
 **Composition evidence:** E-041  
-**Default-personality implementation evidence:** E-042
+**V3 implementation evidence:** E-042  
+**V3 behavioral evidence:** E-043  
+**V4 implementation evidence:** E-044
 
-Current objective: evaluate the implemented A/B/C defaults in controlled live Rooms. Success is not "more disagreement." Success is recognizably different and independently useful reasoning trajectories that can still converge, update, and cooperate when the evidence warrants it.
+Current objective: evaluate the V4 A/B/C defaults in controlled live Rooms. Success is not "more disagreement." Success is recognizably different and independently useful reasoning trajectories that can still converge, update, and cooperate when the evidence warrants it.
 
-The implemented default cognitive temperaments are:
+The implemented V4 cognitive temperaments are:
 
-- **A:** exploratory and constructive — expands possibilities and probes reality;
-- **B:** skeptical and discriminating — separates claims, evidence, assumptions, and material objections;
-- **C:** contextual and relational — examines surrounding purpose, relationships, relevance, and consequences while treating synthesis as a hypothesis rather than closure.
+- **A:** exploratory and generative — first widens the possibility space before narrowing;
+- **B:** skeptical and discriminating — first establishes the epistemic picture before building conclusions;
+- **C:** contextual and relational — first locates the immediate question in the objective, dependencies, tradeoffs, and consequences that materially affect it, while treating framing as a hypothesis rather than a ruling.
 
-Do not revise the prompts pre-emptively to eliminate plausible overlap. Specifically watch the deferred seams identified during design review: A/B may both propose tests for different reasons; B/C may both challenge framing at different levels; A/C may both use decision relevance as a discipline. Change the defaults only if controlled behavior shows a material problem.
+V3 baseline: four fresh, mechanically clean independent trials produced no manufactured disagreement, option flooding, skeptical paralysis, or C closure pathology, but blind classification recovered only **3/12** individual identities and **0/4** complete trios. The established target was **3/4 complete trios**. That demonstrated a material distinctiveness problem and justified V4.
+
+Do not revise V4 further before rerunning the same controlled evaluation unless implementation evidence demonstrates a defect. The next uncertainty is behavioral and should be answered empirically.
 
 ## Recently completed work
 
-### Standard default personality implementation
+### V4 default personality distinctiveness revision
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-044
+
+PR #32 sharpened the standard defaults around distinct first attentional moves without changing protected institutional, structural, or protocol layers. A now first widens the possibility space; B first establishes the epistemic picture; C first locates the question in consequential context and explicitly treats framing as interpretation rather than ruling.
+
+Startup migration now recognizes the exact V3 built-in personality bodies and updates only those defaults to V4. Non-matching/custom default text remains preserved, and existing Room snapshots/effective instructions are not silently rewritten.
+
+Exact PR head `b588e27011b0c1be13f8ada9b1cb254133d2329c` passed GitHub Actions run `34856031735` with **309 tests, 2 warnings**. PR #32 squash-merged as `7567e2a40c6a3745d829f119397cc6525f9f512a`; its Git tree `741448ed0a9d023f012778c679dd5d692ec6f9fe` exactly matches the tested PR-head tree. Canonical-main run `34856479809` also passed **309 tests, 2 warnings**.
+
+This establishes V4 implementation, not V4 behavioral differentiation.
+
+### V3 controlled personality evaluation
+**Work state:** COMPLETE  
+**Reality / evidence:** HISTORICALLY VERIFIED — criterion not met — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-043
+
+Four fresh Rooms tested the V3 defaults independently across café, AI-tutoring, manuscript, and disaster-relief decisions. All four trials were mechanically clean and showed useful convergence without manufactured disagreement or caricature failure.
+
+The blind reviewer recovered **3/12** individual identities and **0/4** complete A/B/C trios against the established **3/4 complete-trio** target. The sample is too small to support a statistical claim of worse-than-chance performance; the practical result is simply that V3 did not meet the required blind recognizability criterion. V3 remains historical evidence and has been superseded as the active default by V4.
+
+### V3 standard default personality implementation
 **Work state:** COMPLETE  
 **Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-13  
 **Decision:** D-023  

@@ -1389,3 +1389,72 @@ Verification history:
 
 **Evidence boundary:** E-042 establishes that the approved default personality texts are implemented, selected for fresh/default-profile use, conservatively migrated from exact prior built-ins, and hosted-regression verified. It does **not** establish that A/B/C are behaviorally distinguishable enough in live model cognition, that the observed A/B or B/C overlap seams are harmless in practice, or that C's greater prompt length has no behavioral weighting effect. Those are the next controlled live-evaluation questions.
 
+### E-043 — V3 controlled default-personality behavioral evaluation
+**Date:** 2026-09-14  
+**Scope:** [ROOM] controlled live behavioral evaluation under D-023. This record evaluates the V3 defaults implemented by E-042; it does not establish V4 behavior.
+
+Four fresh Personal Rooms were run across four different decision domains:
+
+1. family-owned café profitability;
+2. optional AI tutoring and causal inference;
+3. manuscript revision under a deadline;
+4. disaster-relief ordering governance.
+
+Each trial used the same control structure: standard V3 defaults only, no Room personality overrides, no private initialization or participant-specific overlays, the same shared independent-reasoning overlay, and `starting_agent: "either"` so A/B/C began independently from the same Round-start event. The staging opening Round was never executed. No participant used MESSAGE or consumed a peer response before its own answer; each participant produced one FINISH and each Round closed normally. The four trials are therefore mechanically clean for the intended independent comparison.
+
+The live responses supplied positive behavioral evidence as well:
+
+- all three agents remained generally competent across business, evidentiary, creative, and organizational problems;
+- none manufactured disagreement merely to express identity;
+- A did not exhibit option flooding or obvious novelty fixation;
+- B did not exhibit skeptical paralysis;
+- C did not treat synthesis as epistemic authority or premature closure;
+- convergence occurred naturally when the problem strongly supported a common recommendation.
+
+The blind-distinctiveness stage then removed agent identities, independently randomized the three responses within each scenario, and asked an external evaluator to map each response to A/B/C based on reasoning trajectory rather than tone. The established success criterion was at least **3 of 4 complete trios** correctly mapped.
+
+Actual blind score:
+
+- **3 of 12** individual identities correctly mapped;
+- **0 of 4** complete A/B/C trios correctly mapped;
+- A, B, and C were each correctly identified in only **1 of 4** scenarios.
+
+The sample is too small to support a statistical claim that performance was worse than chance. The decision-relevant result is that V3 failed the previously established practical distinguishability criterion. Pairwise confusions occurred across all three pairings, showing that the issue was not confined to one weak personality. The responses did show differences in emphasis, but those differences were too subtle for reliable blind recovery.
+
+**Conclusion:** V3 demonstrated that the D-023 personality architecture can influence attention without creating caricature or forced disagreement, but the personality strengths were under-calibrated for the required blind recognizability. This is a calibration failure, not evidence that protected identity / replaceable personality composition itself is unsound.
+
+**Status:** HISTORICALLY VERIFIED / DID NOT MEET CRITERION. V3 is superseded as the active default by the V4 revision recorded in E-044.
+
+### E-044 — V4 standard default personality distinctiveness revision implementation
+**Date:** 2026-09-14  
+**Scope:** [CORE] targeted D-023 revision responding to E-043; conservative V3 built-in migration; deterministic/hosted verification. This record does not claim V4 behavioral differentiation.
+
+PR #32 replaced the active V3 personality bodies with a targeted V4 revision that strengthens each participant's characteristic first attentional move:
+
+- **Agent A — exploratory / generative:** first widens the possibility space before narrowing, looking for untried options, combinations, mechanisms, or reframings that may change the shape of the problem;
+- **Agent B — skeptical / discriminating:** first establishes the epistemic picture, separating observations from inferences or assumptions, identifying what remains unknown, and comparing competing explanations;
+- **Agent C — contextual / relational:** first locates the immediate question within the objective, dependencies, tradeoffs, and consequences that materially affect it, while explicitly treating framing or synthesis as an interpretation to test rather than a ruling.
+
+The revision preserves the D-023 layer boundary: C's organizer/coordination responsibilities remain in the protected structural layer and are not embedded in the replaceable personality body. The former Implementer / Verifier / Integrator occupational labels remain absent from the active defaults.
+
+Upgrade behavior recognizes the exact V3 default personality bodies by SHA-256:
+
+- A: `678d7c48cd652e9237fcfeadd8da20d3595aa708a79deb35cd531263d96e2477`;
+- B: `a0df11ad77c5849cfa39cadfc6efe0d4b302cac587fa5e2f60ab13db6327bd17`;
+- C: `5f7452ee2a40a9ed432d1cacbd404ff836a9539260d1ea1ac01035acd99f0fa9`.
+
+Only recognized exact built-in default profile text migrates to V4. Non-matching/custom profile content remains preserved, and existing Room snapshots/effective instructions are not silently rewritten. Regression coverage verifies V4 first-move anchors, the exact V3 migration identities, recognized-default migration, and preservation of customized text.
+
+Verification:
+
+- exact reviewed PR head: `b588e27011b0c1be13f8ada9b1cb254133d2329c`;
+- PR-head Git tree: `741448ed0a9d023f012778c679dd5d692ec6f9fe`;
+- GitHub Actions PR run `34856031735`: **309 passed, 2 warnings**;
+- PR #32 squash merge: `7567e2a40c6a3745d829f119397cc6525f9f512a` — `Sharpen default personality trajectories`;
+- merge Git tree: `741448ed0a9d023f012778c679dd5d692ec6f9fe`, exactly matching the reviewed/tested PR-head tree;
+- canonical-main GitHub Actions run `34856479809`: **309 passed, 2 warnings**.
+
+**Evidence boundary:** E-044 establishes that the reviewed V4 personality texts are implemented, selected for fresh/default-profile use, conservatively migrated from exact V3 built-ins, and deterministically/hosted verified. It does **not** establish that V4 meets the blind-distinctiveness criterion. The next evidence step is to rerun the same four controlled independent scenarios in fresh Rooms and repeat blind classification against the same **3-of-4 complete-trio** target.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically.
+
