@@ -1831,3 +1831,45 @@ This evidence verifies the narrow mechanism implemented in E-054. It does not es
 
 **Status:** IMPLEMENTED / LIVE VERIFIED. The D-020 delegation-cohort timing issue is COMPLETE.
 
+### E-056 — Temperament-only default personalities
+**Date:** 2026-09-14  
+**Scope:** [CORE] D-023 refinement after the principal accepted that shared model competence outweighs personality in same-task reasoning. No change to persistent identity, peer status, C's protected coordination responsibilities, routing, timing, or Room protocol.
+
+PR #46 removes V7's mandatory cognitive work products and redefines the standard personalities as general-purpose character/temperament priors:
+
+- **Agent A — exploratory / imaginative / forward-moving.** Naturally notices openings, alternatives, reframings, experiments, optionality, and tractable change. Conversational style is energetic about possibilities without requiring novelty or disagreement.
+- **Agent B — measured / discriminating / precise.** Naturally notices overclaiming, ambiguity, hidden assumptions, confidence calibration, and distinctions between what is known and inferred. Conversational style is exacting without requiring opposition or excessive caution.
+- **Agent C — contextual / connective / organizational.** Naturally notices relationships, dependencies, sequencing, people, and downstream consequences. Conversational style connects pieces and preserves tensions without requiring universal synthesis.
+
+All three defaults now state explicitly that:
+
+- each participant remains a **fully capable generalist**;
+- the **assigned task governs the work**;
+- personality should show through attention, emphasis, questions, interaction, and expression;
+- personality must not force a different conclusion merely for distinctiveness;
+- the former V7 `possibility brief`, `evidence audit`, and `decision map` obligations are removed.
+
+C's protected organizer/coordination responsibilities remain outside the personality layer exactly as required by D-023. The new C personality explicitly distinguishes those protected responsibilities from temperament.
+
+Upgrade behavior adds exact V7 personality-body SHA-256 anchors so existing installations using exact built-in V7 defaults migrate to the new temperament-only defaults while non-matching/custom default text remains preserved:
+
+- A: `5462686efba369af926bee543fdb27b53145fce9c02ad581eefca26057acc503`;
+- B: `ca4f58aee7040dccdbfecae94088d2ae88e1eb0366b7a20f234f7a27e0039c34`;
+- C: `1c19a8d4d39a7d148c29725f55ee0f8239c45503090f2eb77a143c3df88b1afa`.
+
+Verification:
+
+- an initial PR-head run correctly exposed one stale UI assertion tied to the old C temperament phrase; that assertion was updated in the same PR;
+- exact corrected PR head: `20fa1b135426842bba1c65483cbb587b5db5c6fb`;
+- PR-head Git tree: `343c68687675825e69f9c9d3300db6b044e7d9a5`;
+- GitHub Actions corrected PR run `34892520515`: **319 passed, 2 warnings** in 52.30s;
+- PR #46 squash merge: `d83e2b6eca09477e255ea0033843c5834e64e4e1`;
+- merge Git tree: `343c68687675825e69f9c9d3300db6b044e7d9a5`, exactly matching the tested corrected PR-head tree;
+- canonical-main GitHub Actions run `34892673292`: **319 passed, 2 warnings** in 56.40s.
+
+**Evidence boundary:** E-056 establishes the temperament-only implementation and conservative V7 migration. It does not establish live personality recognizability.
+
+**Next evidence gate:** use interactive role-play conversations with rotating fictional responsibilities, then blind/anonymize the transcripts independently and ask an external evaluator to map conversational behavior to the three temperament descriptions. Solution divergence is not a success criterion.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically; behavioral character-recognizability evaluation NOT YET VERIFIED.
+

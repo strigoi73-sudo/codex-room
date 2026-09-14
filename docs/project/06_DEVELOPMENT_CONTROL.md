@@ -7,11 +7,11 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The D-020 delegation-cohort timing issue is now **LIVE VERIFIED / COMPLETE**. E-055 confirms that the first peer return stays passive to C, the full cohort settles, and C receives one coalesced integration turn before normal closure.
+- **What just changed?** D-023 personality defaults were simplified from mandatory cognitive work products to **temperament-only generalist personalities**. PR #46 is merged and hosted-verified; see E-056.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** The timing issue is complete. Reassess the roadmap before starting another implementation slice.
-- **What are we deliberately not doing?** **No further personality calibration or personality behavioral testing unless the principal explicitly revisits it.** No broader fan-out/join framework, archive/retrieval, capability-promotion, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this timing slice.
+- **What is next?** Run three controlled interactive role-play conversations with rotating fictional responsibilities, blind each transcript independently, and have an external evaluator classify the speakers by temperament. Solution divergence is not scored.
+- **What are we deliberately not doing?** No return to same-task independent solution-divergence tests, no stronger mandatory cognitive-work-product prose, and no broader fan-out/join framework or adjacent productization during this evaluation slice.
 
 ## Current Focus
 
@@ -28,14 +28,63 @@ E-055 verifies the exact timing mechanism end to end. A returned first and remai
 
 The demonstrated timing issue is complete. No further timing retest is currently warranted.
 
-### Personality calibration
-**Work state:** DEFERRED  
-**Reality:** Historical evidence retained through E-051; no current behavioral-testing priority  
-**Decision:** D-023
+### Personality character-recognizability evaluation
+**Work state:** IN PROGRESS  
+**Reality:** temperament-only defaults IMPLEMENTED / VERIFIED deterministically; live role-play recognizability NOT YET VERIFIED  
+**Decision:** D-023  
+**Implementation evidence:** E-056
 
-The principal explicitly stopped further personality testing on 2026-09-14 in order to focus on the coordination timing defect exposed by CG1. Existing V7 defaults remain the current implemented defaults; this status does not claim that the personality calibration target was achieved. Resume only on explicit principal direction.
+Current working conclusion: the shared model supplies the dominant reasoning competence and principles. Personality should not be expected to force different solutions to the same well-posed problem. Cognitive specialization should come from task allocation when needed.
+
+The active personality objective is narrower and more human-like: A/B/C should remain equally capable generalists while showing stable differences in temperament, attention, interaction, emphasis, and expression.
+
+Current defaults:
+
+- **A:** exploratory, imaginative, forward-moving;
+- **B:** measured, discriminating, precise;
+- **C:** contextual, connective, organizational.
+
+The former V7 possibility-brief / evidence-audit / decision-map obligations are superseded. The assigned task governs the work; personality colors how the participant engages with it.
+
+**Next gate:** three fresh role-play Rooms. Each Room should:
+
+- create an actual multi-turn conversation rather than three independent essays;
+- assign each agent a fictional responsibility through participant-specific Round overlays;
+- rotate role categories so each persistent identity occupies an operations/resource role, a purpose/content role, and a stakeholder/relationship role exactly once across the three conversations;
+- rotate the starting participant across A/B/C;
+- state that the fictional scene is not ordinary Personal coordination and that no character has special coordination authority unless the fictional role supplies it, reducing contamination from C's protected ordinary-operation responsibility;
+- avoid references to personality testing inside the substantive conversation;
+- produce enough interaction to expose questioning, disagreement, initiative, uncertainty style, adaptation, and conversational tone without forcing filler.
+
+After all three exports are collected, blind them before external evaluation. Do **not** give the raw Room JSON to the evaluator because it contains A/B/C identifiers, profile snapshots, developer instructions, routing metadata, and other direct identity leakage.
+
+The blind packet should:
+
+- retain scenario facts, fictional roles, message order, and substantive dialogue;
+- remove developer instructions, profile snapshots, thread ids, agent ids, routing/timing metadata, and evaluation controls;
+- replace A/B/C with fresh anonymous speaker labels **independently for each conversation** so recognition must be repeated rather than carried through one persistent alias;
+- sanitize any accidental Agent A/B/C references inside message text;
+- provide the evaluator only the temperament-level personality descriptions from E-056.
+
+Primary result: whether the evaluator correctly maps each independently blinded three-speaker conversation to A/B/C temperaments, with confidence and cross-message behavioral evidence. Agreement on substantive solutions is neither a success nor failure condition.
+
+Interpretation guide:
+
+- **3/3 complete conversation mappings correct:** strong first evidence of recognizable character;
+- **2/3:** promising but inspect the confused pair and whether role assignment dominated personality;
+- **0–1/3:** insufficient recognizability under this design; inspect interaction traits before revising prose.
+
+This is a small qualitative calibration, not a statistical proof. Do not change the personalities again until the three-conversation packet has been externally classified and the failure mode, if any, is visible.
 
 ## Recently completed work
+
+### Temperament-only default personalities
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-056
+
+PR #46 removed V7's mandatory cognitive work products and made A/B/C fully capable generalists whose personalities differ through temperament and interaction rather than required solution method. Exact V7 built-ins migrate conservatively; custom defaults remain preserved. Corrected PR-head and canonical-main suites both passed **319 tests, 2 warnings**.
 
 ### Live C delegation-cohort timing verification
 **Work state:** COMPLETE  
