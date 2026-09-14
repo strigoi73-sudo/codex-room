@@ -50,6 +50,11 @@ _PRE_PERSONALITY_LAYER_PROFILE_SHA256 = {
     "agent_b": "aa769b9385fa8ab277769abf45963de732f16a1443d5ff6514f599f5f4def6de",
     "agent_c": "b07be1545126c2061f82c2128195a091f991ab38a9b0ebbeb92b1d22e7614e62",
 }
+_ROLE_DERIVED_PERSONALITY_SHA256 = {
+    "agent_a": "a4a8566f549a95661f1d043936558ec9e2e7165bd859dfabedb7bd030586c323",
+    "agent_b": "06b9e49ab589092bca16e9c93bee35c6222f7eec3dd144fc206314a90a9e2351",
+    "agent_c": "2978adfbc475d74927d29699c5828a2ed4bc515fe673362b4ffeb580acaf49f5",
+}
 _INSTITUTIONAL_RELEASE_BINDABLE_ROOM_STATUSES = frozenset(
     {
         RoomStatus.PREPARING,
@@ -310,7 +315,7 @@ class Database:
                     ),
                     (
                         "profile_default_c",
-                        "Agent C · The Integrator",
+                        "Agent C default",
                         DEFAULT_PERSONALITY_BY_AGENT["agent_c"],
                         "agent_c",
                         now,
@@ -601,7 +606,7 @@ class Database:
         and protocol layers around the selected profile personality.
         """
         defaults = await db.execute_fetchall(
-            """SELECT id, default_slot, developer_instructions FROM agent_profiles
+            """SELECT id, name, default_slot, developer_instructions FROM agent_profiles
                WHERE default_slot IN ('agent_a', 'agent_b', 'agent_c')"""
         )
         for row in defaults:
@@ -610,12 +615,26 @@ class Database:
             digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
             if (
                 digest == _PRE_PERSONALITY_LAYER_PROFILE_SHA256[slot]
+                or digest == _ROLE_DERIVED_PERSONALITY_SHA256[slot]
                 or text == _TRIAD_PROFILE_TEXT[slot]
             ):
+                profile_name = row["name"]
+                if (
+                    slot == "agent_c"
+                    and profile_name == "Agent C · The Integrator"
+                ):
+                    profile_name = "Agent C default"
                 await db.execute(
-                    """UPDATE agent_profiles SET developer_instructions=?, updated_at=?
+                    """UPDATE agent_profiles
+                       SET name=?, developer_instructions=?, updated_at=?
                        WHERE id=? AND developer_instructions=?""",
-                    (DEFAULT_PERSONALITY_BY_AGENT[slot], now, row["id"], text),
+                    (
+                        profile_name,
+                        DEFAULT_PERSONALITY_BY_AGENT[slot],
+                        now,
+                        row["id"],
+                        text,
+                    ),
                 )
 
     async def create_room(self, request: CreateRoomRequest) -> str:
