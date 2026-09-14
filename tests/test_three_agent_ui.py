@@ -105,7 +105,7 @@ def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Pa
     )
     with TestClient(app) as client:
         profiles = client.get("/api/profiles/defaults").json()
-        assert "contextual, relational temperament" in profiles["agent_c"]["developer_instructions"]
+        assert "strongly contextual and relational temperament" in profiles["agent_c"]["developer_instructions"]
 
         created = client.post(
             "/api/rooms",
