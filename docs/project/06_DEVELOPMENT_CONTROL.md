@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** D-024 removes startup differentiation: A/B/C now use neutral empty default profile bodies. Persistent identity, shared institutional context, Room protocol, and C's protected coordination structure remain.
+- **What just changed?** D-024 neutral startup profiles are merged and hosted-verified. A/B/C now use identical empty default profile bodies; persistent identity, shared institutional context, Room protocol, and C's protected coordination structure remain. See E-058.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Verify the D-024 neutral-default migration/behavior on the implementation PR, then reassess whether a formal dynamic cognitive-posture capability for C is worth adding.
+- **What is next?** Reassess whether a formal dynamic cognitive-posture capability for C is worth adding. That capability remains exploratory and is not implied by D-024.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -29,10 +29,10 @@ E-055 verifies the exact timing mechanism end to end. A returned first and remai
 The demonstrated timing issue is complete. No further timing retest is currently warranted.
 
 ### Neutral startup profiles
-**Work state:** IN PROGRESS  
-**Reality:** D-024 DECIDED; implementation pending hosted verification on the active PR  
+**Work state:** COMPLETE  
+**Reality:** IMPLEMENTED / VERIFIED deterministically  
 **Decisions:** D-023, D-024  
-**Prior evidence:** E-056, E-057
+**Evidence:** E-058
 
 The active product direction no longer requires persistent startup personalities.
 
@@ -48,9 +48,20 @@ D-024 requires:
 
 The former personality-calibration effort remains closed. Behavioral recognizability is not an acceptance criterion.
 
-A future C-driven dynamic cognitive-posture capability remains **EXPLORATORY / NOT IMPLEMENTED**. Do not conflate that potential feature with D-024: neutral startup is independently useful and should be verified first.
+PR #49 and E-058 verify the implementation: fresh standard composition has no default `PERSONALITY` section; E-056 built-ins migrate conservatively to empty defaults; custom profile text remains preserved; and C's protected structural layer remains intact.
+
+A future C-driven dynamic cognitive-posture capability remains **EXPLORATORY / NOT IMPLEMENTED**. Do not conflate that potential feature with D-024: neutral startup is complete independently.
 
 ## Recently completed work
+
+### Neutral default startup profiles
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decision:** D-024  
+**Evidence:** E-058
+
+PR #49 removed distinguishing built-in startup personalities by making A/B/C standard default profile bodies identically empty. Fresh Rooms retain institutional/peer context and Room protocol; C retains protected coordination structure. Exact E-056 built-ins migrate conservatively; custom profiles and existing Room snapshots are preserved. PR-head and canonical-main suites both passed **321 tests, 2 warnings**.
+
 
 ### Personality calibration closed
 **Work state:** COMPLETE  
