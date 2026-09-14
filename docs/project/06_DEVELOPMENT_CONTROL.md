@@ -7,25 +7,45 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **D-023 personality-layer composition is implemented and verified.** A/B/C identities and protected Room rules are now separated from a replaceable personality layer; C's organizer/coordination responsibility remains protected when C's personality is replaced. See E-041.
-- **What is blocked?** Nothing currently blocks the selected personality-design work.
+- **What just changed?** **The D-023 standard default personalities are now implemented and deterministically verified.** A is exploratory/constructive, B skeptical/discriminating, and C contextual/relational; the old Implementer / Verifier / Integrator-derived defaults are retired. See E-042.
+- **What is blocked?** Nothing currently blocks controlled behavioral evaluation of the new defaults.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Define and evaluate the three standard default personalities under D-023, replacing the old Implementer / Verifier / Integrator-derived defaults with meaningfully differentiated general-purpose temperaments. The personality prose itself is not yet implemented.
+- **What is next?** Run controlled live Room exercises to determine whether the three new defaults actually produce recognizably different, independently useful reasoning paths without manufacturing disagreement. Deterministic implementation is complete; behavioral quality is not yet verified.
 - **What are we deliberately not doing?** No adjacent archive/retrieval, capability-promotion, fan-out/join, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this personality slice unless explicitly reprioritized.
 
 ## Current Focus
 
-### Standard default personality redesign
+### Standard default personality behavioral evaluation
 **Work state:** IN PROGRESS  
-**Reality:** EXPLORATORY personality content; composition substrate IMPLEMENTED / VERIFIED  
+**Reality:** default personality implementation IMPLEMENTED / VERIFIED deterministically; behavioral differentiation NOT YET VERIFIED  
 **Decision:** D-023  
-**Composition evidence:** E-041
+**Composition evidence:** E-041  
+**Default-personality implementation evidence:** E-042
 
-Current objective: define three standard default personalities that are recognizably different in cognitive temperament while remaining general-purpose peers. C's protected organizer/coordination status is structural and must remain independent of C's personality.
+Current objective: evaluate the implemented A/B/C defaults in controlled live Rooms. Success is not "more disagreement." Success is recognizably different and independently useful reasoning trajectories that can still converge, update, and cooperate when the evidence warrants it.
 
-The next personality implementation should retire the old Implementer / Verifier / Integrator labels from the default personality bodies, then use controlled behavioral evidence to evaluate whether the three defaults produce independently useful and distinguishable reasoning without manufacturing disagreement.
+The implemented default cognitive temperaments are:
+
+- **A:** exploratory and constructive — expands possibilities and probes reality;
+- **B:** skeptical and discriminating — separates claims, evidence, assumptions, and material objections;
+- **C:** contextual and relational — examines surrounding purpose, relationships, relevance, and consequences while treating synthesis as a hypothesis rather than closure.
+
+Do not revise the prompts pre-emptively to eliminate plausible overlap. Specifically watch the deferred seams identified during design review: A/B may both propose tests for different reasons; B/C may both challenge framing at different levels; A/C may both use decision relevance as a discipline. Change the defaults only if controlled behavior shows a material problem.
 
 ## Recently completed work
+
+### Standard default personality implementation
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-13  
+**Decision:** D-023  
+**Evidence:** E-042
+
+PR #30 replaced the role-derived standard default personality bodies with the approved general-purpose temperaments for A/B/C, kept C's organizer responsibility exclusively in the protected structural layer, migrated only exact known prior built-in personality defaults, preserved non-matching custom profile text, and removed the remaining built-in C profile display label `The Integrator`.
+
+The first PR run exposed one stale UI regression assertion that still required the retired C label; all other tests passed. After updating only that obsolete expectation, the exact final PR head and canonical-main merge both passed **307 tests, 2 warnings**, and the squash-merge Git tree exactly matches the tested PR-head tree.
+
+Behavioral quality is intentionally not claimed by this deterministic evidence. Controlled live Room evaluation is the active next step.
+
 
 ### Protected identity / replaceable personality composition
 **Work state:** COMPLETE  
