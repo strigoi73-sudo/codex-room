@@ -334,3 +334,25 @@ D-025 builds on D-020's C-first coordination and D-024's neutral startup. It doe
 
 **Principle:** **Start neutral; let C shape the cognition needed for the task without controlling the answer.**
 
+### D-026 — Dual-peer delegation must be meaningfully differentiated
+**Date:** 2026-09-14  
+**Status:** ACTIVE
+
+Cognition should be allocated economically. Because A and B are neutral peers running the same underlying model, invoking both for substantially the same analysis is ordinarily redundant and does not justify the added token and coordination cost.
+
+Settled design:
+
+- every additional peer invocation must have expected marginal value;
+- C should use the fewest peers that can add sufficient value to the objective;
+- if one peer is sufficient, C should invoke one rather than both;
+- if C invokes both A and B in the same delegation, their cognitive responsibilities **must be meaningfully differentiated**;
+- differentiation must concern a substantive dimension expected to create complementary value, such as perspective, method, evidence source, scope, constraint, deliverable, verification responsibility, or another real division of cognitive work;
+- cosmetic role labels do not satisfy the rule;
+- C must not send A and B substantially the same analysis in substantially the same way;
+- when independent verification is valuable, the independence should still be differentiated by method or responsibility—for example, one peer reconstructs from first principles while the other audits assumptions, evidence, or failure modes;
+- A/B remain epistemic peers and may challenge their assigned frame or return any conclusion supported by their judgment.
+
+D-026 supersedes D-025 only where D-025 allowed identical or overlapping dual-peer assignments merely because independent work might be useful. D-025's temporary cognitive-framing authority, identity protections, and no-dictated-conclusion guardrails remain active.
+
+**Principle:** **Use the fewest peers that add sufficient value; if both peers are invoked, buy complementary cognition rather than duplicate cognition.**
+
