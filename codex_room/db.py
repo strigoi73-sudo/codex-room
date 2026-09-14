@@ -1488,20 +1488,22 @@ class Database:
         agent_a_instructions: str,
         agent_b_name: str,
         agent_b_instructions: str,
-        agent_c_name: str,
-        agent_c_instructions: str,
+        agent_c_name: str | None = None,
+        agent_c_instructions: str | None = None,
     ) -> dict[str, dict[str, Any]]:
         now = utc_now()
+        updates = [
+            (agent_a_name, agent_a_instructions, now, "agent_a"),
+            (agent_b_name, agent_b_instructions, now, "agent_b"),
+        ]
+        if agent_c_name is not None and agent_c_instructions is not None:
+            updates.append((agent_c_name, agent_c_instructions, now, "agent_c"))
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             await db.executemany(
                 """UPDATE agent_profiles SET name=?, developer_instructions=?, updated_at=?
                    WHERE default_slot=?""",
-                [
-                    (agent_a_name, agent_a_instructions, now, "agent_a"),
-                    (agent_b_name, agent_b_instructions, now, "agent_b"),
-                    (agent_c_name, agent_c_instructions, now, "agent_c"),
-                ],
+                updates,
             )
             await db.commit()
         return await self.get_default_profiles()
