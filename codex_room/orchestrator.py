@@ -2700,15 +2700,22 @@ class RoomRuntime:
             )
             if message is None:
                 continue
+            deferred_runnable = set(
+                (message.get("metadata") or {}).get(
+                    "deferred_runnable_recipients", []
+                )
+            )
             cohort = {
                 delivery["agent_key"]
                 for delivery in message.get("deliveries", [])
                 if delivery.get("runnable")
+                or delivery["agent_key"] in deferred_runnable
             }
             if not cohort or any(
                 delivery["status"] != "delivered"
                 for delivery in message.get("deliveries", [])
                 if delivery.get("runnable")
+                or delivery["agent_key"] in deferred_runnable
             ):
                 continue
             terminal_ids: dict[str, str] = {}
