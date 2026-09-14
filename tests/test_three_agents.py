@@ -650,6 +650,161 @@ async def test_peer_exchange_keeps_c_passive_then_integrates_once(runtime_factor
 
 
 @pytest.mark.asyncio
+async def test_c_multi_peer_delegation_batches_returns_until_full_cohort_settles(
+    runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {
+            "agent_a": [],
+            "agent_b": [],
+            "agent_c": [],
+        },
+        blocked_calls={"agent_a": {1}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message=(
+                    "A: assess the causal evidence. "
+                    "B: design the practical implementation path."
+                ),
+                invoke_targets=["agent_a", "agent_b"],
+            ),
+            AgentDecision(outcome=Outcome.FINISH, message="Integrated both returns"),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="A causal-evidence return",
+            invoke_targets=["agent_c"],
+        )
+    )
+    adapter.decisions["agent_b"].append(
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="B implementation return",
+            invoke_targets=["agent_c"],
+        )
+    )
+
+    runtime = await runtime_factory(adapter)
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Batch one C delegation cohort",
+            starting_agent="agent_c",
+            max_consecutive_passes=10,
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(
+        lambda: len(adapter.calls["agent_a"]) == 1
+        and len(adapter.calls["agent_b"]) == 1
+    )
+    await wait_until(lambda: len(adapter.completed_calls["agent_b"]) == 1)
+    await asyncio.sleep(0.05)
+    assert len(adapter.calls["agent_c"]) == 1
+
+    events = await runtime.db.get_events(room_id)
+    b_return = next(
+        event
+        for event in events
+        if event["event_type"] == "agent_message"
+        and event["source"] == "agent_b"
+        and event["content"] == "B implementation return"
+    )
+    b_to_c = next(
+        delivery
+        for delivery in b_return["deliveries"]
+        if delivery["agent_key"] == "agent_c"
+    )
+    assert b_to_c["runnable"] is False
+    assert b_return["metadata"]["requested_runnable_recipients"] == ["agent_c"]
+    assert b_return["metadata"]["runnable_recipients"] == []
+    assert b_return["metadata"]["deferred_runnable_recipients"] == ["agent_c"]
+
+    adapter.release_call("agent_a", 1)
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 2)
+    prompt = adapter.calls["agent_c"][1]["prompt"]
+    assert "A causal-evidence return" in prompt
+    assert "B implementation return" in prompt
+    assert "All peers invoked by the same delegation have now settled" in prompt
+
+    await wait_until(lambda: _room_has_status(runtime, room_id, RoomStatus.FINISHED))
+    events = await runtime.db.get_events(room_id)
+    cohort_triggers = [
+        event
+        for event in events
+        if event["event_type"] == "delegation_cohort_settled"
+    ]
+    assert len(cohort_triggers) == 1
+    assert cohort_triggers[0]["metadata"]["delegation_cohort"] == [
+        "agent_a",
+        "agent_b",
+    ]
+    assert cohort_triggers[0]["metadata"]["settlement_signals"] == {
+        "agent_a": "MESSAGE",
+        "agent_b": "MESSAGE",
+    }
+    assert len(adapter.calls["agent_c"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_c_multi_peer_delegation_releases_after_message_and_pass_settle(
+    runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {
+            "agent_a": [],
+            "agent_b": [(Outcome.PASS, "")],
+            "agent_c": [],
+        },
+        blocked_calls={"agent_a": {1}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="Ask both peers for bounded contributions.",
+                invoke_targets=["agent_a", "agent_b"],
+            ),
+            AgentDecision(outcome=Outcome.FINISH, message="Integrated available return"),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="A substantive return after B passed",
+            invoke_targets=["agent_c"],
+        )
+    )
+
+    runtime = await runtime_factory(adapter, "delegation-pass.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="One delegated peer passes",
+            starting_agent="agent_c",
+            max_consecutive_passes=10,
+        )
+    )
+
+    await wait_until(lambda: len(adapter.completed_calls["agent_b"]) == 1)
+    await asyncio.sleep(0.05)
+    assert len(adapter.calls["agent_c"]) == 1
+
+    adapter.release_call("agent_a", 1)
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 2)
+    prompt = adapter.calls["agent_c"][1]["prompt"]
+    assert "A substantive return after B passed" in prompt
+    assert "agent_b: PASS" in prompt
+    await wait_until(
+        lambda: _room_has_status(runtime, snapshot["id"], RoomStatus.FINISHED)
+    )
+
+
+@pytest.mark.asyncio
 async def test_direct_peer_return_to_c_needs_no_synthetic_integration(runtime_factory):
     adapter = FakeAgentAdapter(
         {
