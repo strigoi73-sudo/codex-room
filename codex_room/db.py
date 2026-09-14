@@ -80,6 +80,11 @@ _V7_DEFAULT_PERSONALITY_SHA256 = {
     "agent_b": "ca4f58aee7040dccdbfecae94088d2ae88e1eb0366b7a20f234f7a27e0039c34",
     "agent_c": "1c19a8d4d39a7d148c29725f55ee0f8239c45503090f2eb77a143c3df88b1afa",
 }
+_E056_DEFAULT_PERSONALITY_SHA256 = {
+    "agent_a": "5b11450825c124cd423bc99ad8ff8cffd94a89eec0309750b5aa3cba392db8d5",
+    "agent_b": "9532a31035d3c230d44e709d8e0c3ad4ebc94fc6454bfa3eff3c487500ca4ded",
+    "agent_c": "8b689f1894125f106023958d16385c7656287cdfb57b6d3f476406ed164e3993",
+}
 _INSTITUTIONAL_RELEASE_BINDABLE_ROOM_STATUSES = frozenset(
     {
         RoomStatus.PREPARING,
@@ -624,11 +629,12 @@ class Database:
     async def _migrate_builtin_profiles_to_personality_layers(
         self, db: aiosqlite.Connection, now: str
     ) -> None:
-        """Convert exact built-in full prompts to personality-only profile bodies.
+        """Convert exact built-in defaults to the current optional profile bodies.
 
         Existing Room snapshots and any non-matching custom default profile text are
         deliberately preserved. New Rooms compose protected institutional, structural,
-        and protocol layers around the selected profile personality.
+        and protocol layers around the selected optional profile body. The standard
+        default body is intentionally empty.
         """
         defaults = await db.execute_fetchall(
             """SELECT id, name, default_slot, developer_instructions FROM agent_profiles
@@ -646,6 +652,7 @@ class Database:
                 or digest == _V5_DEFAULT_PERSONALITY_SHA256[slot]
                 or digest == _V6_2_DEFAULT_PERSONALITY_SHA256[slot]
                 or digest == _V7_DEFAULT_PERSONALITY_SHA256[slot]
+                or digest == _E056_DEFAULT_PERSONALITY_SHA256[slot]
                 or text == _TRIAD_PROFILE_TEXT[slot]
             ):
                 profile_name = row["name"]
