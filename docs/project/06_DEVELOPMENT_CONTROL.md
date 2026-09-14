@@ -72,8 +72,6 @@ The remaining issue was premature semantic finalization: C responded substantive
 
 PR #41 adds a narrow protected C rule requiring explicitly necessary multi-peer inputs to settle before final recommendation/FINISH. Exact PR head `04fdca71911330a0a4c8607738e89c0e1279311c` passed GitHub Actions run `34887902144` with **315 passed, 2 warnings**. Squash merge `2ce2e7c40fbca09ac31e843b7d06dabf13cc387d` has the exact same Git tree `9af8be81e7cbc1fc7f94c73aafdf295e360e43bd`; canonical-main run `34888053548` also passed **315 passed, 2 warnings**.
 
-
-
 ### V7 same-task work-product admission gate
 **Work state:** COMPLETE  
 **Reality / evidence:** OBSERVED ISSUE — admission gate failed — 2026-09-14  
