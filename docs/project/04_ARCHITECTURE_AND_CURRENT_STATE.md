@@ -172,7 +172,7 @@ Routing telemetry records readable recipients, requested/immediate/deferred runn
 
 Historical verification after the original selective-invocation change: **111 passed, 2 warnings**, with SQLite `quick_check` OK. The 2026-09-14 cohort-timing repair is verified by E-054: PR-head and canonical-main exact-tree runs both passed **317 tests, 2 warnings**.
 
-**Monitor:** selective targeting may reduce spontaneous peer challenge if agents under-invoke useful reviewers. Multi-peer cohort batching intentionally trades first-return responsiveness for one coherent C integration turn; live timing behavior remains to be verified.
+**Live verification:** E-055 confirmed the delegation-cohort timing behavior in a fresh Room: the first peer return remained passive to C, the second peer return completed the cohort, one cohort-settled trigger made C runnable, and C integrated both returns in one batch before normal causal closure. Multi-peer cohort batching intentionally trades first-return responsiveness for one coherent C integration turn.
 
 ## 7. Delivery coalescing
 

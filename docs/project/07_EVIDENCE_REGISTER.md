@@ -1798,3 +1798,36 @@ The slower canonical-main pytest duration is recorded as an observation, not a f
 
 **Status:** IMPLEMENTED / VERIFIED deterministically. Personality behavioral evaluation is not the active workstream.
 
+### E-055 — Live C delegation-cohort timing verification
+**Date:** 2026-09-14  
+**Scope:** [ROOM] live verification of the deterministic D-020 delegation-cohort timing repair from E-054. Personality behavior was explicitly out of scope.
+
+Fresh Room:
+
+- Room: `D020-Timing-1-Delegation-Cohort`;
+- Room id: `room_ed26d1ca3c154fc6bc99799d09ccf070`;
+- active Round: `round_808c359ce90c4e44a3bc03e2328125af`;
+- starting participant: Agent C;
+- no task/public overlay, private initialization, participant overlays, or Room personality overrides;
+- opening staging Round was prepared but never started and closed only as `replaced_by_new_round`.
+
+The timing-only prompt required C to send one MESSAGE invoking A and B together on two bounded tasks and then integrate only after the delegated work settled.
+
+Observed event chain:
+
+1. **One exact C delegation cohort formed.** C's event `event_3c1c707059724c80a0b804b9a1461d58` invoked both `agent_a` and `agent_b`; both deliveries were runnable from that same event.
+2. **A returned first while B was still running.** A's MESSAGE `event_93b8476be7cb49a0a6329d706a6a2fd1` was recorded at 20:01:38.556Z. Its C delivery was readable but `runnable: false`; metadata recorded `requested_runnable_recipients: ["agent_c"]`, `runnable_recipients: []`, `deferred_runnable_recipients: ["agent_c"]`, and the original C delegation event as `delegation_cohort_parent_event_id`.
+3. **No premature C turn occurred.** There is no C `agent_activity` or decision event between A's first return and B's later return.
+4. **B returned second.** B's MESSAGE `event_20148188455346eeb506bb1ea93f4071` was recorded at 20:01:43.526Z with the same deferred-to-C cohort metadata.
+5. **Exactly one cohort-settled trigger fired.** `event_3c1c707059724c80a0b804b9a1461d58_delegation_cohort_settled_agent_c` was created at 20:01:43.731Z. Its metadata identified cohort `["agent_a", "agent_b"]` with settlement signals `MESSAGE/MESSAGE` and both response event ids.
+6. **C received one coalesced integration turn.** C's next activity reported **3 unread events**. Its input set was exactly A's return, B's return, and the cohort-settled trigger. The cohort trigger was the only triggering event; both peer returns were passive inputs.
+7. **C integrated once and closed normally.** C emitted one FINISH using all three input event ids. `reactions_settled` then showed the same C FINISH as the terminal decision settling both A and B MESSAGE boundaries, and the Round closed by `reactions_settled`.
+
+The active Round had only four substantive turns: C delegation, A return, B return, C integration. There was no extra intermediate C model invocation between peer completions.
+
+**Interpretation:** the E-052 timing defect is resolved for the demonstrated case. C's integration wake now follows the settlement of its exact multi-peer delegation cohort rather than first-peer completion order. The implementation preserves public visibility of early peer returns, uses existing delivery coalescing, and preserves causal settlement/normal closure.
+
+This evidence verifies the narrow mechanism implemented in E-054. It does not establish a general fan-out/join abstraction and should not be generalized beyond one C MESSAGE's runnable peer cohort without further evidence.
+
+**Status:** IMPLEMENTED / LIVE VERIFIED. The D-020 delegation-cohort timing issue is COMPLETE.
+

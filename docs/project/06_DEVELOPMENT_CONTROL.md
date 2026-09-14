@@ -7,51 +7,26 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The principal stopped the personality-testing workstream and redirected development to the demonstrated **coordination timing issue** from CG1. PR #43 now batches returns from one multi-peer C delegation so C is not awakened by whichever peer happens to finish first. See E-052 and E-054.
-- **What is blocked?** Nothing. The CORE timing repair is merged and hosted-verified; only a fresh live Room proof remains.
+- **What just changed?** The D-020 delegation-cohort timing issue is now **LIVE VERIFIED / COMPLETE**. E-055 confirms that the first peer return stays passive to C, the full cohort settles, and C receives one coalesced integration turn before normal closure.
+- **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Pull/restart and run a **timing-only live proof** of one C message invoking A and B together. Verify that the first peer return stays readable but does not wake C, and that C receives one coalesced integration turn only after the complete delegation cohort settles.
+- **What is next?** The timing issue is complete. Reassess the roadmap before starting another implementation slice.
 - **What are we deliberately not doing?** **No further personality calibration or personality behavioral testing unless the principal explicitly revisits it.** No broader fan-out/join framework, archive/retrieval, capability-promotion, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this timing slice.
 
 ## Current Focus
 
 ### C delegation-cohort timing
-**Work state:** IN PROGRESS  
-**Reality:** CG1 timing defect OBSERVED; protected C settlement instruction IMPLEMENTED / VERIFIED; deterministic delegation-cohort batching IMPLEMENTED / VERIFIED; live Room timing proof NOT YET VERIFIED  
+**Work state:** COMPLETE  
+**Reality:** IMPLEMENTED / LIVE VERIFIED  
 **Decision:** D-020  
 **Observed Room evidence:** E-052  
 **Instruction repair:** E-053  
-**Deterministic timing implementation:** E-054
+**Deterministic timing implementation:** E-054  
+**Live verification:** E-055
 
-Current objective: make C's integration timing follow the causal structure of its own multi-peer delegation rather than peer completion order.
+E-055 verifies the exact timing mechanism end to end. A returned first and remained passive to C. B returned later. CORE then created one delegation-cohort-settled trigger, and C consumed both peer returns plus that trigger in one integration turn. The same C FINISH settled both peer MESSAGE boundaries and the Round closed normally.
 
-The demonstrated defect in E-052 was specific: C invoked A and B together, B returned first, and B's MESSAGE immediately made C runnable while A was still executing. C therefore spent a model turn and issued a substantive recommendation before its own requested cohort had settled. The later A return was not lost because D-020's integration-before-closure barrier reopened C, but the ordering was inefficient and semantically premature.
-
-PR #43 addresses that seam mechanically:
-
-- one C MESSAGE with multiple runnable peer recipients defines an exact **delegation cohort**;
-- peer MESSAGE returns addressed to C remain public/readable but are temporarily non-runnable for C while sibling cohort members remain unsettled;
-- peers and other requested targets continue to run normally;
-- after every member of that exact cohort has produced MESSAGE, PASS, or FINISH, CORE creates one durable `delegation_cohort_settled` trigger for C;
-- C's existing delivery coalescing supplies the accumulated peer returns plus that trigger in one invocation;
-- single-peer delegation remains immediate;
-- deferred C returns still participate in causal settlement, so C's later terminal reaction can close the peer MESSAGE boundaries normally.
-
-This is intentionally narrower than a general fan-out/join system. It fixes the demonstrated race without introducing a fourth coordination abstraction or forcing unrelated Room work behind a global barrier.
-
-**Next evidence gate — timing only:** use a fresh Room with C as sole starter. The prompt should require C to issue one MESSAGE invoking both A and B on two bounded tasks. The content of those tasks is not under evaluation; personality differentiation is not scored.
-
-Pass conditions:
-
-- one C delegation event has A and B as runnable recipients;
-- the first peer MESSAGE return is visible in the event stream but its C delivery is non-runnable;
-- C receives no model turn from that partial return alone;
-- after the second cohort member settles, exactly one `delegation_cohort_settled` trigger is created;
-- C's next invocation contains the accumulated peer return material and the cohort-settled trigger;
-- no extra premature C integration turn occurs;
-- causal settlement and normal Room closure still work.
-
-After this live timing proof, stop and reassess the remaining coordination mechanics. Do **not** resume the personality evaluation automatically.
+The demonstrated timing issue is complete. No further timing retest is currently warranted.
 
 ### Personality calibration
 **Work state:** DEFERRED  
@@ -61,6 +36,14 @@ After this live timing proof, stop and reassess the remaining coordination mecha
 The principal explicitly stopped further personality testing on 2026-09-14 in order to focus on the coordination timing defect exposed by CG1. Existing V7 defaults remain the current implemented defaults; this status does not claim that the personality calibration target was achieved. Resume only on explicit principal direction.
 
 ## Recently completed work
+
+### Live C delegation-cohort timing verification
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / LIVE VERIFIED — 2026-09-14  
+**Decision:** D-020  
+**Evidence:** E-055
+
+The fresh timing-only Room verified the E-054 mechanism without any personality scoring. One C message invoked A and B together; A returned first and did not wake C; B returned later; one cohort-settled trigger then made C runnable; C consumed both peer returns in one integration batch; causal settlement and normal closure succeeded.
 
 ### Deterministic C delegation-cohort batching
 **Work state:** COMPLETE  
