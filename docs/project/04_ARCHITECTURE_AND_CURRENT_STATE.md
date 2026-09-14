@@ -134,7 +134,7 @@ P4.4 is now **IMPLEMENTED / VERIFIED end to end**. In Room `room_857d95aa75c14dd
 
 A later repaired Round in the same Room then rediscovered the already-bound custom capability through normal `list` / `inspect`, with implementation/package/registration/verification identities matching the original registration, created one workspace input file, and invoked the normal registered capability successfully. Durable evidence recorded `ok:true`, `slug:"alpha-beta-99"`, and `length:13` under the same immutable implementation/package/registration/verification identities. A/B remained unconsumed, C FINISHed exactly `P4.4-CUSTOM-OK`, and the one-turn Round closed normally. P4.4 therefore demonstrates the full path from agent judgment through bounded custom authoring, verification, host binding, later rediscovery, and registered deterministic reuse.
 
-P4.5a lineage binding inheritance is now **IMPLEMENTED / VERIFIED deterministically — through 2026-09-14**. Original Room registrations and schema-v1 direct bindings remain immutable historical provenance. Rollover successors use schema-v2 inherited bindings containing the successor Room identity, the exact original registration SHA-256 and registration Room, plus the immediate predecessor Room and predecessor binding SHA-256. The loader resolves the original content-addressed registration/package/verification objects and validates the predecessor-binding chain, so a later generation continues to use the original registration while recording its immediate inheritance source.
+P4.5a lineage binding inheritance is now **IMPLEMENTED / VERIFIED deterministically — 2026-09-13**. Original Room registrations and schema-v1 direct bindings remain immutable historical provenance. Rollover successors use schema-v2 inherited bindings containing the successor Room identity, the exact original registration SHA-256 and registration Room, plus the immediate predecessor Room and predecessor binding SHA-256. The loader resolves the original content-addressed registration/package/verification objects and validates the predecessor-binding chain, so a later generation continues to use the original registration while recording its immediate inheritance source.
 
 The rollover saga creates inherited binding state from the predecessor's exact bound set under protected operation-scoped staging before successor finalization. Repeating the same operation validates and reuses the same binding bytes. Failure/abort removes staged and successor binding state; startup recovery revalidates/reconstructs inheritance for a fully provisioned pending successor before finalizing it and removes inherited state when an incomplete successor is aborted. A successor therefore receives all eligible lineage-scoped custom bindings deterministically without a newest-version lookup, republishing, re-verification, or synthetic registration.
 
@@ -284,7 +284,7 @@ Current startup migration therefore includes a separate `triad_profiles_v2` exac
 
 ### Agent identity, protected structure, and replaceable personality
 
-**IMPLEMENTED / VERIFIED deterministically — 2026-09-13**
+**IMPLEMENTED / VERIFIED deterministically — through 2026-09-14**
 
 Agent developer instructions are now composed from separate layers rather than treating the editable profile as the entire developer prompt:
 
