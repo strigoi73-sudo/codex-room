@@ -74,8 +74,6 @@ The V7 AI tutoring rerun was mechanically clean under the established independen
 
 The experiment changes the active mechanism under test: stop asking three identical models to solve the same broad task independently and expecting static personality text to create sufficient cognitive division. Move complementarity to C-first decomposition and bounded peer task allocation.
 
-
-
 ### V7 complementary work-product contracts
 **Work state:** COMPLETE  
 **Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
