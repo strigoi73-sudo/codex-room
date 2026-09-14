@@ -294,3 +294,24 @@ This decision supersedes D-020 only where D-020 names **Implementer / Verifier /
 
 **Implementation status:** the protected-instruction / replaceable-personality composition model is **IMPLEMENTED / VERIFIED** by PR #28 and E-041. The existing default personality prose still contains the older Implementer / Verifier / Integrator labels pending the next deliberate personality-design slice; those labels are no longer the governing architectural definition of A, B, and C.
 
+### D-024 — Persistent agents start from neutral default cognition
+**Date:** 2026-09-14  
+**Status:** ACTIVE
+
+Codex Room Personal should not assign distinguishing personality, temperament, occupational identity, intellectual specialty, or stylistic role to Agent A, Agent B, or Agent C at startup.
+
+Settled design:
+
+- A/B/C remain persistent organizational identities and epistemic peers.
+- The standard default profile body for A, B, and C is neutral/empty; fresh Rooms therefore do not compose a default `PERSONALITY` layer.
+- Shared institutional identity/peer rules and Room protocol remain protected and continue to give every participant the context needed to understand the Room and its peers.
+- C retains the protected organizer/coordination responsibilities established by D-020/D-023. This structural responsibility is not a personality or cognitive specialty and grants no superior judgment.
+- A and B receive no protected occupational or cognitive specialization.
+- Optional custom/default-profile text and Room-specific profile overrides remain supported. When explicitly supplied, they may shape a participant for that Room without changing persistent identity or protected structure.
+- C may differentiate delegated work through task framing, participant-specific context, or ordinary coordination when useful. A future formal dynamic cognitive-posture capability may refine that behavior, but is not required by this decision and is not implemented by D-024.
+- No participant is expected to be behaviorally recognizable from a startup temperament.
+
+D-024 supersedes D-023 only where D-023 requires every persistent agent to have a non-neutral standard default personality. D-023's separation of persistent identity from replaceable profile content, protected institutional/structural layers, Room-specific replacement semantics, and C's no-superior-judgment coordination rule remain active.
+
+**Principle:** **Start neutral; specialize work when the objective warrants it.**
+
