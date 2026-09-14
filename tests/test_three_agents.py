@@ -256,15 +256,18 @@ def test_standard_default_personalities_are_general_purpose_and_distinct() -> No
     assert "**What else could we do?**" in defaults["agent_a"]
     assert "**What are we justified in believing?**" in defaults["agent_b"]
     assert "**How do the consequential parts fit together and behave?**" in defaults["agent_c"]
-    assert "first substantive contribution must actively expand the option space" in defaults["agent_a"]
-    assert "first substantive contribution must establish what is actually supported" in defaults["agent_b"]
-    assert "first substantive contribution must identify the critical load-bearing elements" in defaults["agent_c"]
-    assert "Your exploratory orientation remains active" in defaults["agent_a"]
-    assert "Your epistemic orientation remains active" in defaults["agent_b"]
-    assert "Your contextual orientation remains active" in defaults["agent_c"]
-    assert "whether a proposition, inference, diagnosis, or prediction deserves belief" in defaults["agent_b"]
-    assert "how elements relate and what those relationships cause or constrain" in defaults["agent_c"]
-    assert "Do not collapse into generic synthesis" in defaults["agent_c"]
+    assert "primary work product is a **possibility brief**" in defaults["agent_a"]
+    assert "primary work product is an **evidence audit**" in defaults["agent_b"]
+    assert "primary work product is a **decision map**" in defaults["agent_c"]
+    assert "does not turn you into a comprehensive generalist" in defaults["agent_a"]
+    assert "does not turn you into a comprehensive generalist" in defaults["agent_b"]
+    assert "does not require you to reproduce a complete option search and evidence audit yourself" in defaults["agent_c"]
+    assert "Keep the recommendation subordinate to the option-space work" in defaults["agent_a"]
+    assert "tie it directly to the evidence threshold" in defaults["agent_b"]
+    assert "use peer cognition instead of silently absorbing every missing job yourself" in defaults["agent_c"]
+    assert "Leave epistemic auditing, broad systems mapping, and final integration to complementary work" in defaults["agent_a"]
+    assert "Leave broad option generation, system architecture, and final integration to complementary work" in defaults["agent_b"]
+    assert "Leave detailed evidence auditing and broad option generation to complementary work" in defaults["agent_c"]
     for personality in defaults.values():
         assert "The Implementer" not in personality
         assert "The Verifier" not in personality
@@ -293,6 +296,67 @@ def test_v5_default_personality_hashes_remain_exact_migration_anchors() -> None:
         "agent_b": "c1449f7edbb9f0e509a10ca4c5f4ff6146f285de242ea7a9fb195c527c810dd1",
         "agent_c": "59a9113aa443a7c0dbda65444c1e61039e79f27652b8be1ac53d9aad57fa3722",
     }
+
+
+def test_v6_2_default_personality_hashes_remain_exact_migration_anchors() -> None:
+    assert db_module._V6_2_DEFAULT_PERSONALITY_SHA256 == {
+        "agent_a": "75719cad8fcfe3ea0cbc7c7f6fd903769aad1202732b0fae6f42b818b2616c42",
+        "agent_b": "9b136b537a9c8d2dab39fed3f4aef5f68b33c7a3cdca22e9f961c227bd23cdf3",
+        "agent_c": "78dda32bf9ffbf27818ea858f1c4395891b5357aa85c6ba11edd15c7ac60935d",
+    }
+
+
+@pytest.mark.asyncio
+async def test_exact_v6_2_defaults_migrate_without_overwriting_custom_text(
+    tmp_path, monkeypatch
+):
+    old_defaults = {
+        "agent_a": "Exact V6.2 A migration fixture.",
+        "agent_b": "Exact V6.2 B migration fixture.",
+        "agent_c": "Exact V6.2 C migration fixture.",
+    }
+    monkeypatch.setattr(
+        db_module,
+        "_V6_2_DEFAULT_PERSONALITY_SHA256",
+        {
+            slot: hashlib.sha256(text.encode("utf-8")).hexdigest()
+            for slot, text in old_defaults.items()
+        },
+    )
+
+    database = Database(tmp_path / "personality-v7-migration.db")
+    await database.initialize()
+    await database.update_default_profiles(
+        "Agent A default",
+        old_defaults["agent_a"],
+        "Agent B default",
+        old_defaults["agent_b"],
+        "Agent C default",
+        old_defaults["agent_c"],
+    )
+    await database.initialize()
+    migrated = await database.get_default_profiles()
+
+    assert migrated["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
+    assert migrated["agent_b"]["developer_instructions"] == AGENT_B_DEFAULT_PERSONALITY
+    assert migrated["agent_c"]["developer_instructions"] == AGENT_C_DEFAULT_PERSONALITY
+
+    custom_b = old_defaults["agent_b"] + "\nCustom principal preference."
+    await database.update_default_profiles(
+        "Agent A default",
+        old_defaults["agent_a"],
+        "Custom B",
+        custom_b,
+        "Agent C default",
+        old_defaults["agent_c"],
+    )
+    await database.initialize()
+    remigrated = await database.get_default_profiles()
+
+    assert remigrated["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
+    assert remigrated["agent_b"]["developer_instructions"] == custom_b
+    assert remigrated["agent_b"]["name"] == "Custom B"
+    assert remigrated["agent_c"]["developer_instructions"] == AGENT_C_DEFAULT_PERSONALITY
 
 
 @pytest.mark.asyncio
