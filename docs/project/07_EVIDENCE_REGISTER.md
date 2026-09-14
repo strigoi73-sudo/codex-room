@@ -1661,3 +1661,40 @@ Verification:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically.
 
+### E-051 — V7 same-task work-product admission gate failed cleanly
+**Date:** 2026-09-14  
+**Scope:** [ROOM] controlled D-023 admission gate for the V7 primary-work-product personalities using the known-hard AI tutoring scenario.
+
+A fresh Room titled `D023-V7-S2-AI-Tutoring` reran the AI tutoring scenario under the established independent controls.
+
+Mechanical controls were clean:
+
+- the staging opening Round was prepared but never started and closed only as `replaced_by_new_round`;
+- the evaluation Round was `D023-V7-S2-Independent` with `starting_agent: "either"`;
+- A/B/C used the exact V7 standard personality snapshots with no Room personality overrides;
+- there was no private initialization and no participant-specific overlay;
+- all three participants received the same single `round_start_turn` and began independently;
+- every delivery succeeded on the first attempt;
+- no participant consumed peer conversational output before finishing;
+- no participant used MESSAGE;
+- each participant produced exactly one substantive FINISH;
+- the Round closed normally with `mutual_finish`.
+
+The V7 admission criterion was stricter than agreement or wording difference. The complete responses needed to remain organized around different primary work products: A possibility brief, B evidence audit, C decision map.
+
+That separation did not occur.
+
+- **B** behaved strongly as intended. Its response was primarily an evidence audit: the nine-point gap did not establish causation; voluntary participation and pre-existing attendance differences implied selection; randomized or delayed-access evaluation was stronger than matched observational analysis; the mandate threshold depended on causal benefit, subgroup generalization, and implementation burden.
+- **A** did not produce a materially distinct possibility brief. It opened with the same causal-inference objection as B, then centered its answer on essentially the same randomized/phased rollout, measurement plan, and later decision threshold. It did not spend most of the contribution expanding the option space, relaxing assumptions, or developing several genuinely different approaches.
+- **C** did not produce a materially distinct decision map. It likewise opened with selection bias, then centered the response on a randomized pilot/rollout and evidence collection. Equity, workload, privacy, implementation burden, and subgroup effects appeared, but they did not become the governing objective/dependency/sequencing structure of the contribution.
+
+All three therefore followed substantially the same reasoning architecture:
+
+`observed gain is not causal -> voluntary users differ -> do not mandate -> randomized/phased evaluation -> measure baselines/outcomes -> reassess later`.
+
+**Interpretation:** V7's stronger static developer-personality text did not reliably override the shared model's attraction to the same salient high-quality solution when all three participants received the same broad problem-solving assignment. This is now observed after progressively stronger mechanisms: temperament, first-move constraints, persistent cognitive centers, and explicit primary work products/scope boundaries.
+
+The result does **not** show that complementary cognition is unattainable in Codex Room. It shows that same-task independent prompting is an inefficient place to demand that complementarity. The next experiment should move the differentiation mechanism to **coordination and task allocation**: C receives the human objective first, decomposes the problem, and assigns genuinely different bounded work to A and B before integrating returned work.
+
+**Status:** OBSERVED ISSUE / V7 same-task admission gate FAILED. Do not continue same-task personality wording escalation or run the previously planned collaborative test unchanged.
+

@@ -7,50 +7,72 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** V6.2 improved the personalities but failed the pre-set complementarity criterion: café passed qualitatively, while AI tutoring and manuscript revision both converged on substantially the same reasoning architecture. The series stopped after S3 because the 3-of-4 target had become unreachable. V7 now replaces "different centers of gravity while all solve the whole problem" with **different primary work products and scope boundaries**. See E-049 and E-050.
-- **What is blocked?** Nothing currently blocks a fresh V7 admission gate.
+- **What just changed?** The V7 AI-tutoring admission gate was mechanically clean but behaviorally failed: A, B, and C again organized around the same causal-inference / randomized-pilot solution despite explicit possibility-brief / evidence-audit / decision-map contracts. See E-051.
+- **What is blocked?** Nothing blocks the next controlled Room experiment.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Rerun the known-hard AI tutoring scenario once in a fresh V7 Room under the same independent controls. If A produces a possibility brief, B an evidence audit, and C a decision map without collapsing back into the same causal-analysis answer, move next to a collaborative C-first Room that tests complementarity under normal coordination.
-- **What are we deliberately not doing?** No adjacent archive/retrieval, capability-promotion, fan-out/join, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this personality slice unless explicitly reprioritized.
+- **What is next?** Stop escalating same-task personality wording. Run a **coordination-level complementarity gate** using the existing C-first selective-invocation architecture: C receives the human objective, must use both peers, and must decide for itself what distinct bounded work to assign A and B before integrating the result.
+- **What are we deliberately not doing?** No new personality version, no adjacent archive/retrieval, capability-promotion, fan-out/join, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work unless explicitly reprioritized.
 
 ## Current Focus
 
-### Standard default personality behavioral evaluation
+### Coordination-level complementarity evaluation
 **Work state:** IN PROGRESS  
-**Reality:** V3 DID NOT MEET BLIND CRITERION; V4/V5 showed clean calibration failures; V6.2 DID NOT MEET the pre-set complementarity criterion; V7 implementation IMPLEMENTED / VERIFIED deterministically; V7 behavioral complementarity NOT YET VERIFIED  
+**Reality:** D-023 personality-layer composition IMPLEMENTED / VERIFIED; V7 same-task independent work-product separation FAILED cleanly; coordination-level mechanism NOT YET VERIFIED  
 **Decision:** D-023  
 **Composition evidence:** E-041  
-**V3 implementation evidence:** E-042  
-**V3 behavioral evidence:** E-043  
-**V4 implementation evidence:** E-044  
-**V4 café observation:** E-045  
-**V5 implementation evidence:** E-046  
-**V5 café observation:** E-047  
-**V6.2 implementation evidence:** E-048  
 **V6.2 behavioral evidence:** E-049  
-**V7 implementation evidence:** E-050
+**V7 implementation evidence:** E-050  
+**V7 same-task admission evidence:** E-051
 
-Current objective: determine whether explicit, intrinsically different primary work products can produce useful complementary cognition from the same underlying model without requiring manufactured disagreement or sacrificing general competence.
+Current objective: determine whether Codex Room can obtain genuinely complementary cognition by assigning different objectives to the three persistent peers instead of giving three copies of the same model the same broad problem-solving job.
 
-The implemented V7 defaults preserve the temperament centers but add stronger operating scope:
+E-051 changes the working hypothesis. Static personality text remains useful as a prior and work-style bias, but it should no longer be expected to overpower an identical high-salience task objective. Complementarity should now be tested at the **allocation boundary**.
 
-- **A — possibility brief.** Change the option space. A broad request to analyze or decide does not justify a full diagnosis/evidence/system treatment; recommendations are secondary to materially different possibilities, combinations, reversibility, leverage, optionality, and kill conditions.
-- **B — evidence audit.** Establish what deserves belief. Broad requests do not justify a full option search/system treatment; recommendations are concise and tied to supported claims, competing explanations, discriminating evidence, and decision thresholds.
-- **C — decision map.** Establish how the consequential pieces fit together. C identifies objectives, dependencies, constraints, interactions, sequencing, downstream effects, and unresolved tensions without silently reproducing a complete option search and evidence audit. In ordinary collaboration C should use peer cognition instead of absorbing every missing job.
+The next controlled experiment should use the existing normal Personal architecture rather than another independent `either` batch:
 
-This is a different mechanism from V6.2. V6.2 still asked all three agents to produce complete answers and attempted to differentiate the reasoning path through persistent cognitive centers. E-049 showed that a salient "best" reasoning method could still dominate all three. V7 instead makes comprehensive balanced coverage **not** the default job of each participant.
+- C starts as the human principal's organizational contact.
+- The human gives C one decision problem.
+- For this controlled mechanism test, C must invoke **both** A and B, but the human does **not** tell C what each peer should do.
+- C must decide what distinct bounded question or work product to request from each peer.
+- A and B should receive genuinely different task objectives, not the same generic `analyze this problem` assignment.
+- A/B may use their V7 personalities inside those bounded tasks, but success does not require them to ignore obvious facts merely for stylistic distinctiveness.
+- C should integrate returned work into a final recommendation while preserving material disagreement or unresolved dependencies.
+- C's coordination role confers no superior judgment; the evaluation is about decomposition and integration, not hierarchy.
 
-**Next admission gate:** rerun the exact AI tutoring scenario from V6.2 S2 under the same independent controls. The final recommendation may still converge on "do not mandate yet." The gate passes only if the complete work products remain different:
+**Admission scenario:** reuse the AI tutoring problem from E-051 because it is a demonstrated same-task convergence case. This makes the comparison meaningful: the content stays hard while the differentiation mechanism changes from personality-only to task allocation.
 
-- A should center on expanding the actionable option space rather than spending most of the answer prosecuting the causal claim.
-- B should center on the causal/evidentiary audit and what evidence changes confidence.
-- C should center on the governing objective, dependencies, rollout/implementation relationships, sequencing, and consequences rather than duplicating B's audit.
+**Pass conditions:**
 
-If all three again organize around selection bias → randomized trial as the dominant work product, stop and revise before broader testing.
+- C performs nontrivial decomposition before or during delegation rather than solving the whole task and using peers as decoration.
+- C sends A and B materially different bounded asks.
+- At least one peer contribution adds useful work that would not be expected from the other's assigned objective.
+- A/B do not both return redundant complete consultant answers when given different tasks.
+- C's final integration actually uses the distinct peer work and makes important dependencies/disagreement visible.
+- The resulting organization is more informative or decision-useful than the E-051 three-independent-answer pattern.
 
-If the admission gate passes, the next test should be a **collaborative C-first Room** using normal coordination. The purpose is to observe whether selective peer invocation produces genuinely non-redundant contributions and whether C integrates them without superior-judgment assumptions. Do not return automatically to the old four independent complete-solution series; that protocol tested the mechanism V6.2 was designed around.
+**Fail conditions:**
+
+- C sends the same or near-identical broad task to both peers.
+- C independently completes the whole reasoning path before peer work matters.
+- A/B collapse into the same complete solution despite materially different delegation.
+- C merely paraphrases the peer outputs without integration.
+- The final Room is no less redundant than E-051.
+
+If this controlled coordination gate passes, the next test should relax the artificial requirement to invoke both peers and evaluate **ordinary selective invocation**: C decides whether A, B, both, or neither are worth the token/cognition cost on a fresh problem.
+
+If it fails, do not return immediately to stronger personality prose. Inspect whether the failure lies in C's decomposition prompt/structural instructions, task-routing mechanics, or peer adherence to bounded delegation, and change only the demonstrated seam.
 
 ## Recently completed work
+
+### V7 same-task work-product admission gate
+**Work state:** COMPLETE  
+**Reality / evidence:** OBSERVED ISSUE — admission gate failed — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-051
+
+The V7 AI tutoring rerun was mechanically clean under the established independent controls. B produced a recognizable evidence audit, but A and C still organized around the same causal-inference objection and randomized/phased evaluation plan. The explicit primary-work-product language therefore did not prevent same-task convergence.
+
+The experiment changes the active mechanism under test: stop asking three identical models to solve the same broad task independently and expecting static personality text to create sufficient cognitive division. Move complementarity to C-first decomposition and bounded peer task allocation.
 
 ### V7 complementary work-product contracts
 **Work state:** COMPLETE  
