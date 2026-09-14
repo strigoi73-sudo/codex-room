@@ -41,6 +41,35 @@ def test_http_create_state_and_exports(tmp_path):
         assert "Agent A thread" in md_export.text
 
 
+def test_legacy_ab_only_profile_update_preserves_c_default(tmp_path):
+    adapter = FakeAgentAdapter()
+    app = create_app(
+        database_path=tmp_path / "legacy-profile-api.db",
+        data_root=tmp_path / "data",
+        adapter=adapter,
+    )
+    with TestClient(app) as client:
+        before = client.get("/api/profiles/defaults").json()
+        changed = client.put(
+            "/api/profiles/defaults",
+            json={
+                "agent_a_name": "Legacy A",
+                "agent_a_instructions": "legacy A personality",
+                "agent_b_name": "Legacy B",
+                "agent_b_instructions": "legacy B personality",
+            },
+        )
+        assert changed.status_code == 200
+        after = changed.json()
+        assert after["agent_a"]["developer_instructions"] == "legacy A personality"
+        assert after["agent_b"]["developer_instructions"] == "legacy B personality"
+        assert after["agent_c"]["name"] == before["agent_c"]["name"]
+        assert (
+            after["agent_c"]["developer_instructions"]
+            == before["agent_c"]["developer_instructions"]
+        )
+
+
 def test_http_profile_and_staged_round_endpoints(tmp_path):
     adapter = FakeAgentAdapter()
     app = create_app(
@@ -58,6 +87,8 @@ def test_http_profile_and_staged_round_endpoints(tmp_path):
                 "agent_a_instructions": "persistent A",
                 "agent_b_name": "Reviewer",
                 "agent_b_instructions": "persistent B",
+                "agent_c_name": "Organizer",
+                "agent_c_instructions": "persistent C",
             },
         )
         assert changed.status_code == 200

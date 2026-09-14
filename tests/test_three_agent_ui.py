@@ -76,8 +76,9 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     html = (ROOT / "codex_room" / "static" / "index.html").read_text(encoding="utf-8")
     javascript = (ROOT / "codex_room" / "static" / "app.js").read_text(encoding="utf-8")
     assert 'name="include_agent_c"' not in html
-    assert "Agent C · The Integrator" in html
-    assert "Permanent participant · fixed profile" in html
+    assert "Permanent organizer · personality is configurable" in html
+    assert 'name="agent_c_instructions"' in html
+    assert 'data-agent="c"' in html
     assert 'id="add-agent-c"' in html
     assert "Upgrade legacy Room to triad" in html
     assert 'id="agent-strip"' in html

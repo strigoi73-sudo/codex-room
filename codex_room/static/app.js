@@ -50,10 +50,11 @@ function showView(view) {
   views.forEach((element) => element.classList.toggle("hidden", element !== view));
 }
 
-function restoreDefaults(which = "both") {
+function restoreDefaults(which = "all") {
   const form = $("#create-form");
-  if (which === "both" || which === "a") form.elements.agent_a_instructions.value = "";
-  if (which === "both" || which === "b") form.elements.agent_b_instructions.value = "";
+  if (which === "all" || which === "a") form.elements.agent_a_instructions.value = "";
+  if (which === "all" || which === "b") form.elements.agent_b_instructions.value = "";
+  if (which === "all" || which === "c") form.elements.agent_c_instructions.value = "";
 }
 
 async function api(path, options = {}) {
@@ -92,13 +93,9 @@ async function loadRooms() {
 
 async function loadProfiles() {
   state.profiles = await api("/api/profiles/defaults");
-  $("#agent-a-profile-hint").textContent = `Using saved profile: ${state.profiles.agent_a.name}`;
-  $("#agent-b-profile-hint").textContent = `Using saved profile: ${state.profiles.agent_b.name}`;
-  const c = state.profiles.agent_c;
-  if (c) {
-    $("#agent-c-profile-name").textContent = c.name;
-    $("#agent-c-profile-instructions").textContent = c.developer_instructions;
-  }
+  $("#agent-a-profile-hint").textContent = `Using saved personality: ${state.profiles.agent_a.name}`;
+  $("#agent-b-profile-hint").textContent = `Using saved personality: ${state.profiles.agent_b.name}`;
+  $("#agent-c-profile-hint").textContent = `Using saved personality: ${state.profiles.agent_c.name}`;
   return state.profiles;
 }
 
@@ -450,6 +447,7 @@ $("#create-form").addEventListener("submit", async (event) => {
   const values = Object.fromEntries(new FormData(form));
   if (!values.agent_a_instructions.trim()) delete values.agent_a_instructions;
   if (!values.agent_b_instructions.trim()) delete values.agent_b_instructions;
+  if (!values.agent_c_instructions.trim()) delete values.agent_c_instructions;
   ["max_turns", "max_consecutive_passes", "inactivity_seconds"].forEach((key) => values[key] = Number(values[key]));
   try {
     const room = await api("/api/rooms", { method: "POST", body: JSON.stringify(values) });
@@ -548,10 +546,8 @@ $("#profiles-button").addEventListener("click", async () => {
   form.elements.agent_a_instructions.value = profiles.agent_a.developer_instructions;
   form.elements.agent_b_name.value = profiles.agent_b.name;
   form.elements.agent_b_instructions.value = profiles.agent_b.developer_instructions;
-  if (profiles.agent_c) {
-    $("#agent-c-profile-name").textContent = profiles.agent_c.name;
-    $("#agent-c-profile-instructions").textContent = profiles.agent_c.developer_instructions;
-  }
+  form.elements.agent_c_name.value = profiles.agent_c.name;
+  form.elements.agent_c_instructions.value = profiles.agent_c.developer_instructions;
   $("#profiles-dialog").showModal();
 });
 $("#profiles-form").addEventListener("submit", async (event) => {
@@ -561,8 +557,9 @@ $("#profiles-form").addEventListener("submit", async (event) => {
     method: "PUT",
     body: JSON.stringify(Object.fromEntries(new FormData(form))),
   });
-  $("#agent-a-profile-hint").textContent = `Using saved profile: ${state.profiles.agent_a.name}`;
-  $("#agent-b-profile-hint").textContent = `Using saved profile: ${state.profiles.agent_b.name}`;
+  $("#agent-a-profile-hint").textContent = `Using saved personality: ${state.profiles.agent_a.name}`;
+  $("#agent-b-profile-hint").textContent = `Using saved personality: ${state.profiles.agent_b.name}`;
+  $("#agent-c-profile-hint").textContent = `Using saved personality: ${state.profiles.agent_c.name}`;
   $("#profiles-dialog").close();
 });
 
