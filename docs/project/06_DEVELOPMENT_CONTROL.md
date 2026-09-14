@@ -7,36 +7,64 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The V3 D-023 personalities failed the established blind-distinctiveness criterion despite four mechanically clean trials: **3/12** individual identities and **0/4** complete trios were recovered. A targeted V4 revision is now **IMPLEMENTED / VERIFIED deterministically**. See E-043 and E-044.
-- **What is blocked?** Nothing currently blocks a controlled V4 behavioral rerun.
+- **What just changed?** A clean V4 café rerun showed that V4 still failed to produce distinct opening trajectories: all three agents immediately converged on essentially the same margin-versus-demand diagnosis. The principal stopped the V4 series and selected a deliberately stronger V5 calibration. V5 is now **IMPLEMENTED / VERIFIED deterministically**. See E-045 and E-046.
+- **What is blocked?** Nothing currently blocks a fresh V5 café calibration rerun.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Rerun the same four controlled independent scenarios in fresh Rooms using V4, then repeat blind classification against the same **3-of-4 complete-trio** success criterion.
+- **What is next?** Rerun the café scenario once in a fresh V5 Room using the same independent controls. If V5 produces visibly distinct opening reasoning trajectories without obvious pathology, resume the remaining controlled scenarios and blind evaluation.
 - **What are we deliberately not doing?** No adjacent archive/retrieval, capability-promotion, fan-out/join, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this personality slice unless explicitly reprioritized.
 
 ## Current Focus
 
 ### Standard default personality behavioral evaluation
 **Work state:** IN PROGRESS  
-**Reality:** V3 behavioral differentiation DID NOT MEET CRITERION; V4 implementation IMPLEMENTED / VERIFIED deterministically; V4 behavioral differentiation NOT YET VERIFIED  
+**Reality:** V3 DID NOT MEET BLIND CRITERION; V4 showed an OBSERVED first-move convergence issue in the clean café rerun; V5 implementation IMPLEMENTED / VERIFIED deterministically; V5 behavioral differentiation NOT YET VERIFIED  
 **Decision:** D-023  
 **Composition evidence:** E-041  
 **V3 implementation evidence:** E-042  
 **V3 behavioral evidence:** E-043  
-**V4 implementation evidence:** E-044
+**V4 implementation evidence:** E-044  
+**V4 café observation:** E-045  
+**V5 implementation evidence:** E-046
 
-Current objective: evaluate the V4 A/B/C defaults in controlled live Rooms. Success is not "more disagreement." Success is recognizably different and independently useful reasoning trajectories that can still converge, update, and cooperate when the evidence warrants it.
+Current objective: test whether the stronger V5 calibration can overcome the generic convergence observed in V3 and V4 while preserving competence, cooperation, and the ability to converge when evidence warrants it.
 
-The implemented V4 cognitive temperaments are:
+The implemented V5 cognitive centers of gravity are:
 
-- **A:** exploratory and generative — first widens the possibility space before narrowing;
-- **B:** skeptical and discriminating — first establishes the epistemic picture before building conclusions;
-- **C:** contextual and relational — first locates the immediate question in the objective, dependencies, tradeoffs, and consequences that materially affect it, while treating framing as a hypothesis rather than a ruling.
+- **A:** strongly exploratory and generative — first expands the possibility space and resists leading with diagnosis;
+- **B:** strongly skeptical and discriminating — first challenges the epistemic foundation and resists leading with solutions;
+- **C:** strongly contextual and relational — first maps the larger objective, dependencies, constraints, and consequences and resists leading with either local-option generation or fact-by-fact litigation.
 
-V3 baseline: four fresh, mechanically clean independent trials produced no manufactured disagreement, option flooding, skeptical paralysis, or C closure pathology, but blind classification recovered only **3/12** individual identities and **0/4** complete trios. The established target was **3/4 complete trios**. That demonstrated a material distinctiveness problem and justified V4.
+The V5 self-corrections remain asymmetric: A distrusts the attractiveness of its possibilities; B distrusts the importance of its objections; C distrusts the completeness of its synthesis.
 
-Do not revise V4 further before rerunning the same controlled evaluation unless implementation evidence demonstrates a defect. The next uncertainty is behavioral and should be answered empirically.
+V4 calibration evidence is deliberately bounded. Scenario 1 was mechanically clean, but A, B, and C all opened with essentially the same "margin, not demand" framing. Because first-move differentiation was the main V4 intervention, the principal treated that single clean result as sufficient evidence to stop V4 and make a larger calibration move. No claim is made that V4 completed or failed the full four-scenario blind protocol.
+
+**Next gate:** rerun only the café scenario first with V5. If A expands options, B audits the epistemic foundation, and C maps consequential context before they converge, V5 has earned the full controlled evaluation. If all three again enter through the same diagnosis, revise before spending the remaining Rooms.
 
 ## Recently completed work
+
+### V5 strong personality calibration
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-046
+
+PR #34 deliberately strengthened the A/B/C cognitive priors rather than continuing small V4-style increments. Each personality now names a dominant first move and a starting posture to resist, while retaining self-correction and the ability to use other reasoning modes later. Protected institutional, structural, and Room-protocol layers were unchanged.
+
+Startup migration now recognizes the exact V4 built-in personality bodies and updates only those defaults to V5. Non-matching/custom default text remains preserved, and existing Room snapshots/effective instructions are not silently rewritten.
+
+The first PR run passed **310 tests** and failed one stale UI assertion that still required the V4 C phrase; no production defect was demonstrated. After changing only that obsolete expectation, exact final PR head `1b38c76b5cf1cbc606fc2b9df2bf3f1e2b4d66be` passed run `34863827367` with **311 tests, 2 warnings**. PR #34 squash-merged as `ed8b73fb9f1437a894e926f65e1ca558e0005973`; merge tree `c5955136274252f77e065d3a5b54825ba2cae5e2` exactly matches the tested PR-head tree. Canonical-main run `34864015525` also passed **311 tests, 2 warnings**.
+
+This establishes V5 implementation, not behavioral differentiation.
+
+### V4 café first-move calibration observation
+**Work state:** COMPLETE  
+**Reality / evidence:** OBSERVED ISSUE — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-045
+
+The first V4 controlled rerun used the same café scenario and independent controls as the V3 evaluation. Mechanics were clean: exact V4 defaults, no overrides/private initialization/participant-specific overlays, `starting_agent: "either"`, one shared start event, one FINISH from each participant, no MESSAGE, and normal `mutual_finish` closure.
+
+Despite that control, A, B, and C all opened by diagnosing essentially the same margin-versus-demand problem. Later differences existed, but V4's principal intervention was supposed to produce distinct first attentional moves. The principal treated this as a strong enough calibration signal to stop the V4 series and move directly to a more extreme V5. The remaining V4 scenarios and blind packet were intentionally not run.
 
 ### V4 default personality distinctiveness revision
 **Work state:** COMPLETE  
