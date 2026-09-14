@@ -17,7 +17,12 @@ from codex_room.models import (
     RoomStatus,
 )
 from codex_room.personalities import (
+    AGENT_A_DEFAULT_PERSONALITY,
+    AGENT_B_DEFAULT_PERSONALITY,
+    AGENT_C_DEFAULT_PERSONALITY,
     AGENT_C_INTEGRATOR_INSTRUCTIONS,
+    AGENT_C_STRUCTURAL_INSTRUCTIONS,
+    ROOM_PROTOCOL_INSTRUCTIONS,
     default_agent_instructions,
 )
 from codex_room.orchestrator import RoomRuntime
@@ -171,6 +176,69 @@ def test_fresh_ab_instruction_template_is_membership_generic() -> None:
     assert "Agent A, Agent B, and Agent C" in instructions
     assert "every engaged participant has settled" in instructions
     assert "named Agent B" not in instructions
+
+
+@pytest.mark.asyncio
+async def test_personality_overrides_replace_defaults_but_preserve_protected_layers(
+    runtime_factory,
+):
+    overrides = {
+        "agent_a": "A_ROOM_PERSONALITY_CANARY",
+        "agent_b": "B_ROOM_PERSONALITY_CANARY",
+        "agent_c": "C_ROOM_PERSONALITY_CANARY",
+    }
+    defaults = {
+        "agent_a": AGENT_A_DEFAULT_PERSONALITY,
+        "agent_b": AGENT_B_DEFAULT_PERSONALITY,
+        "agent_c": AGENT_C_DEFAULT_PERSONALITY,
+    }
+    runtime = await runtime_factory(FakeAgentAdapter())
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="personality layer composition",
+            auto_start=False,
+            agent_a_instructions=overrides["agent_a"],
+            agent_b_instructions=overrides["agent_b"],
+            agent_c_instructions=overrides["agent_c"],
+        )
+    )
+    agents = {agent["agent_key"]: agent for agent in snapshot["agents"]}
+
+    for key, agent in agents.items():
+        effective = agent["developer_instructions"]
+        assert agent["profile_snapshot"] == defaults[key]
+        assert agent["room_override"] == overrides[key]
+        assert overrides[key] in effective
+        assert defaults[key] not in effective
+        assert "INSTITUTIONAL IDENTITY AND PEER RULES" in effective
+        assert "ROOM PROTOCOL" in effective
+        assert ROOM_PROTOCOL_INSTRUCTIONS in effective
+        assert "ROOM-SPECIFIC OVERRIDE" not in effective
+
+    assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_a"]["developer_instructions"]
+    assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_b"]["developer_instructions"]
+    assert AGENT_C_STRUCTURAL_INSTRUCTIONS in agents["agent_c"]["developer_instructions"]
+
+
+@pytest.mark.asyncio
+async def test_default_personalities_are_snapshotted_and_composed_when_not_overridden(
+    runtime_factory,
+):
+    defaults = {
+        "agent_a": AGENT_A_DEFAULT_PERSONALITY,
+        "agent_b": AGENT_B_DEFAULT_PERSONALITY,
+        "agent_c": AGENT_C_DEFAULT_PERSONALITY,
+    }
+    runtime = await runtime_factory(FakeAgentAdapter(), "default-personalities.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="default personalities", auto_start=False)
+    )
+    agents = {agent["agent_key"]: agent for agent in snapshot["agents"]}
+    for key, agent in agents.items():
+        assert agent["profile_snapshot"] == defaults[key]
+        assert agent["room_override"] is None
+        assert defaults[key] in agent["developer_instructions"]
+    assert AGENT_C_STRUCTURAL_INSTRUCTIONS in agents["agent_c"]["developer_instructions"]
 
 
 @pytest.mark.asyncio
