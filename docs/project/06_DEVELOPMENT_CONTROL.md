@@ -7,62 +7,70 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The V7 AI-tutoring admission gate was mechanically clean but behaviorally failed: A, B, and C again organized around the same causal-inference / randomized-pilot solution despite explicit possibility-brief / evidence-audit / decision-map contracts. See E-051.
-- **What is blocked?** Nothing blocks the next controlled Room experiment.
+- **What just changed?** CG1 showed that C-first **bounded task allocation works**: C assigned different jobs to A and B, and both peers honored them. The gate only partially passed because C issued its substantive final recommendation after B returned while A was still running. The runtime later reopened C before closure, so the mechanical D-020 integration barrier worked. PR #41 now adds a narrow protected C rule to keep multi-peer delegation provisional until all requested inputs settle. See E-052 and E-053.
+- **What is blocked?** Nothing. The fix is merged and hosted-verified; a fresh Room is required to behaviorally verify it.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Stop escalating same-task personality wording. Run a **coordination-level complementarity gate** using the existing C-first selective-invocation architecture: C receives the human objective, must use both peers, and must decide for itself what distinct bounded work to assign A and B before integrating the result.
-- **What are we deliberately not doing?** No new personality version, no adjacent archive/retrieval, capability-promotion, fan-out/join, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work unless explicitly reprioritized.
+- **What is next?** Pull/restart and rerun **CG1** with the same AI tutoring scenario, C as sole starter, no overlay. The gate now passes only if C again delegates distinct bounded work **and waits for both explicitly requested inputs before presenting the final recommendation**.
+- **What are we deliberately not doing?** No new personality version, no deterministic join barrier, and no adjacent archive/retrieval, capability-promotion, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work unless new evidence requires it.
 
 ## Current Focus
 
 ### Coordination-level complementarity evaluation
 **Work state:** IN PROGRESS  
-**Reality:** D-023 personality-layer composition IMPLEMENTED / VERIFIED; V7 same-task independent work-product separation FAILED cleanly; coordination-level mechanism NOT YET VERIFIED  
-**Decision:** D-023  
-**Composition evidence:** E-041  
-**V6.2 behavioral evidence:** E-049  
-**V7 implementation evidence:** E-050  
-**V7 same-task admission evidence:** E-051
+**Reality:** Same-task personality differentiation failed cleanly; bounded C-first task allocation showed a PARTIAL PASS; protected multi-peer settlement rule IMPLEMENTED / VERIFIED deterministically; behavioral rerun NOT YET VERIFIED  
+**Decisions:** D-020, D-023  
+**V7 same-task evidence:** E-051  
+**CG1 coordination evidence:** E-052  
+**C settlement repair evidence:** E-053
 
-Current objective: determine whether Codex Room can obtain genuinely complementary cognition by assigning different objectives to the three persistent peers instead of giving three copies of the same model the same broad problem-solving job.
+Current objective: verify that Codex Room can obtain useful complementary cognition through **C-first task decomposition plus bounded peer work**, while C waits for the full set of peer inputs it explicitly judged necessary before final integration.
 
-E-051 changes the working hypothesis. Static personality text remains useful as a prior and work-style bias, but it should no longer be expected to overpower an identical high-salience task objective. Complementarity should now be tested at the **allocation boundary**.
+CG1 materially improved the mechanism relative to E-051:
 
-The next controlled experiment should use the existing normal Personal architecture rather than another independent `either` batch:
+- C decomposed the AI tutoring problem into a causal-evidence dependency and an implementation/equity dependency.
+- C assigned the causal-evidence task to A and the implementation task to B.
+- A and B followed those assignments and returned non-redundant work rather than duplicate complete answers.
+- This happened even though the allocation crossed the V7 personality centers, which is evidence that explicit bounded task objectives can appropriately dominate personality priors.
 
-- C starts as the human principal's organizational contact.
-- The human gives C one decision problem.
-- For this controlled mechanism test, C must invoke **both** A and B, but the human does **not** tell C what each peer should do.
-- C must decide what distinct bounded question or work product to request from each peer.
-- A and B should receive genuinely different task objectives, not the same generic `analyze this problem` assignment.
-- A/B may use their V7 personalities inside those bounded tasks, but success does not require them to ignore obvious facts merely for stylistic distinctiveness.
-- C should integrate returned work into a final recommendation while preserving material disagreement or unresolved dependencies.
-- C's coordination role confers no superior judgment; the evaluation is about decomposition and integration, not hierarchy.
+The remaining seam was C's integration timing. B returned first and directly invoked C. C then produced the substantive final recommendation while A's delegated turn was still running. When A returned, the existing runtime mechanically reopened C before closure, proving the D-020 integration-before-closure barrier still worked. C consumed A and FINISHed without revision.
 
-**Admission scenario:** reuse the AI tutoring problem from E-051 because it is a demonstrated same-task convergence case. This makes the comparison meaningful: the content stays hard while the differentiation mechanism changes from personality-only to task allocation.
+PR #41 therefore changes **only** C's protected coordination instructions. When C explicitly requests multiple peer contributions because each is needed for a decision:
 
-**Pass conditions:**
+- the first return is partial;
+- C must not present the final recommendation or FINISH merely because one return arrived first;
+- C waits until every requested contribution has returned, declined, failed, or been explicitly judged unnecessary;
+- interim reactions may remain provisional;
+- after settlement, C integrates the available set.
 
-- C performs nontrivial decomposition before or during delegation rather than solving the whole task and using peers as decoration.
-- C sends A and B materially different bounded asks.
-- At least one peer contribution adds useful work that would not be expected from the other's assigned objective.
-- A/B do not both return redundant complete consultant answers when given different tasks.
-- C's final integration actually uses the distinct peer work and makes important dependencies/disagreement visible.
-- The resulting organization is more informative or decision-useful than the E-051 three-independent-answer pattern.
+No scheduler, routing, fan-out/join, Room protocol, or V7 personality change was made. A deterministic join remains unjustified because the runtime already prevented late substantive work from crossing closure and a global join could reduce useful responsiveness.
 
-**Fail conditions:**
+**Next gate — CG1 rerun:** reuse the exact AI tutoring coordination scenario with C as sole starter, no public/task overlay, no private initialization, and no personality overrides.
 
-- C sends the same or near-identical broad task to both peers.
-- C independently completes the whole reasoning path before peer work matters.
-- A/B collapse into the same complete solution despite materially different delegation.
-- C merely paraphrases the peer outputs without integration.
-- The final Room is no less redundant than E-051.
+Pass conditions:
 
-If this controlled coordination gate passes, the next test should relax the artificial requirement to invoke both peers and evaluate **ordinary selective invocation**: C decides whether A, B, both, or neither are worth the token/cognition cost on a fresh problem.
+- C again assigns A/B materially different bounded jobs;
+- A/B honor those tasks without collapsing into duplicate complete solutions;
+- if C treats both contributions as necessary, it does not issue the final recommendation until both have settled;
+- C's final substantive recommendation reflects both peer contributions or explicitly explains why one returned contribution proved unnecessary;
+- closure remains normal and no human intervention is required.
 
-If it fails, do not return immediately to stronger personality prose. Inspect whether the failure lies in C's decomposition prompt/structural instructions, task-routing mechanics, or peer adherence to bounded delegation, and change only the demonstrated seam.
+If the rerun passes, move next to **ordinary selective invocation on a fresh scenario**: remove the artificial requirement to invoke both peers and evaluate whether C can decide whether A, B, both, or neither are worth the cognition/token cost.
+
+If the rerun still fails because C finalizes early, then reconsider whether deterministic cohort/join support is warranted. Do not implement it before that evidence.
 
 ## Recently completed work
+
+### CG1 coordination gate and C delegated-input settlement repair
+**Work state:** COMPLETE for diagnosis/repair; behavioral verification pending  
+**Reality / evidence:** CG1 PARTIAL PASS / OBSERVED ISSUE; repair IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decisions:** D-020, D-023  
+**Evidence:** E-052, E-053
+
+CG1 established that coordination-level task allocation can produce non-redundant peer cognition where identical same-task prompting did not. C's delegation itself succeeded and A/B adhered to the bounded assignments.
+
+The remaining issue was premature semantic finalization: C responded substantively after only the first peer return. The existing runtime later reopened C on the second return, so no mechanical closure leak occurred.
+
+PR #41 adds a narrow protected C rule requiring explicitly necessary multi-peer inputs to settle before final recommendation/FINISH. Exact PR head `04fdca71911330a0a4c8607738e89c0e1279311c` passed GitHub Actions run `34887902144` with **315 passed, 2 warnings**. Squash merge `2ce2e7c40fbca09ac31e843b7d06dabf13cc387d` has the exact same Git tree `9af8be81e7cbc1fc7f94c73aafdf295e360e43bd`; canonical-main run `34888053548` also passed **315 passed, 2 warnings**.
 
 ### V7 same-task work-product admission gate
 **Work state:** COMPLETE  
