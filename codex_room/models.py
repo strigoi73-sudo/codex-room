@@ -102,6 +102,7 @@ class CreateRoomRequest(BaseModel):
     agent_b_name: str = Field(default="Agent B", min_length=1, max_length=80)
     agent_a_instructions: str | None = Field(default=None, max_length=50_000)
     agent_b_instructions: str | None = Field(default=None, max_length=50_000)
+    agent_c_instructions: str | None = Field(default=None, max_length=50_000)
     max_turns: int = Field(default=40, ge=2, le=500)
     max_consecutive_passes: int = Field(default=3, ge=1, le=20)
     inactivity_seconds: int = Field(default=900, ge=30, le=86_400)
@@ -179,6 +180,8 @@ class DefaultProfilesUpdate(BaseModel):
     agent_a_instructions: str = Field(min_length=1, max_length=50_000)
     agent_b_name: str = Field(default="Agent B default", min_length=1, max_length=120)
     agent_b_instructions: str = Field(min_length=1, max_length=50_000)
+    agent_c_name: str = Field(default="Agent C default", min_length=1, max_length=120)
+    agent_c_instructions: str = Field(min_length=1, max_length=50_000)
 
 
 class UpdateRoomRequest(BaseModel):
