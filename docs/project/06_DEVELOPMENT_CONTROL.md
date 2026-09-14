@@ -8,9 +8,9 @@
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
 - **What just changed?** The principal stopped the personality-testing workstream and redirected development to the demonstrated **coordination timing issue** from CG1. PR #43 now batches returns from one multi-peer C delegation so C is not awakened by whichever peer happens to finish first. See E-052 and E-054.
-- **What is blocked?** Nothing. The CORE timing repair is merged and hosted-verified; only a fresh live Room proof remains.
+- **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Pull/restart and run a **timing-only live proof** of one C message invoking A and B together. Verify that the first peer return stays readable but does not wake C, and that C receives one coalesced integration turn only after the complete delegation cohort settles.
+- **What is next?** The timing issue is complete. Reassess the roadmap before starting another implementation slice.
 - **What are we deliberately not doing?** **No further personality calibration or personality behavioral testing unless the principal explicitly revisits it.** No broader fan-out/join framework, archive/retrieval, capability-promotion, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this timing slice.
 
 ## Current Focus
