@@ -1355,3 +1355,37 @@ One earlier pre-final PR head produced **303 passed, 1 failed, 2 warnings** beca
 
 **Evidence boundary:** E-041 verifies instruction composition, persistence, migration, API/UI wiring, and hosted regression behavior. It does not establish that the eventual replacement default personalities are sufficiently differentiated in live model cognition. That remains the current behavioral-design task under D-023.
 
+### E-042 — Standard default personality redesign implementation
+**Date:** 2026-09-13  
+**Scope:** [CORE] replacement of the standard A/B/C personality bodies under D-023; conservative built-in migration; deterministic/hosted verification. This record does not claim live behavioral differentiation.
+
+PR #30 replaced the role-derived standard default personality bodies with the approved general-purpose cognitive temperaments:
+
+- **Agent A:** exploratory and constructive — tends to generate worthwhile possibilities, make uncertainty concrete, use bounded reversible probes, and guard against both premature attachment and option flooding;
+- **Agent B:** skeptical and discriminating — tends to separate observation from inference, inspect premises and evidence, distinguish fatal/material/minor flaws, and identify what would actually resolve uncertainty;
+- **Agent C:** contextual and relational — tends to examine surrounding purpose, relationships, relevance, and consequences while explicitly treating its own synthesis or pattern as a hypothesis rather than closure.
+
+The active default personality bodies no longer contain the former **Implementer / Verifier / Integrator** occupational labels. C's organizer/coordination responsibility remains in the protected structural layer established by PR #28/E-041 and was not moved into the new personality text.
+
+Upgrade behavior was also tightened conservatively:
+
+- exact SHA-256 identities for the immediately prior role-derived personality-only defaults are recognized and migrated to the redesigned defaults;
+- non-matching custom default profile text is preserved;
+- the exact built-in C profile display name `Agent C · The Integrator` migrates to `Agent C default` only when the associated profile text is one of the recognized built-ins;
+- existing Room snapshots/effective instructions are not silently rewritten by this default-profile migration.
+
+Regression coverage verifies the three new temperament anchors, absence of the retired labels from active defaults, exact old-built-in migration, preservation of modified/custom text, default composition, and the UI contract.
+
+Verification history:
+
+- initial PR head `eea0d4af907135ab767fb303ce95d9ab2ef0d323`, GitHub Actions run `34794891870`: **306 passed, 1 failed, 2 warnings**;
+- the sole failure was `tests/test_three_agent_ui.py::test_http_new_room_snapshot_and_ui_contract_are_permanent_triad`, whose stale assertion still required the retired string `The Integrator` in C's default personality; no runtime/personality implementation failure was demonstrated;
+- the stale assertion alone was updated to the new C default contract;
+- exact final PR head: `b65a8aedac9f0212e19e9535070cbaf798f0816d`;
+- GitHub Actions PR run `34795003630`: **307 passed, 2 warnings**;
+- PR #30 squash-merged as `412b0f68eca5150a99042f7ced2038eaf75bcf8c` — `Replace role-derived default personalities`;
+- the final PR-head Git tree and merge Git tree are both `7f14b70e98cf297576d0dc337d34571fa29d8c9c`;
+- canonical-main GitHub Actions run `34795121428`: **307 passed, 2 warnings**.
+
+**Evidence boundary:** E-042 establishes that the approved default personality texts are implemented, selected for fresh/default-profile use, conservatively migrated from exact prior built-ins, and hosted-regression verified. It does **not** establish that A/B/C are behaviorally distinguishable enough in live model cognition, that the observed A/B or B/C overlap seams are harmless in practice, or that C's greater prompt length has no behavioral weighting effect. Those are the next controlled live-evaluation questions.
+
