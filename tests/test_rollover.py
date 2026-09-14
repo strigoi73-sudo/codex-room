@@ -260,6 +260,7 @@ async def test_rollover_copies_only_stable_configuration_and_checkpoint(tmp_path
                 starting_agent="agent_a",
                 max_consecutive_passes=1,
                 auto_start=False,
+                agent_c_instructions="C_ROLLOVER_PERSONALITY_CANARY",
             )
         )
         prepared = await runtime.prepare_round(
