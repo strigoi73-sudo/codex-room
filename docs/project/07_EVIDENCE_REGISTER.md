@@ -1533,3 +1533,74 @@ Verification history:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically.
 
+### E-047 — V5 café calibration gate failed cleanly
+**Date:** 2026-09-14  
+**Scope:** [ROOM] one controlled V5 live rerun under D-023, used as a calibration gate before spending the remaining scenarios.
+
+A fresh Room titled `D023-V5-S1-Cafe` reran the same family-owned café scenario and independent controls used for the prior calibration work.
+
+Mechanical controls were clean:
+
+- the staging opening Round was prepared but never started and closed only as `replaced_by_new_round`;
+- the evaluation Round was `D023-V5-S1-Independent` with `starting_agent: "either"`;
+- A/B/C used the exact V5 standard personality snapshots with no Room personality overrides;
+- there was no private initialization and no participant-specific overlay;
+- all three agents received the same start event and began independently;
+- no agent used MESSAGE or consumed peer conversational output before finishing;
+- each participant produced exactly one substantive FINISH;
+- the Round closed normally with `mutual_finish`.
+
+V5 had been deliberately strengthened to force different first cognitive entrances. The live result still converged at that exact seam:
+
+- B opened: the facts support a **margin problem more clearly than a demand problem**;
+- C opened: the immediate problem is **margin compression, not demand collapse**;
+- A opened: the immediate problem is **margin compression**.
+
+Later texture showed some differentiation. A became the most generative around catering, pickup/preorder, and alternative use of quiet capacity; B most explicitly discriminated what the evidence did and did not establish; C organized options into a sequenced margin-recovery program. Those differences emerged only after all three had already entered through substantially the same diagnosis.
+
+**Interpretation:** V5 did not pass its deliberately cheap café admission gate. Stronger temperament prose and explicit first-move prohibitions influenced later emphasis but did not reliably overcome the shared model's tendency to begin with the same competent diagnostic framing. The remaining V5 scenarios were intentionally not run. This result motivated a different V6.2 mechanism: persistent asymmetric cognitive contracts across the full reasoning cycle, rather than a stronger opening temperament alone.
+
+**Status:** OBSERVED ISSUE / V5 first-move calibration insufficient. V5 is superseded as the active default by V6.2; no completed four-scenario V5 blind verdict is claimed.
+
+### E-048 — V6.2 complementary cognitive-contract implementation
+**Date:** 2026-09-14  
+**Scope:** [CORE] D-023 personality revision responding to E-047; conservative V5 built-in migration; exact-diff and hosted verification. This record does not claim live behavioral differentiation.
+
+PR #36 replaced the V5 default personality bodies with V6.2 persistent cognitive contracts. The change preserves the protected D-023 composition boundary: institutional identity/peer rules, C's structural organizer responsibilities, and Room protocol were unchanged.
+
+The active V6.2 cognitive centers of gravity are:
+
+- **Agent A — "What else could we do?"** A must actively expand the option space on a fresh problem and keep the exploratory orientation active through narrowing and recommendation. Its later convergence favors leverage, reversibility, optionality, useful learning, combinations, and removal of unnecessary tradeoffs.
+- **Agent B — "What are we justified in believing?"** B must establish what is actually supported before accepting diagnosis, causal story, prediction, or solution, and keeps epistemic justification as its center through evaluation and recommendation.
+- **Agent C — "How do the consequential parts fit together and behave?"** C must identify load-bearing objectives, dependencies, constraints, bottlenecks, interactions, sequencing, and consequences before local diagnosis, and keeps relational/system structure as its center through recommendation.
+
+V6.2 also makes the B/C seam explicit:
+
+- B's primary concern is whether a proposition, inference, diagnosis, or prediction deserves belief;
+- C's primary concern is how elements relate and what those relationships cause or constrain, assuming relevant claims are provisionally usable.
+
+All three profiles include characteristic anti-duplication "move the frontier" behavior and stopping rules against their expected failure modes. C is explicitly required to surface genuine unresolved conflict rather than hide it inside a compromise.
+
+Upgrade behavior adds exact V5 personality-body SHA-256 anchors:
+
+- A: `49225250cd1fa14c1bb58e654cf4ede6e55dd7ff969013341552db5ee45a705d`;
+- B: `c1449f7edbb9f0e509a10ca4c5f4ff6146f285de242ea7a9fb195c527c810dd1`;
+- C: `59a9113aa443a7c0dbda65444c1e61039e79f27652b8be1ac53d9aad57fa3722`.
+
+Only exact recognized built-in defaults migrate to V6.2. Non-matching/custom default text remains preserved, and existing Room snapshots/effective instructions are not silently rewritten.
+
+Verification:
+
+- exact final PR head: `8ecfd73104638b49975a6bf134cc3dde16f35468`;
+- PR-head Git tree: `bc2590ddc11682d51ecf3cb79221259f7acd59ea`;
+- GitHub Actions PR run `34870235815`: **313 passed, 2 warnings**;
+- PR #36 squash merge: `6d89465de2bf581a8bce2e44ce569beea224f3df` — `D-023: implement V6.2 complementary cognitive contracts`;
+- merge Git tree: `bc2590ddc11682d51ecf3cb79221259f7acd59ea`, exactly matching the tested PR-head tree;
+- canonical-main GitHub Actions run `34870432154`: **313 passed, 2 warnings**.
+
+**Evidence boundary:** E-048 establishes that V6.2 is implemented as the current default, conservatively migrates exact V5 defaults, preserves custom/default and existing Room-state boundaries, and is deterministically/hosted verified. It does **not** establish that the shared model will honor the intended complementary trajectories in live cognition.
+
+**Next evidence gate:** rerun the same café scenario once in a fresh V6.2 Room under the established independent controls. Only if A, B, and C visibly perform complementary cognitive work without obvious pathology should the remaining controlled scenarios and blind evaluation resume.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically.
+
