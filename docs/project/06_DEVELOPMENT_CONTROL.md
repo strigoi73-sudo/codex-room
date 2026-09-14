@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The blind role-play recognizability gate completed with **1/9 individual identities correct and 0/3 complete trios**. E-057 shows that fictional/task roles dominated the observable temperament signal. Active personality calibration is now **MONITOR / DEFERRED**.
+- **What just changed?** D-024 removes startup differentiation: A/B/C now use neutral empty default profile bodies. Persistent identity, shared institutional context, Room protocol, and C's protected coordination structure remain.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Reassess the roadmap. A dynamic cognitive-posture capability for C is an exploratory candidate; no implementation decision has been made yet.
+- **What is next?** Verify the D-024 neutral-default migration/behavior on the implementation PR, then reassess whether a formal dynamic cognitive-posture capability for C is worth adding.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -28,37 +28,38 @@ E-055 verifies the exact timing mechanism end to end. A returned first and remai
 
 The demonstrated timing issue is complete. No further timing retest is currently warranted.
 
-### Personality calibration / recognizability
-**Work state:** MONITOR / DEFERRED  
-**Reality:** temperament-only defaults IMPLEMENTED / VERIFIED deterministically; behavioral recognizability NOT ESTABLISHED  
-**Decision:** D-023  
-**Implementation evidence:** E-056  
-**Behavioral evidence:** E-057
+### Neutral startup profiles
+**Work state:** IN PROGRESS  
+**Reality:** D-024 DECIDED; implementation pending hosted verification on the active PR  
+**Decisions:** D-023, D-024  
+**Prior evidence:** E-056, E-057
 
-The active calibration effort is stopped.
+The active product direction no longer requires persistent startup personalities.
 
-Accumulated evidence across V3–V7 and the later role-play gate shows that persistent personality text is a weak mechanism relative to stronger influences:
+D-024 requires:
 
-- the shared model dominates same-task reasoning;
-- assigned task/cognitive responsibility strongly shapes the work performed;
-- explicit fictional or occupational roles strongly shape observable conversational behavior;
-- personality remains visible, at most, as a lighter influence on attention, tone, emphasis, questioning, and interaction.
+- standard A/B/C default profile bodies are empty and identical;
+- fresh Rooms compose no default `PERSONALITY` section;
+- A/B/C retain persistent identity and shared institutional/peer context;
+- C retains protected organizer/coordination responsibilities as structure, not personality;
+- custom saved profile text and Room-specific overrides remain supported;
+- existing Room snapshots are not rewritten;
+- exact known built-in defaults migrate conservatively to the empty neutral default while non-matching custom text is preserved.
 
-The final blind role-play gate produced **1/9 individual identities correct and 0/3 complete trios**. The evaluator explicitly reported that it was largely identifying the fictional jobs rather than persistent personalities. Because the test design itself exposed role dominance, this is not classified as a defective implementation of E-056; it is evidence that recognizability is not an important or reliable acceptance criterion for the current architecture.
+The former personality-calibration effort remains closed. Behavioral recognizability is not an acceptance criterion.
 
-The current E-056 defaults remain in place:
-
-- **A:** exploratory, imaginative, forward-moving;
-- **B:** measured, discriminating, precise;
-- **C:** contextual, connective, organizational.
-
-They are treated as light social/interaction priors only. They do not define permanent cognitive specialties and should not constrain task assignment.
-
-**Do not resume active personality calibration automatically.** Reopen only if normal Codex Room usage demonstrates a concrete user-facing problem attributable to insufficient personality distinction, or if the principal explicitly chooses to revisit the product value of persistent personalities.
-
-A separate exploratory direction is now under principal review: give C the ability to assign temporary cognitive postures and bounded task frames to A/B according to the current objective. This is **EXPLORATORY / NOT IMPLEMENTED** and is not yet a settled replacement for the personality layer.
+A future C-driven dynamic cognitive-posture capability remains **EXPLORATORY / NOT IMPLEMENTED**. Do not conflate that potential feature with D-024: neutral startup is independently useful and should be verified first.
 
 ## Recently completed work
+
+### Personality calibration closed
+**Work state:** COMPLETE  
+**Reality / evidence:** OBSERVED ISSUE / calibration objective not established — 2026-09-14  
+**Decisions:** D-023, D-024  
+**Evidence:** E-057
+
+The blind role-play gate produced **1/9** individual identities correct and **0/3** complete trios, with fictional/task roles dominating the observable signal. The principal subsequently chose neutral startup profiles rather than further calibration.
+
 
 ### Blind role-play personality recognizability gate
 **Work state:** COMPLETE  

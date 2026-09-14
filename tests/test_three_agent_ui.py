@@ -105,7 +105,9 @@ def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Pa
     )
     with TestClient(app) as client:
         profiles = client.get("/api/profiles/defaults").json()
-        assert "contextual, connective, and organizational temperament" in profiles["agent_c"]["developer_instructions"]
+        assert profiles["agent_a"]["developer_instructions"] == ""
+        assert profiles["agent_b"]["developer_instructions"] == ""
+        assert profiles["agent_c"]["developer_instructions"] == ""
 
         created = client.post(
             "/api/rooms",
