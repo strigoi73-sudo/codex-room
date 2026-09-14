@@ -1604,3 +1604,60 @@ Verification:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically.
 
+### E-049 — V6.2 behavioral evaluation failed the pre-set complementarity criterion
+**Date:** 2026-09-14  
+**Scope:** [ROOM] controlled D-023 behavioral evaluation of the V6.2 default personalities across the first three established scenarios. The fourth scenario and blind classification were stopped once the agreed 3-of-4 criterion became mathematically unreachable.
+
+All three V6.2 Rooms used the established independent-control pattern: fresh Room, unstarted staging Round replaced by a dedicated evaluation Round, `starting_agent: "either"`, no private initialization, no participant-specific overlays, one common start event, no peer MESSAGE traffic before FINISH, and normal `mutual_finish` closure.
+
+Scenario outcomes:
+
+- **S1 — Café:** qualitative gate **PASS**. A materially changed the option space, B made the evidence structure legible, and C organized the consequential relationships and sequencing. Final recommendations overlapped, but the cognitive work products were visibly more complementary than V4/V5. C still opened with the familiar margin-compression diagnosis, so the pass carried a watch item rather than establishing full verification.
+- **S2 — AI tutoring:** **FAIL**. The prompt contained an obvious selection-bias / causal-inference flaw, and the shared model pulled all three participants into substantially the same organizing frame. B behaved strongly as intended, but A and C also centered their answers on the association-versus-causation objection and converged on essentially the same randomized/phased evaluation plan. Later texture differed, but the complete trio was not reliably distinguishable by cognitive work.
+- **S3 — Manuscript revision:** **FAIL**. All three independently converged on nearly the same intermediate method and recommendation: scene-level diagnosis/map, structural rebuild of the middle, selective cuts, targeted character additions, protection of the strong opening, and a final continuity/pacing pass. A/B/C openings retained some characteristic language, but the reasoning architecture and operational work product were substantially the same.
+
+The pre-established practical criterion for this evaluation family was at least **3 of 4 complete A/B/C trios** showing distinguishable reasoning trajectories. After S2 and S3 both failed, the maximum possible result was only 2 of 4 even if S4 passed. The principal therefore stopped the V6.2 series before the disaster-relief scenario and blind classification.
+
+**Interpretation:** V6.2 was behaviorally better than V5, especially in the café gate, but persistent cognitive-center instructions were still not strong enough to overcome a shared model's attraction to a salient best reasoning path. When the task strongly suggested one high-quality method, the agents could preserve different wording and emphasis while still producing substantially redundant cognition.
+
+This evidence supports moving away from asking three copies of the same model to each produce a complete balanced solution. The next mechanism should make the agents' default contributions intrinsically non-redundant through different required primary work products.
+
+**Status:** OBSERVED ISSUE / V6.2 behavioral criterion NOT MET. V6.2 is superseded as the active default by V7; S4 and blind classification were intentionally not run.
+
+### E-050 — V7 complementary work-product implementation
+**Date:** 2026-09-14  
+**Scope:** [CORE] D-023 revision responding to E-049; exact V6.2 built-in migration; deterministic and hosted verification. This record does not claim live V7 complementarity.
+
+PR #38 changed the standard default personalities from persistent cognitive centers alone to distinct **primary work products**:
+
+- **Agent A — possibility brief.** Broad requests to analyze, advise, or decide do not erase the exploratory scope. A is expected to spend most of its contribution changing the option space, including materially different approaches, at least one option outside the presented framing, combinations/sequences/reversible experiments, leverage/optionality, and kill conditions. Any recommendation is subordinate to that option-space work.
+- **Agent B — evidence audit.** Broad requests do not erase the epistemic scope. B is expected to spend most of its contribution on what is supported, what important conclusion is not supported, competing explanations/premises, discriminating evidence, decision thresholds, and what action is already justified. Any recommendation is concise and tied directly to the evidence threshold.
+- **Agent C — decision map.** C is expected to identify the governing objective, load-bearing constraints/dependencies, interactions, sequencing, downstream effects, and unresolved tensions without silently reproducing a complete option search and evidence audit. In ordinary collaboration it should use peer cognition rather than absorb every missing cognitive job itself.
+
+All three defaults explicitly reject comprehensive balanced coverage merely for completeness. This is the key V7 mechanism: the shared model is not merely asked to think differently while still solving the entire problem in the same way; each default contribution has a different primary deliverable and scope boundary.
+
+The D-023 protected-layer boundary remains unchanged. Shared institutional identity/peer rules, C's structural coordination responsibilities, and Room protocol were not modified. The V7 work-product contracts live only in the replaceable personality layer.
+
+Upgrade behavior adds exact V6.2 personality-body SHA-256 anchors:
+
+- A: `75719cad8fcfe3ea0cbc7c7f6fd903769aad1202732b0fae6f42b818b2616c42`;
+- B: `9b136b537a9c8d2dab39fed3f4aef5f68b33c7a3cdca22e9f961c227bd23cdf3`;
+- C: `78dda32bf9ffbf27818ea858f1c4395891b5357aa85c6ba11edd15c7ac60935d`.
+
+Only exact recognized built-in V6.2 defaults migrate to V7. Non-matching/custom defaults remain preserved, and existing Room snapshots/effective instructions are not silently rewritten.
+
+Verification:
+
+- exact PR head: `739ab2562ef38212ce0e4f4c9ef2fe1808ee4cee`;
+- PR-head Git tree: `0fc53385d726084bbc7f13a5cce551cdde302aff`;
+- GitHub Actions PR run `34873161338`: **315 passed, 2 warnings**;
+- PR #38 squash merge: `1c427954c7471a9d8007bd2ac29bac7d2d3f1655` — `D-023: implement V7 complementary work products`;
+- merge Git tree: `0fc53385d726084bbc7f13a5cce551cdde302aff`, exactly matching the tested PR-head tree;
+- canonical-main GitHub Actions run `34873373728`: **315 passed, 2 warnings**.
+
+**Evidence boundary:** E-050 establishes that V7 is implemented as the active standard default, exact V6.2 built-ins migrate conservatively, custom/default and existing Room-state boundaries remain intact, and the exact merged tree is hosted-verified. It does **not** establish that the shared model will honor the work-product separation in live cognition.
+
+**Next evidence gate:** rerun the known-hard AI tutoring scenario in a fresh V7 Room under the same independent controls. Success requires the complete contributions to be organized around different primary products — A possibility brief, B evidence audit, C decision map — even if all three ultimately oppose an immediate mandate. If that admission gate passes, proceed to a collaborative C-first Room to test complementarity under normal coordination rather than returning immediately to a four-scenario independent blind series.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically.
+

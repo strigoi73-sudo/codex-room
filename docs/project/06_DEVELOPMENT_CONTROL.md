@@ -7,17 +7,17 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The clean V5 café gate again showed first-move convergence: A, B, and C all opened with essentially the same margin-versus-demand diagnosis despite the stronger V5 prohibitions. The remaining V5 scenarios were stopped. V6.2 now replaces opening-only calibration with persistent asymmetric cognitive contracts across the full reasoning cycle and is **IMPLEMENTED / VERIFIED deterministically**. See E-047 and E-048.
-- **What is blocked?** Nothing currently blocks a fresh V6.2 café calibration rerun.
+- **What just changed?** V6.2 improved the personalities but failed the pre-set complementarity criterion: café passed qualitatively, while AI tutoring and manuscript revision both converged on substantially the same reasoning architecture. The series stopped after S3 because the 3-of-4 target had become unreachable. V7 now replaces "different centers of gravity while all solve the whole problem" with **different primary work products and scope boundaries**. See E-049 and E-050.
+- **What is blocked?** Nothing currently blocks a fresh V7 admission gate.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Rerun the café scenario once in a fresh V6.2 Room using the same independent controls. If A/B/C perform visibly complementary cognitive work without obvious pathology, resume the remaining controlled scenarios and blind evaluation.
+- **What is next?** Rerun the known-hard AI tutoring scenario once in a fresh V7 Room under the same independent controls. If A produces a possibility brief, B an evidence audit, and C a decision map without collapsing back into the same causal-analysis answer, move next to a collaborative C-first Room that tests complementarity under normal coordination.
 - **What are we deliberately not doing?** No adjacent archive/retrieval, capability-promotion, fan-out/join, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this personality slice unless explicitly reprioritized.
 
 ## Current Focus
 
 ### Standard default personality behavioral evaluation
 **Work state:** IN PROGRESS  
-**Reality:** V3 DID NOT MEET BLIND CRITERION; V4 and V5 each showed an OBSERVED first-move convergence issue in clean café gates; V6.2 implementation IMPLEMENTED / VERIFIED deterministically; V6.2 behavioral differentiation NOT YET VERIFIED  
+**Reality:** V3 DID NOT MEET BLIND CRITERION; V4/V5 showed clean calibration failures; V6.2 DID NOT MEET the pre-set complementarity criterion; V7 implementation IMPLEMENTED / VERIFIED deterministically; V7 behavioral complementarity NOT YET VERIFIED  
 **Decision:** D-023  
 **Composition evidence:** E-041  
 **V3 implementation evidence:** E-042  
@@ -26,23 +26,59 @@
 **V4 café observation:** E-045  
 **V5 implementation evidence:** E-046  
 **V5 café observation:** E-047  
-**V6.2 implementation evidence:** E-048
+**V6.2 implementation evidence:** E-048  
+**V6.2 behavioral evidence:** E-049  
+**V7 implementation evidence:** E-050
 
-Current objective: test whether persistent asymmetric cognitive contracts can produce complementary cognition from the same underlying model while preserving competence, cooperation, and natural convergence when evidence warrants it.
+Current objective: determine whether explicit, intrinsically different primary work products can produce useful complementary cognition from the same underlying model without requiring manufactured disagreement or sacrificing general competence.
 
-The implemented V6.2 centers of gravity are:
+The implemented V7 defaults preserve the temperament centers but add stronger operating scope:
 
-- **A — "What else could we do?"** Expand and improve the option space, then narrow in terms of leverage, reversibility, optionality, useful learning, and changed tradeoffs.
-- **B — "What are we justified in believing?"** Establish what claims deserve confidence, what evidence matters, and when uncertainty is small enough to act.
-- **C — "How do the consequential parts fit together and behave?"** Map objectives, dependencies, bottlenecks, interactions, sequencing, and downstream consequences, while preserving real unresolved conflict.
+- **A — possibility brief.** Change the option space. A broad request to analyze or decide does not justify a full diagnosis/evidence/system treatment; recommendations are secondary to materially different possibilities, combinations, reversibility, leverage, optionality, and kill conditions.
+- **B — evidence audit.** Establish what deserves belief. Broad requests do not justify a full option search/system treatment; recommendations are concise and tied to supported claims, competing explanations, discriminating evidence, and decision thresholds.
+- **C — decision map.** Establish how the consequential pieces fit together. C identifies objectives, dependencies, constraints, interactions, sequencing, downstream effects, and unresolved tensions without silently reproducing a complete option search and evidence audit. In ordinary collaboration C should use peer cognition instead of absorbing every missing job.
 
-The orientation is designed to persist through evaluation and recommendation, not only the opening move. The B/C boundary is explicit: B primarily interrogates whether propositions or inferences deserve belief; C primarily interrogates how provisionally usable elements relate and what those relationships cause or constrain. All three carry characteristic anti-duplication "move the frontier" behavior and stopping rules.
+This is a different mechanism from V6.2. V6.2 still asked all three agents to produce complete answers and attempted to differentiate the reasoning path through persistent cognitive centers. E-049 showed that a salient "best" reasoning method could still dominate all three. V7 instead makes comprehensive balanced coverage **not** the default job of each participant.
 
-V5 calibration evidence is deliberately bounded. Its single café gate was mechanically clean, yet B opened with "margin problem more clearly than demand problem," while C and A both opened with "margin compression." Later texture differed, but the intended first cognitive trajectories did not. The principal therefore stopped the remaining V5 scenarios and moved to a different mechanism rather than spending additional Rooms on the same failure mode.
+**Next admission gate:** rerun the exact AI tutoring scenario from V6.2 S2 under the same independent controls. The final recommendation may still converge on "do not mandate yet." The gate passes only if the complete work products remain different:
 
-**Next gate:** rerun only the café scenario first with V6.2. A should materially expand the option space, B should make the epistemic structure legible, and C should make the load-bearing relationships legible before their recommendations converge. If the same diagnostic entrance still dominates all three, revise again before spending the remaining Rooms.
+- A should center on expanding the actionable option space rather than spending most of the answer prosecuting the causal claim.
+- B should center on the causal/evidentiary audit and what evidence changes confidence.
+- C should center on the governing objective, dependencies, rollout/implementation relationships, sequencing, and consequences rather than duplicating B's audit.
+
+If all three again organize around selection bias → randomized trial as the dominant work product, stop and revise before broader testing.
+
+If the admission gate passes, the next test should be a **collaborative C-first Room** using normal coordination. The purpose is to observe whether selective peer invocation produces genuinely non-redundant contributions and whether C integrates them without superior-judgment assumptions. Do not return automatically to the old four independent complete-solution series; that protocol tested the mechanism V6.2 was designed around.
 
 ## Recently completed work
+
+### V7 complementary work-product contracts
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-050
+
+PR #38 replaced the V6.2 "persistent cognitive center while still solving the full problem" mechanism with explicit primary deliverables: A possibility brief, B evidence audit, and C decision map. Each default now rejects comprehensive balanced coverage merely for completeness. A/B recommendations are subordinate to their primary work products; C is explicitly told to use peer cognition in ordinary collaborative operation rather than silently absorb every missing job.
+
+The D-023 protected-layer boundary is unchanged: institutional identity/peer rules, C's structural organizer responsibilities, and Room protocol remain outside the replaceable personality body.
+
+Startup migration recognizes the exact V6.2 built-in personality bodies and updates only those defaults to V7. Non-matching/custom default text remains preserved, and existing Room snapshots/effective instructions are not silently rewritten.
+
+Exact PR head `739ab2562ef38212ce0e4f4c9ef2fe1808ee4cee` passed GitHub Actions run `34873161338` with **315 tests, 2 warnings**. PR #38 squash-merged as `1c427954c7471a9d8007bd2ac29bac7d2d3f1655`; merge tree `0fc53385d726084bbc7f13a5cce551cdde302aff` exactly matches the tested PR-head tree. Canonical-main run `34873373728` also passed **315 tests, 2 warnings**.
+
+This establishes V7 implementation, not live behavioral complementarity.
+
+### V6.2 behavioral evaluation
+**Work state:** COMPLETE  
+**Reality / evidence:** OBSERVED ISSUE — pre-set criterion not met — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-049
+
+Three controlled V6.2 scenarios were run under clean independent controls. Café showed meaningful complementary work and passed its qualitative gate, but AI tutoring and manuscript revision both converged strongly on the same dominant reasoning method and operational plan.
+
+The agreed practical target was at least 3 of 4 complete trios. After two failures in the first three scenarios, the maximum possible score was 2 of 4, so the disaster-relief scenario and blind classification were intentionally not run.
+
+The result is stronger than the V4/V5 calibration evidence: V6.2 could produce genuine differentiation when the task left room for several useful approaches, but a salient high-quality reasoning path still overwhelmed the personality contracts. This motivated V7's primary-work-product mechanism.
 
 ### V6.2 persistent complementary cognitive contracts
 **Work state:** COMPLETE  
