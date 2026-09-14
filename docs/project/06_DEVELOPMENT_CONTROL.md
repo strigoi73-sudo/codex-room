@@ -7,19 +7,19 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** D-024 neutral startup profiles are merged and hosted-verified. A/B/C now use identical empty default profile bodies; persistent identity, shared institutional context, Room protocol, and C's protected coordination structure remain. See E-058.
+- **What just changed?** D-025 temporary cognitive framing is merged and verified. C now explicitly knows it may assign A/B temporary task-specific postures, perspectives, scopes, constraints, evidence standards, deliverables, or roles/personas without changing their identity or dictating conclusions. See E-059.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Verify D-025's explicit temporary cognitive-framing instruction on the implementation PR, then exercise it in ordinary Room use before considering any heavier posture subsystem.
+- **What is next?** Exercise D-025 in ordinary Room use and observe whether C chooses useful, economical frames before considering any heavier posture subsystem.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### C temporary cognitive framing
-**Work state:** IN PROGRESS  
-**Reality:** D-025 DECIDED; protected-instruction implementation pending hosted verification  
+**Work state:** COMPLETE for implementation; MONITOR for live usefulness  
+**Reality:** IMPLEMENTED / VERIFIED deterministically  
 **Decision:** D-025  
-**Prior evidence:** E-052, E-058
+**Evidence:** E-059
 
 C's coordination discretion now explicitly includes assigning temporary task-specific working postures, perspectives, scopes, constraints, evidence standards, expected deliverables, or temporary roles/personas to A/B when useful.
 
@@ -31,7 +31,9 @@ Guardrails:
 - C cannot dictate conclusions;
 - A/B remain epistemic peers and may challenge the frame, reject a bad premise, or expand scope when necessary.
 
-The initial implementation intentionally uses existing natural-language delegation. No posture registry, new database object, or UI is warranted without evidence that the semantic capability is insufficient.
+The implementation uses existing natural-language delegation. PR #51 / E-059 verify the protected instruction and guardrails. No posture registry, new database object, profile mutation, or UI is warranted without evidence that the semantic capability is insufficient.
+
+Live usefulness remains a MONITOR item: observe whether C selects useful frames in ordinary work, whether the frames reduce redundant cognition, and whether A/B appropriately retain independent judgment.
 
 ### C delegation-cohort timing
 **Work state:** COMPLETE  
@@ -71,6 +73,15 @@ PR #49 and E-058 verify the implementation: fresh standard composition has no de
 D-025 now authorizes an initial semantic form of dynamic cognitive framing through C's protected coordination instructions. A heavier posture registry/data model/UI remains **NOT IMPLEMENTED** and should not be added unless ordinary use demonstrates a need.
 
 ## Recently completed work
+
+### C temporary cognitive framing
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decision:** D-025  
+**Evidence:** E-059
+
+PR #51 adds explicit protected C discretion to assign temporary task-specific cognitive frames through ordinary delegation while preserving neutral persistent identities and peer judgment. Exact PR head passed **322 tests, 2 warnings**; canonical main passed the same suite on rerun after one recorded intermittent pre-existing timing-test failure on the first attempt.
+
 
 ### Neutral default startup profiles
 **Work state:** COMPLETE  
