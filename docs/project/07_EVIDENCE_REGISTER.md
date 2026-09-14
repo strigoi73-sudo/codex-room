@@ -1944,3 +1944,41 @@ Verification:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically. D-024 neutral startup profiles are COMPLETE.
 
+### E-059 — C temporary cognitive framing
+**Date:** 2026-09-14  
+**Scope:** [CORE] D-025 protected-coordination instruction allowing C to assign temporary task-specific cognitive frames to A/B through ordinary natural-language delegation.
+
+PR #51 changes only C's protected structural coordination instructions plus regression coverage and governing documentation. The new instruction explicitly allows C, when useful, to assign A and/or B:
+
+- temporary working postures or perspectives;
+- scopes and constraints;
+- evidence standards;
+- expected deliverables;
+- temporary roles or personas.
+
+The same protected instruction also states that:
+
+- frames are chosen from the objective rather than fixed A/B specialties;
+- differentiation is optional; identical, overlapping, or independent work may be better;
+- frames are delegation instructions only and do not alter persistent identity, saved profile, or peer standing;
+- C may not dictate conclusions;
+- A/B may challenge the framing, reject a mistaken premise, expand scope when necessary, or return any conclusion supported by their own judgment and evidence.
+
+No posture registry, database object, profile mutation, or UI mechanism was added. The capability uses the existing Room MESSAGE/delegation path.
+
+Verification:
+
+- PR #51 exact head: `547ee44f5fe3215841d22ee26cfc098c2f1299ab`;
+- tested PR-head Git tree: `dfcc00c242acedb7c0ce5b52276a1784bc103e76`;
+- PR Actions run `34902792601`: **322 passed, 2 warnings** in 54.35s;
+- squash merge: `36eafaadd7b7a162ca7d4e8195e90f9498da0b21`;
+- merge Git tree: `dfcc00c242acedb7c0ce5b52276a1784bc103e76`, exactly matching the tested PR-head tree;
+- the first canonical-main Actions attempt on run `34902936137` produced one failure in pre-existing timing-sensitive test `test_finish_preserves_peer_turn_that_is_already_running` (expected peer status `running`, observed `idle`), with **321 passed, 1 failed, 2 warnings**. No D-025 code changed after that attempt;
+- rerunning that exact workflow job on the same canonical-main commit succeeded with **322 passed, 2 warnings** in 53.27s.
+
+**Interpretation:** D-025's implementation is verified on the exact tested bytes and on canonical main. The transient first-attempt orchestrator timing failure was not caused by an intervening D-025 code change and is not claimed fixed here; it is recorded as verification context rather than expanded into a separate repair effort.
+
+**Evidence boundary:** E-059 verifies that C is explicitly instructed and structurally authorized to use temporary cognitive framing through existing natural-language delegation. It does not establish how well C will choose frames in live ordinary use, and it does not implement persistent posture state or deterministic profile rewriting.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically. Live usefulness of C-selected cognitive frames remains to be observed in ordinary Room use.
+
