@@ -60,9 +60,11 @@
                 <button type="button" class="text-button restore-default" data-agent="b">Clear room override</button>
               </div>
             </div>
-            <div class="agent-setup agent-c-border fixed-profile">
-              <span class="agent-glyph c">C</span>
-              <div><strong>Agent C · The Integrator</strong><small>Permanent participant · fixed profile</small></div>
+            <div class="agent-setup agent-c-border">
+              <div class="setup-heading"><span class="agent-glyph c">C</span><div><strong>Agent C</strong><small>Permanent organizer · personality is configurable</small></div></div>
+              <small id="agent-c-profile-hint" class="profile-hint">Using saved Agent C personality</small>
+              <label>Room personality override <span class="optional">optional</span><textarea name="agent_c_instructions" rows="8" maxlength="50000" placeholder="Leave blank to use the saved Agent C personality"></textarea></label>
+              <button type="button" class="text-button restore-default" data-agent="c">Clear room override</button>
             </div>
             <details class="limits">
               <summary>Runaway protection</summary>
@@ -143,11 +145,11 @@
     <dialog id="profiles-dialog">
       <form id="profiles-form" method="dialog">
         <p class="eyebrow">Persistent defaults</p><h2>Agent profiles</h2>
-        <p>These personalities are automatically snapshotted into every new Room. Room overrides and round overlays remain separate.</p>
+        <p>These default personalities are snapshotted into every new Room. Protected identity, Agent C's organizer responsibilities, Room protocol, and round overlays remain separate.</p>
         <div class="round-grid">
-          <div><label>Agent A profile name<input name="agent_a_name" maxlength="120" required /></label><label>Agent A instructions<textarea name="agent_a_instructions" rows="10" maxlength="50000" required></textarea></label></div>
-          <div><label>Agent B profile name<input name="agent_b_name" maxlength="120" required /></label><label>Agent B instructions<textarea name="agent_b_instructions" rows="10" maxlength="50000" required></textarea></label></div>
-          <div class="fixed-profile"><span class="agent-glyph c">C</span><div><strong id="agent-c-profile-name">Agent C</strong><small>Fixed join template</small><p id="agent-c-profile-instructions">The Integrator</p></div></div>
+          <div><label>Agent A personality name<input name="agent_a_name" maxlength="120" required /></label><label>Agent A personality<textarea name="agent_a_instructions" rows="10" maxlength="50000" required></textarea></label></div>
+          <div><label>Agent B personality name<input name="agent_b_name" maxlength="120" required /></label><label>Agent B personality<textarea name="agent_b_instructions" rows="10" maxlength="50000" required></textarea></label></div>
+          <div><label>Agent C personality name<input name="agent_c_name" maxlength="120" required /></label><label>Agent C personality<textarea name="agent_c_instructions" rows="10" maxlength="50000" required></textarea></label></div>
         </div>
         <div class="dialog-actions"><button type="button" class="ghost close-dialog">Cancel</button><button value="default" class="primary" type="submit">Save defaults</button></div>
       </form>
