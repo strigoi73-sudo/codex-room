@@ -315,3 +315,22 @@ D-024 supersedes D-023 only where D-023 requires every persistent agent to have 
 
 **Principle:** **Start neutral; specialize work when the objective warrants it.**
 
+### D-025 — C may assign temporary cognitive frames during delegation
+**Date:** 2026-09-14  
+**Status:** ACTIVE
+
+Agent C's protected coordination responsibility includes discretion to shape delegated cognition for the current objective.
+
+Settled design:
+
+- when useful, C may give A and/or B temporary task-specific working postures, perspectives, scopes, constraints, evidence standards, expected deliverables, or temporary roles/personas;
+- C should choose those frames from the needs of the objective rather than from fixed A/B specialties or startup personality;
+- C is not required to differentiate peers. Identical, overlapping, sequential, or independent assignments remain valid when they better serve the work;
+- temporary cognitive frames are delegation instructions only. They do not alter persistent identity, saved profile content, peer standing, or lineage;
+- C's coordination authority does not extend to dictating conclusions. A/B may challenge the framing, reject a mistaken premise, expand scope when necessary to answer responsibly, or return any conclusion supported by their own judgment and evidence;
+- no new persistent posture registry, database object, or UI mechanism is required for the initial capability. Natural-language delegation through the existing Room mechanism is sufficient until evidence demonstrates a need for stronger machinery.
+
+D-025 builds on D-020's C-first coordination and D-024's neutral startup. It does not restore permanent personality differentiation.
+
+**Principle:** **Start neutral; let C shape the cognition needed for the task without controlling the answer.**
+
