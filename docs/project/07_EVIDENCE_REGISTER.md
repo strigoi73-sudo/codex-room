@@ -1759,3 +1759,42 @@ Verification:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically.
 
+### E-054 — Deterministic C delegation-cohort timing
+**Date:** 2026-09-14  
+**Scope:** [CORE] D-020 coordination-timing repair derived from CG1 / E-052. This work intentionally stops the personality-calibration thread and addresses the demonstrated runtime ordering seam directly.
+
+CG1 showed that C can issue one multi-peer delegation, receive one peer return first, and be awakened immediately by that first return while another peer from the same delegation is still running. The existing integration-before-closure barrier prevented the later peer result from being silently lost, but it did not prevent an unnecessary premature C turn.
+
+PR #43 adds a narrow deterministic **delegation-cohort wake barrier**:
+
+- a C MESSAGE that invokes more than one peer defines one delegation cohort using that exact event and its runnable recipients;
+- when a cohort peer returns a MESSAGE that requests C, C's copy remains public/readable but is temporarily **non-runnable** while sibling cohort members remain unsettled;
+- other explicitly requested recipients of that peer message remain runnable normally;
+- each cohort member is considered settled when its turn caused by the original C delegation produces MESSAGE, PASS, or FINISH;
+- after the complete cohort settles, the runtime emits one durable `delegation_cohort_settled` trigger to C;
+- C's normal delivery coalescing then claims the accumulated passive peer returns plus the one cohort-settled trigger in a single model invocation;
+- single-peer C delegation remains immediate and unchanged;
+- deferred C recipients remain part of causal MESSAGE settlement, so C's later terminal reaction can settle those peer MESSAGE boundaries and allow normal Room closure.
+
+This is deliberately **not** a global fan-out/join primitive. The barrier applies only to peers invoked together by one C delegation event. It changes when C is awakened by that cohort; it does not hide peer messages from the observer, prevent unrelated observer work, or change the protected peer relationship.
+
+Focused regression coverage proves two timing cases:
+
+1. B returns a MESSAGE to C while A is still running. C is not awakened by B alone. After A returns, C receives both A and B returns plus the cohort-settled trigger in one invocation, then the Room closes normally.
+2. One delegated peer returns MESSAGE while the other PASSes. C remains unwoken until both settle, then receives the available return plus the PASS settlement signal.
+
+Verification:
+
+- exact PR head: `7ee029e9ee8678eb6e7645b130311e866e24f87c`;
+- PR-head Git tree: `25defbb94723c90a6698d1acb311e7eff71e17cf`;
+- GitHub Actions PR run `34889003409`: **317 passed, 2 warnings** in 46.14s;
+- PR #43 squash merge: `167ef0cc609ae5635909ae11b722a7842252e570`;
+- merge Git tree: `25defbb94723c90a6698d1acb311e7eff71e17cf`, exactly matching the tested PR-head tree;
+- canonical-main GitHub Actions run `34889163939`: **317 passed, 2 warnings** in 107.79s.
+
+The slower canonical-main pytest duration is recorded as an observation, not a failure: both exact-tree hosted runs passed. No evidence currently attributes the duration difference to the cohort logic.
+
+**Evidence boundary:** E-054 establishes deterministic cohort batching and causal-settlement behavior. It does not yet establish the live hosted/local timing behavior in a real Room.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically. Personality behavioral evaluation is not the active workstream.
+

@@ -148,7 +148,7 @@ Final live verification used a fresh Room whose prompt did not name any capabili
 
 ## 6. Selective invocation and routing
 
-**IMPLEMENTED / HISTORICALLY VERIFIED — 2026-09-09**
+**IMPLEMENTED / VERIFIED — delegation-cohort timing updated 2026-09-14**
 
 `AgentDecision` supports optional `invoke_targets` for MESSAGE outcomes.
 
@@ -164,17 +164,21 @@ Current semantics:
 - running agents retain serialized backlog behavior rather than receiving concurrent turns;
 - private-message authorization remains unchanged.
 
-Routing telemetry records readable recipients, runnable recipients, triggering/passive event IDs, batch IDs, usage, and avoided legacy fan-out.
+D-020 now also has a narrow **C delegation-cohort timing rule**. When one C MESSAGE invokes multiple peers, a peer MESSAGE return addressed to C remains readable but temporarily non-runnable until every peer invoked by that same C event has settled its delegated turn. CORE then creates one durable `delegation_cohort_settled` trigger. C's next claim coalesces the accumulated passive returns plus that trigger. Single-peer delegation remains immediate. Deferred C deliveries remain part of causal MESSAGE settlement, so C's later terminal reaction can settle those peer boundaries normally.
 
-Historical verification after the selective-invocation change: **111 passed, 2 warnings**, with SQLite `quick_check` OK. A real Room exercise used **5 purposeful invocations** while avoiding **4 legacy fan-out invocations**.
+This is not a general join primitive: the cohort is the exact runnable-recipient set of one C delegation event, unrelated work is not globally blocked, and the observer can still see each public peer return as it arrives.
 
-**Monitor:** selective targeting may reduce spontaneous peer challenge if agents under-invoke useful reviewers.
+Routing telemetry records readable recipients, requested/immediate/deferred runnable recipients where applicable, triggering/passive event IDs, delegation-cohort identity, batch IDs, usage, and avoided legacy fan-out.
+
+Historical verification after the original selective-invocation change: **111 passed, 2 warnings**, with SQLite `quick_check` OK. The 2026-09-14 cohort-timing repair is verified by E-054: PR-head and canonical-main exact-tree runs both passed **317 tests, 2 warnings**.
+
+**Monitor:** selective targeting may reduce spontaneous peer challenge if agents under-invoke useful reviewers. Multi-peer cohort batching intentionally trades first-return responsiveness for one coherent C integration turn; live timing behavior remains to be verified.
 
 ## 7. Delivery coalescing
 
 **IMPLEMENTED and worth preserving**
 
-`claim_next_batch()` continues to coalesce multiple pending conversational deliveries into one invocation when appropriate. Selective invocation was designed to preserve this behavior rather than convert delivery into one-event/one-model-call execution.
+`claim_next_batch()` continues to coalesce multiple pending conversational deliveries into one invocation when appropriate. The C delegation-cohort barrier deliberately uses this existing behavior: peer returns stay passive until the cohort-settled trigger makes C runnable, allowing the complete return set to be consumed in one batch rather than one model call per completion.
 
 ## 8. Persistent threads and context management
 
