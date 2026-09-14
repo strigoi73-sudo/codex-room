@@ -2040,8 +2040,19 @@ class RoomRuntime:
         peers = [item for item in participants if item["agent_key"] != agent_key]
         if not peers:
             raise RuntimeError("A Room requires at least one peer")
-        runnable_targets = self._resolve_invoke_targets(
+        requested_runnable_targets = self._resolve_invoke_targets(
             decision, agent_key, participants
+        )
+        delegation_parent = self._multi_peer_c_delegation_parent(batch, agent_key)
+        defer_c_return = (
+            decision.outcome == Outcome.MESSAGE
+            and delegation_parent is not None
+            and "agent_c" in requested_runnable_targets
+        )
+        runnable_targets = tuple(
+            target
+            for target in requested_runnable_targets
+            if not (defer_c_return and target == "agent_c")
         )
         peer_keys = tuple(item["agent_key"] for item in peers)
         ready_peers = {
@@ -2064,9 +2075,20 @@ class RoomRuntime:
                     "batch_id": batch["batch_id"],
                     "invoke_targets": decision.invoke_targets,
                     "readable_recipients": list(peer_keys),
+                    "requested_runnable_recipients": list(requested_runnable_targets),
                     "runnable_recipients": list(runnable_targets),
+                    "deferred_runnable_recipients": (
+                        ["agent_c"] if defer_c_return else []
+                    ),
+                    **(
+                        {
+                            "delegation_cohort_parent_event_id": delegation_parent["id"]
+                        }
+                        if defer_c_return and delegation_parent is not None
+                        else {}
+                    ),
                     "legacy_fanout_invocations_avoided": (
-                        len(peer_keys) - len(runnable_targets)
+                        len(peer_keys) - len(requested_runnable_targets)
                     ),
                     **recovery_metadata,
                 },
@@ -2152,6 +2174,11 @@ class RoomRuntime:
             await self.db.set_agent_status(agent["id"], AgentStatus.READY_TO_FINISH)
             if event.pop("_created", True):
                 self._publish_event(event)
+
+        if delegation_parent is not None and not limit_hit:
+            await self._release_c_delegation_cohort_if_settled(
+                room_id, batch["round_id"], delegation_parent["id"]
+            )
 
         if limit_hit:
             await self.db.set_room_status(room_id, RoomStatus.STOPPED)
@@ -2262,6 +2289,148 @@ class RoomRuntime:
                 ],
             }
         }
+
+    @staticmethod
+    def _multi_peer_c_delegation_parent(
+        batch: dict[str, Any], agent_key: str
+    ) -> dict[str, Any] | None:
+        """Return the C delegation event when this turn belongs to a multi-peer cohort."""
+        triggering = set(batch.get("triggering_event_ids") or [])
+        for event in batch.get("events", []):
+            if event.get("id") not in triggering:
+                continue
+            if event.get("event_type") != "agent_message" or event.get("source") != "agent_c":
+                continue
+            targets = (event.get("metadata") or {}).get("runnable_recipients") or []
+            if (
+                isinstance(targets, list)
+                and len(targets) > 1
+                and agent_key in targets
+            ):
+                return event
+        return None
+
+    async def _release_c_delegation_cohort_if_settled(
+        self, room_id: str, round_id: str, delegation_event_id: str
+    ) -> bool:
+        """Wake C once after every peer in one multi-target C delegation has settled."""
+        events = await self.db.get_round_decision_events(room_id, round_id)
+        delegation = next(
+            (
+                event
+                for event in events
+                if event["id"] == delegation_event_id
+                and event["event_type"] == "agent_message"
+                and event["source"] == "agent_c"
+            ),
+            None,
+        )
+        if delegation is None:
+            return False
+
+        cohort_deliveries = [
+            item for item in delegation.get("deliveries", []) if item.get("runnable")
+        ]
+        if len(cohort_deliveries) < 2:
+            return False
+
+        settlement_signals: dict[str, str] = {}
+        response_event_ids: dict[str, str] = {}
+        returned_message_event_ids: list[str] = []
+        terminal_delivery_states = {"failed", "cancelled"}
+
+        for delivery in sorted(cohort_deliveries, key=lambda item: item["agent_key"]):
+            peer_key = delivery["agent_key"]
+            responses = [
+                event
+                for event in events
+                if event["source"] == peer_key
+                and delegation_event_id
+                in (event.get("metadata") or {}).get("input_event_ids", [])
+            ]
+            if responses:
+                response = responses[-1]
+                signal = response["event_type"].removeprefix("agent_").upper()
+                settlement_signals[peer_key] = signal
+                response_event_ids[peer_key] = response["id"]
+                if response["event_type"] == "agent_message":
+                    returned_message_event_ids.append(response["id"])
+                continue
+            if delivery.get("status") in terminal_delivery_states:
+                settlement_signals[peer_key] = str(delivery["status"]).upper()
+                continue
+            # A delivery may already be marked delivered a few instructions before
+            # its decision event is persisted. Do not release the cohort in that race.
+            return False
+
+        trigger_id = (
+            f"event_{delegation_event_id.removeprefix('event_')}"
+            "_delegation_cohort_settled_agent_c"
+        )
+        trigger = await self.db.create_event(
+            room_id,
+            "delegation_cohort_settled",
+            "room",
+            "agent_c",
+            (
+                "All peers invoked by the same delegation have now settled. "
+                "Integrate the accumulated returns before the next substantive "
+                "recommendation or follow-up. "
+                + ", ".join(
+                    f"{key}: {settlement_signals[key]}"
+                    for key in sorted(settlement_signals)
+                )
+                + "."
+            ),
+            related_event_id=delegation_event_id,
+            metadata={
+                "delegation_event_id": delegation_event_id,
+                "delegation_cohort": [
+                    item["agent_key"]
+                    for item in sorted(
+                        cohort_deliveries, key=lambda item: item["agent_key"]
+                    )
+                ],
+                "settlement_signals": settlement_signals,
+                "response_event_ids": response_event_ids,
+                "returned_message_event_ids": returned_message_event_ids,
+            },
+            deliver_to=("agent_c",),
+            runnable_to=("agent_c",),
+            discussion_id=round_id,
+            round_id=round_id,
+            event_class="conversation",
+            conversational=True,
+            counts_as_turn=False,
+            counts_toward_pass=False,
+            visibility="mechanical",
+            agent_readable=True,
+            turn_triggering=True,
+            event_id=trigger_id,
+        )
+        if trigger.pop("_created", True):
+            self._publish_event(trigger)
+        if await self.db.reopen_ready_agent(room_id, "agent_c"):
+            reopened = await self.db.create_event(
+                room_id,
+                "agent_reopened",
+                "room",
+                "observer",
+                "Agent C received the completed peer delegation cohort and reopened for integration.",
+                related_event_id=trigger["id"],
+                metadata={
+                    "reopened_agent": "agent_c",
+                    "message_source": "room",
+                    "reason": "delegation_cohort_settled",
+                    "delegation_event_id": delegation_event_id,
+                },
+                discussion_id=round_id,
+                round_id=round_id,
+            )
+            self._publish_event(reopened)
+        await self.ensure_workers(room_id)
+        self.wake(room_id, "agent_c")
+        return True
 
     @staticmethod
     def _resolve_invoke_targets(
@@ -2531,15 +2700,22 @@ class RoomRuntime:
             )
             if message is None:
                 continue
+            deferred_runnable = set(
+                (message.get("metadata") or {}).get(
+                    "deferred_runnable_recipients", []
+                )
+            )
             cohort = {
                 delivery["agent_key"]
                 for delivery in message.get("deliveries", [])
                 if delivery.get("runnable")
+                or delivery["agent_key"] in deferred_runnable
             }
             if not cohort or any(
                 delivery["status"] != "delivered"
                 for delivery in message.get("deliveries", [])
                 if delivery.get("runnable")
+                or delivery["agent_key"] in deferred_runnable
             ):
                 continue
             terminal_ids: dict[str, str] = {}
