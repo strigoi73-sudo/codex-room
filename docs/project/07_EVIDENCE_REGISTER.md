@@ -1458,3 +1458,78 @@ Verification:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically.
 
+### E-045 — V4 café first-move calibration observation
+**Date:** 2026-09-14  
+**Scope:** [ROOM] one controlled V4 live rerun under D-023, used as a calibration gate rather than as a completed four-scenario blind evaluation.
+
+A fresh Room titled `D023-V4-S1-Cafe` reran the same family-owned café scenario used in the V3 evaluation.
+
+Mechanical controls were clean:
+
+- the staging opening Round was prepared but never started and closed only as `replaced_by_new_round`;
+- the evaluation Round was `D023-V4-S1-Independent` with `starting_agent: "either"`;
+- A/B/C used the exact V4 standard personality snapshots with no Room personality overrides;
+- there was no private initialization and no participant-specific overlay;
+- all three agents were delivered the same start event and began independently;
+- no agent used MESSAGE or consumed peer conversational output before finishing;
+- each participant produced exactly one substantive FINISH;
+- the Round closed normally with `mutual_finish`.
+
+The principal V4 intervention was stronger first-attentional differentiation. On that target, the live result showed direct convergence:
+
+- A opened by framing the immediate problem as margin rather than demand;
+- B opened by framing the evidence as margin erosion rather than demand collapse;
+- C opened by framing the immediate problem as margin compression rather than demand.
+
+Later reasoning contained some differentiation: A became more generative in menu/operating possibilities, B more explicitly discriminated what the evidence established, and C showed contextual/daypart relationships. But those differences emerged after all three had already entered through substantially the same diagnosis.
+
+**Interpretation:** this is a strong observed calibration failure at the exact first-move seam V4 was designed to strengthen. It does not establish a full V4 blind-evaluation score because the other three scenarios and blind packet were intentionally not run. The human principal explicitly chose to treat this clean Scenario 1 result as sufficient to stop the incremental V4 path and move to a more extreme V5 calibration.
+
+**Status:** OBSERVED ISSUE / V4 first-move calibration insufficient. V4 is superseded as the active default by V5; no completed four-scenario V4 blind verdict is claimed.
+
+### E-046 — V5 strong default-personality calibration implementation
+**Date:** 2026-09-14  
+**Scope:** [CORE] deliberately stronger D-023 personality calibration responding to E-045; conservative V4 built-in migration; deterministic/hosted verification. This record does not claim V5 behavioral differentiation.
+
+PR #34 replaced the active V4 personality bodies with a stronger calibration intended to counter the repeated tendency of a shared capable model to converge on the same generic problem-solving entry point.
+
+The V5 default cognitive priors are:
+
+- **Agent A — strongly exploratory / generative:** natural first move is to expand the possibility space; it explicitly resists beginning with diagnosis unless missing facts make exploration meaningless;
+- **Agent B — strongly skeptical / discriminating:** natural first move is to challenge the epistemic foundation; it explicitly resists leading with solutions before the factual structure has survived examination;
+- **Agent C — strongly contextual / relational:** natural first move is to step outside the immediate question into objectives, dependencies, constraints, and consequences; it explicitly resists leading with local-option generation or fact-by-fact litigation.
+
+The stronger starting priors retain anti-caricature self-correction:
+
+- A distrusts the attractiveness of its possibilities;
+- B distrusts the importance of its objections;
+- C distrusts the completeness of its synthesis.
+
+The D-023 layer boundary remains intact. C's organizer/coordination responsibility is unchanged in the protected structural layer and is not embedded in the replaceable personality body. Protected institutional identity, peer rules, and Room protocol were unchanged.
+
+Upgrade behavior now recognizes the exact V4 default personality bodies by SHA-256:
+
+- A: `ebe03e6456df6eb2ccbf4e82bdeedaf756a4075712266ba16b99201400583d11`;
+- B: `e52156bc3d24a9e39c2a04458edc15cd7fd71ad3164ef7de1d17fa0959488776`;
+- C: `cbea4f0090d33aa22079f9c6692569dac0193bd633e6ed61839f9019020d8706`.
+
+Only recognized exact built-in default profile text migrates to V5. Non-matching/custom profile content remains preserved, and existing Room snapshots/effective instructions are not silently rewritten. Regression coverage verifies V5 first-move and negative-starting constraints, the exact V4 migration identities, recognized-default migration, custom-profile preservation, fresh Room composition, and the UI default-profile contract.
+
+Verification history:
+
+- initial PR head `7e36c63f7cbba684dc0f8233ff65f38646a03cdf`, GitHub Actions run `34863634983`: **310 passed, 1 failed, 2 warnings**;
+- the sole failure was a stale UI assertion expecting the V4 phrase `contextual, relational temperament`; production V5 behavior was not implicated;
+- only that obsolete assertion was changed;
+- exact final PR head: `1b38c76b5cf1cbc606fc2b9df2bf3f1e2b4d66be`;
+- final PR-head Git tree: `c5955136274252f77e065d3a5b54825ba2cae5e2`;
+- GitHub Actions final PR run `34863827367`: **311 passed, 2 warnings**;
+- PR #34 squash merge: `ed8b73fb9f1437a894e926f65e1ca558e0005973` — `Strengthen default personality calibration`;
+- merge Git tree: `c5955136274252f77e065d3a5b54825ba2cae5e2`, exactly matching the tested final PR-head tree;
+- canonical-main GitHub Actions run `34864015525`: **311 passed, 2 warnings**.
+
+**Evidence boundary:** E-046 establishes that the V5 personality texts are implemented, selected for fresh/default-profile use, conservatively migrated from exact V4 built-ins, and deterministically/hosted verified. It does **not** establish that V5 produces the intended strong behavioral differentiation without excessive rigidity or pathology.
+
+**Next evidence gate:** rerun the café scenario in a fresh V5 Room using the same independent controls. Only if the opening trajectories visibly separate should the remaining scenarios and full blind evaluation resume.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically.
+
