@@ -7,17 +7,36 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **I-004 is closed.** The README now consistently describes the permanent A/B/C Personal triad for new Rooms, including first-run instructions and the architecture diagram; no runtime behavior changed.
-- **What is blocked?** Nothing currently blocks selection of the next work item.
+- **What just changed?** **D-023 personality-layer composition is implemented and verified.** A/B/C identities and protected Room rules are now separated from a replaceable personality layer; C's organizer/coordination responsibility remains protected when C's personality is replaced. See E-041.
+- **What is blocked?** Nothing currently blocks the selected personality-design work.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** No new active implementation slice is selected. Personal/CORE capability promotion remains later direction under D-022, and the Personal daily usage pacing limit remains approved planned development under D-019; choose the next priority explicitly before implementation.
-- **What are we deliberately not doing?** No archive/retrieval work, collaboration-quality experiments, provider-neutral implementation, broader productization, or Enterprise expansion unless reprioritized.
+- **What is next?** Define and evaluate the three standard default personalities under D-023, replacing the old Implementer / Verifier / Integrator-derived defaults with meaningfully differentiated general-purpose temperaments. The personality prose itself is not yet implemented.
+- **What are we deliberately not doing?** No adjacent archive/retrieval, capability-promotion, fan-out/join, provider-subagent-routing, provider-neutral, broader productization, or Enterprise work during this personality slice unless explicitly reprioritized.
 
 ## Current Focus
 
-No active implementation slice is selected. Select the next priority explicitly rather than extending a completed phase by default.
+### Standard default personality redesign
+**Work state:** IN PROGRESS  
+**Reality:** EXPLORATORY personality content; composition substrate IMPLEMENTED / VERIFIED  
+**Decision:** D-023  
+**Composition evidence:** E-041
+
+Current objective: define three standard default personalities that are recognizably different in cognitive temperament while remaining general-purpose peers. C's protected organizer/coordination status is structural and must remain independent of C's personality.
+
+The next personality implementation should retire the old Implementer / Verifier / Integrator labels from the default personality bodies, then use controlled behavioral evidence to evaluate whether the three defaults produce independently useful and distinguishable reasoning without manufacturing disagreement.
 
 ## Recently completed work
+
+### Protected identity / replaceable personality composition
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-13  
+**Decision:** D-023  
+**Evidence:** E-041
+
+PR #28 separated protected institutional/structural/protocol instructions from the replaceable personality layer. Room personality overrides now replace the selected default personality instead of being appended to it; A, B, and C all support overrides; C's organizer responsibilities remain protected; exact known built-in defaults migrate conservatively while existing Room snapshots and non-matching custom defaults are preserved.
+
+Exact PR-head and canonical-main hosted verification both passed **305 tests, 2 warnings**, and the squash-merge tree exactly matches the tested PR-head tree. The existing standard personality prose still contains the old role-derived labels and is the current active design target, not a completed part of D-023.
+
 
 ### P4 — Deterministic Room and agent capabilities
 **Work state:** COMPLETE  
@@ -509,4 +528,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question currently blocks selection of the next work item. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is closed. The broader A/B protected-institutional-layer question remains a future design concern unless the human principal explicitly promotes it.
+No high-priority open question blocks the current personality-design work. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is closed. The former protected-institutional-layer design concern is resolved by D-023 / E-041; the open question is now the exact content and empirical differentiation quality of the three standard default personalities.
