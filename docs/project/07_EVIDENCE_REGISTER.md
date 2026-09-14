@@ -1316,3 +1316,42 @@ Post-rollover predecessor stability check:
 
 This live proof satisfies the remaining E-039 boundary: a fresh registered lineage-scoped custom capability survived an actual Room rollover, remained discoverable/inspectable/invokable at the exact inherited identity in the successor, and left the historical predecessor's original binding unchanged.
 
+### E-041 — Protected instruction layers and replaceable A/B/C personalities
+**Date:** 2026-09-13  
+**Scope:** [CORE] personality-composition refactor; deterministic/hosted verification. This record does not claim that the next default personality texts have been behaviorally validated.
+
+PR #28 changed effective agent-instruction composition from an editable whole-prompt / additive-override model to explicit protected and replaceable layers.
+
+Verified behavior:
+
+- A, B, and C effective developer instructions are composed from protected shared institutional/peer rules, agent-specific structural instructions where applicable, one replaceable personality body, and protected Room protocol;
+- C's organizer/coordination responsibilities are carried in the protected structural layer and remain present when C receives a personality override;
+- A/B/C Room personality overrides use the override as the effective personality rather than retaining the saved default personality alongside it;
+- the old `ROOM-SPECIFIC OVERRIDE` additive composition is absent from new effective prompts;
+- all three agents support Room personality overrides, including C;
+- saved default profile rows hold the personality body used for new composition;
+- exact known built-in full-prompt defaults migrate to personality-only default rows;
+- non-matching custom default text and existing Room snapshots are deliberately preserved rather than silently rewritten;
+- normal rollover preserves exact selected profile snapshot, Room override, and effective instructions; the legacy add-C path composes C's protected structure around its selected personality;
+- the previous A/B-only default-profile update API remains compatible and preserves C's saved default when C fields are omitted.
+
+Focused regression tests exercise default composition, all-three override replacement, C structural protection, migration, rollover continuity, UI/API support, and A/B-only update compatibility.
+
+Exact reviewed PR head:
+
+`1265d93e3850b62e03109ef3f6aa5db331ae8e54`
+
+GitHub Actions PR run `34793148740`: **305 passed, 2 warnings**.
+
+PR #28 squash-merged as:
+
+`247aee5f3d6869e0435cadba415ed168b163b345` — `Core: separate protected instructions from replaceable personalities`
+
+The merge Git tree `817c498f21d6ab93cc5523636189a972d054c132` exactly matches the reviewed/tested PR-head tree.
+
+Canonical-main GitHub Actions run `34793231052`: **305 passed, 2 warnings**.
+
+One earlier pre-final PR head produced **303 passed, 1 failed, 2 warnings** because a newly expanded test expected Agent C inside the intentionally two-agent `LegacyPairDatabase` compatibility fixture. The correction kept that fixture pair-scoped and moved triad/C assertions to triad-specific coverage; the failure did not demonstrate a runtime composition defect.
+
+**Evidence boundary:** E-041 verifies instruction composition, persistence, migration, API/UI wiring, and hosted regression behavior. It does not establish that the eventual replacement default personalities are sufficiently differentiated in live model cognition. That remains the current behavioral-design task under D-023.
+
