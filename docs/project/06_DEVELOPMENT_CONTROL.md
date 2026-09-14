@@ -80,8 +80,6 @@ The agreed practical target was at least 3 of 4 complete trios. After two failur
 
 The result is stronger than the V4/V5 calibration evidence: V6.2 could produce genuine differentiation when the task left room for several useful approaches, but a salient high-quality reasoning path still overwhelmed the personality contracts. This motivated V7's primary-work-product mechanism.
 
-
-
 ### V6.2 persistent complementary cognitive contracts
 **Work state:** COMPLETE  
 **Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
