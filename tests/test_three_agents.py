@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 
 import pytest
 from pydantic import ValidationError
 
+import codex_room.db as db_module
 from codex_room.db import Database
 from codex_room.models import (
     AddAgentRequest,
@@ -248,19 +250,78 @@ def test_standard_default_personalities_are_general_purpose_and_distinct() -> No
         "agent_c": AGENT_C_DEFAULT_PERSONALITY,
     }
 
-    assert "exploratory, constructive temperament" in defaults["agent_a"]
+    assert "exploratory, generative temperament" in defaults["agent_a"]
     assert "skeptical, discriminating temperament" in defaults["agent_b"]
     assert "contextual, relational temperament" in defaults["agent_c"]
-    assert "Generating possibilities is not enough." in defaults["agent_a"]
-    assert "Finding a weakness does not automatically defeat an idea." in defaults["agent_b"]
-    assert (
-        "Treat any synthesis or pattern you form as a hypothesis rather than as closure."
-        in defaults["agent_c"]
-    )
+    assert "widen the possibility space before narrowing it" in defaults["agent_a"]
+    assert "establish the epistemic picture" in defaults["agent_b"]
+    assert "determine what the immediate question is connected to" in defaults["agent_c"]
+    assert "Offering a framing does not settle the matter" in defaults["agent_c"]
     for personality in defaults.values():
         assert "The Implementer" not in personality
         assert "The Verifier" not in personality
         assert "The Integrator" not in personality
+
+
+def test_v3_default_personality_hashes_remain_exact_migration_anchors() -> None:
+    assert db_module._V3_DEFAULT_PERSONALITY_SHA256 == {
+        "agent_a": "678d7c48cd652e9237fcfeadd8da20d3595aa708a79deb35cd531263d96e2477",
+        "agent_b": "a0df11ad77c5849cfa39cadfc6efe0d4b302cac587fa5e2f60ab13db6327bd17",
+        "agent_c": "5f7452ee2a40a9ed432d1cacbd404ff836a9539260d1ea1ac01035acd99f0fa9",
+    }
+
+
+@pytest.mark.asyncio
+async def test_exact_v3_defaults_migrate_without_overwriting_custom_text(
+    tmp_path, monkeypatch
+):
+    old_defaults = {
+        "agent_a": "Exact V3 A migration fixture.",
+        "agent_b": "Exact V3 B migration fixture.",
+        "agent_c": "Exact V3 C migration fixture.",
+    }
+    monkeypatch.setattr(
+        db_module,
+        "_V3_DEFAULT_PERSONALITY_SHA256",
+        {
+            slot: hashlib.sha256(text.encode("utf-8")).hexdigest()
+            for slot, text in old_defaults.items()
+        },
+    )
+
+    database = Database(tmp_path / "personality-v4-migration.db")
+    await database.initialize()
+    await database.update_default_profiles(
+        "Agent A default",
+        old_defaults["agent_a"],
+        "Agent B default",
+        old_defaults["agent_b"],
+        "Agent C default",
+        old_defaults["agent_c"],
+    )
+    await database.initialize()
+    migrated = await database.get_default_profiles()
+
+    assert migrated["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
+    assert migrated["agent_b"]["developer_instructions"] == AGENT_B_DEFAULT_PERSONALITY
+    assert migrated["agent_c"]["developer_instructions"] == AGENT_C_DEFAULT_PERSONALITY
+
+    custom_b = old_defaults["agent_b"] + "\nCustom principal preference."
+    await database.update_default_profiles(
+        "Agent A default",
+        old_defaults["agent_a"],
+        "Custom B",
+        custom_b,
+        "Agent C default",
+        old_defaults["agent_c"],
+    )
+    await database.initialize()
+    remigrated = await database.get_default_profiles()
+
+    assert remigrated["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
+    assert remigrated["agent_b"]["developer_instructions"] == custom_b
+    assert remigrated["agent_b"]["name"] == "Custom B"
+    assert remigrated["agent_c"]["developer_instructions"] == AGENT_C_DEFAULT_PERSONALITY
 
 
 @pytest.mark.asyncio
