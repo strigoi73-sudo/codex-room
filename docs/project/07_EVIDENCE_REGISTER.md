@@ -1873,3 +1873,39 @@ Verification:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically; behavioral character-recognizability evaluation NOT YET VERIFIED.
 
+### E-057 — Blind role-play personality recognizability evaluation
+**Date:** 2026-09-14  
+**Scope:** [ROOM] qualitative blind evaluation of the E-056 temperament-only defaults. This evidence tests recognizability, not implementation correctness.
+
+Three fresh role-play Rooms were run with current temperament-only defaults. The first Museum attempt exposed a deterministic C multi-peer delegation-cohort choreography confound and was discarded. A corrected Museum run, a Remote Film Shoot run, and a Community Festival run were then retained under a stricter control: every substantive MESSAGE invoked exactly one peer, mechanical FINISH/PASS material was excluded from the evaluation packet, and each conversation used an independently permuted anonymous speaker mapping.
+
+The fictional responsibilities were deliberately rotated across conversations. The evaluator received only:
+
+- scenario context;
+- fictional role labels;
+- substantive MESSAGE dialogue;
+- the three temperament descriptions from E-056;
+- instructions to classify stable conversational behavior rather than substantive position, professional role, or correctness.
+
+The evaluator did **not** receive the raw Room exports, developer instructions, agent ids, profile snapshots, routing metadata, or the answer key.
+
+Observed classification result:
+
+- Conversation 1 — Museum: **0/3** individual identities correct; **0/1** complete trio.
+- Conversation 2 — Remote Film Shoot: **0/3** individual identities correct; **0/1** complete trio.
+- Conversation 3 — Community Festival: **1/3** individual identities correct; **0/1** complete trio.
+- Aggregate: **1/9** individual identities correct; **0/3** complete trios.
+
+The evaluator's own qualitative conclusion was that the apparent behavioral signal was dominated by the **fictional occupational role** rather than the underlying persistent personality. Its classifications repeatedly mapped creative/purpose roles to exploratory Personality A, operations/sequencing roles to contextual Personality C, and expectation/risk/precision roles to measured Personality B. In the third scenario, the Site/Safety and Vendor/Community roles produced a B/C ambiguity, again reflecting role demands more strongly than persistent identity.
+
+**Interpretation:** this result does not demonstrate that the E-056 personality implementation is defective. It demonstrates that, under a realistic role-play task with differentiated responsibilities, **task/role demands can dominate the observable temperament signal**. Combined with E-043, E-045, E-047, E-049, and E-051, the accumulated evidence supports a broader working conclusion:
+
+- shared-model competence dominates same-task reasoning;
+- assigned cognitive responsibility reliably shapes work product;
+- explicit occupational/fictional role strongly shapes observable conversational behavior;
+- persistent personality text is a comparatively weak signal and has not earned further active calibration effort.
+
+No additional personality wording change is justified by this evaluation. The current E-056 temperament-only defaults remain implemented and may continue as light social/interaction priors.
+
+**Status:** OBSERVED ISSUE for behavioral recognizability; calibration objective NOT ESTABLISHED. Active personality calibration should move to **MONITOR / DEFERRED** unless ordinary Codex Room usage later demonstrates a concrete product problem attributable to insufficient personality distinction.
+
