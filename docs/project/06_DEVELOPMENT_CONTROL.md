@@ -72,8 +72,6 @@ PR #43 changes C wake timing for one multi-peer delegation cohort. Partial peer 
 
 Exact PR head `7ee029e9ee8678eb6e7645b130311e866e24f87c` passed **317 tests, 2 warnings**. Squash merge `167ef0cc609ae5635909ae11b722a7842252e570` has the exact same tree `25defbb94723c90a6698d1acb311e7eff71e17cf`; canonical-main run `34889163939` also passed **317 tests, 2 warnings**.
 
-
-
 ### CG1 coordination gate and C delegated-input settlement repair
 **Work state:** COMPLETE for diagnosis/repair; behavioral verification pending  
 **Reality / evidence:** CG1 PARTIAL PASS / OBSERVED ISSUE; repair IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
