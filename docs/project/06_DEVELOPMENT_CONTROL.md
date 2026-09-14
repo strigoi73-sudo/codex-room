@@ -10,10 +10,28 @@
 - **What just changed?** D-024 neutral startup profiles are merged and hosted-verified. A/B/C now use identical empty default profile bodies; persistent identity, shared institutional context, Room protocol, and C's protected coordination structure remain. See E-058.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Reassess whether a formal dynamic cognitive-posture capability for C is worth adding. That capability remains exploratory and is not implied by D-024.
+- **What is next?** Verify D-025's explicit temporary cognitive-framing instruction on the implementation PR, then exercise it in ordinary Room use before considering any heavier posture subsystem.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
+
+### C temporary cognitive framing
+**Work state:** IN PROGRESS  
+**Reality:** D-025 DECIDED; protected-instruction implementation pending hosted verification  
+**Decision:** D-025  
+**Prior evidence:** E-052, E-058
+
+C's coordination discretion now explicitly includes assigning temporary task-specific working postures, perspectives, scopes, constraints, evidence standards, expected deliverables, or temporary roles/personas to A/B when useful.
+
+Guardrails:
+
+- frames are selected from the objective, not fixed A/B specialties;
+- differentiation is optional rather than mandatory;
+- frames are delegation instructions, not persistent identity/profile changes;
+- C cannot dictate conclusions;
+- A/B remain epistemic peers and may challenge the frame, reject a bad premise, or expand scope when necessary.
+
+The initial implementation intentionally uses existing natural-language delegation. No posture registry, new database object, or UI is warranted without evidence that the semantic capability is insufficient.
 
 ### C delegation-cohort timing
 **Work state:** COMPLETE  
@@ -50,7 +68,7 @@ The former personality-calibration effort remains closed. Behavioral recognizabi
 
 PR #49 and E-058 verify the implementation: fresh standard composition has no default `PERSONALITY` section; E-056 built-ins migrate conservatively to empty defaults; custom profile text remains preserved; and C's protected structural layer remains intact.
 
-A future C-driven dynamic cognitive-posture capability remains **EXPLORATORY / NOT IMPLEMENTED**. Do not conflate that potential feature with D-024: neutral startup is complete independently.
+D-025 now authorizes an initial semantic form of dynamic cognitive framing through C's protected coordination instructions. A heavier posture registry/data model/UI remains **NOT IMPLEMENTED** and should not be added unless ordinary use demonstrates a need.
 
 ## Recently completed work
 

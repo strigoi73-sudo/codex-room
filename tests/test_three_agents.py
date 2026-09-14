@@ -220,6 +220,9 @@ async def test_personality_overrides_replace_defaults_but_preserve_protected_lay
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_a"]["developer_instructions"]
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_b"]["developer_instructions"]
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS in agents["agent_c"]["developer_instructions"]
+    assert "temporary task-specific working postures" in agents["agent_c"]["developer_instructions"]
+    assert "temporary role or persona" in agents["agent_c"]["developer_instructions"]
+    assert "do not authorize C to dictate a conclusion" in agents["agent_c"]["developer_instructions"]
     assert "the first return is only a partial result" in agents["agent_c"]["developer_instructions"]
     assert "Wait until every requested contribution has returned" in agents["agent_c"]["developer_instructions"]
 
@@ -258,6 +261,21 @@ def test_standard_default_profiles_are_identically_neutral() -> None:
         "agent_c": AGENT_C_DEFAULT_PERSONALITY,
     }
     assert defaults == {"agent_a": "", "agent_b": "", "agent_c": ""}
+
+
+def test_c_structural_role_can_assign_temporary_cognitive_frames_without_identity_change() -> None:
+    c_instructions = default_agent_instructions("Agent C", "Agent A")
+    a_instructions = default_agent_instructions("Agent A", "Agent C")
+    b_instructions = default_agent_instructions("Agent B", "Agent C")
+
+    assert "temporary task-specific working postures" in c_instructions
+    assert "temporary role or persona" in c_instructions
+    assert "not according to fixed A/B specialties" in c_instructions
+    assert "They do not change a participant's persistent identity, saved profile" in c_instructions
+    assert "they do not authorize C to dictate a conclusion" in c_instructions
+    assert "may challenge the framing" in c_instructions
+    assert "temporary task-specific working postures" not in a_instructions
+    assert "temporary task-specific working postures" not in b_instructions
 
 
 def test_v3_default_personality_hashes_remain_exact_migration_anchors() -> None:
