@@ -111,7 +111,7 @@ def default_agent_instructions(
     agent_key = key_by_identity.get(name)
     if agent_key is None:
         raise ValueError(f"Cannot infer Codex Room identity from name: {name}")
-    personality = role.strip() if role else DEFAULT_PERSONALITY_BY_AGENT[agent_key]
+    personality = role.strip() if role else ""
     return compose_agent_instructions(agent_key, name, personality)
 
 
