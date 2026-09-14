@@ -10,16 +10,16 @@
 - **What just changed?** The first live D-025 allocation test exposed redundant dual-peer cognition: C invoked A and B with substantially the same analysis and received strongly convergent answers. D-026 now makes peer-count economy explicit and requires meaningful differentiation whenever both peers are invoked. See E-060.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Verify D-026 on the implementation PR, then run a fresh live task to confirm C uses one peer when one is enough and meaningfully differentiated responsibilities when both are invoked.
+- **What is next?** Run a fresh live task to confirm C uses one peer when one is enough and meaningfully differentiated responsibilities when both are invoked.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### C peer-allocation economy and temporary cognitive framing
-**Work state:** IN PROGRESS  
-**Reality:** D-025 implemented; D-026 DECIDED and implementation pending hosted verification  
+**Work state:** COMPLETE for implementation; MONITOR for live compliance  
+**Reality:** IMPLEMENTED / VERIFIED deterministically  
 **Decisions:** D-025, D-026  
-**Evidence:** E-059, E-060
+**Evidence:** E-059, E-060, E-061
 
 C retains D-025 authority to assign temporary task-specific working postures, perspectives, scopes, constraints, evidence standards, expected deliverables, or temporary roles/personas to A/B.
 
@@ -34,7 +34,9 @@ Cosmetic role labels and substantially duplicate analyses do not satisfy the rul
 
 D-025's identity and judgment guardrails remain: frames are temporary delegation instructions; C cannot dictate conclusions; A/B may challenge the frame or premise and remain epistemic peers.
 
-No posture registry, new database object, profile mutation, or UI is warranted without evidence that natural-language delegation is insufficient.
+PR #53 / E-061 verify the protected D-026 rule. No posture registry, new database object, profile mutation, or UI is warranted without evidence that natural-language delegation is insufficient.
+
+Live compliance remains a MONITOR item until a fresh Room demonstrates economical peer count and meaningful dual-peer differentiation in practice.
 
 ### C delegation-cohort timing
 **Work state:** COMPLETE  
@@ -74,6 +76,15 @@ PR #49 and E-058 verify the implementation: fresh standard composition has no de
 D-025 now authorizes an initial semantic form of dynamic cognitive framing through C's protected coordination instructions. A heavier posture registry/data model/UI remains **NOT IMPLEMENTED** and should not be added unless ordinary use demonstrates a need.
 
 ## Recently completed work
+
+### D-026 peer-allocation economy and mandatory differentiation
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decision:** D-026  
+**Evidence:** E-061
+
+PR #53 makes dual-peer differentiation mandatory in C's protected coordination instructions and requires every additional peer invocation to earn its expected cognitive/token cost. PR-head and canonical-main suites both passed **322 tests, 2 warnings**.
+
 
 ### First live D-025 allocation test
 **Work state:** COMPLETE  

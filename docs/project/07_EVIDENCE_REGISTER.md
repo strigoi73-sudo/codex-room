@@ -2008,3 +2008,33 @@ This observation motivates D-026: use the fewest peers that add sufficient value
 
 **Status:** OBSERVED ISSUE for dual-peer allocation efficiency; coordination mechanics PASS; differentiated framing NOT DEMONSTRATED.
 
+### E-061 — D-026 peer-allocation economy and mandatory dual-peer differentiation
+**Date:** 2026-09-14  
+**Scope:** [CORE] protected C coordination rule implementing D-026.
+
+PR #53 updates C's protected structural instructions so that:
+
+- every additional peer invocation must be expected to earn its cognitive and token cost;
+- C should use the fewest peers that can add sufficient value;
+- if one peer is enough, C should invoke one rather than both;
+- if C invokes both A and B in the same delegation, their cognitive responsibilities must be meaningfully differentiated;
+- the differentiation must concern a substantive dimension expected to create complementary value, such as perspective, method, evidence source, scope, constraint, deliverable, or verification responsibility;
+- cosmetic labels and substantially duplicate analyses do not satisfy the rule;
+- independent verification must still differentiate method or responsibility rather than duplicating the same assignment;
+- D-025's temporary-frame, persistent-identity, peer-status, and no-dictated-conclusion guardrails remain intact.
+
+Regression coverage verifies that these requirements appear only in C's protected structural instructions and not in A/B's default instructions.
+
+Verification:
+
+- PR #53 exact head: `280c04b69418cefcd2c2a91ea003ada7872f7717`;
+- tested PR-head Git tree: `c8e635761d4d7aaf5fe619a90e8e86da86dd85cb`;
+- PR Actions run `34905911537`: **322 passed, 2 warnings** in 50.14s;
+- squash merge: `057d5e2ca67356c6dfa642fb1c6bad6e5b71634e`;
+- merge Git tree: `c8e635761d4d7aaf5fe619a90e8e86da86dd85cb`, exactly matching the tested PR-head tree;
+- canonical-main Actions run `34906039452`: **322 passed, 2 warnings** in 53.51s.
+
+**Evidence boundary:** E-061 verifies the protected coordination rule and exact merged bytes. It does not yet establish live compliance by C in a fresh Room.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically. Live behavioral verification remains next.
+
