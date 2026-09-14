@@ -220,6 +220,8 @@ async def test_personality_overrides_replace_defaults_but_preserve_protected_lay
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_a"]["developer_instructions"]
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS not in agents["agent_b"]["developer_instructions"]
     assert AGENT_C_STRUCTURAL_INSTRUCTIONS in agents["agent_c"]["developer_instructions"]
+    assert "the first return is only a partial result" in agents["agent_c"]["developer_instructions"]
+    assert "Wait until every requested contribution has returned" in agents["agent_c"]["developer_instructions"]
 
 
 @pytest.mark.asyncio
