@@ -7,11 +7,11 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** D-023 personality defaults were simplified from mandatory cognitive work products to **temperament-only generalist personalities**. PR #46 is merged and hosted-verified; see E-056.
+- **What just changed?** The blind role-play recognizability gate completed with **1/9 individual identities correct and 0/3 complete trios**. E-057 shows that fictional/task roles dominated the observable temperament signal. Active personality calibration is now **MONITOR / DEFERRED**.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Run three controlled interactive role-play conversations with rotating fictional responsibilities, blind each transcript independently, and have an external evaluator classify the speakers by temperament. Solution divergence is not scored.
-- **What are we deliberately not doing?** No return to same-task independent solution-divergence tests, no stronger mandatory cognitive-work-product prose, and no broader fan-out/join framework or adjacent productization during this evaluation slice.
+- **What is next?** Reassess the roadmap. A dynamic cognitive-posture capability for C is an exploratory candidate; no implementation decision has been made yet.
+- **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
@@ -28,55 +28,46 @@ E-055 verifies the exact timing mechanism end to end. A returned first and remai
 
 The demonstrated timing issue is complete. No further timing retest is currently warranted.
 
-### Personality character-recognizability evaluation
-**Work state:** IN PROGRESS  
-**Reality:** temperament-only defaults IMPLEMENTED / VERIFIED deterministically; live role-play recognizability NOT YET VERIFIED  
+### Personality calibration / recognizability
+**Work state:** MONITOR / DEFERRED  
+**Reality:** temperament-only defaults IMPLEMENTED / VERIFIED deterministically; behavioral recognizability NOT ESTABLISHED  
 **Decision:** D-023  
-**Implementation evidence:** E-056
+**Implementation evidence:** E-056  
+**Behavioral evidence:** E-057
 
-Current working conclusion: the shared model supplies the dominant reasoning competence and principles. Personality should not be expected to force different solutions to the same well-posed problem. Cognitive specialization should come from task allocation when needed.
+The active calibration effort is stopped.
 
-The active personality objective is narrower and more human-like: A/B/C should remain equally capable generalists while showing stable differences in temperament, attention, interaction, emphasis, and expression.
+Accumulated evidence across V3–V7 and the later role-play gate shows that persistent personality text is a weak mechanism relative to stronger influences:
 
-Current defaults:
+- the shared model dominates same-task reasoning;
+- assigned task/cognitive responsibility strongly shapes the work performed;
+- explicit fictional or occupational roles strongly shape observable conversational behavior;
+- personality remains visible, at most, as a lighter influence on attention, tone, emphasis, questioning, and interaction.
+
+The final blind role-play gate produced **1/9 individual identities correct and 0/3 complete trios**. The evaluator explicitly reported that it was largely identifying the fictional jobs rather than persistent personalities. Because the test design itself exposed role dominance, this is not classified as a defective implementation of E-056; it is evidence that recognizability is not an important or reliable acceptance criterion for the current architecture.
+
+The current E-056 defaults remain in place:
 
 - **A:** exploratory, imaginative, forward-moving;
 - **B:** measured, discriminating, precise;
 - **C:** contextual, connective, organizational.
 
-The former V7 possibility-brief / evidence-audit / decision-map obligations are superseded. The assigned task governs the work; personality colors how the participant engages with it.
+They are treated as light social/interaction priors only. They do not define permanent cognitive specialties and should not constrain task assignment.
 
-**Next gate:** three fresh role-play Rooms. Each Room should:
+**Do not resume active personality calibration automatically.** Reopen only if normal Codex Room usage demonstrates a concrete user-facing problem attributable to insufficient personality distinction, or if the principal explicitly chooses to revisit the product value of persistent personalities.
 
-- create an actual multi-turn conversation rather than three independent essays;
-- assign each agent a fictional responsibility through participant-specific Round overlays;
-- rotate role categories so each persistent identity occupies an operations/resource role, a purpose/content role, and a stakeholder/relationship role exactly once across the three conversations;
-- rotate the starting participant across A/B/C;
-- state that the fictional scene is not ordinary Personal coordination and that no character has special coordination authority unless the fictional role supplies it, reducing contamination from C's protected ordinary-operation responsibility;
-- avoid references to personality testing inside the substantive conversation;
-- produce enough interaction to expose questioning, disagreement, initiative, uncertainty style, adaptation, and conversational tone without forcing filler.
-
-After all three exports are collected, blind them before external evaluation. Do **not** give the raw Room JSON to the evaluator because it contains A/B/C identifiers, profile snapshots, developer instructions, routing metadata, and other direct identity leakage.
-
-The blind packet should:
-
-- retain scenario facts, fictional roles, message order, and substantive dialogue;
-- remove developer instructions, profile snapshots, thread ids, agent ids, routing/timing metadata, and evaluation controls;
-- replace A/B/C with fresh anonymous speaker labels **independently for each conversation** so recognition must be repeated rather than carried through one persistent alias;
-- sanitize any accidental Agent A/B/C references inside message text;
-- provide the evaluator only the temperament-level personality descriptions from E-056.
-
-Primary result: whether the evaluator correctly maps each independently blinded three-speaker conversation to A/B/C temperaments, with confidence and cross-message behavioral evidence. Agreement on substantive solutions is neither a success nor failure condition.
-
-Interpretation guide:
-
-- **3/3 complete conversation mappings correct:** strong first evidence of recognizable character;
-- **2/3:** promising but inspect the confused pair and whether role assignment dominated personality;
-- **0–1/3:** insufficient recognizability under this design; inspect interaction traits before revising prose.
-
-This is a small qualitative calibration, not a statistical proof. Do not change the personalities again until the three-conversation packet has been externally classified and the failure mode, if any, is visible.
+A separate exploratory direction is now under principal review: give C the ability to assign temporary cognitive postures and bounded task frames to A/B according to the current objective. This is **EXPLORATORY / NOT IMPLEMENTED** and is not yet a settled replacement for the personality layer.
 
 ## Recently completed work
+
+### Blind role-play personality recognizability gate
+**Work state:** COMPLETE  
+**Reality / evidence:** OBSERVED ISSUE — recognizability objective not established — 2026-09-14  
+**Decision:** D-023  
+**Evidence:** E-057
+
+Three retained role-play conversations were independently blinded and externally classified. Result: **1/9** individual identities correct and **0/3** complete trios. The evaluator's own reasoning showed that fictional occupational roles dominated the personality signal. No further wording revision is warranted; active calibration moves to MONITOR / DEFERRED.
+
 
 ### Temperament-only default personalities
 **Work state:** COMPLETE  
