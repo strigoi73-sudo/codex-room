@@ -1698,3 +1698,64 @@ The result does **not** show that complementary cognition is unattainable in Cod
 
 **Status:** OBSERVED ISSUE / V7 same-task admission gate FAILED. Do not continue same-task personality wording escalation or run the previously planned collaborative test unchanged.
 
+### E-052 — CG1 coordination gate: bounded task allocation worked; C finalized before all requested inputs returned
+**Date:** 2026-09-14  
+**Scope:** [ROOM] controlled coordination-level complementarity gate using the known-hard AI tutoring problem after E-051.
+
+Room `D023-CG1-AI-Tutoring` used Agent C as the sole starting participant, no public/task overlay, no private initialization, and no Room personality overrides. The public prompt required C to use both A and B, choose distinct bounded work for each, and integrate their work before final recommendation.
+
+The coordination mechanism materially changed the behavior relative to E-051.
+
+C decomposed the decision into two distinct dependencies and publicly stated the assignments:
+
+- **Agent A:** causal-evidence assessment;
+- **Agent B:** practical/equitable implementation path.
+
+Both peers honored the bounded assignment rather than returning redundant complete consultant answers.
+
+- **A** focused on the evidentiary question: association versus causal effect, voluntary-selection bias, randomized rollout, pre-specified outcomes, baseline adjustment, and conditions under which a mandate would lose support.
+- **B** focused on implementation: optional supported access, scheduled in-school/advisory availability, devices/connectivity, accessibility/ELL support, teacher training, consent, privacy/academic-integrity rules, and operational/equity thresholds for later expansion.
+
+This is strong evidence that **task allocation, not static personality wording alone, can produce non-redundant peer cognition from the same underlying model**. Notably, C assigned the epistemic job to A and the implementation job to B despite their V7 default centers. The peers followed the bounded task objective, showing that allocation can dominate personality when needed without changing persistent identity.
+
+The gate did not fully pass, however, because C issued its substantive final recommendation after B's implementation return while A's delegated causal-evidence turn was still running. Runtime evidence is exact:
+
+- B's MESSAGE triggered a C turn first;
+- C's substantive FINISH used only B's MESSAGE as its triggering/input event;
+- A's substantive MESSAGE arrived later;
+- because A's unread result crossed C's previous FINISH boundary, the runtime mechanically reopened C before closure;
+- C then consumed A's message and emitted an empty FINISH, after which the Room closed by `reactions_settled`.
+
+Therefore D-020's **mechanical integration-before-closure barrier worked as implemented**: A's late substantive work could not silently cross closure. But C's semantic coordination timing was insufficient. It treated the first of two explicitly requested necessary peer returns as enough to present the final recommendation, then judged the later A result to require no textual revision.
+
+**Interpretation:** CG1 validates the allocation hypothesis but exposes a narrower C-coordination defect. The next change should not add a runtime join barrier yet, because the runtime already provided the required late-input integration opportunity and a global join could unnecessarily reduce responsiveness. The cheapest safe repair is to strengthen C's protected structural coordination instructions: when C explicitly requests multiple peer contributions because each is needed for the decision, treat early returns as provisional and do not present the final recommendation or FINISH until all requested contributions have returned, declined, failed, or been explicitly judged unnecessary.
+
+**Status:** PARTIAL PASS / OBSERVED ISSUE. Bounded task decomposition and peer adherence succeeded; full integration timing failed.
+
+### E-053 — C delegated-input settlement instruction
+**Date:** 2026-09-14  
+**Scope:** [CORE] narrow D-020 protected structural-instruction repair responding to E-052. No personality, scheduler, routing, or Room-protocol change.
+
+PR #41 added one protected C structural coordination rule:
+
+> When C has explicitly requested multiple peer contributions because each is needed for the decision, the first return is only a partial result. C must not present the final recommendation or FINISH merely because one requested contribution arrived first. It should wait until every requested contribution has returned, declined, failed, or been explicitly judged no longer necessary, then integrate the available set. Interim reactions may remain provisional.
+
+This instruction lives in `AGENT_C_STRUCTURAL_INSTRUCTIONS`, not in the replaceable personality layer. A/B protected instructions and all V7 personality bodies are unchanged. The change preserves C's peer status and does not add superior judgment.
+
+The repair deliberately does **not** add a deterministic fan-out/join barrier. E-052 showed that the existing D-020 integration-before-closure mechanism already reopened C when later A work arrived. The demonstrated defect was that C semantically finalized too early, not that the runtime allowed the Room to close without an integration opportunity.
+
+Verification:
+
+- exact PR head: `04fdca71911330a0a4c8607738e89c0e1279311c`;
+- PR-head Git tree: `9af8be81e7cbc1fc7f94c73aafdf295e360e43bd`;
+- GitHub Actions PR run `34887902144`: **315 passed, 2 warnings**;
+- PR #41 squash merge: `2ce2e7c40fbca09ac31e843b7d06dabf13cc387d`;
+- merge Git tree: `9af8be81e7cbc1fc7f94c73aafdf295e360e43bd`, exactly matching the tested PR-head tree;
+- canonical-main GitHub Actions run `34888053548`: **315 passed, 2 warnings**.
+
+**Evidence boundary:** E-053 establishes correct composition and deterministic regression coverage for the protected C settlement rule. It does not establish that C will obey the rule behaviorally.
+
+**Next evidence gate:** rerun CG1 with the same AI tutoring scenario and C-first coordination after pulling/restarting the updated runtime. Success now requires the already-demonstrated distinct A/B task allocation plus C withholding its final recommendation until both explicitly requested peer inputs have settled and then integrating both.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically.
+
