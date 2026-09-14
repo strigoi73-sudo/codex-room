@@ -58,6 +58,8 @@ def test_http_profile_and_staged_round_endpoints(tmp_path):
                 "agent_a_instructions": "persistent A",
                 "agent_b_name": "Reviewer",
                 "agent_b_instructions": "persistent B",
+                "agent_c_name": "Organizer",
+                "agent_c_instructions": "persistent C",
             },
         )
         assert changed.status_code == 200
