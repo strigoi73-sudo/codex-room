@@ -60,6 +60,11 @@ _V3_DEFAULT_PERSONALITY_SHA256 = {
     "agent_b": "a0df11ad77c5849cfa39cadfc6efe0d4b302cac587fa5e2f60ab13db6327bd17",
     "agent_c": "5f7452ee2a40a9ed432d1cacbd404ff836a9539260d1ea1ac01035acd99f0fa9",
 }
+_V4_DEFAULT_PERSONALITY_SHA256 = {
+    "agent_a": "ebe03e6456df6eb2ccbf4e82bdeedaf756a4075712266ba16b99201400583d11",
+    "agent_b": "e52156bc3d24a9e39c2a04458edc15cd7fd71ad3164ef7de1d17fa0959488776",
+    "agent_c": "cbea4f0090d33aa22079f9c6692569dac0193bd633e6ed61839f9019020d8706",
+}
 _INSTITUTIONAL_RELEASE_BINDABLE_ROOM_STATUSES = frozenset(
     {
         RoomStatus.PREPARING,
@@ -622,6 +627,7 @@ class Database:
                 digest == _PRE_PERSONALITY_LAYER_PROFILE_SHA256[slot]
                 or digest == _ROLE_DERIVED_PERSONALITY_SHA256[slot]
                 or digest == _V3_DEFAULT_PERSONALITY_SHA256[slot]
+                or digest == _V4_DEFAULT_PERSONALITY_SHA256[slot]
                 or text == _TRIAD_PROFILE_TEXT[slot]
             ):
                 profile_name = row["name"]
