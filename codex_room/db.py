@@ -15,6 +15,8 @@ from .personalities import (
     AGENT_A_IMPLEMENTER_INSTRUCTIONS,
     AGENT_B_VERIFIER_INSTRUCTIONS,
     AGENT_C_INTEGRATOR_INSTRUCTIONS,
+    DEFAULT_PERSONALITY_BY_AGENT,
+    compose_agent_instructions,
 )
 
 from .models import (
@@ -43,6 +45,11 @@ _EARLY_TRIAD_PROFILE_SHA256 = {
     "agent_c": "7bfe1e10d35c084e1eb8aac8013459fdc3ac48d3824ebd9d728a9ea9ceb0c6cb",
 }
 _EARLY_TRIAD_PROFILE_MIGRATION_ID = "triad_profiles_v2"
+_PRE_PERSONALITY_LAYER_PROFILE_SHA256 = {
+    "agent_a": "5d12def051f832aa83ef2bb929d6d3aa9301b7f9eb387dc8eaece1c30b494493",
+    "agent_b": "aa769b9385fa8ab277769abf45963de732f16a1443d5ff6514f599f5f4def6de",
+    "agent_c": "b07be1545126c2061f82c2128195a091f991ab38a9b0ebbeb92b1d22e7614e62",
+}
 _INSTITUTIONAL_RELEASE_BINDABLE_ROOM_STATUSES = frozenset(
     {
         RoomStatus.PREPARING,
@@ -288,7 +295,7 @@ class Database:
                     (
                         "profile_default_a",
                         "Agent A default",
-                        AGENT_A_IMPLEMENTER_INSTRUCTIONS,
+                        DEFAULT_PERSONALITY_BY_AGENT["agent_a"],
                         "agent_a",
                         now,
                         now,
@@ -296,7 +303,7 @@ class Database:
                     (
                         "profile_default_b",
                         "Agent B default",
-                        AGENT_B_VERIFIER_INSTRUCTIONS,
+                        DEFAULT_PERSONALITY_BY_AGENT["agent_b"],
                         "agent_b",
                         now,
                         now,
@@ -304,7 +311,7 @@ class Database:
                     (
                         "profile_default_c",
                         "Agent C · The Integrator",
-                        AGENT_C_INTEGRATOR_INSTRUCTIONS,
+                        DEFAULT_PERSONALITY_BY_AGENT["agent_c"],
                         "agent_c",
                         now,
                         now,
@@ -386,6 +393,7 @@ class Database:
                     )
             await self._migrate_known_pair_profiles(db, now)
             await self._migrate_known_early_triad_profiles(db, now)
+            await self._migrate_builtin_profiles_to_personality_layers(db, now)
             await db.execute(
                 """CREATE UNIQUE INDEX IF NOT EXISTS idx_events_room_sequence
                    ON events(room_id, sequence_no)"""
@@ -583,6 +591,33 @@ class Database:
             )
             await db.commit()
 
+    async def _migrate_builtin_profiles_to_personality_layers(
+        self, db: aiosqlite.Connection, now: str
+    ) -> None:
+        """Convert exact built-in full prompts to personality-only profile bodies.
+
+        Existing Room snapshots and any non-matching custom default profile text are
+        deliberately preserved. New Rooms compose protected institutional, structural,
+        and protocol layers around the selected profile personality.
+        """
+        defaults = await db.execute_fetchall(
+            """SELECT id, default_slot, developer_instructions FROM agent_profiles
+               WHERE default_slot IN ('agent_a', 'agent_b', 'agent_c')"""
+        )
+        for row in defaults:
+            slot = row["default_slot"]
+            text = row["developer_instructions"]
+            digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            if (
+                digest == _PRE_PERSONALITY_LAYER_PROFILE_SHA256[slot]
+                or text == _TRIAD_PROFILE_TEXT[slot]
+            ):
+                await db.execute(
+                    """UPDATE agent_profiles SET developer_instructions=?, updated_at=?
+                       WHERE id=? AND developer_instructions=?""",
+                    (DEFAULT_PERSONALITY_BY_AGENT[slot], now, row["id"], text),
+                )
+
     async def create_room(self, request: CreateRoomRequest) -> str:
         room_id = new_id("room")
         round_id = new_id("round")
@@ -605,11 +640,15 @@ class Database:
                 raise RuntimeError("Default agent profiles are missing")
             a_profile_text = profile_a["developer_instructions"]
             b_profile_text = profile_b["developer_instructions"]
+            c_profile_text = profile_c["developer_instructions"]
             a_instructions = self._effective_instructions(
-                a_profile_text, request.agent_a_instructions
+                "agent_a", request.agent_a_name, a_profile_text, request.agent_a_instructions
             )
             b_instructions = self._effective_instructions(
-                b_profile_text, request.agent_b_instructions
+                "agent_b", request.agent_b_name, b_profile_text, request.agent_b_instructions
+            )
+            c_instructions = self._effective_instructions(
+                "agent_c", "Agent C", c_profile_text, request.agent_c_instructions
             )
             await db.execute(
                 """INSERT INTO rooms
@@ -669,13 +708,13 @@ class Database:
                     room_id,
                     "agent_c",
                     "Agent C",
-                    profile_c["developer_instructions"],
+                    c_instructions,
                     AgentStatus.INITIALIZING,
                     now,
                     now,
                     profile_c["id"],
-                    profile_c["developer_instructions"],
-                    None,
+                    c_profile_text,
+                    request.agent_c_instructions,
                 ),
             ]
             await db.executemany(
@@ -879,7 +918,9 @@ class Database:
                         successor_id,
                         "agent_c",
                         "Agent C",
-                        profile_c["developer_instructions"],
+                        self._effective_instructions(
+                            "agent_c", "Agent C", profile_c["developer_instructions"], None
+                        ),
                         AgentStatus.INITIALIZING,
                         now,
                         now,
@@ -1231,7 +1272,9 @@ class Database:
                 (
                     agent_id,
                     room_id,
-                    profile["developer_instructions"],
+                    self._effective_instructions(
+                        "agent_c", "Agent C", profile["developer_instructions"], None
+                    ),
                     AgentStatus.INITIALIZING,
                     now,
                     now,
@@ -1445,6 +1488,8 @@ class Database:
         agent_a_instructions: str,
         agent_b_name: str,
         agent_b_instructions: str,
+        agent_c_name: str,
+        agent_c_instructions: str,
     ) -> dict[str, dict[str, Any]]:
         now = utc_now()
         async with self.connect() as db:
@@ -1455,6 +1500,7 @@ class Database:
                 [
                     (agent_a_name, agent_a_instructions, now, "agent_a"),
                     (agent_b_name, agent_b_instructions, now, "agent_b"),
+                    (agent_c_name, agent_c_instructions, now, "agent_c"),
                 ],
             )
             await db.commit()
@@ -3301,10 +3347,14 @@ class Database:
         return result
 
     @staticmethod
-    def _effective_instructions(profile: str, override: str | None) -> str:
-        if not override or not override.strip():
-            return profile
-        return f"{profile}\n\nROOM-SPECIFIC OVERRIDE\n{override.strip()}"
+    def _effective_instructions(
+        agent_key: str,
+        name: str,
+        profile: str,
+        override: str | None,
+    ) -> str:
+        personality = override.strip() if override and override.strip() else profile.strip()
+        return compose_agent_instructions(agent_key, name, personality)
 
     @staticmethod
     def _event_traits(event_type: str) -> tuple[str, bool, bool, bool, bool, bool, str]:
