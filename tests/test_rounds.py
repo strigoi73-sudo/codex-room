@@ -21,6 +21,13 @@ from codex_room.models import (
     RoomStatus,
 )
 from codex_room.orchestrator import RoomRuntime
+from codex_room.personalities import (
+    AGENT_A_DEFAULT_PERSONALITY,
+    AGENT_B_DEFAULT_PERSONALITY,
+    AGENT_C_DEFAULT_PERSONALITY,
+    AGENT_C_STRUCTURAL_INSTRUCTIONS,
+    ROOM_PROTOCOL_INSTRUCTIONS,
+)
 
 from .fakes import FakeAgentAdapter, LegacyPairDatabase, wait_until
 
@@ -355,7 +362,12 @@ async def test_persistent_profiles_are_snapshotted_into_new_rooms(runtime_factor
     adapter = FakeAgentAdapter()
     runtime = await runtime_factory(adapter, "profiles.db")
     await runtime.db.update_default_profiles(
-        "Explorer", "persistent A personality", "Synthesizer", "persistent B personality"
+        "Explorer",
+        "persistent A personality",
+        "Synthesizer",
+        "persistent B personality",
+        "Organizer",
+        "persistent C personality",
     )
     room = await runtime.create_room(
         CreateRoomRequest(topic="Profile inheritance", starting_agent="agent_a")
@@ -363,8 +375,12 @@ async def test_persistent_profiles_are_snapshotted_into_new_rooms(runtime_factor
     agents = {agent["agent_key"]: agent for agent in room["agents"]}
     assert agents["agent_a"]["profile_snapshot"] == "persistent A personality"
     assert agents["agent_b"]["profile_snapshot"] == "persistent B personality"
-    assert agents["agent_a"]["developer_instructions"] == "persistent A personality"
-    assert agents["agent_b"]["developer_instructions"] == "persistent B personality"
+    assert agents["agent_c"]["profile_snapshot"] == "persistent C personality"
+    assert "persistent A personality" in agents["agent_a"]["developer_instructions"]
+    assert "persistent B personality" in agents["agent_b"]["developer_instructions"]
+    assert "persistent C personality" in agents["agent_c"]["developer_instructions"]
+    assert ROOM_PROTOCOL_INSTRUCTIONS in agents["agent_a"]["developer_instructions"]
+    assert AGENT_C_STRUCTURAL_INSTRUCTIONS in agents["agent_c"]["developer_instructions"]
 
 
 @pytest.mark.asyncio
@@ -418,8 +434,8 @@ async def test_known_pair_profile_migration_repairs_only_live_unmodified_snapsho
 
     await database.initialize()
     defaults = await database.get_default_profiles()
-    assert defaults["agent_a"]["developer_instructions"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
-    assert defaults["agent_b"]["developer_instructions"] == AGENT_B_VERIFIER_INSTRUCTIONS
+    assert defaults["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
+    assert defaults["agent_b"]["developer_instructions"] == AGENT_B_DEFAULT_PERSONALITY
     active = {item["agent_key"]: item for item in await database.get_agents(active_id)}
     assert active["agent_a"]["profile_snapshot"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
     assert active["agent_b"]["profile_snapshot"] == AGENT_B_VERIFIER_INSTRUCTIONS
@@ -504,8 +520,8 @@ async def test_early_triad_profile_migration_repairs_exact_observed_builtins(
     await database.initialize()
 
     defaults = await database.get_default_profiles()
-    assert defaults["agent_a"]["developer_instructions"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
-    assert defaults["agent_b"]["developer_instructions"] == AGENT_B_VERIFIER_INSTRUCTIONS
+    assert defaults["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
+    assert defaults["agent_b"]["developer_instructions"] == AGENT_B_DEFAULT_PERSONALITY
     async with database.connect() as connection:
         c_default = await database._fetchone(
             connection,
@@ -513,7 +529,7 @@ async def test_early_triad_profile_migration_repairs_exact_observed_builtins(
             (),
         )
     assert c_default is not None
-    assert c_default["developer_instructions"] == AGENT_C_INTEGRATOR_INSTRUCTIONS
+    assert c_default["developer_instructions"] == AGENT_C_DEFAULT_PERSONALITY
 
     active = {item["agent_key"]: item for item in await database.get_agents(active_id)}
     assert active["agent_a"]["profile_snapshot"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
@@ -543,9 +559,9 @@ async def test_early_triad_profile_migration_repairs_exact_observed_builtins(
         CreateRoomRequest(topic="fresh after migration", auto_start=False)
     )
     fresh = {item["agent_key"]: item for item in await database.get_agents(fresh_id)}
-    assert fresh["agent_a"]["profile_snapshot"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
-    assert fresh["agent_b"]["profile_snapshot"] == AGENT_B_VERIFIER_INSTRUCTIONS
-    assert fresh["agent_c"]["profile_snapshot"] == AGENT_C_INTEGRATOR_INSTRUCTIONS
+    assert fresh["agent_a"]["profile_snapshot"] == AGENT_A_DEFAULT_PERSONALITY
+    assert fresh["agent_b"]["profile_snapshot"] == AGENT_B_DEFAULT_PERSONALITY
+    assert fresh["agent_c"]["profile_snapshot"] == AGENT_C_DEFAULT_PERSONALITY
 
     await database.initialize()
     active_room = await database.get_room(active_id)
@@ -560,10 +576,46 @@ async def test_early_triad_profile_migration_repairs_exact_observed_builtins(
 
 
 @pytest.mark.asyncio
+async def test_builtin_full_prompt_defaults_migrate_to_personality_only(
+    tmp_path, monkeypatch
+):
+    database = Database(tmp_path / "personality-layer-migration.db")
+    await database.initialize()
+    legacy = {
+        "agent_a": "legacy full prompt A",
+        "agent_b": "legacy full prompt B",
+        "agent_c": "legacy full prompt C",
+    }
+    monkeypatch.setattr(
+        db_module,
+        "_PRE_PERSONALITY_LAYER_PROFILE_SHA256",
+        {
+            key: hashlib.sha256(value.encode("utf-8")).hexdigest()
+            for key, value in legacy.items()
+        },
+    )
+    async with database.connect() as connection:
+        for key, text in legacy.items():
+            await connection.execute(
+                "UPDATE agent_profiles SET developer_instructions=? WHERE default_slot=?",
+                (text, key),
+            )
+        await connection.commit()
+
+    await database.initialize()
+    defaults = await database.get_default_profiles()
+    assert defaults["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
+    assert defaults["agent_b"]["developer_instructions"] == AGENT_B_DEFAULT_PERSONALITY
+    assert defaults["agent_c"]["developer_instructions"] == AGENT_C_DEFAULT_PERSONALITY
+
+
+@pytest.mark.asyncio
 async def test_room_override_does_not_mutate_persistent_profile(runtime_factory):
     adapter = FakeAgentAdapter()
     runtime = await runtime_factory(adapter, "overrides.db")
-    await runtime.db.update_default_profiles("A", "base A", "B", "base B")
+    await runtime.db.update_default_profiles(
+        "A", "base A", "B", "base B", "C", "base C"
+    )
     room = await runtime.create_room(
         CreateRoomRequest(
             topic="Override",
@@ -575,8 +627,9 @@ async def test_room_override_does_not_mutate_persistent_profile(runtime_factory)
     defaults = await runtime.db.get_default_profiles()
     assert agent_a["profile_snapshot"] == "base A"
     assert agent_a["room_override"] == "only this room"
-    assert "base A" in agent_a["developer_instructions"]
+    assert "base A" not in agent_a["developer_instructions"]
     assert "only this room" in agent_a["developer_instructions"]
+    assert ROOM_PROTOCOL_INSTRUCTIONS in agent_a["developer_instructions"]
     assert defaults["agent_a"]["developer_instructions"] == "base A"
 
 
