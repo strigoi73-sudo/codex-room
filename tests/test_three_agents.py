@@ -252,28 +252,29 @@ def test_standard_default_personalities_are_general_purpose_and_distinct() -> No
         "agent_c": AGENT_C_DEFAULT_PERSONALITY,
     }
 
-    assert "strongly exploratory and generative temperament" in defaults["agent_a"]
-    assert "strongly skeptical and discriminating temperament" in defaults["agent_b"]
-    assert "strongly contextual and relational temperament" in defaults["agent_c"]
-    assert "**What else could we do?**" in defaults["agent_a"]
-    assert "**What are we justified in believing?**" in defaults["agent_b"]
-    assert "**How do the consequential parts fit together and behave?**" in defaults["agent_c"]
-    assert "primary work product is a **possibility brief**" in defaults["agent_a"]
-    assert "primary work product is an **evidence audit**" in defaults["agent_b"]
-    assert "primary work product is a **decision map**" in defaults["agent_c"]
-    assert "does not turn you into a comprehensive generalist" in defaults["agent_a"]
-    assert "does not turn you into a comprehensive generalist" in defaults["agent_b"]
-    assert "does not require you to reproduce a complete option search and evidence audit yourself" in defaults["agent_c"]
-    assert "Keep the recommendation subordinate to the option-space work" in defaults["agent_a"]
-    assert "tie it directly to the evidence threshold" in defaults["agent_b"]
-    assert "use peer cognition instead of silently absorbing every missing job yourself" in defaults["agent_c"]
-    assert "Leave epistemic auditing, broad systems mapping, and final integration to complementary work" in defaults["agent_a"]
-    assert "Leave broad option generation, system architecture, and final integration to complementary work" in defaults["agent_b"]
-    assert "Leave detailed evidence auditing and broad option generation to complementary work" in defaults["agent_c"]
+    assert "exploratory, imaginative, and forward-moving temperament" in defaults["agent_a"]
+    assert "measured, discriminating, and precise temperament" in defaults["agent_b"]
+    assert "contextual, connective, and organizational temperament" in defaults["agent_c"]
+
     for personality in defaults.values():
+        assert "fully capable generalist" in personality
+        assert "The task you are assigned governs the work you should do" in personality
+        assert "not through" in personality
+        assert "different conclusion" in personality
+        assert "primary work product" not in personality
+        assert "possibility brief" not in personality
+        assert "evidence audit" not in personality
+        assert "decision map" not in personality
         assert "The Implementer" not in personality
         assert "The Verifier" not in personality
         assert "The Integrator" not in personality
+
+    assert "what if" in defaults["agent_a"]
+    assert "novelty bias" in defaults["agent_a"]
+    assert "clarify before overstating" in defaults["agent_b"]
+    assert "criticism without progress" in defaults["agent_b"]
+    assert "connect pieces that others have separated" in defaults["agent_c"]
+    assert "protected coordination responsibilities" in defaults["agent_c"]
 
 
 def test_v3_default_personality_hashes_remain_exact_migration_anchors() -> None:
@@ -306,6 +307,67 @@ def test_v6_2_default_personality_hashes_remain_exact_migration_anchors() -> Non
         "agent_b": "9b136b537a9c8d2dab39fed3f4aef5f68b33c7a3cdca22e9f961c227bd23cdf3",
         "agent_c": "78dda32bf9ffbf27818ea858f1c4395891b5357aa85c6ba11edd15c7ac60935d",
     }
+
+
+def test_v7_default_personality_hashes_remain_exact_migration_anchors() -> None:
+    assert db_module._V7_DEFAULT_PERSONALITY_SHA256 == {
+        "agent_a": "5462686efba369af926bee543fdb27b53145fce9c02ad581eefca26057acc503",
+        "agent_b": "ca4f58aee7040dccdbfecae94088d2ae88e1eb0366b7a20f234f7a27e0039c34",
+        "agent_c": "1c19a8d4d39a7d148c29725f55ee0f8239c45503090f2eb77a143c3df88b1afa",
+    }
+
+
+@pytest.mark.asyncio
+async def test_exact_v7_defaults_migrate_without_overwriting_custom_text(
+    tmp_path, monkeypatch
+):
+    old_defaults = {
+        "agent_a": "Exact V7 A migration fixture.",
+        "agent_b": "Exact V7 B migration fixture.",
+        "agent_c": "Exact V7 C migration fixture.",
+    }
+    monkeypatch.setattr(
+        db_module,
+        "_V7_DEFAULT_PERSONALITY_SHA256",
+        {
+            slot: hashlib.sha256(text.encode("utf-8")).hexdigest()
+            for slot, text in old_defaults.items()
+        },
+    )
+
+    database = Database(tmp_path / "personality-temperament-migration.db")
+    await database.initialize()
+    await database.update_default_profiles(
+        "Agent A default",
+        old_defaults["agent_a"],
+        "Agent B default",
+        old_defaults["agent_b"],
+        "Agent C default",
+        old_defaults["agent_c"],
+    )
+    await database.initialize()
+    migrated = await database.get_default_profiles()
+
+    assert migrated["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
+    assert migrated["agent_b"]["developer_instructions"] == AGENT_B_DEFAULT_PERSONALITY
+    assert migrated["agent_c"]["developer_instructions"] == AGENT_C_DEFAULT_PERSONALITY
+
+    custom_c = old_defaults["agent_c"] + "\nCustom principal preference."
+    await database.update_default_profiles(
+        "Agent A default",
+        old_defaults["agent_a"],
+        "Agent B default",
+        old_defaults["agent_b"],
+        "Custom C",
+        custom_c,
+    )
+    await database.initialize()
+    remigrated = await database.get_default_profiles()
+
+    assert remigrated["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
+    assert remigrated["agent_b"]["developer_instructions"] == AGENT_B_DEFAULT_PERSONALITY
+    assert remigrated["agent_c"]["developer_instructions"] == custom_c
+    assert remigrated["agent_c"]["name"] == "Custom C"
 
 
 @pytest.mark.asyncio
