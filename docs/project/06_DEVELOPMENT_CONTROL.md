@@ -70,8 +70,6 @@ The V5 café rerun was mechanically clean under the same independent controls. A
 
 The principal stopped the remaining V5 scenarios and selected a different mechanism for V6.2: persistent asymmetric cognitive contracts rather than further adjective-level strengthening of opening temperament.
 
-
-
 ### V5 strong personality calibration
 **Work state:** COMPLETE  
 **Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
