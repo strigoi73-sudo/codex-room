@@ -273,3 +273,24 @@ Settled direction:
 This sets product architecture and continuity requirements. It does not claim that custom registration, rollover inheritance, Personal promotion, or the broader default library are implemented yet.
 
 **Principle:** **Agents decide when cognition should become software; Codex Room makes that software discoverable, verifiable, persistent, and reusable.**
+
+### D-023 — Persistent agent identity is separate from replaceable personality
+**Date:** 2026-09-13  
+**Status:** ACTIVE
+
+Codex Room Personal should treat Agent A, Agent B, and Agent C as persistent organizational identities rather than permanent occupational roles.
+
+Settled design:
+
+- every persistent agent has a standard default personality;
+- the human principal may replace the personality of A, B, or C without changing that agent's persistent identity, peer status, history, or protected structural responsibilities;
+- a Room-specific personality override replaces the selected default personality rather than being appended to it as a competing instruction;
+- shared institutional identity/peer rules and Room protocol remain protected outside the replaceable personality layer;
+- C retains protected organizer/coordination responsibilities regardless of C's current personality;
+- C's organizer status grants no superior judgment or authority over A or B;
+- exact default-personality wording is deliberately below the Charter/Constitution level and may be refined empirically without reopening the three-agent architecture.
+
+This decision supersedes D-020 only where D-020 names **Implementer / Verifier / Integrator** as permanent agent-role descriptors. D-020's permanent-triad, C-first coordination, direct peer communication, selective invocation, and integration-before-closure requirements remain active.
+
+**Implementation status:** the protected-instruction / replaceable-personality composition model is **IMPLEMENTED / VERIFIED** by PR #28 and E-041. The existing default personality prose still contains the older Implementer / Verifier / Integrator labels pending the next deliberate personality-design slice; those labels are no longer the governing architectural definition of A, B, and C.
+
