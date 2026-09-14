@@ -297,11 +297,17 @@ A and B currently have no special protected structural role beyond the shared pe
 
 Default profile rows now store the personality body for each slot. When a new Room is created, the runtime composes the protected layers around either the saved default personality or a Room-specific personality override. An override **replaces** the selected default personality; the old additive `profile + ROOM-SPECIFIC OVERRIDE` composition is no longer used for new Rooms. A/B/C all support Room personality overrides, including C.
 
-The migration converts only exact known built-in full-prompt defaults to personality-only default rows. Non-matching custom default content is preserved deliberately, and existing Room snapshots/effective instructions are not silently rewritten. Normal triad rollover continues to carry the exact predecessor agent configuration forward; the legacy add-C path composes C's protected structural/protocol layers around the selected C personality.
+The migration converts only exact known built-in defaults to the current personality-only default rows. This now includes both the earlier full-prompt built-ins and the exact role-derived personality-only defaults that were active immediately before the standard-personality redesign. Non-matching custom default content is preserved deliberately, and existing Room snapshots/effective instructions are not silently rewritten. Normal triad rollover continues to carry the exact predecessor agent configuration forward; the legacy add-C path composes C's protected structural/protocol layers around the selected C personality.
 
-The current standard personality bodies intentionally remain the pre-existing Implementer / Verifier / Integrator-derived text pending the separate default-personality redesign. Those labels no longer define the durable institutional architecture; D-023 governs the identity/personality separation.
+The standard default personalities are now general-purpose cognitive temperaments rather than occupational roles:
 
-Verification is recorded in E-041. PR #28 exact head `1265d93e3850b62e03109ef3f6aa5db331ae8e54` and canonical-main squash merge `247aee5f3d6869e0435cadba415ed168b163b345` have the same Git tree; both hosted test runs passed **305 tests, 2 warnings**.
+- Agent A is exploratory and constructive: it tends to expand the possibility space, make uncertainty concrete, and learn through bounded contact with reality;
+- Agent B is skeptical and discriminating: it tends to separate observation from inference, test premises and evidence, and distinguish material objections from non-fatal limitations;
+- Agent C is contextual and relational: it tends to examine surrounding purpose, relationships, relevance, and consequences while treating its own synthesis as a hypothesis rather than closure.
+
+The former Implementer / Verifier / Integrator labels are retired from the active default personality bodies. C's organizer/coordination responsibility remains only in the protected structural layer, not in C's personality.
+
+Composition verification remains recorded in E-041. The redesigned default-personality implementation and conservative migration are recorded in E-042. PR #30 exact head `b65a8aedac9f0212e19e9535070cbaf798f0816d` and canonical-main squash merge `412b0f68eca5150a99042f7ced2038eaf75bcf8c` have the same Git tree; both final hosted test runs passed **307 tests, 2 warnings**. Behavioral differentiation of the new defaults remains to be established through controlled live Room evidence.
 
 ## 14. Runtime-state and work-queue caution
 
