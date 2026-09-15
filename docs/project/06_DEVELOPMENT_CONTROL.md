@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, **A3 — Whole-system housekeeping, efficiency, and operational assurance audit**, and **I-012 — authorized CORE/cross-Room read inspection** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** E-084 completed the blind Stage 2 fixture attempt. Desktop correctly found the intended shutdown-order defect in 8 tool calls / 279,098 reported tokens. The Room did not complete the task: C used 38 tool calls and 1,805,314 task-only reported tokens, inspected substantial CORE material despite the shared-workspace-only scope, invoked no peers, then stated it was awaiting two peer audits while emitting `invoke_targets: []`; the Room closed with no runnable work. No paid rerun is justified before deterministic diagnosis.
+- **What just changed?** E-085 traced E-084's 39 task provider responses to the single SDK turn's internal tool loop: 38 tool calls caused repeated model/tool continuations while Room `tool_activity` events were recorded only after the turn completed. PR #70 removes mandatory registry ceremony from ordinary one-off workspace work, emphasizes few/batched tool continuations, preserves explicit workspace-only boundaries, and shortens the repeated capability guidance by 33.1%. The repair is canonically verified; token savings are not claimed until ordinary work demonstrates them.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Diagnose the two E-084 Room failures deterministically from CORE source/tests: (1) why C left the explicitly supplied shared-workspace scope for CORE inspection, and (2) why C's prose claimed it was awaiting peer audits while its structured action invoked nobody. Do not commission another paid Room rerun merely to reproduce either failure. After bounded diagnosis/repair decision, return to **I-010**. No automatic router is authorized.
+- **What is next?** Return to **I-010** outside the protected Room using the grounded candidate specification from E-080. Continuation economy is now MONITOR through useful work; do not commission another synthetic Desktop-vs-Room or model benchmark merely to measure PR #70. The E-084 stated-vs-structured peer-invocation inconsistency remains an observed issue to revisit only if it recurs in useful work. No automatic router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -27,7 +27,7 @@ Ordered remediation:
 1. **I-007 — Environment and documentation truth drift (COMPLETE):** Python support-floor, README/Architecture/Operations truth, and Development Control context hygiene repaired; see E-066.
 2. **I-008 — Repository branch hygiene (COMPLETE):** merged-branch residue removed and automatic deletion of future merged PR heads enabled; see E-067.
 3. **I-009 — Runtime provenance and maintenance health (COMPLETE):** deterministic runtime/source/model-policy provenance, watchdog degradation/recovery health, and durable execution-level model/effort/usage facts implemented and canonically verified; see E-068.
-4. **P1 follow-up — Model/reasoning-effort economy:** same-thread C-selected peer switching is live verified; E-080 invalidated one apparent naturalistic allocation because cognition went through SDK-internal subagents rather than Room A/B.
+4. **P1 follow-up — Model/reasoning-effort and continuation economy (COMPLETE / MONITOR):** same-thread selection is live verified; hidden SDK subagents are disabled; E-083–E-085 establish continuation amplification and the bounded PR #70 repair. No further dedicated paid benchmarking is planned.
 5. **I-012 — Authorized CORE and cross-Room read inspection (COMPLETE):** the I-010 evidence boundary was repaired and live verified under D-029 / E-078 / E-079.
 6. **I-013 — SDK-internal subagent bypass (COMPLETE):** Codex's ambient multi-agent surface is disabled so production cognition routes through persistent Room A/B/C and its execution-accounting path; see E-080.
 7. **I-014 — Deterministic retrieval economy (COMPLETE):** request-file/repeated-retrieval amplification is repaired with direct/batched source retrieval, targeted verification of delegated evidence, and compact per-execution economics telemetry; see E-081.
@@ -154,8 +154,8 @@ Current order:
 1. I-007 — environment/document truth and context hygiene;
 2. I-008 — merged-branch/repository hygiene;
 3. I-009 — runtime provenance, maintenance-health visibility, and usage instrumentation;
-4. P1 follow-up — empirical model/reasoning-effort economy investigation;
-5. I-010 — deterministic persistent-data integrity/backup/restore maintenance;
+4. P1 follow-up — COMPLETE / MONITOR through ordinary useful work;
+5. I-010 — deterministic persistent-data integrity/backup/restore maintenance — **NEXT**;
 6. I-011 — verification-platform and dependency assurance cleanup.
 
 Do not collapse this into one large refactor. Each item should close on bounded evidence, and later items should reuse instrumentation established earlier.
@@ -184,11 +184,11 @@ GitHub Actions runs the canonical Python suite on pushes to `main` and pull requ
 
 P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, the minimal CORE library, agent-created custom capability registration/verification, and lineage rollover inheritance have all been verified end to end. P4 is closed. Personal/CORE promotion remains later work under D-022 and requires separate explicit prioritization.
 
-### P1 follow-up — Model/reasoning-effort economy
-**Work state:** IN PROGRESS  
-**Reality:** EXPLORATORY  
-**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076, E-077, E-080, E-081, E-082, E-083, E-084  
-**Current gate:** E-083/E-084 are sufficient to stop dedicated paid Desktop-vs-Room comparison runs. Stage 2 independently confirms severe continuation/tool-loop amplification and additionally exposes two demonstrated Room-quality failures: scope selection escaped an explicit shared-workspace-only task, and C's stated coordination plan diverged from its structured peer-invocation action. Diagnose those mechanically before deciding whether a CORE repair is warranted; treat any recurrence of `sub_agent_activity` as a regression rather than P1 evidence.
+### P1 follow-up — Model/reasoning-effort and continuation economy
+**Work state:** COMPLETE / MONITOR  
+**Reality:** IMPLEMENTED / VERIFIED mechanisms; ordinary-use savings MONITOR  
+**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076, E-077, E-080, E-081, E-082, E-083, E-084, E-085  
+**Current gate:** Dedicated paid P1 benchmarking is closed. E-085 proves that E-084's replay amplification came from the Codex tool loop inside one SDK turn, not Room ledger events, and PR #70 removes a demonstrated Room-owned continuation tax. Savings must be observed in useful work rather than commissioned as another benchmark. Reopen only for a concrete recurring operating-economics defect.
 
 The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of four admitted model/effort configurations for that peer execution. D-028 hard-prohibits Astra execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
 
@@ -196,14 +196,15 @@ E-070 established that the former 0.147 runtime exposed Sol, Terra, Luna, and GP
 
 The two paid synthetic matrices are complete under E-073/E-074. Routine structured work showed no measured quality advantage for universal Terra/high, but the harder threshold run's only score differences came from an epistemically ambiguous state/evidence answer key and therefore do not support a trustworthy model ranking. More importantly, the principal reported that the 30 dedicated benchmark turns consumed nearly 20% of the five-hour Plus allowance. Continuing synthetic expansion would violate P1's own efficiency objective.
 
-P1 now proceeds through bounded evidence-gathering that earns its cost; broad paid model-ranking matrices remain closed:
+P1's dedicated experimental phase is closed. The retained operating guidance is:
 
 - E-077 already verifies the live same-thread switching mechanics; do not repeat the forced two-configuration commissioning test;
 - E-080 shows that Codex SDK-internal subagents can bypass `invoke_targets` and Room execution accounting when the ambient multi-agent surface is available; exclude such work from P1 allocation conclusions and keep I-013 ahead of further evidence gathering;
 - E-081 shows that repeated deterministic tool continuations can dominate usage even inside one visible Room turn; prefer reducing tool-loop/context amplification before spending more allowance on model-ranking experiments;
 - E-082 provides a read-only local Codex rollout usage extractor, so future useful Desktop-vs-Room comparisons can use cumulative/task-level token counters without asking either system to introspect or commissioning synthetic benchmark turns;
 - E-083 shows that the first matched C-only comparison used 32 Room tool calls versus 11 on Desktop and about 1.92x the reported total tokens despite only about 8% more uncached input and reasoning-output tokens; the dominant penalty was cached-context replay across extra continuations. Its deterministic ground-truth test also falsified C's specific duplicate-insert restart claim, so future correctness reviews should require end-to-end reachability rather than local suspicious-code inference;
-- E-084's fresh blind fixture strengthens the economics finding: Desktop solved the task correctly with 8 tool calls / 279,098 tokens, while the task-only Room attempt used 38 tool calls / 1,805,314 tokens and returned no answer. The Room used 6.47x total tokens, 6.83x cached input, and 3.33x uncached input. C also violated the explicit shared-workspace-only evidence boundary and claimed it was awaiting two peer audits while structured metadata showed zero peer invocations and `invoke_targets: []`; stop paid comparison reruns and diagnose those demonstrated failures deterministically;
+- E-084's fresh blind fixture strengthens the economics finding: Desktop solved the task correctly with 8 tool calls / 279,098 tokens, while the task-only Room attempt used 38 tool calls / 1,805,314 tokens and returned no answer. The Room used 6.47x total tokens, 6.83x cached input, and 3.33x uncached input. C also violated the explicit shared-workspace-only evidence boundary and claimed it was awaiting two peer audits while structured metadata showed zero peer invocations and `invoke_targets: []`;
+- E-085 traces those 39 task provider responses to one C SDK turn with 38 tool calls; Room tool-activity events were post-turn records, not cognition triggers. Fifteen source operations were single reads versus one `read_many`, and the old capability policy imposed registry/separate-command ceremony. PR #70 now prioritizes native one-off workspace work, few/batched tool continuations, sufficient-evidence stopping, and explicit workspace-only boundaries; monitor ordinary work rather than rerunning the lab;
 - use the E-075 capability naturally in ordinary Rooms rather than creating more paid benchmark Rooms;
 - C should prefer `luna-medium` for routine bounded delegated work and deliberately choose a stronger admitted Terra or Sol configuration only when complexity, uncertainty, risk, or prior verification trouble provides an affirmative reason;
 - Astra is prohibited by D-028 and is not an admissible execution configuration; the runtime must fail closed if an Astra turn is attempted;
