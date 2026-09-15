@@ -6,6 +6,7 @@ import pytest
 
 from codex_room.agent import InterruptOutcome
 from codex_room.db import Database
+from codex_room.exporter import as_markdown
 from codex_room.models import (
     CreateRoomRequest,
     ObserverMessageRequest,
@@ -647,4 +648,18 @@ async def test_transaction_required_contributor_blocks_settlement_until_peer_con
     assert task is not None
     assert task["state"] == "settled"
     assert task["required_contributors_json"] == '["agent_a"]'
+
+    exported = await runtime.db.snapshot(room_id, event_limit=None)
+    assert exported is not None
+    active_round = exported["active_round"]
+    assert active_round["work_model_version"] == 2
+    transaction = active_round["transaction_state"]
+    assert transaction["tasks"][0]["required_contributors"] == ["agent_a"]
+    assert any(
+        item["agent_key"] == "agent_a"
+        for item in transaction["tasks"][0]["assignments"]
+    )
+    markdown = as_markdown(exported)
+    assert "### Transaction work state" in markdown
+    assert "Required contributors: agent_a" in markdown
 
