@@ -390,7 +390,12 @@ class Database:
             await self._ensure_column(db, "rounds", "participant_overlays_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "work_model_version", "INTEGER NOT NULL DEFAULT 1")
             await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
-            await self._ensure_column(db, "agent_executions", "assignment_id", "TEXT")
+            await self._ensure_column(
+                db,
+                "agent_executions",
+                "assignment_id",
+                "TEXT REFERENCES assignments(id)",
+            )
 
             now = utc_now()
             await db.executemany(
