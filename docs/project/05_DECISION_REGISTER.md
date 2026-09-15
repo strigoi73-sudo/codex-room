@@ -417,3 +417,29 @@ Settled design:
 
 This decision clarifies the CORE/Room boundary: **protection constrains mutation, not legitimate inspection.**
 
+### D-030 — Transaction work state replaces conversational backlog as the authoritative scheduler
+**Date:** 2026-09-15  
+**Status:** ACTIVE
+
+The principal approves I-015 Stage A as Codex Room's coordination-stabilization architecture.
+
+Settled direction:
+
+- A/B/C remain the permanent Personal organization and remain epistemic peers; C retains coordination responsibility but no superior judgment;
+- agents continue to decide intellectual questions: whether peer cognition is useful, whom to involve, how to frame assignments, what evidence matters, how to interpret disagreement, and what conclusion to reach;
+- CORE owns declared mechanical work state through explicit **Task → Assignment → Join → Result/Integration → Settlement** transactions;
+- transaction-enabled work must not use unread public conversation as an implicit runnable-work queue;
+- public Room history remains readable/auditable, but cognition occurs only through an explicit assignment;
+- delegation must be one atomic structured action that both defines the peer work and creates the runnable assignment(s); a separate routing field must not be able to contradict the declared delegation;
+- dependency joins are deterministic CORE state. A parent assignment that delegates remains nonterminal until the required child assignments settle and the parent resumes;
+- direct A/B collaboration remains allowed through nested explicit delegation;
+- task settlement is determined by task/assignment/join state, not by participant membership, passive delivery counts, prose promises, or agent-level READY_TO_FINISH state;
+- existing exact SDK-turn binding, serialized per-agent execution, recovery/provenance machinery, capability boundaries, Rooms/Rounds, persistent identities, and audit events should be reused rather than rewritten;
+- legacy work-model-v1 Rounds retain their historical event/delivery interpretation. Transaction semantics are introduced behind an explicit work-model version and historical event streams are not silently reinterpreted;
+- Stage A deliberately retains the current persistent SDK-thread/context model so coordination reliability can be isolated from the later Stage C memory/context experiment;
+- implementation should proceed in bounded slices with deterministic invariant tests before naturalistic paid validation.
+
+D-030 supersedes the **implementation mechanism**, but not the governing intent, of D-015/D-020/D-027 where those decisions relied on readable/runnable event deliveries, inferred delegation cohorts, or conversational settlement. Their principles remain active: selective cognition, public readability, C integration-before-closure, direct peer collaboration, and invocation economy.
+
+**Principle:** **Agents decide the work; CORE makes declared work state reliable.**
+
