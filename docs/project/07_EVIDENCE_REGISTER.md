@@ -2860,3 +2860,67 @@ Important limitations:
 - Desktop failed-tool count is not reconstructed by the current extractor, so only the Room's six explicit failures are directly measured.
 
 **Status:** P1 evidence established. Stage 1 favors Desktop on both continuation economy and this specific correctness question; broader system-level conclusions remain exploratory.
+
+### E-084 — Blind Stage 2 Desktop-vs-Room fixture exposed scope and coordination failure
+**Date:** 2026-09-15  
+**Scope:** [P1 / operating economics / coordination correctness] Fresh blind standalone fixture comparison after Stage 1.
+
+A fresh standalone 28-file Python fixture (`relay_app`) was created outside the Codex Room repository specifically to avoid Stage 1 answer leakage. The bug report asked whether graceful shutdown could acknowledge an update before durable persistence and required a reachable causal mechanism, source evidence, rejected false leads, and the smallest safe correction.
+
+The Desktop run used the extracted fixture as its working directory and correctly identified the intended defect: `UpdateAPI.update()` acknowledges after scheduling asynchronous delivery; `RelayApplication.shutdown()` closes the journal before stopping/draining the subscription pump; a delayed accepted delivery can therefore wake after journal closure, fail with `RuntimeError("journal is closed")`, and never reach SQLite. Desktop correctly rejected WAL and already-enqueued journal items as false leads and recommended the minimal shutdown-order repair: stop/drain subscriptions before closing the journal.
+
+Desktop blind-run economics:
+
+| Metric | Desktop Stage 2A |
+|---|---:|
+| Tool calls | 8 |
+| Provider-response usage records | 9 |
+| Total reported tokens | 279,098 |
+| Input tokens | 275,125 |
+| Cached input tokens | 251,648 |
+| Uncached input tokens | 23,477 |
+| Output tokens | 3,973 |
+| Reasoning-output tokens | 1,867 |
+| Context compactions | 0 |
+| Subagent activity | 0 |
+
+The Room run used fresh Room `room_26494a49df3749fd99f84df5c45f5727`. The fixture bytes were copied into that Room's shared workspace before the LAB-2B prompt. A neutral setup topic caused one initial no-op C turn before the real lab prompt; that setup turn is excluded from the task-cost comparison below.
+
+The LAB-2B Room run failed procedurally rather than merely reaching the wrong technical conclusion:
+
+- C made 38 tool calls, including 29 deterministic-capability invocations and 7 command-execution activities; 6 tool calls failed;
+- persistent A/B peer invocations remained zero and SDK subagent activity remained zero;
+- C spent substantial retrieval effort against Codex Room CORE (`codex_room/` and CORE `tests/`) despite the prompt explicitly limiting work to the supplied Room shared workspace;
+- C did not return the requested conclusion, mechanism, source evidence, false leads, or correction;
+- C's only substantive message said it was "awaiting the two complementary peer audits before concluding", but the exact message metadata recorded `invoke_targets: []`, `peer_invocations: 0`, no requested runnable recipients, and no runnable recipients;
+- with no runnable work remaining, the Room closed mechanically as `quiescent_without_work`.
+
+Native rollout extraction permits exact separation of the neutral setup turn. The full C thread reported 1,825,861 total tokens across 40 provider-response usage records. The first setup turn accounted for 20,547 total tokens (20,489 input, 58 output, 28 reasoning; no cached input). Therefore the actual LAB-2B attempt consumed:
+
+| Metric | Room Stage 2B task only | Desktop Stage 2A | Room / Desktop |
+|---|---:|---:|---:|
+| Tool calls | 38 | 8 | 4.75x |
+| Provider responses | 39 | 9 | 4.33x |
+| Total reported tokens | 1,805,314 | 279,098 | 6.47x |
+| Input tokens | 1,797,842 | 275,125 | 6.53x |
+| Cached input tokens | 1,719,552 | 251,648 | 6.83x |
+| Uncached input tokens | 78,290 | 23,477 | 3.33x |
+| Output tokens | 7,472 | 3,973 | 1.88x |
+| Reasoning-output tokens | 3,125 | 1,867 | 1.67x |
+
+Interpretation:
+
+- Stage 2 independently reinforces E-081/E-083: continuation count and repeated cached-context replay remain a first-order Room cost driver even on a small bounded fixture;
+- unlike Stage 1, the Room also consumed materially more *uncached* input, consistent with investigating the wrong source boundary rather than merely replaying the same relevant context;
+- normal Room coordination did not get a chance to demonstrate value because C never actually invoked A or B despite believing or stating that it was awaiting two peer audits;
+- the closure mechanism behaved consistently with the structured routing state: because C emitted no runnable peer targets, the Room had no work to execute. The contradiction is between C's stated coordination plan and its structured action, not evidence that the router silently dropped requested peer work;
+- the Room's explicit scope failure and coordination-action inconsistency are demonstrated product-quality issues worthy of deterministic source/test diagnosis before paying for another comparative Room run.
+
+Experimental limitations:
+
+- the Room incurred one excluded neutral setup turn because the Room creation flow required a topic before the later observer LAB prompt;
+- Desktop used CLI `0.154.0-alpha.6.2`; Room used SDK/runtime `0.154.0`; exact client-build equivalence was not achieved;
+- intended Terra/high selection remained operator-controlled and is not independently emitted by the Desktop rollout extractor;
+- this is one blind fixture and does not establish universal Desktop superiority.
+
+**Status:** P1 Stage 2 evidence established. No rerun is justified before deterministic diagnosis of the demonstrated scope-selection and stated-vs-structured peer-invocation failures.
