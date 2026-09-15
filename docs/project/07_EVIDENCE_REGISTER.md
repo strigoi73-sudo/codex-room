@@ -2847,7 +2847,7 @@ PR #67 converted that dispute into a deterministic regression test. The test for
 - exactly one execution row remains for the batch, so no duplicate insert occurs;
 - no `worker_error` event is emitted.
 
-Exact PR #67 head `297bada6fd89ba095e0fe64076e9cf9fde66e3d8` passed **358 tests, 2 warnings** in GitHub Actions run `34997699874`. PR #67 squash-merged as `66ac4355551609bcca34b78166687bd252c8539e`; canonical-main hosted verification is recorded with the final run once complete.
+Exact PR #67 head `297bada6fd89ba095e0fe64076e9cf9fde66e3d8` passed **358 tests, 2 warnings** in GitHub Actions run `34997699874`. PR #67 squash-merged as `66ac4355551609bcca34b78166687bd252c8539e`; canonical-`main` run `34997919791` then passed **358 tests, 2 warnings** on that exact merge commit.
 
 Ground-truth conclusion: Desktop was correct on the disputed pre-bind restart mechanism; C's proposed duplicate-insert corruption path was a false positive caused by local reasoning that did not prove reachability through the complete startup control flow. No production persistence repair was justified by that claim.
 
