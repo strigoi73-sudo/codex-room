@@ -2533,14 +2533,18 @@ class RoomRuntime:
             or not decision.execution_configs
         ):
             return {}
-        unauthorized = set(decision.execution_configs) - set(runnable_targets)
+        requested = {
+            selection.target: selection.config
+            for selection in decision.execution_configs
+        }
+        unauthorized = set(requested) - set(runnable_targets)
         if unauthorized:
             raise ValueError(
                 "execution_configs may name only peers C is invoking now: "
                 + ", ".join(sorted(unauthorized))
             )
         resolved: dict[str, dict[str, str]] = {}
-        for target, config_id in decision.execution_configs.items():
+        for target, config_id in requested.items():
             model, effort = EXECUTION_CONFIGS[config_id]
             resolved[target] = {
                 "config_id": config_id,
@@ -3184,7 +3188,7 @@ Respond to this event according to your own judgment. Your final response must s
 
 {self._execution_config_prompt(agent["agent_key"])}
 
-For PASS or FINISH, set invoke_targets and execution_configs to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
+For MESSAGE, execution_configs is null or an array of records like [{"target":"agent_a","config":"luna-medium"}]. For PASS or FINISH, set invoke_targets and execution_configs to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
 
     @staticmethod
     def _execution_config_prompt(agent_key: str) -> str:
