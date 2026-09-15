@@ -3188,3 +3188,49 @@ Evidence boundary: CI verifies launcher contents/sequencing and the existing bro
 
 **Status:** browser-preserving restart correction IMPLEMENTED / VERIFIED on canonical `main` / LOCALLY CONFIRMED.
 
+### E-092 — Ordinary-use stabilization discussion isolates coordination mechanics from cognition
+**Date:** 2026-09-15  
+**Scope:** [ROOM observation] Room `room_9d8df997c8ff47419252e5877eb9f23c` (“Wits End”), prompted with the demonstrated coordination/economics failures and instructed to use both peers without repository modification.
+
+Observed execution:
+
+- C accepted the supplied incidents as evidence rather than rediscovering them and performed no source/tool inspection before delegation;
+- C explicitly gave A a coordination-architecture assignment and B an execution-economics/simplification assignment, selected `terra-medium` for both, emitted `invoke_targets=[agent_a, agent_b]`, and both deliveries became runnable;
+- A completed its coordination analysis with 0 tools and **22,399 execution tokens**;
+- B completed its economics/simplification analysis with 2 command activities (1 failed, 1 completed) and **66,245 execution tokens**;
+- CORE emitted the existing deterministic `delegation_cohort_settled` trigger only after both peer MESSAGE returns existed;
+- C consumed both peer returns plus the cohort trigger and produced an integrated FINISH with 0 tools and **27,838 execution tokens**;
+- C's initial delegation turn cost **22,040 execution tokens**, making the four execution deltas total **138,522 tokens**.
+
+This run demonstrates that the triad can perform differentiated parallel cognition and deterministic cohort integration economically enough to be materially different from the prior 544,416-token pre-peer evidence loop when the work does not require repeated source/tool continuations.
+
+The run also exposed a remaining settlement-model anomaly: after C FINISHed following the settled cohort, observer telemetry said “Agent C is ready to finish. The Room is waiting for: agent_b,” even though B had already returned its MESSAGE, the cohort-settled event recorded both A and B as settled, and no runnable work remained; the Room then closed as `quiescent_without_work`. This is evidence that peer-contribution settlement, agent FINISH state, and Room closure are not represented by one clean work-state model.
+
+A and B independently converged on the same architectural boundary: keep intellectual allocation/judgment cognitive; move declared assignments, causal delivery, dependency joins, queue ordering, resource budgets, and terminal-state validity into deterministic CORE state. Both rejected brittle prose matching as the primary fix.
+
+**Evidence limit:** this Room did not inspect current CORE source. Its architectural proposals are reasoned from the supplied incidents and observed Room behavior, not proof of implementation feasibility. E-093 separately records the source-level feasibility inspection.
+
+**Status:** OBSERVED ISSUE plus naturalistic architectural evidence; no redesign implementation claim.
+
+### E-093 — Current CORE contains reusable transaction primitives but uses conversational delivery as the work-state kernel
+**Date:** 2026-09-15  
+**Scope:** [CORE source inspection] Canonical `main` at `6247db876d0c118b88e3f486a36fae702adf01f8`.
+
+Fresh source inspection establishes:
+
+- persistent product/state objects already exist for Rooms, Agents, Rounds, Events, Deliveries, Round-Agent state, exact Agent Executions, and usage continuations;
+- `create_event()` creates readable and runnable delivery rows separately, making event visibility and scheduling durable;
+- `claim_next_batch()` finds the newest pending runnable conversational delivery for an agent, then claims **every pending conversational delivery in sequence from the agent's delivery boundary through that trigger**, including passive-readable events; `_claimed_batch()` labels the resulting event IDs as triggering vs passive;
+- `_delivery_prompt()` therefore still composes work from unread Room events, now with `role="triggering"` / `role="passive_context"` labels added by PR #77;
+- the structured agent decision schema carries MESSAGE/PASS/FINISH plus `invoke_targets` and optional peer execution configurations, but it has no first-class task, assignment, dependency, join, or terminal-task action;
+- C multi-peer coordination is reconstructed from an `agent_message` event's runnable deliveries; `_release_c_delegation_cohort_if_settled()` searches later decision events for peer responses to that delegation and then synthesizes one `delegation_cohort_settled` trigger for C;
+- Round settlement is reconstructed from agent READY_TO_FINISH/PASS state, delivery participation, open runnable deliveries, causal-message boundaries, and a separate integration-before-closure check;
+- agent executions already provide the exact durable execution primitive needed by a future assignment queue: each claimed batch receives one `agent_executions` row and is bound to one exact SDK thread/turn before Room-side settlement;
+- the adapter resumes one long-lived SDK `thread_id` per application-level agent and starts each Room execution as another turn on that thread.
+
+Feasibility conclusion: a Task/Assignment/Join redesign does **not** require rewriting the whole product. Rooms/Rounds/Agents, events as audit history, execution durability/recovery, workspaces/capabilities, model policy, exports, and UI transport are reusable. The concentrated replacement area is the scheduling/work-state kernel: runnable-delivery batching, passive unread events as prompt work, event-derived cohort reconstruction, and heuristic settlement.
+
+A staged implementation can therefore introduce transaction tables/state alongside legacy delivery semantics, preserve historical Rooms under their existing interpretation, and migrate new work deliberately. The later proposal to split durable organizational identity from full provider-thread context is a deeper runtime experiment and should remain separate from the first coordination-state migration.
+
+**Status:** source-level architecture finding supporting I-015; redesign remains EXPLORATORY / NOT IMPLEMENTED.
+

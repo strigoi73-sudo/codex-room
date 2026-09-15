@@ -57,6 +57,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-012` | Authorized CORE and cross-Room read inspection | Development Control |
 | `I-013` | SDK-internal subagent bypass | Development Control |
 | `I-014` | Deterministic retrieval economy | Development Control |
+| `I-015` | Task-transaction stabilization redesign | Development Control |
 
 ## 4. Decision and evidence identifiers
 
