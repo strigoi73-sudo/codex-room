@@ -29,6 +29,13 @@ from .custom_registry import (
     load_room_custom_capabilities,
     resolve_room_capability_context,
 )
+from .source_inspection import (
+    INSPECT_SOURCE_IMPLEMENTATION_COMPONENTS,
+    INSPECT_SOURCE_INPUT_SCHEMA,
+    INSPECT_SOURCE_OUTPUT_SCHEMA,
+    SourceInspectionError,
+    inspect_source,
+)
 
 CAPABILITY_MARKER = 1
 REGISTRY_MARKER = 1
@@ -1309,6 +1316,13 @@ COMPARE_FILES_OUTPUT_SCHEMA: dict[str, Any] = {
 }
 
 
+def _invoke_inspect_source(root: Path, inputs: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return inspect_source(root, inputs)
+    except SourceInspectionError as exc:
+        raise CapabilityUsageError(str(exc)) from exc
+
+
 CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
     "assert_file": CapabilitySpec(
         capability_id="assert_file",
@@ -1416,6 +1430,37 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
             _is_hidden_relative,
             find_files,
             _invoke_find_files,
+        ),
+    ),
+    "inspect_source": CapabilitySpec(
+        capability_id="inspect_source",
+        description=(
+            "Discover and inspect authorized read-only sources beyond the current "
+            "Room workspace: the maintained CORE source surface and any Personal "
+            "Room shared workspace. Supports bounded source discovery, file finding, "
+            "literal text search, and UTF-8 text reads without granting cross-boundary "
+            "write authority or exposing CORE runtime data."
+        ),
+        origin="core",
+        scope="core",
+        version="1",
+        input_schema=INSPECT_SOURCE_INPUT_SCHEMA,
+        output_schema=INSPECT_SOURCE_OUTPUT_SCHEMA,
+        durable_result_fields=("evidence",),
+        permissions={
+            "workspace_read": True,
+            "cross_room_read": True,
+            "core_source_read": True,
+            "workspace_write": False,
+            "network": False,
+            "external_process": False,
+        },
+        side_effects="none",
+        verification={"status": "pending", "evidence": ["I-012"]},
+        handler=_invoke_inspect_source,
+        implementation_components=(
+            *INSPECT_SOURCE_IMPLEMENTATION_COMPONENTS,
+            _invoke_inspect_source,
         ),
     ),
     "search_text": CapabilitySpec(
