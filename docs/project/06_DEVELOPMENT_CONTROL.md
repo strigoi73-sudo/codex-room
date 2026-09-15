@@ -184,15 +184,15 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 ### P1 follow-up — Model/reasoning-effort economy
 **Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
-**Evidence:** E-065, E-068, E-069  
-**Current gate:** zero-turn local model-catalog probe, then a bounded comparison matrix.
+**Evidence:** E-065, E-068, E-069, E-070  
+**Current gate:** bounded 12-turn admission benchmark across Luna/medium, Terra/medium, Terra/high baseline, and Sol/medium.
 
 Current source pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. A3 found no settled evidence that this universal policy is the best quality/cost tradeoff for every task. I-009 now provides verified per-execution model, reasoning-effort, and usage facts plus live runtime provenance.
 
 P1 proceeds by measurement, not automatic routing:
 
-- first read the actual models/reasoning levels available to the principal's authenticated local Codex runtime without spending a model turn;
-- then compare a small admission matrix that separates model-tier effects from reasoning-effort effects while retaining Terra/high as the production baseline;
+- the zero-turn authenticated local model-catalog gate is complete under E-070;
+- compare the admitted four-cell matrix — Luna/medium, Terra/medium, Terra/high, and Sol/medium — so medium-effort model-tier effects and Terra medium→high effort effects are separately visible;
 - use fresh isolated threads and identical bounded tasks so persistent context does not confound the comparison;
 - record token usage, latency/duration where available, completion/failure behavior, and task-quality evidence;
 - only if the admission comparison shows material economic value should P1 expand into participant-specific, delegation-selected, self-adjusted, or dynamic model policy design.
