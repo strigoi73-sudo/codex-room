@@ -242,6 +242,8 @@ class Database:
                     round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
                     lifecycle_version INTEGER NOT NULL,
                     worker_generation INTEGER NOT NULL,
+                    model TEXT,
+                    reasoning_effort TEXT,
                     sdk_thread_id TEXT,
                     sdk_turn_id TEXT,
                     state TEXT NOT NULL,
@@ -315,6 +317,10 @@ class Database:
             await self._ensure_column(db, "events", "execution_id", "TEXT")
             await self._ensure_column(
                 db, "agent_executions", "last_verified_progress_at", "TEXT"
+            )
+            await self._ensure_column(db, "agent_executions", "model", "TEXT")
+            await self._ensure_column(
+                db, "agent_executions", "reasoning_effort", "TEXT"
             )
             await self._ensure_column(db, "rounds", "last_activity_at", "TEXT")
             await self._ensure_column(db, "rounds", "participant_private_json", "TEXT NOT NULL DEFAULT '{}'")
@@ -2179,7 +2185,12 @@ class Database:
         return room
 
     async def claim_next_batch(
-        self, room_id: str, agent_key: str, worker_generation: int = 0
+        self,
+        room_id: str,
+        agent_key: str,
+        worker_generation: int = 0,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> dict[str, Any] | None:
         now = utc_now()
         batch_id = new_id("batch")
@@ -2210,6 +2221,26 @@ class Database:
                 (room_id, agent["id"], agent["active_round_id"]),
             )
             if execution is not None:
+                if (
+                    (execution["model"] is None and model is not None)
+                    or (
+                        execution["reasoning_effort"] is None
+                        and reasoning_effort is not None
+                    )
+                ):
+                    await db.execute(
+                        """UPDATE agent_executions
+                           SET model=COALESCE(model, ?),
+                               reasoning_effort=COALESCE(reasoning_effort, ?)
+                           WHERE batch_id=?""",
+                        (model, reasoning_effort, execution["batch_id"]),
+                    )
+                    execution = await self._fetchone(
+                        db,
+                        "SELECT * FROM agent_executions WHERE batch_id=?",
+                        (execution["batch_id"],),
+                    )
+                    assert execution is not None
                 if execution["state"] == "usage_suspended":
                     await db.commit()
                     return None
@@ -2267,8 +2298,9 @@ class Database:
                 await db.execute(
                     """INSERT INTO agent_executions
                        (batch_id, room_id, agent_id, round_id, lifecycle_version,
-                        worker_generation, state, created_at, error)
-                       VALUES (?, ?, ?, ?, ?, ?, 'quarantined', ?, ?)""",
+                        worker_generation, model, reasoning_effort,
+                        state, created_at, error)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'quarantined', ?, ?)""",
                     (
                         legacy_batch_id,
                         room_id,
@@ -2276,6 +2308,8 @@ class Database:
                         agent["active_round_id"],
                         agent["lifecycle_version"],
                         worker_generation,
+                        model,
+                        reasoning_effort,
                         now,
                         "Processing claim has no persisted Codex turn identity",
                     ),
@@ -2394,8 +2428,8 @@ class Database:
             await db.execute(
                 """INSERT INTO agent_executions
                    (batch_id, room_id, agent_id, round_id, lifecycle_version,
-                    worker_generation, state, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, 'claimed', ?)""",
+                    worker_generation, model, reasoning_effort, state, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'claimed', ?)""",
                 (
                     batch_id,
                     room_id,
@@ -2403,6 +2437,8 @@ class Database:
                     agent["active_round_id"],
                     agent["lifecycle_version"],
                     worker_generation,
+                    model,
+                    reasoning_effort,
                     now,
                 ),
             )
@@ -2433,10 +2469,21 @@ class Database:
         )
 
     async def claim_next_delivery(
-        self, room_id: str, agent_key: str, worker_generation: int = 0
+        self,
+        room_id: str,
+        agent_key: str,
+        worker_generation: int = 0,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> dict[str, Any] | None:
         """Compatibility alias; the returned unit is now a coalesced batch."""
-        return await self.claim_next_batch(room_id, agent_key, worker_generation)
+        return await self.claim_next_batch(
+            room_id,
+            agent_key,
+            worker_generation,
+            model=model,
+            reasoning_effort=reasoning_effort,
+        )
 
     def _claimed_batch(
         self,

@@ -57,7 +57,7 @@ def create_app(
 
     @app.get("/api/health")
     async def health() -> dict[str, Any]:
-        return {"ok": True, "codex": runtime.auth_info}
+        return runtime.health_status()
 
     @app.get("/api/profiles/defaults")
     async def get_default_profiles() -> dict[str, dict[str, Any]]:
