@@ -7,7 +7,7 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and **A3 — Whole-system housekeeping, efficiency, and operational assurance audit** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-007 repaired the Python support-floor contract, README/Architecture/Operations truth drift, and Development Control context bloat on PR #57; see E-066.
+- **What just changed?** I-008 preflight verified that all 56 non-`main` branches are merged-PR residue and that zero PRs are open; see E-067. The remaining deletes/settings toggle require operator-side GitHub/local Git because the connected GitHub write surface cannot perform those mutations.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
 - **What is next?** I-008 repository branch hygiene is next after I-007. Then I-009 runtime provenance/maintenance observability, the P1 model/reasoning-effort economy investigation, I-010 persistent-data maintenance, and I-011 verification-platform/dependency assurance.
@@ -241,18 +241,18 @@ A3 found multiple low-risk truth/maintenance defects:
 Repair completed through PR #57 and canonical-main verification. The owning sources were updated in place rather than adding a new documentation layer; completed experimental detail remains in its Decision/Evidence owners, and Development Control is again a compact volatile control surface.
 
 ### I-008 — Repository branch hygiene
-**Work state:** PLANNED  
-**Reality:** OBSERVED ISSUE  
+**Work state:** IN PROGRESS  
+**Reality:** OBSERVED ISSUE / deletion set VERIFIED  
 **Priority:** HIGH / second A3 remediation item  
-**Evidence:** E-065
+**Evidence:** E-065, E-067
 
-At the audited baseline GitHub exposed 55 non-`main` branches; all 55 were heads of already-merged PRs, with zero open PRs. Automatic deletion after merge was disabled and no branch was protected.
+Fresh E-067 preflight after I-007 found 56 non-`main` branches; every one is a head of an already-merged PR, with zero open PRs. Automatic deletion after merge remains disabled. The checked GitHub ruleset path is unavailable for this private repository on the current account tier, so minimal `main` protection is not a blocker for completing branch cleanup.
 
 Bounded remediation:
 
-- delete only branches proven to belong to merged PRs and not otherwise needed;
+- delete the exact 56-branch merged set verified in E-067;
 - enable automatic deletion of future merged PR branches;
-- consider only minimal protection against accidental force/deletion of canonical `main`, avoiding heavyweight workflow ceremony not justified by Personal development.
+- leave `main` protection as a plan/account-capability constraint rather than inventing a heavier workaround.
 
 ### I-009 — Runtime provenance and maintenance health
 **Work state:** PLANNED  
