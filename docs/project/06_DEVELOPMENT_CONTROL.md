@@ -277,6 +277,24 @@ The bounded remediation is complete on canonical CORE:
 
 PR #58 and the exact canonical merge commit are verified under E-068. Canonical-main CI passed **327 tests, 2 warnings**. E-069 then live-verified the local Personal runtime on exact canonical revision `6168c80938c7e9172a86651d3a9953fb66c2e219`: clean source, Python 3.12.10, `openai-codex` 0.147.0, Terra/high policy, and a healthy zero-failure watchdog.
 
+### I-012 — Authorized CORE and cross-Room read inspection
+**Work state:** IN PROGRESS  
+**Reality:** DECIDED / NOT IMPLEMENTED on canonical `main`  
+**Decision:** D-029  
+**Priority:** ACTIVE / raised directly by the I-010/P1 live trial
+
+The I-010 adaptive-cognition Room demonstrated a real evidence boundary: the agents could inspect only their current shared workspace and therefore could not ground implementation-specific maintenance conclusions in CORE source or prior Room artifacts.
+
+Bounded remediation is underway in PR #62:
+
+- add one deterministic read-only inspection capability that can discover authorized sources, find files, search literal text, and read bounded UTF-8 source text;
+- expose the maintained CORE repository/source surface while excluding `data/`, environment-private files, credentials/secrets, virtual environments, Git internals, and arbitrary host paths;
+- expose other Personal Rooms only through `data/rooms/<room_id>/shared`, not private participant state or host database internals;
+- reject traversal plus symlink/reparse escapes and keep read payload content transient while durable telemetry records only bounded provenance/evidence;
+- preserve all existing cross-boundary write restrictions.
+
+Do not add unrestricted host-filesystem access or inject CORE/other Room content wholesale into model context.
+
 ### I-010 — Persistent-data operational maintenance
 **Work state:** PLANNED  
 **Reality:** OBSERVED ISSUE / maintenance gap  
