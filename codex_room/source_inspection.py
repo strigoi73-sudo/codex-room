@@ -946,6 +946,7 @@ def _read_operation(
         text = data.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise SourceInspectionError("read supports UTF-8 text files only") from exc
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
 
     lines = text.splitlines(keepends=True)
     start_index = min(start_line - 1, len(lines))
