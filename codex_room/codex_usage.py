@@ -260,8 +260,26 @@ def analyze_rollout(path: Path) -> dict[str, Any]:
         "counts": {
             "user_turns": len(user_turns),
             "token_count_updates": len(token_updates),
+            "provider_response_usage_records": event_counts.get(
+                "record:token_usage_record", 0
+            ),
+            "zero_delta_token_count_updates": sum(
+                1
+                for update in token_updates
+                if update["delta_from_previous_total"] is not None
+                and update["delta_from_previous_total"]["total_tokens"] == 0
+            ),
+            "custom_tool_calls": event_counts.get("payload:custom_tool_call", 0),
+            "function_calls": event_counts.get("payload:function_call", 0),
+            "tool_calls": (
+                event_counts.get("payload:custom_tool_call", 0)
+                + event_counts.get("payload:function_call", 0)
+            ),
             "context_compactions": event_counts.get("payload:context_compacted", 0),
             "sub_agent_activity": event_counts.get("payload:sub_agent_activity", 0),
+            "inter_agent_communication_metadata": event_counts.get(
+                "record:inter_agent_communication_metadata", 0
+            ),
         },
         "final_total_usage": dict(latest_total) if token_updates else None,
         "final_last_usage": token_updates[-1]["last"] if token_updates else None,
@@ -302,8 +320,21 @@ def print_human(report: dict[str, Any], *, timeline: bool) -> None:
         print(f"  cli_version: {thread['cli_version']}")
     print(f"  user_turns: {counts['user_turns']}")
     print(f"  token_count_updates: {counts['token_count_updates']}")
+    print(
+        f"  provider_response_usage_records: "
+        f"{counts['provider_response_usage_records']}"
+    )
+    print(
+        f"  zero_delta_token_count_updates: "
+        f"{counts['zero_delta_token_count_updates']}"
+    )
+    print(f"  tool_calls: {counts['tool_calls']}")
     print(f"  context_compactions: {counts['context_compactions']}")
     print(f"  sub_agent_activity: {counts['sub_agent_activity']}")
+    print(
+        f"  inter_agent_communication_metadata: "
+        f"{counts['inter_agent_communication_metadata']}"
+    )
     _print_usage("Final cumulative usage:", report["final_total_usage"])
     _print_usage("Last provider usage:", report["final_last_usage"])
 
