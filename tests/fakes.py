@@ -47,6 +47,7 @@ class FakeAgentAdapter:
         interrupt_outcomes: dict[str, InterruptOutcome] | None = None,
         failures: dict[str, list[Exception]] | None = None,
         profile_rebind_error: Exception | None = None,
+        turn_id_namespace: str = "",
     ) -> None:
         self.decisions = {
             key: deque(AgentDecision(outcome=outcome, message=message) for outcome, message in values)
@@ -63,6 +64,7 @@ class FakeAgentAdapter:
         self.interrupt_outcomes = interrupt_outcomes or {}
         self.failures = {key: deque(values) for key, values in (failures or {}).items()}
         self.profile_rebind_error = profile_rebind_error
+        self.turn_id_namespace = turn_id_namespace
         self._call_gates: dict[tuple[str, int], asyncio.Event] = {}
         self._inactive_agents: set[str] = set()
         self.starts: list[tuple[str, str]] = []
@@ -117,7 +119,8 @@ class FakeAgentAdapter:
                 self._topic_barrier.set()
             await asyncio.wait_for(self._topic_barrier.wait(), timeout=2)
         call_number = len(self.calls[agent["agent_key"]])
-        turn_id = f"turn_fake_{agent['agent_key']}_{call_number}"
+        namespace = f"{self.turn_id_namespace}_" if self.turn_id_namespace else ""
+        turn_id = f"turn_fake_{namespace}{agent['agent_key']}_{call_number}"
         if on_started is not None:
             await on_started(agent["thread_id"], turn_id)
         if on_progress is not None:
