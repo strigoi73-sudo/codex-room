@@ -449,3 +449,56 @@ async def test_transaction_turn_limit_stops_before_released_parent_can_run_again
     assert tasks and tasks[0]["state"] == "cancelled"
     c_assignment = next(row for row in assignments if row["agent_key"] == "agent_c")
     assert c_assignment["state"] == "cancelled"
+
+
+@pytest.mark.asyncio
+async def test_transaction_pause_resume_uses_explicit_task_state_not_deliveries(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_a": {1}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Complete after the Room is paused.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="C resumed from explicit transaction state.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="A completed while paused.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "pause-resume.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Pause transaction work", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: len(adapter.calls["agent_a"]) == 1)
+
+    await runtime.pause(room_id)
+    adapter.release_call("agent_a", 1)
+    await wait_until(lambda: len(adapter.completed_calls["agent_a"]) == 1)
+    await asyncio.sleep(0.05)
+    assert len(adapter.calls["agent_c"]) == 1
+
+    await runtime.resume(room_id)
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    assert "A completed while paused." in adapter.calls["agent_c"][1]["prompt"]
