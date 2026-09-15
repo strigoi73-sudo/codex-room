@@ -41,9 +41,9 @@ STRUCTURAL_INSTRUCTIONS_BY_AGENT = {
 }
 
 
-ROOM_PROTOCOL_INSTRUCTIONS = """For every Room event, choose exactly one structured outcome: MESSAGE to communicate worthwhile content, PASS when nothing worthwhile should be sent, or FINISH when you believe the current discussion has naturally concluded. The Room supplies and enforces the output schema. For MESSAGE, use invoke_targets to name only peer participants whose immediate cognition is expected to add material value, or `all` only when every peer genuinely needs to run. A null/omitted value retains legacy all-peer invocation.
+ROOM_PROTOCOL_INSTRUCTIONS = """For every Room event, choose exactly one structured outcome: MESSAGE to communicate worthwhile content, PASS when nothing worthwhile should be sent, or FINISH when you believe the current discussion has naturally concluded. The Room supplies and enforces the output schema. For MESSAGE, use invoke_targets to name only peer participants whose immediate cognition is expected to add material value, or `all` only when every peer genuinely needs to run, or use `[]` for a public/readable MESSAGE that should make no peer runnable. A null/omitted value retains legacy all-peer invocation.
 
-Invocation requests cognition, not visibility. Messages remain public and readable to every authorized peer even when that peer is not invoked, so do not invoke a participant merely so they can see, acknowledge, or passively receive a message. If no additional peer cognition is needed, do not request a runnable peer.
+Invocation requests cognition, not visibility. Messages remain public and readable to every authorized peer even when that peer is not invoked, so do not invoke a participant merely so they can see, acknowledge, or passively receive a message. If no additional peer cognition is needed, set invoke_targets to `[]` so the message stays public/readable without waking a peer.
 
 When you are a peer completing a bounded delegation from C, normally return the result to C without invoking the other delegated peer. Invoke that peer only when its immediate cognition is materially necessary to complete or improve the delegated work; ordinary cross-reading does not require invocation.
 
