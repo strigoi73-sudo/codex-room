@@ -2767,7 +2767,14 @@ Verification history:
 - after updating that exact assertion, head `7a7d0b5f724e280db9dc3f2a595dd33501ce3722` passed **350 tests, 2 warnings** in run `34986727410`;
 - the later exact implementation head `0f075bd5ea5fa408a1c0e94606d74e85513e44c4`, including explicit status classification for execution-economics telemetry, passed **350 tests, 2 warnings** in run `34986799530`.
 
-Evidence boundary: deterministic implementation and PR-head verification are complete. Canonical-main verification remains pending until PR #64 is finalized and merged. No dedicated paid Room smoke is warranted; the next useful Room can provide naturalistic evidence on whether direct/batched retrieval reduces file-change/tool-loop amplification.
+Final canonical verification:
 
-**Status:** I-014 IMPLEMENTED / VERIFIED on PR #64 head; canonical-main verification pending.
+- final exact PR #64 head `6bea22469f0195831dfb09037f551380fde76a07` passed **350 tests, 2 warnings** in GitHub Actions run `34987373764`;
+- PR #64 squash-merged as `02c026ab29dd4bd573b8945de0e6adca9c4b27b4`;
+- the final PR head and merge commit carry the exact same Git tree `9b7e163a7d685add368d7208f5010d8294f3b9e3`;
+- canonical-`main` run `34987638410` passed **350 tests, 2 warnings** on that exact merge commit.
+
+Evidence boundary: deterministic implementation and canonical verification are complete. No dedicated paid Room smoke is warranted; the next useful Room can provide naturalistic evidence on whether direct/batched retrieval reduces file-change/tool-loop amplification.
+
+**Status:** I-014 IMPLEMENTED / VERIFIED on canonical `main`; naturalistic ordinary-use monitoring remains.
 
