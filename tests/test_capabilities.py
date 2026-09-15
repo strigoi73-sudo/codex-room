@@ -986,3 +986,16 @@ def test_inspect_source_manifest_advertises_direct_source_cli() -> None:
     assert inspected["invocation"]["source_cli"] == "codex-room-cap source --help"
     assert inspected["verification"]["status"] == "verification_pending"
 
+def test_source_cli_failure_is_attributed_to_inspect_source(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    assert main(
+        ["source", "search", "workspace", ".", "--query", ""]
+    ) == 2
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["codex_room_capability"] == 1
+    assert payload["capability"] == "inspect_source"
+    assert payload["ok"] is False
+
