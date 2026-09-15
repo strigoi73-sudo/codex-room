@@ -7,7 +7,7 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and **A3 — Whole-system housekeeping, efficiency, and operational assurance audit** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-009 is complete in canonical CORE: `/api/health` now exposes deterministic runtime/source/model-policy provenance and watchdog health, and durable execution records retain model/effort beside existing usage facts; see E-068.
+- **What just changed?** I-009 is complete and live-verified locally: `/api/health` reported exact canonical revision `6168c80938c7e9172a86651d3a9953fb66c2e219`, clean source, Python 3.12.10, `openai-codex` 0.147.0, Terra/high policy, and a healthy zero-failure watchdog; see E-068/E-069.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
 - **What is next?** The bounded P1 model/reasoning-effort economy investigation is next, using the execution-level model/effort/usage facts added by I-009. Then I-010 persistent-data maintenance and I-011 verification-platform/dependency assurance.
@@ -256,9 +256,9 @@ Bounded remediation:
 
 ### I-009 — Runtime provenance and maintenance health
 **Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / VERIFIED  
+**Reality:** IMPLEMENTED / VERIFIED / LIVE VERIFIED  
 **Priority:** HIGH / prerequisite for P1 empirical follow-up  
-**Evidence:** E-065, E-068
+**Evidence:** E-065, E-068, E-069
 
 The bounded remediation is complete on canonical CORE:
 
@@ -267,7 +267,7 @@ The bounded remediation is complete on canonical CORE:
 - durable `agent_executions` rows retain the execution model and reasoning effort beside the existing SDK usage JSON, providing the empirical input needed for P1;
 - no dashboard, general observability platform, or automatic model-routing policy was introduced.
 
-PR #58 and the exact canonical merge commit are verified under E-068. Canonical-main CI passed **327 tests, 2 warnings**. The principal's currently running local process must still pull/restart before the new health surface can be called live on that machine; that deployment fact does not reopen the canonical implementation item.
+PR #58 and the exact canonical merge commit are verified under E-068. Canonical-main CI passed **327 tests, 2 warnings**. E-069 then live-verified the local Personal runtime on exact canonical revision `6168c80938c7e9172a86651d3a9953fb66c2e219`: clean source, Python 3.12.10, `openai-codex` 0.147.0, Terra/high policy, and a healthy zero-failure watchdog.
 
 ### I-010 — Persistent-data operational maintenance
 **Work state:** PLANNED  
