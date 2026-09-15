@@ -396,6 +396,48 @@ def _find_entries(
     return matches, scanned_entries, truncation_reason
 
 
+def _search_entries(
+    source_root: Path,
+    relative_root: PurePosixPath,
+    *,
+    include_globs: list[str],
+    exclude_globs: list[str],
+    include_hidden: bool,
+    max_results: int,
+) -> tuple[list[dict[str, Any]], int, str | None]:
+    """Resolve a search target as one explicit file or a directory scan."""
+    target = _assert_real_path(source_root, relative_root)
+    try:
+        target_stat = os.lstat(target)
+    except OSError as exc:
+        raise SourceInspectionError("search path is unavailable") from exc
+    if _is_link_or_reparse(target_stat):
+        raise SourceInspectionError("search paths must not traverse links or reparse points")
+    if stat.S_ISDIR(target_stat.st_mode):
+        return _find_entries(
+            source_root,
+            relative_root,
+            include_globs=include_globs,
+            exclude_globs=exclude_globs,
+            include_hidden=include_hidden,
+            max_results=max_results,
+        )
+    if not stat.S_ISREG(target_stat.st_mode):
+        raise SourceInspectionError("search path must identify a real file or directory")
+
+    relative_to_source = target.relative_to(source_root).as_posix()
+    selected_name = target.name
+    if not include_hidden and _is_hidden(relative_to_source):
+        return [], 1, None
+    if include_globs and not _matches_patterns(selected_name, include_globs):
+        return [], 1, None
+    if exclude_globs and _matches_patterns(selected_name, exclude_globs):
+        return [], 1, None
+    return [
+        {"path": relative_to_source, "size_bytes": target_stat.st_size}
+    ], 1, None
+
+
 def _read_regular_bytes(source_root: Path, relative: PurePosixPath) -> tuple[Path, bytes]:
     path = _assert_real_path(source_root, relative, expect_file=True)
     item_stat = os.lstat(path)
@@ -549,7 +591,7 @@ def _search_operation(
         _validate_core_path(relative)
     include_globs = _normalize_patterns(inputs.get("include_globs"), "include_globs")
     exclude_globs = _normalize_patterns(inputs.get("exclude_globs"), "exclude_globs")
-    candidates, scanned_entries, candidate_truncation = _find_entries(
+    candidates, scanned_entries, candidate_truncation = _search_entries(
         source_root,
         relative,
         include_globs=include_globs,
@@ -749,7 +791,7 @@ def _search_many_operation(
         _validate_core_path(relative)
     include_globs = _normalize_patterns(inputs.get("include_globs"), "include_globs")
     exclude_globs = _normalize_patterns(inputs.get("exclude_globs"), "exclude_globs")
-    candidates, scanned_entries, candidate_truncation = _find_entries(
+    candidates, scanned_entries, candidate_truncation = _search_entries(
         source_root,
         relative,
         include_globs=include_globs,
