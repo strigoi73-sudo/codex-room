@@ -2535,3 +2535,42 @@ P1 consequence:
 
 **Status:** synthetic P1 benchmark phase COMPLETE / STOPPED FOR COST. Next evidence should come from representative real work, not additional dedicated benchmark turns.
 
+### E-075 — P1 bounded C-selected execution configuration
+**Date:** 2026-09-15  
+**Scope:** [CORE / P1 experimental capability] Representative-real-work model/effort economy without automatic routing.
+
+PR #60 implemented the smallest adaptive cognition mechanism needed for P1 real-work evidence while preserving the existing triad and C's coordination-only authority.
+
+Implemented behavior:
+
+- C may attach a bounded execution selection to a peer it explicitly invokes in the same MESSAGE;
+- allowed P1 selections are `luna-medium`, `terra-medium`, `terra-high`, `sol-medium`, and `astra-medium`;
+- each selection resolves deterministically to the exact SDK model + reasoning effort at delivery claim time;
+- the selected model/effort is persisted in the existing durable `agent_executions` row before invocation, so recovery and I-009 usage evidence remain tied to the exact execution;
+- C is instructed to prefer `luna-medium` for routine bounded delegated work and spend stronger cognition only for an affirmative reason such as complexity, uncertainty, risk, or prior verification trouble;
+- A/B cannot directly cause a model change. Their structured selections are not resolved into executable settings; they are instructed to return an escalation request to C when stronger cognition appears warranted;
+- C may redelegate the same peer with a stronger allowed configuration after considering that request;
+- if C does not specify a peer configuration, the compatibility fallback remains the existing `gpt-5.6-terra` / `high` policy;
+- C's own turns remain on the existing Terra/high fallback;
+- no automatic task classifier, deterministic model router, new persistent agent, UI control, or separate metrics system was introduced.
+
+Structured-output implementation uses a strict-schema-safe nullable array of required `{target, config}` records. Event metadata stores the plain JSON form plus the resolved exact model/effort map for inspection.
+
+Verification history:
+
+- initial PR-head CI exposed one pre-existing timing assumption in the multi-peer test after additional metadata/validation work; the test was corrected to wait for the intended durable event rather than a fixed sleep;
+- later diagnostic runs exposed a prompt-formatting bug in a JSON example embedded in an f-string. The worker error was `Invalid format specifier '"agent_a","config":"luna-medium"' for object of type 'str'`; the example was replaced with non-braced prose and all temporary diagnostic workflow/test changes were removed before final verification;
+- final exact PR head `f0736b3f79f5274781a2d7dda3e26d942775e153` passed **329 tests, 2 warnings** in GitHub Actions run `34951904535`;
+- PR #60 squash-merged as `ebbacb212b8d6c26b69a8fd2acb0959dcff26b42`;
+- canonical-`main` run `34952133541` on that exact merge commit passed **329 tests, 2 warnings**;
+- automatic merged-branch cleanup left only `main`.
+
+Evidence boundary:
+
+- the capability is IMPLEMENTED / VERIFIED on canonical `main`;
+- it is still an **experimental P1 allocation mechanism**, not a settled recommendation for automatic/dynamic routing;
+- no local live Room using C-selected peer cognition has yet been recorded under this evidence item;
+- P1's next evidence should come from ordinary work the principal wants done, without duplicate benchmark turns solely for comparison.
+
+**Status:** bounded adaptive execution selection IMPLEMENTED / VERIFIED; representative live-use evaluation remains IN PROGRESS.
+
