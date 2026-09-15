@@ -2372,3 +2372,37 @@ First admission matrix remains:
 GPT-5.5 is retained as an available legacy comparator but is not admitted to the first benchmark unless later evidence makes it economically relevant. Higher reasoning levels (`xhigh`, `max`, `ultra`) are likewise deferred until the first comparison shows a reason to spend on them.
 
 **Status:** P1 catalog gate PASSED after corrected unfiltered probe. No production model-selection policy changed.
+
+### E-071 — P1 Codex SDK/runtime standard advanced to 0.154.0
+**Date:** 2026-09-15  
+**Scope:** [CORE] dependency/runtime upgrade supporting the P1 model-economy investigation.
+
+Motivation:
+
+- the principal's Codex desktop UI visibly exposed Astra while Codex Room's pinned `openai-codex==0.147.0` runtime did not return Astra from an unfiltered `codex.models()` probe;
+- the published Codex runtime line after the Astra client floor provides a matched `openai-codex==0.154.0` / `openai-codex-cli-bin==0.154.0` pair;
+- production Room cognition remains explicitly pinned in Codex Room source to `gpt-5.6-terra` with `high` reasoning, so advancing the SDK/runtime does not itself change the Room model-selection policy.
+
+Implementation:
+
+- `pyproject.toml` now requires `openai-codex>=0.154,<1`;
+- `constraints-test.txt` pins both `openai-codex==0.154.0` and `openai-codex-cli-bin==0.154.0`;
+- one restart/reconciliation test fixture was updated for the 0.154 `AsyncTurnHandle` constructor contract, which now subscribes to turn notifications during construction. No production recovery logic changed.
+
+Verification history:
+
+- PR #59 initial dependency-only head installed the 0.154.0 pair successfully but full CI found one fixture incompatibility: **326 passed, 1 failed, 2 warnings** in run `34943186987`. The failure occurred because the test substituted bare `object()` for the SDK client while the new handle constructor requires the client's notification-subscription surface;
+- after the narrow fixture correction, PR-head run `34943392571` passed **327 tests, 2 warnings**;
+- final exact PR head `27c4dab1809f576ee4fadeaaa06c906b387f8842`, including refreshed dependency-provenance comments, passed **327 tests, 2 warnings** in run `34943555791`;
+- PR #59 squash-merged as `e08f06c483b2040aa857bc43aa637d870281f5a9`;
+- canonical-`main` run `34943692719` on that exact merge commit passed **327 tests, 2 warnings**;
+- automatic merged-branch cleanup removed the feature branch.
+
+Evidence boundary:
+
+- canonical CORE now standardizes on the matched 0.154.0 SDK/runtime pair;
+- the principal's local installation has not yet been reinstalled/restarted onto that dependency pair in this evidence record;
+- Astra exposure through the upgraded local SDK/runtime remains to be verified directly with the zero-turn model-catalog probe before P1 spends model usage on comparison turns.
+
+**Status:** Codex SDK/runtime 0.154.0 IMPLEMENTED / VERIFIED on canonical `main`; local live deployment verification pending.
+
