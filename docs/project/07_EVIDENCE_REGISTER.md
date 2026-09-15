@@ -2963,3 +2963,62 @@ Verification:
 Evidence boundary: the continuation mechanism and CORE instruction repair are deterministically established. **No token-savings claim is made yet.** The next evidence should come from ordinary useful Room work, not another paid synthetic comparison.
 
 **Status:** continuation mechanism DIAGNOSED; bounded CORE repair IMPLEMENTED / VERIFIED; dedicated paid P1 benchmarking CLOSED, ordinary-use monitoring remains.
+
+### E-086 — LAB-2C post-fix continuation-economy regression
+**Date:** 2026-09-15  
+**Scope:** [P1 / CORE / operating economics] Controlled post-PR-#70 regression against the same blind shutdown fixture used by E-084.
+
+A fresh Room `room_50eadb78672740cba17bb5e486b9a6b9` was created after PR #70 was deployed. The LAB-2C task reused the same standalone `relay_app` fixture and explicitly constrained C to the Room shared workspace, prohibited A/B invocation, prohibited modification, and asked C to minimize unnecessary tool/model continuations while batching known related lookups.
+
+Observed result:
+
+- C completed the task correctly in one Room turn;
+- C identified the same intended shutdown-order defect as the clean Desktop Stage 2A run and recommended the same minimal correction: stop/drain subscriptions before closing the journal;
+- A/B peer invocations remained zero;
+- SDK subagent activity remained zero;
+- no context compaction occurred;
+- Room execution economics reported **3 tool calls**, **0 failures**, and **92,765 total tokens**;
+- all 3 recorded activities were ordinary command executions; there were no deterministic-capability or capability-registry invocations;
+- the C rollout thread was `01a0a650-e951-7df1-9e51-4026fea95482`, top-level, SDK originator, CLI 0.154.0, cwd set to the Room shared workspace.
+
+Native rollout extraction reported exactly **4 provider-response usage records** and **3 tool calls**, with no zero-delta updates:
+
+| Metric | Desktop Stage 2A | Pre-fix Room LAB-2B | Post-fix Room LAB-2C |
+|---|---:|---:|---:|
+| Tool calls | 8 | 38 | **3** |
+| Provider responses | 9 | 39 | **4** |
+| Total reported tokens | 279,098 | 1,805,314 | **92,765** |
+| Input tokens | 275,125 | 1,797,842 | **90,578** |
+| Cached input tokens | 251,648 | 1,719,552 | **79,872** |
+| Uncached input tokens | 23,477 | 78,290 | **10,706** |
+| Output tokens | 3,973 | 7,472 | **2,187** |
+| Reasoning-output tokens | 1,867 | 3,125 | **1,045** |
+| Correct completed answer | yes | no | **yes** |
+
+Relative to the pre-fix Room run, LAB-2C reduced:
+
+- tool calls by **92.1%**;
+- provider responses by **89.7%**;
+- total reported tokens by **94.9%**;
+- cached input by **95.4%**;
+- uncached input by **86.3%**.
+
+Relative to the frozen Desktop Stage 2A baseline, LAB-2C used:
+
+- 62.5% fewer tool calls;
+- 55.6% fewer provider responses;
+- 66.8% fewer total reported tokens;
+- 54.4% fewer uncached input tokens.
+
+The provider-response timeline was compact and monotonic: 20,813 → 42,133 → 65,740 → 92,765 cumulative total tokens. The final provider request was 27,025 tokens.
+
+Interpretation: PR #70's continuation-economy change is not merely syntactically present; on this controlled regression it materially changed tool-loop behavior and eliminated the previously demonstrated registry/retrieval amplification. The post-fix Room also completed correctly and economically enough to outperform the frozen Desktop baseline on this bounded task.
+
+Limitations:
+
+- this is one controlled fixture and must not be generalized into universal Room superiority;
+- the Desktop baseline used CLI 0.154.0-alpha.6.2 while the Room used 0.154.0;
+- the LAB-2C prompt explicitly emphasized continuation minimization and workspace-only scope, so part of the improvement reflects the repaired policy plus an explicit regression instruction rather than a measurement of unconstrained ordinary use;
+- the compact Room export records command-execution categories, not raw command bodies. The rollout cwd was the Room shared workspace and the final answer cited only fixture-local paths; there is no observed evidence of CORE or cross-Room inspection, but the current telemetry does not independently reconstruct every shell read path.
+
+**Status:** PR #70 continuation-economy repair LIVE VERIFIED on a controlled regression. Dedicated P1 benchmarking remains closed; ordinary-use monitoring is now sufficient.
