@@ -1,6 +1,6 @@
 # Codex Room — Architecture & Current State
 
-**Last synthesized:** 2026-09-12  
+**Last synthesized:** 2026-09-14  
 **Scope:** Best current technical synthesis from the canonical source baseline, dated implementation/test evidence, and current repository state.  
 **Freshness:** Moderate to high volatility. Verify consequential current-state claims against newer source, tests, or runtime evidence when available.
 
@@ -28,7 +28,7 @@ Exact current HEAD, working-tree state, and active repository work are intention
 
 **IMPLEMENTED / VERIFIED — 2026-09-10**
 
-`pyproject.toml` declares setuptools packaging for `codex_room` and its static assets, with test dependencies available through the `test` extra. `constraints-test.txt` records the known-good application/test dependency set used by routine development and CI while `pyproject.toml` retains broader supported ranges. A disposable clean environment successfully installed the project with:
+`pyproject.toml` declares setuptools packaging for `codex_room` and its static assets, requires Python 3.11+, and exposes test dependencies through the `test` extra. `constraints-test.txt` records the known-good application/test dependency set used by routine development and CI while `pyproject.toml` retains broader supported dependency ranges. A disposable clean environment successfully installed the project with:
 
 `python -m pip install -c constraints-test.txt ".[test]"`
 
@@ -66,7 +66,7 @@ Persistent SDK threads remain a major context-cost driver; invocation frequency 
 
 ## 5. Deterministic Room capability substrate
 
-**IMPLEMENTED / VERIFIED end to end — 2026-09-12; P4.1 live invocation VERIFIED; P4.2 live registry discovery/invocation VERIFIED**
+**IMPLEMENTED / VERIFIED end to end through P4.5 — 2026-09-13**
 
 Codex Room owns a deterministic capability substrate without relying on the provider's experimental dynamic-tool API.
 
@@ -140,7 +140,7 @@ The rollover saga creates inherited binding state from the predecessor's exact b
 
 Focused regression coverage proves exact registration/package/implementation/verification continuity, unchanged predecessor binding bytes, normal successor `list` / `inspect` / `invoke`, replay/idempotence, abort cleanup, restart finalization/cleanup, multiple inherited capabilities, false-predecessor rejection, and multi-generation origin/immediate-predecessor coherence. PR #24 exact head `888585749cbfe702080005d7211fbc79e758a7a7` and canonical-main merge `f1f83357b78399718ed8910f2849763c6c2dbbbb` both passed **301 tests, 2 warnings**; the squash-merge tree exactly matches the reviewed/tested PR-head tree. See E-039.
 
-P4.5 remains **IN PROGRESS** pending a fresh live rollover proof. Personal/CORE promotion remains later work under D-022.
+P4.5 is **COMPLETE / IMPLEMENTED / VERIFIED end to end**. E-040 records the fresh live rollover proof: a newly registered lineage capability survived an actual Room rollover, remained discoverable/inspectable/invokable in the successor at the exact inherited version and provenance, and left the predecessor binding unchanged. Personal/CORE promotion remains later work under D-022.
 
 PRs #8–#11 established the registry/discovery path and then repaired two live-only integration gaps: agents initially preferred ad hoc mechanical execution, and later safe telemetry could miss capability commands exposed only through an outer PowerShell wrapper. Exact PR-head and merged-byte verification is recorded in E-031; the final code-bearing merged bytes passed **164 tests, 2 warnings** on rerun after one unrelated pre-existing timing flake.
 
@@ -263,9 +263,9 @@ Hosted verification for the merged repair passed **130 tests, 2 warnings** on ca
 
 ## 13. Permanent Personal triad and integration-before-closure
 
-**IMPLEMENTED / VERIFIED — 2026-09-12**
+**IMPLEMENTED / VERIFIED — through 2026-09-14**
 
-D-020 aligned Personal runtime behavior with the settled three-agent production architecture.
+D-020 aligned Personal runtime behavior with the settled three-agent production architecture; later D-024 through D-027 refine startup cognition, temporary framing, differentiated peer allocation, and invocation economy without changing the permanent triad.
 
 Current behavior:
 
@@ -313,7 +313,7 @@ The migration recognizes exact known built-in defaults through E-056 and convert
 
 E-057 established that task/fictional role dominated blind personality recognition. D-024 resolves the resulting product question by removing startup differentiation rather than continuing calibration. E-058 records the neutral-default implementation and verification: PR #49 tested head `2627fbd35b14214988a1828f788adb02163b03f8` and squash merge `833d3498c75fe4d7e2a3e76efda362b421341431` share Git tree `be52f9a92655ce28f6c3655fc39f1b72922d7d39`; PR run `34901569309` and canonical-main run `34901711440` both passed **321 tests, 2 warnings**. D-025 then makes task-specific differentiation an explicit part of C's protected coordination discretion through natural-language delegation rather than persistent startup profiles. E-059 verifies that protected-instruction implementation on PR #51 / merge `36eafaadd7b7a162ca7d4e8195e90f9498da0b21`, with exact tested/merged tree `dfcc00c242acedb7c0ce5b52276a1784bc103e76`; the PR suite passed **322 tests, 2 warnings**, and canonical main passed the same suite on rerun after one recorded intermittent pre-existing timing-test failure on the first attempt. E-060 then records the first live D-025 allocation test: C correctly coordinated a dual-peer cohort but gave A and B substantially the same analysis, producing strongly convergent recommendations. D-026 responds by making dual-peer differentiation mandatory and peer-count economy explicit. E-061 verifies the implementation on PR #53 / merge `057d5e2ca67356c6dfa642fb1c6bad6e5b71634e`; tested and merged tree `c8e635761d4d7aaf5fe619a90e8e86da86dd85cb` matched exactly, and both PR-head and canonical-main suites passed **322 tests, 2 warnings**. E-062 then live-verifies D-026 in a clean household-move Room: C assigned A the operating-workflow/tooling problem and B the AI-judgment/risk problem, and both produced complementary work. The same trace exposed a separate peer-routing inefficiency when B made A runnable after posting an already-public return, causing an extra A review and C reopen; D-027 addresses that broader invocation-economy gap. E-063 verifies D-027 on PR #55 / merge `18337b2c678bdf258f84591b6f9443e969c65d1c`: corrected tested and merged tree `da51b39fb0f18d66f062470e50652a76572243a7` matched exactly, and corrected PR-head plus canonical-main suites both passed **324 tests, 2 warnings**.
 
-The former Implementer / Verifier / Integrator occupational labels remain retired.
+The Implementer / Verifier / Integrator names remain persistent organizational labels, but their former use as startup occupational/cognitive personality contracts is retired.
 
 Composition verification is recorded in E-041. V3 implementation/evaluation is recorded in E-042/E-043; V4 implementation and its failed café calibration gate in E-044/E-045; V5 implementation and its failed café calibration gate in E-046/E-047. V6.2 implementation is recorded in E-048 and its behavioral failure against the pre-set complementarity criterion in E-049. V6.2 showed real improvement in the café scenario but converged too strongly in AI tutoring and manuscript revision, making the 3-of-4 target unreachable after S3.
 
@@ -323,4 +323,4 @@ V7 deterministic implementation is recorded in E-050, and its same-task AI-tutor
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 
-Fresh live Personal Room exports were captured on 2026-09-12 and are recorded in E-029. They provide current runtime evidence for D-020 selective coordination, integration-before-closure, C-only engaged-participant settlement, SDK-pinned runtime operation, and successful local adoption of the repaired A/B/C built-in profiles. Older Room-error snapshots remain historical evidence only.
+Live evidence spans the dated records in the Evidence Register rather than one permanent smoke snapshot. E-029 covers the 2026-09-12 post-D-020 smoke/early-triad repair, E-040 closes live P4.5 rollover inheritance, and E-064 provides the latest clean D-027 invocation-economy Room: C differentiated A/B work, A used a public no-wake return, B targeted only C, one cohort integration turn followed, and no visibility-driven peer review/reopen cascade occurred. Older Room-error snapshots remain historical evidence only.
