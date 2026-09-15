@@ -356,3 +356,24 @@ D-026 supersedes D-025 only where D-025 allowed identical or overlapping dual-pe
 
 **Principle:** **Use the fewest peers that add sufficient value; if both peers are invoked, buy complementary cognition rather than duplicate cognition.**
 
+### D-027 — Invocation is for immediate cognition, not message visibility
+**Date:** 2026-09-14  
+**Status:** ACTIVE
+
+Runnable peer invocation should be treated as an explicit purchase of additional cognition rather than as a message-delivery mechanism.
+
+Settled design:
+
+- all Room participants should invoke a peer only when that peer's immediate cognition is expected to add material value;
+- public Room messages remain readable to authorized peers without making those peers runnable, so visibility, acknowledgment, or passive awareness is not a sufficient reason to invoke;
+- `all` should be used only when every peer genuinely needs to run;
+- if no additional peer cognition is needed, a MESSAGE should not request a runnable peer;
+- when A or B is completing a bounded delegation from C, that peer should normally return the result to C without invoking the other delegated peer;
+- A/B may still invoke each other when additional cognition from that peer is materially necessary to complete or improve the delegated work;
+- D-027 does not prohibit direct A/B collaboration and does not make C a permission gate. It distinguishes readable communication from runnable cognition;
+- D-026 remains the stronger special case for C's dual-peer allocation: when C invokes both A and B, the two assignments must still be meaningfully differentiated.
+
+D-027 generalizes the token-economy principle beyond C's initial allocation decision to every use of `invoke_targets`.
+
+**Principle:** **Messages are public; invocations buy cognition. Wake a peer only when the work needs that peer to think now.**
+
