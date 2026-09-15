@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and **A3 — Whole-system housekeeping, efficiency, and operational assurance audit** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** A3 audited the canonical system after D-027 and found no new material core-runtime failure. It identified bounded housekeeping, observability, assurance, and model/effort-economy work. See E-065.
+- **What just changed?** I-007 repaired the Python support-floor contract, README/Architecture/Operations truth drift, and Development Control context bloat on PR #57; see E-066.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Execute the A3 remediation sequence without turning the audit into a broad refactor: first I-007 environment/document truth cleanup and I-008 merged-branch hygiene; then I-009 runtime provenance/maintenance observability; then the P1 model/reasoning-effort economy investigation; then I-010 persistent-data maintenance and I-011 verification-platform/dependency assurance.
+- **What is next?** I-008 repository branch hygiene is next after I-007. Then I-009 runtime provenance/maintenance observability, the P1 model/reasoning-effort economy investigation, I-010 persistent-data maintenance, and I-011 verification-platform/dependency assurance.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -24,7 +24,7 @@ A3 found the core execution/coordination architecture structurally healthy enoug
 
 Ordered remediation:
 
-1. **I-007 — Environment and documentation truth drift (IN PROGRESS):** repair the Python support-floor claim, README/current-architecture contradictions, stale maintained summaries/headers, and routine-context bloat in Development Control.
+1. **I-007 — Environment and documentation truth drift (COMPLETE):** Python support-floor, README/Architecture/Operations truth, and Development Control context hygiene repaired; see E-066.
 2. **I-008 — Repository branch hygiene:** remove merged-branch residue and adopt cheap automatic cleanup / minimal protection against destructive ref movement.
 3. **I-009 — Runtime provenance and maintenance health:** expose deterministic live build/runtime/model/effort provenance, surface unexpected maintenance/watchdog degradation, and provide the usage instrumentation needed for the next P1 investigation.
 4. **P1 follow-up — Model/reasoning-effort economy:** measure representative work before deciding whether universal Terra/high, participant-specific defaults, delegation-selected effort, or another policy is economically justified.
@@ -224,10 +224,10 @@ Before implementation, resolve at least: whether purchased credits form a distin
 ## Maintenance issues
 
 ### I-007 — Environment and documentation truth drift
-**Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE  
-**Priority:** HIGH / first A3 remediation item  
-**Evidence:** E-065
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED on PR #57  
+**Evidence:** E-065, E-066  
+**Priority:** CLOSED / first A3 remediation item
 
 A3 found multiple low-risk truth/maintenance defects:
 
@@ -238,7 +238,7 @@ A3 found multiple low-risk truth/maintenance defects:
 - Development Control retains substantial completed experimental narration already owned by durable decision/evidence sources, increasing routine retrieval/context cost;
 - Repository & Operations has not yet been refreshed for major later architecture such as P4 and current routing/profile behavior.
 
-Repair the owning sources rather than adding a new documentation layer. Preserve historical evidence in its existing owners; make Development Control compact enough to serve its volatile-control role.
+Repair completed on PR #57. The owning sources were updated in place rather than adding a new documentation layer; completed experimental detail remains in its Decision/Evidence owners, and Development Control is again a compact volatile control surface.
 
 ### I-008 — Repository branch hygiene
 **Work state:** PLANNED  
