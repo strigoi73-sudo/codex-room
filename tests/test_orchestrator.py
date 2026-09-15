@@ -140,6 +140,22 @@ async def test_execution_persists_model_effort_and_usage(runtime_factory):
     room = await runtime.create_room(
         CreateRoomRequest(topic="Record execution policy", starting_agent="agent_a")
     )
+    await asyncio.sleep(1)
+    print("P1_DIAG_CALLS", adapter.calls["agent_a"], flush=True)
+    print(
+        "P1_DIAG_EVENTS",
+        [
+            (event["event_type"], event["content"])
+            for event in await runtime.db.get_events(room["id"])
+        ],
+        flush=True,
+    )
+    async with runtime.db.connect() as diagnostic_db:
+        diagnostic_rows = await diagnostic_db.execute_fetchall(
+            "SELECT model, reasoning_effort, state, error, usage_json FROM agent_executions WHERE room_id=?",
+            (room["id"],),
+        )
+    print("P1_DIAG_EXECUTIONS", [dict(row) for row in diagnostic_rows], flush=True)
     async def persisted_execution():
         async with runtime.db.connect() as db:
             rows = await db.execute_fetchall(
