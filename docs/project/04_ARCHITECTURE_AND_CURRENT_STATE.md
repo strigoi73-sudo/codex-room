@@ -319,7 +319,19 @@ Composition verification is recorded in E-041. V3 implementation/evaluation is r
 
 V7 deterministic implementation is recorded in E-050, and its same-task AI-tutoring admission failure in E-051 established that explicit work-product prose did not reliably override shared-model convergence. CG1 / E-052 then showed that bounded task allocation can create genuinely different cognitive work even when the underlying model is shared. E-056 records the resulting D-023 refinement: the V7 work-product burden is removed, exact V7 built-ins migrate conservatively, and the active defaults are temperament-only generalists. PR #46 corrected head `20fa1b135426842bba1c65483cbb587b5db5c6fb` and squash merge `d83e2b6eca09477e255ea0033843c5834e64e4e1` share Git tree `343c68687675825e69f9c9d3300db6b044e7d9a5`; corrected PR run `34892520515` and canonical-main run `34892673292` both passed **319 tests, 2 warnings**. E-057 then tested live character recognizability through independently blinded role-play transcripts and found the observable signal dominated by fictional/task roles: **1/9** individual identities correct and **0/3** complete trios. The personality implementation remains active, but further calibration is MONITOR / DEFERRED; recognizability is not an established acceptance criterion.
 
-## 14. Runtime-state and work-queue caution
+## 14. Runtime provenance and maintenance health
+
+**IMPLEMENTED / VERIFIED — 2026-09-14**
+
+The runtime now exposes a bounded deterministic health/provenance surface rather than requiring repository/process inference for ordinary live-version questions. `/api/health` reports application/source provenance captured for the running process, including the package version, Git revision and source-dirty state when available, a SHA-256 fingerprint over the relevant source/package bytes, Python version, installed `openai-codex` version, and the configured Room model/reasoning-effort policy.
+
+Maintenance watchdog cycles retain process-local health facts: last cycle start/success, last unexpected error/time, cumulative failure count, consecutive failures, and an explicit `starting` / `healthy` / `degraded` state. A successful later cycle clears current degradation while preserving the prior error and cumulative count for the lifetime of the process.
+
+Durable `agent_executions` rows now persist the model and reasoning effort at execution claim time beside the existing SDK usage JSON. Existing open pre-I-009 executions are filled when reclaimed. This provides execution-level policy/usage evidence for the subsequent P1 model-economy investigation without introducing a general metrics platform or automatic model routing.
+
+E-068 records PR #58 and canonical-main verification. The exact code-bearing canonical commit passed **327 tests, 2 warnings**. Git provenance fields may be unavailable outside a Git checkout; the source fingerprint remains the deterministic byte-level fallback. Watchdog error history is intentionally process-scoped rather than a cross-restart incident log.
+
+## 15. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 
