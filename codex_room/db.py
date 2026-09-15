@@ -3512,6 +3512,6 @@ class Database:
             return "initialization", False, False, False, True, False, (
                 "private" if event_type == "private_initialization" else "public"
             )
-        if event_type in {"agent_activity", "tool_activity"}:
+        if event_type in {"agent_activity", "tool_activity", "execution_economics"}:
             return "status", False, False, False, False, False, "mechanical"
         return "lifecycle", False, False, False, False, False, "mechanical"
