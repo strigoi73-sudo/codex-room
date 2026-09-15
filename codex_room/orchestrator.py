@@ -1255,12 +1255,31 @@ class RoomRuntime:
                 # query and the wait leaves the wake flag set. Clearing after an
                 # empty claim would lose that notification and delay a valid turn.
                 wakeup.clear()
-                delivery = await self.db.claim_next_delivery(
-                    room_id,
-                    agent_key,
-                    generation,
-                    model=ROOM_MODEL,
-                    reasoning_effort=ROOM_REASONING_EFFORT,
+                room = await self.db.get_room(room_id)
+                round_item = (
+                    await self.db.get_round(room["active_round_id"])
+                    if room and room.get("active_round_id")
+                    else None
+                )
+                transactional = bool(
+                    round_item and round_item.get("work_model_version", 1) == 2
+                )
+                delivery = (
+                    await self.db.claim_next_assignment(
+                        room_id,
+                        agent_key,
+                        generation,
+                        model=ROOM_MODEL,
+                        reasoning_effort=ROOM_REASONING_EFFORT,
+                    )
+                    if transactional
+                    else await self.db.claim_next_delivery(
+                        room_id,
+                        agent_key,
+                        generation,
+                        model=ROOM_MODEL,
+                        reasoning_effort=ROOM_REASONING_EFFORT,
+                    )
                 )
                 if delivery is None:
                     self._set_worker_phase(key, generation, "idle", None, "Worker is waiting for work.")
@@ -1279,6 +1298,8 @@ class RoomRuntime:
                     (
                         "The Room is reconciling the exact persisted Codex turn."
                         if delivery.get("recovered")
+                        else "The transaction assignment is running under exact-turn reconciliation."
+                        if transactional
                         else
                         f"Retry attempt {max(item['attempts'] for item in delivery['events']) + 1} "
                         "is running under exact-turn reconciliation."
@@ -1286,7 +1307,10 @@ class RoomRuntime:
                         else "The persistent agent turn is running under exact-turn reconciliation."
                     ),
                 )
-                await self._process_delivery(delivery, generation)
+                if transactional:
+                    await self._process_assignment(delivery, generation)
+                else:
+                    await self._process_delivery(delivery, generation)
                 self._set_worker_phase(key, generation, "idle", None, "Worker completed its batch.")
                 # Decision routing publishes while the worker is still settling.
                 # Publish the terminal transition as well so connected clients do
