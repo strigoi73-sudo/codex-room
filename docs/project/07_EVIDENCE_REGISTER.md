@@ -2443,3 +2443,54 @@ Using `medium` across Luna/Terra/Sol/Astra isolates model-tier effects at one co
 
 **Status:** P1 local runtime/catalog gate PASSED. Astra is admitted to the first paid comparison. No production model-selection policy changed.
 
+### E-073 — P1 first paid model/effort admission benchmark
+**Date:** 2026-09-15  
+**Scope:** [P1 exploratory] 15 isolated SDK turns on `openai-codex==0.154.0`, three objectively scored task families, five model/effort configurations.
+
+Benchmark design:
+
+- fresh ephemeral thread per turn;
+- service tier unchanged;
+- read-only sandbox with developer instruction prohibiting tools/files/network/external sources;
+- three self-contained task families: evidence grounding, constraint planning, and code review;
+- 10 objectively scored labels per task;
+- configurations: Luna/medium, Terra/medium, Terra/high (production baseline), Sol/medium, Astra/medium;
+- deterministic shuffled execution order.
+
+Observed quality / duration:
+
+| Configuration | Score | SDK failures | Aggregate duration |
+|---|---:|---:|---:|
+| Luna / medium | 30/30 | 0 | 21.650 s |
+| Terra / medium | 30/30 | 0 | 21.053 s |
+| Terra / high | 30/30 | 0 | 26.293 s |
+| Sol / medium | 28/30 | 0 | 25.333 s |
+| Astra / medium | 30/30 | 0 | 20.907 s |
+
+Sol's two misses occurred in the evidence-grounding task: claims whose facts were explicitly unreported were labeled contradicted rather than unknown even though the accompanying rationale itself said training completion and staffing additions were not reported. This single-run miss is evidence about this benchmark instance, not sufficient evidence that Sol is generally inferior.
+
+The generated JSON's top-level summary incorrectly printed all token totals as zero. This is a benchmark-reporting defect, not missing provider usage: the record-level SDK results contain usage under nested `usage.total`, while the summarizer read token fields from the outer usage object. Re-aggregation from the preserved raw records gives:
+
+| Configuration | Input | Output | Reasoning-output | Total |
+|---|---:|---:|---:|---:|
+| Luna / medium | 53,230 | 761 | 468 | 53,991 |
+| Terra / medium | 57,925 | 648 | 353 | 58,573 |
+| Terra / high | 56,391 | 733 | 469 | 57,124 |
+| Sol / medium | 57,925 | 725 | 395 | 58,650 |
+| Astra / medium | 53,512 | 390 | 65 | 53,902 |
+
+Reasoning-output tokens are a subset/detail of reported output usage, not additive to `total_tokens`.
+
+Interpretation:
+
+- this admission set has a substantial ceiling effect: Luna/medium, Terra/medium, Terra/high, and Astra/medium all achieved perfect objective quality;
+- on this routine structured task class, Terra/high showed **no measured quality advantage** over Terra/medium and was materially slower;
+- Luna/medium matched the production Terra/high baseline on quality while completing faster in aggregate;
+- Astra/medium also matched rather than exceeded the ceiling, so this gate does not justify spending Astra on routine work;
+- raw token counts are useful execution facts but are not themselves a complete measure of Plus included-allowance consumption because model, reasoning, context, and provider metering all affect allowance usage;
+- therefore the first gate supports a strong hypothesis that universal Terra/high overspends cognition on routine bounded work, but it does **not** yet establish the boundary at which Terra/high, Sol, or Astra earn their higher usage.
+
+**Next gate:** a deliberately harder, more Codex-Room-representative threshold benchmark should test the same five configurations on subtle evidence/state reasoning, multi-constraint coordination, and concurrent/runtime code reasoning. If that also ceilings, stop synthetic expansion and move to representative real-work evaluation rather than manufacturing ever harder puzzles.
+
+**Status:** first paid P1 admission gate COMPLETE; no production model-selection policy changed.
+
