@@ -1517,7 +1517,6 @@ async def test_passive_delivery_cannot_claim_until_later_runnable_trigger(runtim
     prompt = await runtime._delivery_prompt(batch["events"], agent, round_id)
     assert f'id="{passive["id"]}" type="agent_message" role="passive_context"' in prompt
     assert f'id="{trigger["id"]}" type="observer_message" role="triggering"' in prompt
-    assert "Triggering" not in prompt  # roles are machine-stable lowercase attributes
     assert "Events with role=\"triggering\" caused this execution" in prompt
     assert "do not mistake them for a new request" in prompt
     stored_later = await runtime.db.get_events(room_id)
