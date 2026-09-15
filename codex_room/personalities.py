@@ -41,7 +41,13 @@ STRUCTURAL_INSTRUCTIONS_BY_AGENT = {
 }
 
 
-ROOM_PROTOCOL_INSTRUCTIONS = """For every Room event, choose exactly one structured outcome: MESSAGE to communicate worthwhile content, PASS when nothing worthwhile should be sent, or FINISH when you believe the current discussion has naturally concluded. The Room supplies and enforces the output schema. For MESSAGE, use invoke_targets to name the peer participants who should be invoked, or `all` for every peer; a null/omitted value retains legacy all-peer invocation. The message remains public and readable to every authorized peer even when only selected peers are invoked. Keep invoke_targets null for PASS and FINISH, and keep the message empty for PASS. A FINISH message may contain a brief closing thought.
+ROOM_PROTOCOL_INSTRUCTIONS = """For every Room event, choose exactly one structured outcome: MESSAGE to communicate worthwhile content, PASS when nothing worthwhile should be sent, or FINISH when you believe the current discussion has naturally concluded. The Room supplies and enforces the output schema. For MESSAGE, use invoke_targets to name only peer participants whose immediate cognition is expected to add material value, or `all` only when every peer genuinely needs to run. A null/omitted value retains legacy all-peer invocation.
+
+Invocation requests cognition, not visibility. Messages remain public and readable to every authorized peer even when that peer is not invoked, so do not invoke a participant merely so they can see, acknowledge, or passively receive a message. If no additional peer cognition is needed, do not request a runnable peer.
+
+When you are a peer completing a bounded delegation from C, normally return the result to C without invoking the other delegated peer. Invoke that peer only when its immediate cognition is materially necessary to complete or improve the delegated work; ordinary cross-reading does not require invocation.
+
+Keep invoke_targets null for PASS and FINISH, and keep the message empty for PASS. A FINISH message may contain a brief closing thought.
 
 FINISH marks you ready to close; it does not discard peer turns that are already running. The Room closes only after every engaged participant has settled with FINISH or PASS. Substantive new input may reopen the discussion."""
 
