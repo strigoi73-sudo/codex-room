@@ -184,7 +184,7 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 ### P1 follow-up — Model/reasoning-effort economy
 **Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
-**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076  
+**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076, E-077  
 **Current gate:** deploy/use the verified C-selected peer-execution capability in representative real work; no further dedicated paid synthetic benchmarks.
 
 The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of four admitted model/effort configurations for that peer execution. D-028 hard-prohibits Astra execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
@@ -279,21 +279,22 @@ PR #58 and the exact canonical merge commit are verified under E-068. Canonical-
 
 ### I-012 — Authorized CORE and cross-Room read inspection
 **Work state:** IN PROGRESS  
-**Reality:** DECIDED / NOT IMPLEMENTED on canonical `main`  
+**Reality:** IMPLEMENTED / VERIFIED on PR #62 head; canonical `main` and live-Room verification pending  
 **Decision:** D-029  
+**Evidence:** E-077, E-078  
 **Priority:** ACTIVE / raised directly by the I-010/P1 live trial
 
-The I-010 adaptive-cognition Room demonstrated a real evidence boundary: the agents could inspect only their current shared workspace and therefore could not ground implementation-specific maintenance conclusions in CORE source or prior Room artifacts.
+The I-010 adaptive-cognition Room demonstrated a real evidence boundary: the agents could inspect only their current shared workspace and therefore could not ground implementation-specific maintenance conclusions in CORE source or prior Room artifacts. E-077 records that live observation while also verifying same-thread Luna→Terra peer execution.
 
-Bounded remediation is underway in PR #62:
+PR #62 implements the bounded remediation through registered CORE capability `inspect_source`:
 
-- add one deterministic read-only inspection capability that can discover authorized sources, find files, search literal text, and read bounded UTF-8 source text;
-- expose the maintained CORE repository/source surface while excluding `data/`, environment-private files, credentials/secrets, virtual environments, Git internals, and arbitrary host paths;
+- discover authorized sources, find files, search literal text, and read bounded UTF-8 source text;
+- expose an allowlisted maintained CORE repository/source surface while excluding `data/`, environment-private files, credentials/secrets, virtual environments, Git internals, and arbitrary host paths;
 - expose other Personal Rooms only through `data/rooms/<room_id>/shared`, not private participant state or host database internals;
-- reject traversal plus symlink/reparse escapes and keep read payload content transient while durable telemetry records only bounded provenance/evidence;
+- reject traversal plus symlink/reparse escapes and keep read/search payload content transient while durable telemetry records only bounded provenance/evidence;
 - preserve all existing cross-boundary write restrictions.
 
-Do not add unrestricted host-filesystem access or inject CORE/other Room content wholesale into model context.
+Repaired code-bearing PR head `b70d67f0d743b8a1228b29fd942f2aae666302cc` passed **341 tests, 2 warnings** in run `34956587939`. Do not close I-012 until the final exact PR head and canonical-main merge commit pass, followed by a fresh local Room smoke for the actual sandbox/runtime read path.
 
 ### I-010 — Persistent-data operational maintenance
 **Work state:** PLANNED  
