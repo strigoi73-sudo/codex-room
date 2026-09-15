@@ -99,6 +99,7 @@ Current shutdown targeting identifies both the repository venv Python process ru
 The kill script deliberately does **not** terminate browser processes. Codex Room opens the UI through the system browser and that process may also own unrelated tabs/windows, so browser teardown is outside the safe repository-specific process boundary.
 
 PR #18 introduced this behavior. Exact PR-head and merged canonical-main Python CI both passed **238 tests, 2 warnings**. Local Windows runtime verification on 2026-09-12 then confirmed that the normal Kill path closed both the Codex Room server console and the Kill console with no manual cleanup required. The shutdown behavior is therefore IMPLEMENTED / VERIFIED for the intended Personal Windows path.
+
 ### Offline persistent-data maintenance
 
 I-010 adds a local operator maintenance wrapper:
