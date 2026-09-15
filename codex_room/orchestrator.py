@@ -451,6 +451,9 @@ class RoomRuntime:
                 or agent["status"] != AgentStatus.IDLE
                 or evidence.get("pending_count")
                 or evidence.get("processing_count")
+                or await self.db.has_open_transaction_assignment(
+                    room_id, agent_key, room["active_round_id"]
+                )
                 or execution.get("state")
                 in {"claimed", "active", "recovering", "result_ready", "quarantined"}
                 or await self._adapter_has_active_run(agent["id"])
@@ -476,6 +479,9 @@ class RoomRuntime:
                 if (
                     settled.get("pending_count")
                     or settled.get("processing_count")
+                    or await self.db.has_open_transaction_assignment(
+                        room_id, agent_key, room["active_round_id"]
+                    )
                     or settled_execution.get("state")
                     in {"claimed", "active", "recovering", "result_ready", "quarantined"}
                     or await self._adapter_has_active_run(agent["id"])
