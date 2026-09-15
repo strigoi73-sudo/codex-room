@@ -2046,6 +2046,19 @@ class RoomRuntime:
             await self.db.set_agent_status(agent["id"], AgentStatus.IDLE)
             await self.db.set_execution_state(batch["batch_id"], "settled")
 
+            if settlement["turn_limit_hit"]:
+                await self.db.cancel_transaction_work(room_id, batch["round_id"])
+                await self.db.set_room_status(room_id, RoomStatus.STOPPED)
+                await self.db.stop_active_round(room_id, "turn_limit")
+                await self.db.set_all_agent_statuses(room_id, AgentStatus.IDLE)
+                await self._system_event(
+                    room_id,
+                    "turn_limit",
+                    "The configured Round turn limit was reached during transaction work.",
+                )
+                await self.publish_state(room_id)
+                return
+
             if settlement["released_join_id"]:
                 released = await self.db.create_event(
                     room_id,
