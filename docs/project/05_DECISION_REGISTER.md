@@ -203,9 +203,13 @@ Settled product intent:
 - an already-running model invocation may finish, so exact enforcement can overshoot the configured percentage;
 - the provider's own usage/rate-limit enforcement remains authoritative.
 
-This capability is **DECIDED / NOT IMPLEMENTED** and **PLANNED**. Approval does not start implementation. D-020 later inserted the permanent-triad / C-integration migration ahead of Assurance Pass 2; this usage-pacing decision does not displace that migration or A2.
+This capability is **DECIDED / NOT IMPLEMENTED**. Approval does not start implementation.
 
-The following details are intentionally left for implementation design rather than settled here: warning thresholds, UI presentation, carry-forward behavior, daily-period/time-zone semantics, polling cadence, and the exact SDK/app-server integration technique.
+**Readiness update — 2026-09-14:** implementation is deferred until Codex Room can correctly account for mixed subscription allowance and purchased credits. E-026 establishes access to structured rate-limit data, but does not establish the semantics needed to know how multiple usage pools are represented, prioritized, or consumed. The product intent above remains active; implementation should not proceed by assuming a single weekly pool.
+
+Before implementation, deliberately resolve which usage pool the pacing policy governs, whether and how purchased credits alter or bypass the daily pacing limit, what provider-reported data can distinguish the relevant pools, and behavior when one pool is exhausted while another remains available.
+
+Other details intentionally left for implementation design include warning thresholds, UI presentation, carry-forward behavior, daily-period/time-zone semantics, polling cadence, and the exact SDK/app-server integration technique.
 
 ### D-020 — Permanent Personal triad, C-first coordination, and integration-before-closure
 **Date:** 2026-09-11  
