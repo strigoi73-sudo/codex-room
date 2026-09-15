@@ -27,6 +27,10 @@ SEARCH_EXCERPT_CHARS = 240
 MAX_READ_FILE_BYTES = 2 * 1024 * 1024
 MAX_READ_OUTPUT_BYTES = 128 * 1024
 MAX_READ_LINES = 1000
+MAX_BATCH_QUERIES = 16
+MAX_BATCH_QUERY_CHARS = 16 * 1024
+MAX_BATCH_READS = 16
+MAX_BATCH_READ_OUTPUT_BYTES = 128 * 1024
 
 CORE_READ_ENTRIES = frozenset(
     {
@@ -654,6 +658,233 @@ def _search_operation(
     }
 
 
+
+def _normalize_search_queries(raw_queries: Any) -> list[str]:
+    if (
+        not isinstance(raw_queries, list)
+        or not 1 <= len(raw_queries) <= MAX_BATCH_QUERIES
+        or any(not isinstance(query, str) for query in raw_queries)
+    ):
+        raise SourceInspectionError(
+            f"queries must contain 1 to {MAX_BATCH_QUERIES} strings"
+        )
+    queries = list(raw_queries)
+    if len(set(queries)) != len(queries):
+        raise SourceInspectionError("queries must not contain duplicates")
+    for query in queries:
+        if (
+            not query
+            or "\n" in query
+            or "\r" in query
+            or len(query) > MAX_QUERY_CHARS
+        ):
+            raise SourceInspectionError(
+                f"each query must be one non-empty line of at most "
+                f"{MAX_QUERY_CHARS} characters"
+            )
+    if sum(len(query) for query in queries) > MAX_BATCH_QUERY_CHARS:
+        raise SourceInspectionError(
+            f"combined query text exceeds {MAX_BATCH_QUERY_CHARS} characters"
+        )
+    return queries
+
+
+def _search_many_operation(
+    workspace: Path,
+    inputs: dict[str, Any],
+) -> dict[str, Any]:
+    allowed = {
+        "operation",
+        "source",
+        "room_id",
+        "path",
+        "queries",
+        "include_globs",
+        "exclude_globs",
+        "include_hidden",
+        "case_sensitive",
+        "max_files",
+        "max_matches",
+    }
+    unknown = sorted(set(inputs) - allowed)
+    if unknown:
+        raise SourceInspectionError(
+            "unknown search_many field(s): " + ", ".join(unknown)
+        )
+
+    queries = _normalize_search_queries(inputs.get("queries"))
+    source = inputs.get("source", "workspace")
+    room_id = inputs.get("room_id")
+    raw_path = inputs.get("path", ".")
+    include_hidden = inputs.get("include_hidden", False)
+    case_sensitive = inputs.get("case_sensitive", True)
+    max_files = inputs.get("max_files", DEFAULT_SEARCH_FILES)
+    max_matches = inputs.get("max_matches", DEFAULT_SEARCH_MATCHES)
+    if not isinstance(source, str):
+        raise SourceInspectionError("source must be a string")
+    if not isinstance(include_hidden, bool) or not isinstance(case_sensitive, bool):
+        raise SourceInspectionError(
+            "include_hidden and case_sensitive must be booleans"
+        )
+    if (
+        not isinstance(max_files, int)
+        or isinstance(max_files, bool)
+        or not 1 <= max_files <= MAX_SEARCH_FILES
+    ):
+        raise SourceInspectionError(
+            f"max_files must be an integer from 1 to {MAX_SEARCH_FILES}"
+        )
+    if (
+        not isinstance(max_matches, int)
+        or isinstance(max_matches, bool)
+        or not 1 <= max_matches <= MAX_SEARCH_MATCHES
+    ):
+        raise SourceInspectionError(
+            f"max_matches must be an integer from 1 to {MAX_SEARCH_MATCHES}"
+        )
+
+    source_root, descriptor, core = _resolve_source(workspace, source, room_id)
+    relative = _normalized_relative_path(raw_path, allow_dot=not core)
+    if core:
+        _validate_core_path(relative)
+    include_globs = _normalize_patterns(inputs.get("include_globs"), "include_globs")
+    exclude_globs = _normalize_patterns(inputs.get("exclude_globs"), "exclude_globs")
+    candidates, scanned_entries, candidate_truncation = _find_entries(
+        source_root,
+        relative,
+        include_globs=include_globs,
+        exclude_globs=exclude_globs,
+        include_hidden=include_hidden,
+        max_results=max_files,
+    )
+
+    flags = 0 if case_sensitive else re.IGNORECASE
+    patterns = [re.compile(re.escape(query), flags) for query in queries]
+    transient_matches: list[dict[str, Any]] = []
+    durable_locations: list[list[dict[str, Any]]] = [[] for _ in queries]
+    bytes_read = 0
+    files_searched = 0
+    skipped_non_text = 0
+    skipped_oversize = 0
+    truncation_reason = candidate_truncation
+
+    for candidate in candidates:
+        size = int(candidate["size_bytes"])
+        if size > MAX_SEARCH_FILE_BYTES:
+            skipped_oversize += 1
+            continue
+        if bytes_read + size > MAX_SEARCH_TOTAL_BYTES:
+            truncation_reason = "total_bytes"
+            break
+        relative_file = _normalized_relative_path(candidate["path"], allow_dot=False)
+        path = _assert_real_path(source_root, relative_file, expect_file=True)
+        try:
+            data = path.read_bytes()
+        except OSError as exc:
+            raise SourceInspectionError(
+                f"search_many could not read {candidate['path']}"
+            ) from exc
+        bytes_read += len(data)
+        if len(data) > MAX_SEARCH_FILE_BYTES:
+            skipped_oversize += 1
+            continue
+        if b"\x00" in data:
+            skipped_non_text += 1
+            continue
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError:
+            skipped_non_text += 1
+            continue
+
+        files_searched += 1
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            stop = False
+            for query_index, pattern in enumerate(patterns):
+                for match in pattern.finditer(line):
+                    if len(transient_matches) >= max_matches:
+                        truncation_reason = "max_matches"
+                        stop = True
+                        break
+                    start = match.start()
+                    excerpt_start = max(0, start - 80)
+                    excerpt = line[
+                        excerpt_start : excerpt_start + SEARCH_EXCERPT_CHARS
+                    ]
+                    location = {
+                        "path": candidate["path"],
+                        "line": line_number,
+                        "column": start + 1,
+                    }
+                    prospective = {
+                        "query_index": query_index,
+                        **location,
+                        "excerpt": excerpt,
+                        "excerpt_start_column": excerpt_start + 1,
+                    }
+                    prospective_bytes = len(
+                        json.dumps(
+                            [*transient_matches, prospective],
+                            ensure_ascii=True,
+                            separators=(",", ":"),
+                        ).encode("utf-8")
+                    )
+                    if prospective_bytes > MAX_SEARCH_MATCH_BYTES:
+                        truncation_reason = "result_bytes"
+                        stop = True
+                        break
+                    transient_matches.append(prospective)
+                    durable_locations[query_index].append(location)
+                if stop:
+                    break
+            if stop:
+                break
+        if truncation_reason in {"max_matches", "result_bytes"}:
+            break
+
+    grouped_results: list[dict[str, Any]] = []
+    durable_queries: list[dict[str, Any]] = []
+    for index, query in enumerate(queries):
+        matches = [
+            {key: value for key, value in match.items() if key != "query_index"}
+            for match in transient_matches
+            if match["query_index"] == index
+        ]
+        grouped_results.append({"query": query, "matches": matches})
+        durable_queries.append(
+            {
+                "query_sha256": hashlib.sha256(query.encode("utf-8")).hexdigest(),
+                "query_length": len(query),
+                "locations": durable_locations[index],
+                "match_count": len(matches),
+            }
+        )
+
+    return {
+        "codex_room_capability": CAPABILITY_MARKER,
+        "capability": "inspect_source",
+        "ok": True,
+        "evidence": {
+            "operation": "search_many",
+            "source": descriptor,
+            "path": raw_path,
+            "queries": durable_queries,
+            "query_count": len(queries),
+            "match_count": len(transient_matches),
+            "case_sensitive": case_sensitive,
+            "files_searched": files_searched,
+            "bytes_read": bytes_read,
+            "scanned_entries": scanned_entries,
+            "skipped_non_text": skipped_non_text,
+            "skipped_oversize": skipped_oversize,
+            "truncated": truncation_reason is not None,
+            "truncation_reason": truncation_reason,
+            "symlinks_followed": False,
+        },
+        "results": grouped_results,
+    }
+
+
 def _read_operation(
     workspace: Path,
     inputs: dict[str, Any],
@@ -766,6 +997,122 @@ def _read_operation(
     }
 
 
+
+def _read_many_operation(
+    workspace: Path,
+    inputs: dict[str, Any],
+) -> dict[str, Any]:
+    allowed = {"operation", "source", "room_id", "reads", "max_bytes"}
+    unknown = sorted(set(inputs) - allowed)
+    if unknown:
+        raise SourceInspectionError(
+            "unknown read_many field(s): " + ", ".join(unknown)
+        )
+
+    source = inputs.get("source", "workspace")
+    room_id = inputs.get("room_id")
+    reads = inputs.get("reads")
+    max_bytes = inputs.get("max_bytes", MAX_BATCH_READ_OUTPUT_BYTES)
+    if not isinstance(source, str):
+        raise SourceInspectionError("source must be a string")
+    if (
+        not isinstance(reads, list)
+        or not 1 <= len(reads) <= MAX_BATCH_READS
+        or any(not isinstance(item, dict) for item in reads)
+    ):
+        raise SourceInspectionError(
+            f"reads must contain 1 to {MAX_BATCH_READS} objects"
+        )
+    if (
+        not isinstance(max_bytes, int)
+        or isinstance(max_bytes, bool)
+        or not 1 <= max_bytes <= MAX_BATCH_READ_OUTPUT_BYTES
+    ):
+        raise SourceInspectionError(
+            f"max_bytes must be an integer from 1 to "
+            f"{MAX_BATCH_READ_OUTPUT_BYTES}"
+        )
+
+    transient_reads: list[dict[str, Any]] = []
+    durable_reads: list[dict[str, Any]] = []
+    total_bytes = 0
+    batch_truncated = False
+    for item in reads:
+        allowed_item = {"path", "start_line", "max_lines", "max_bytes"}
+        unknown_item = sorted(set(item) - allowed_item)
+        if unknown_item:
+            raise SourceInspectionError(
+                "unknown read_many item field(s): " + ", ".join(unknown_item)
+            )
+        if "path" not in item:
+            raise SourceInspectionError("each read_many item requires path")
+        remaining = max_bytes - total_bytes
+        if remaining <= 0:
+            batch_truncated = True
+            break
+        item_max_bytes = item.get("max_bytes", MAX_READ_OUTPUT_BYTES)
+        if (
+            not isinstance(item_max_bytes, int)
+            or isinstance(item_max_bytes, bool)
+            or not 1 <= item_max_bytes <= MAX_READ_OUTPUT_BYTES
+        ):
+            raise SourceInspectionError(
+                f"read item max_bytes must be an integer from 1 to "
+                f"{MAX_READ_OUTPUT_BYTES}"
+            )
+        request = {
+            "operation": "read",
+            "source": source,
+            "path": item["path"],
+            "start_line": item.get("start_line", 1),
+            "max_lines": item.get("max_lines", 400),
+            "max_bytes": min(item_max_bytes, remaining),
+        }
+        if room_id is not None:
+            request["room_id"] = room_id
+        result = _read_operation(workspace, request)
+        content = result["content"]
+        evidence = result["evidence"]
+        returned_bytes = int(evidence["returned_bytes"])
+        total_bytes += returned_bytes
+        durable_reads.append(evidence)
+        transient_reads.append(
+            {
+                "path": evidence["path"],
+                "start_line": evidence["start_line"],
+                "content": content,
+            }
+        )
+        if request["max_bytes"] < item_max_bytes and evidence["truncated"]:
+            batch_truncated = True
+            break
+
+    return {
+        "codex_room_capability": CAPABILITY_MARKER,
+        "capability": "inspect_source",
+        "ok": True,
+        "evidence": {
+            "operation": "read_many",
+            "source": (
+                durable_reads[0]["source"]
+                if durable_reads
+                else {"kind": source}
+            ),
+            "reads": durable_reads,
+            "requested_count": len(reads),
+            "returned_count": len(transient_reads),
+            "returned_bytes": total_bytes,
+            "truncated": batch_truncated or len(transient_reads) < len(reads),
+            "truncation_reason": (
+                "batch_max_bytes"
+                if batch_truncated or len(transient_reads) < len(reads)
+                else None
+            ),
+        },
+        "reads": transient_reads,
+    }
+
+
 def inspect_source(workspace: Path, inputs: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(inputs, dict):
         raise SourceInspectionError("capability input must be a JSON object")
@@ -786,9 +1133,16 @@ def inspect_source(workspace: Path, inputs: dict[str, Any]) -> dict[str, Any]:
         return _find_operation(workspace, inputs)
     if operation == "search":
         return _search_operation(workspace, inputs)
+    if operation == "search_many":
+        return _search_many_operation(workspace, inputs)
     if operation == "read":
         return _read_operation(workspace, inputs)
-    raise SourceInspectionError("operation must be 'sources', 'find', 'search', or 'read'")
+    if operation == "read_many":
+        return _read_many_operation(workspace, inputs)
+    raise SourceInspectionError(
+        "operation must be 'sources', 'find', 'search', 'search_many', "
+        "'read', or 'read_many'"
+    )
 
 
 INSPECT_SOURCE_INPUT_SCHEMA: dict[str, Any] = {
@@ -798,7 +1152,7 @@ INSPECT_SOURCE_INPUT_SCHEMA: dict[str, Any] = {
     "properties": {
         "operation": {
             "type": "string",
-            "enum": ["sources", "find", "search", "read"],
+            "enum": ["sources", "find", "search", "search_many", "read", "read_many"],
         },
         "source": {
             "type": "string",
@@ -808,6 +1162,38 @@ INSPECT_SOURCE_INPUT_SCHEMA: dict[str, Any] = {
         "room_id": {"type": ["string", "null"]},
         "path": {"type": "string", "default": "."},
         "query": {"type": "string", "minLength": 1, "maxLength": MAX_QUERY_CHARS},
+        "queries": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": MAX_BATCH_QUERIES,
+            "items": {"type": "string", "minLength": 1, "maxLength": MAX_QUERY_CHARS},
+        },
+        "reads": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": MAX_BATCH_READS,
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["path"],
+                "properties": {
+                    "path": {"type": "string"},
+                    "start_line": {"type": "integer", "minimum": 1, "default": 1},
+                    "max_lines": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": MAX_READ_LINES,
+                        "default": 400,
+                    },
+                    "max_bytes": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": MAX_READ_OUTPUT_BYTES,
+                        "default": MAX_READ_OUTPUT_BYTES,
+                    },
+                },
+            },
+        },
         "include_globs": {"type": "array", "items": {"type": "string"}, "default": []},
         "exclude_globs": {"type": "array", "items": {"type": "string"}, "default": []},
         "include_hidden": {"type": "boolean", "default": False},
@@ -856,6 +1242,8 @@ INSPECT_SOURCE_OUTPUT_SCHEMA: dict[str, Any] = {
         "evidence": {"type": "object"},
         "content": {"type": "string"},
         "matches": {"type": "array"},
+        "results": {"type": "array"},
+        "reads": {"type": "array"},
         "capability_version": {"type": "string"},
         "implementation_sha256": {"type": "string"},
         "durable_result_fields": {
@@ -882,6 +1270,10 @@ INSPECT_SOURCE_IMPLEMENTATION_COMPONENTS = (
     MAX_READ_FILE_BYTES,
     MAX_READ_OUTPUT_BYTES,
     MAX_READ_LINES,
+    MAX_BATCH_QUERIES,
+    MAX_BATCH_QUERY_CHARS,
+    MAX_BATCH_READS,
+    MAX_BATCH_READ_OUTPUT_BYTES,
     tuple(sorted(CORE_READ_ENTRIES)),
     _ROOM_ID.pattern,
     _is_link_or_reparse,
@@ -900,6 +1292,9 @@ INSPECT_SOURCE_IMPLEMENTATION_COMPONENTS = (
     _read_regular_bytes,
     _find_operation,
     _search_operation,
+    _normalize_search_queries,
+    _search_many_operation,
     _read_operation,
+    _read_many_operation,
     inspect_source,
 )
