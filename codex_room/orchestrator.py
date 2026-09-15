@@ -2088,6 +2088,28 @@ class RoomRuntime:
                 await self.publish_state(room_id)
                 return
 
+            if settlement["missing_required_contributors"]:
+                required_event = await self.db.create_event(
+                    room_id,
+                    "required_contributors_pending",
+                    "room",
+                    "observer",
+                    "Task settlement is blocked until the explicitly required "
+                    "participant contribution(s) are recorded: "
+                    + ", ".join(settlement["missing_required_contributors"]),
+                    related_event_id=result_event["id"],
+                    metadata={
+                        "task_id": batch["task_id"],
+                        "missing_required_contributors": settlement[
+                            "missing_required_contributors"
+                        ],
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(required_event)
+
             if settlement["released_join_id"]:
                 released = await self.db.create_event(
                     room_id,
