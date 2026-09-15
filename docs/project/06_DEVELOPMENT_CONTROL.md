@@ -7,7 +7,7 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and **A3 — Whole-system housekeeping, efficiency, and operational assurance audit** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-008 preflight verified that all 56 non-`main` branches are merged-PR residue and that zero PRs are open; see E-067. The remaining deletes/settings toggle require operator-side GitHub/local Git because the connected GitHub write surface cannot perform those mutations.
+- **What just changed?** The operator deleted the exact 56-branch set from E-067, and fresh GitHub verification now shows only `main` with zero open PRs. I-008 remains open only until automatic deletion of future merged PR branches is enabled.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
 - **What is next?** I-008 repository branch hygiene is next after I-007. Then I-009 runtime provenance/maintenance observability, the P1 model/reasoning-effort economy investigation, I-010 persistent-data maintenance, and I-011 verification-platform/dependency assurance.
@@ -242,7 +242,7 @@ Repair completed through PR #57 and canonical-main verification. The owning sour
 
 ### I-008 — Repository branch hygiene
 **Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE / deletion set VERIFIED  
+**Reality:** OBSERVED ISSUE / historical branch residue REMEDIATED AND VERIFIED  
 **Priority:** HIGH / second A3 remediation item  
 **Evidence:** E-065, E-067
 
@@ -250,8 +250,8 @@ Fresh E-067 preflight after I-007 found 56 non-`main` branches; every one is a h
 
 Bounded remediation:
 
-- delete the exact 56-branch merged set verified in E-067;
-- enable automatic deletion of future merged PR branches;
+- historical cleanup: COMPLETE — the exact 56-branch merged set from E-067 was deleted and fresh GitHub inspection shows only `main`;
+- remaining closeout: enable automatic deletion of future merged PR branches;
 - leave `main` protection as a plan/account-capability constraint rather than inventing a heavier workaround.
 
 ### I-009 — Runtime provenance and maintenance health
