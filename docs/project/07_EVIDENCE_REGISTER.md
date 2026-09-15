@@ -1,7 +1,7 @@
 # Codex Room — Evidence Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-14  
+**Last updated:** 2026-09-15  
 **Scope:** Compact empirical record supporting important project claims.  
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
@@ -2574,3 +2574,21 @@ Evidence boundary:
 
 **Status:** bounded adaptive execution selection IMPLEMENTED / VERIFIED; representative live-use evaluation remains IN PROGRESS.
 
+
+
+### E-076 — Astra hard execution prohibition
+**Date:** 2026-09-15  
+**Scope:** [CORE / P1 policy enforcement] D-028 hard prohibition on Astra Room cognition.
+
+PR #61 removed `astra-medium` from the bounded C-selectable execution configuration type, mapping, and Structured Output schema. The runtime adapter also now fails closed before starting a Room thread or turn when the currently identified Astra model `gpt-6-astra` is supplied. Regression coverage verifies both schema-level rejection of `astra-medium` and adapter-level rejection of direct Astra execution.
+
+Verification:
+
+- exact PR head `281f70c52ace0c9812d2f7a85b75016c8b0cfa02` passed GitHub Actions run `34953937701`;
+- PR #61 squash-merged as `537e87c1fc2302aab9874bd7f5394e5d17550baf`;
+- the merge commit carries the same Git tree as the verified PR head (`d4f71e006a015804bdd325959093f92d96209c89`);
+- canonical-main GitHub Actions run `34954156484` passed on that exact merge commit.
+
+The governing decision is D-028: Astra is prohibited for Codex Room execution and prompts or later allocation/routing logic may not override the rule. Luna, Terra, and Sol remain admitted to the bounded P1 real-work trial.
+
+**Status:** D-028 IMPLEMENTED / VERIFIED on canonical `main`.
