@@ -40,7 +40,7 @@ async def _room_finished(runtime: RoomRuntime, room_id: str) -> bool:
 async def test_transaction_dual_delegation_releases_c_once_after_both_peers(
     transaction_runtime_factory,
 ):
-    adapter = FakeAgentAdapter()
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
     adapter.decisions["agent_c"].extend(
         [
             TransactionDecision(
@@ -132,7 +132,7 @@ async def test_transaction_dual_delegation_releases_c_once_after_both_peers(
 async def test_transaction_nested_delegation_does_not_release_outer_join_early(
     transaction_runtime_factory,
 ):
-    adapter = FakeAgentAdapter()
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
     adapter.decisions["agent_c"].extend(
         [
             TransactionDecision(
@@ -204,7 +204,7 @@ async def test_transaction_nested_delegation_does_not_release_outer_join_early(
 async def test_transaction_observer_peer_message_creates_explicit_work_then_c_integration(
     transaction_runtime_factory,
 ):
-    adapter = FakeAgentAdapter()
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
     adapter.decisions["agent_c"].append(
         TransactionDecision(
             action=TransactionAction.COMPLETE,
