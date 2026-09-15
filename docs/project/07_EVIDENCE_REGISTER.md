@@ -2324,3 +2324,26 @@ Evidence boundary:
 
 **Status:** I-009 IMPLEMENTED / VERIFIED on canonical `main`. Local live-runtime verification remains a deployment/operator step after pulling and restarting the Room.
 
+### E-069 — I-009 local live-runtime provenance verification
+**Date:** 2026-09-15  
+**Scope:** [CORE live deployment] Principal-operated Windows Codex Room after pulling and restarting canonical `main`.
+
+The principal queried `http://127.0.0.1:8765/api/health` from the local Codex Room installation. The running process reported:
+
+- `application.version`: `0.1.0`;
+- `application.source_revision`: `6168c80938c7e9172a86651d3a9953fb66c2e219`, matching canonical `main` at verification time;
+- `application.source_dirty`: `false`;
+- `application.source_fingerprint_sha256`: `f115abeb99ecfccb9b6f9a90608ed8d3c4fa2480c6729231a4ab18e52b586cf4`;
+- Python: `3.12.10`;
+- installed `openai-codex`: `0.147.0`;
+- configured Room policy: `gpt-5.6-terra` with `high` reasoning effort;
+- Codex authentication: authenticated ChatGPT Plus account;
+- watchdog status: `healthy`;
+- watchdog failure count: `0`;
+- watchdog consecutive failures: `0`;
+- watchdog last error: none.
+
+This closes the deployment-evidence boundary left open by E-068: the new I-009 provenance/health surface is not only implemented and CI-verified on canonical source, but is also running successfully in the principal's local Personal Codex Room environment on the exact canonical revision.
+
+**Status:** I-009 IMPLEMENTED / VERIFIED / LIVE VERIFIED.
+
