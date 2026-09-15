@@ -53,7 +53,6 @@ ExecutionConfigId = Literal[
     "terra-medium",
     "terra-high",
     "sol-medium",
-    "astra-medium",
 ]
 
 EXECUTION_CONFIGS: dict[str, tuple[str, str]] = {
@@ -61,7 +60,6 @@ EXECUTION_CONFIGS: dict[str, tuple[str, str]] = {
     "terra-medium": ("gpt-5.6-terra", "medium"),
     "terra-high": ("gpt-5.6-terra", "high"),
     "sol-medium": ("gpt-5.6-sol", "medium"),
-    "astra-medium": ("gpt-6-astra", "medium"),
 }
 
 
@@ -134,7 +132,6 @@ DECISION_SCHEMA: dict[str, Any] = {
                                     "terra-medium",
                                     "terra-high",
                                     "sol-medium",
-                                    "astra-medium",
                                 ],
                             },
                         },
