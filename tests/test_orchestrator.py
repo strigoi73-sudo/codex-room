@@ -1770,38 +1770,28 @@ async def test_agent_prompt_prefers_continuation_economy_before_registry_overhea
     await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
 
     prompt = adapter.calls["agent_c"][0]["prompt"]
+    assert "Minimize model/tool continuations" in prompt
     assert "native workspace tools directly" in prompt
-    assert "do not consult the capability registry merely because" in prompt
-    assert "Prefer the fewest tool continuations" in prompt
-    assert "batch related independent searches or reads" in prompt
-    assert "Do not batch speculative follow-ups" in prompt
-    assert "Stop retrieving once the task has enough evidence" in prompt
+    assert "do not inspect the capability registry merely because" in prompt
+    assert "Batch related independent reads/searches" in prompt
+    assert "do not batch speculative dependent follow-ups" in prompt
+    assert "stop retrieving once evidence is sufficient" in prompt
     assert "codex-room-cap list" in prompt
-    assert "only if the needed capability identity is not already known" in prompt
+    assert "only when a needed capability identity is unknown" in prompt
     assert "codex-room-cap inspect CAPABILITY_ID" in prompt
     assert "only when its current contract is needed" in prompt
-    assert "codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT" in prompt
-    assert "fragile shell quoting" in prompt
-    assert (
-        "codex-room-cap invoke CAPABILITY_ID --input-file WORKSPACE_RELATIVE_JSON"
-        in prompt
-    )
     assert "codex-room-cap source" in prompt
     assert "search-many/read-many" in prompt
-    assert "explicit workspace-only instruction forbids" in prompt
-    assert "do not create extra model continuations solely for ceremony" in prompt
-    assert "avoid redundant list/inspect calls" in prompt
-    assert "avoid one lookup per continuation" in prompt
+    assert "explicit workspace-only instruction forbids it" in prompt
+    assert "codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT" in prompt
+    assert "--input-file WORKSPACE_RELATIVE_JSON" in prompt
+    assert "Avoid redundant list/inspect calls and ceremony-only continuations" in prompt
     assert "codex-room-cap authoring" in prompt
-    assert "reuse, reliability, provenance, or mechanical-complexity value" in prompt
     assert (
         "codex-room-cap register CAPABILITY_ID --cases-file WORKSPACE_RELATIVE_JSON"
         in prompt
     )
-    assert "protected host registration is pending" in prompt
-    assert "not active until this agent turn settles" in prompt
-    assert "Custom permission fields are declarations" in prompt
-    assert "not per-capability OS enforcement" in prompt
+    assert "Registration is not active until the agent turn settles" in prompt
     assert "run each registry list/inspect operation" not in prompt
     assert "invoking the relevant ones separately" not in prompt
     assert "codex-room-cap assert-file RELATIVE_PATH" not in prompt
