@@ -216,6 +216,8 @@ async def test_execution_economics_event_summarizes_usage_and_tool_activity(
         for event in await runtime.db.get_events(room["id"])
         if event["event_type"] == "execution_economics"
     )
+    assert event["event_class"] == "status"
+    assert event["visibility"] == "mechanical"
     metadata = event["metadata"]
     assert metadata["tool_calls"] == 3
     assert metadata["capability_invocations"] == 2
