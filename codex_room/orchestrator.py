@@ -1021,6 +1021,7 @@ class RoomRuntime:
         await self._retire_room_workers(room_id, interruption_outcomes)
         async with self._lifecycle_locks[room_id]:
             await self.db.cancel_pending_deliveries(room_id, room["discussion_id"])
+            await self.db.cancel_transaction_work(room_id, room["discussion_id"])
             await self.db.stop_active_round(room_id, reason)
             for agent in agents:
                 slot = self._worker_slots.get((room_id, agent["agent_key"]))
