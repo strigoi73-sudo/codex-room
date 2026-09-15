@@ -2284,5 +2284,15 @@ Post-delete verification:
 - canonical `main` remains at `22a6f98e50805f47ad774b6f6c929f7719ba54c6`;
 - `delete_branch_on_merge` is still `false`.
 
-**Status:** I-008 IN PROGRESS. Historical merged-branch residue is fully removed and verified. The remaining closeout action is to enable automatic deletion of future merged PR branches. Minimal `main` protection remains unavailable through the checked ruleset path on this private-repository plan and does not block I-008.
+Final closeout verification:
+
+- repository setting `delete_branch_on_merge` is now `true`;
+- branch count is **1**, consisting only of canonical `main`;
+- non-`main` branch count is **0**;
+- open pull-request count is **0**;
+- default branch remains `main`.
+
+Minimal `main` protection remains unavailable through the checked ruleset path on this private-repository plan; no heavyweight workaround was introduced.
+
+**Status:** I-008 COMPLETE / IMPLEMENTED / VERIFIED. Historical merged-branch residue is removed and future merged PR head branches are configured for automatic deletion.
 
