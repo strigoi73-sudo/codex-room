@@ -245,6 +245,15 @@ class CreateRoomRequest(BaseModel):
     starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] = "agent_c"
     auto_start: bool = True
     work_model_version: Literal[1, 2] = 1
+    required_contributors: list[
+        Literal["agent_a", "agent_b", "agent_c"]
+    ] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_required_contributors(self) -> "CreateRoomRequest":
+        if len(self.required_contributors) != len(set(self.required_contributors)):
+            raise ValueError("required_contributors cannot contain duplicates")
+        return self
 
 
 class AddAgentRequest(BaseModel):
@@ -284,10 +293,15 @@ class PrepareRoundRequest(BaseModel):
     agent_a_overlay: str | None = Field(default=None, max_length=50_000)
     agent_b_overlay: str | None = Field(default=None, max_length=50_000)
     work_model_version: Literal[1, 2] = 1
+    required_contributors: list[
+        Literal["agent_a", "agent_b", "agent_c"]
+    ] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_participant_maps(self) -> "PrepareRoundRequest":
         allowed = {"agent_a", "agent_b", "agent_c"}
+        if len(self.required_contributors) != len(set(self.required_contributors)):
+            raise ValueError("required_contributors cannot contain duplicates")
         for label, values in (
             ("participant_private", self.participant_private),
             ("participant_overlays", self.participant_overlays),

@@ -5,10 +5,13 @@ import asyncio
 import pytest
 
 from codex_room.agent import InterruptOutcome
+from codex_room.agent import AgentTurnTerminalError
 from codex_room.db import Database
+from codex_room.exporter import as_markdown
 from codex_room.models import (
     CreateRoomRequest,
     ObserverMessageRequest,
+    PrepareRoundRequest,
     RoomStatus,
     TransactionAction,
     TransactionDecision,
@@ -35,6 +38,13 @@ async def transaction_runtime_factory(tmp_path):
 async def _room_finished(runtime: RoomRuntime, room_id: str) -> bool:
     room = await runtime.db.get_room(room_id)
     return bool(room and room["status"] == RoomStatus.FINISHED)
+
+
+def _transaction_usage_wall(when: str) -> AgentTurnTerminalError:
+    return AgentTurnTerminalError(
+        f"You've hit your usage limit. Please try again at {when}.",
+        codex_error_info="usageLimitExceeded",
+    )
 
 
 @pytest.mark.asyncio
@@ -587,3 +597,313 @@ async def test_transaction_completion_while_paused_settles_task_then_resume_clos
 
     await runtime.resume(room_id)
     await wait_until(lambda: _room_finished(runtime, room_id))
+
+@pytest.mark.asyncio
+async def test_transaction_required_contributor_blocks_settlement_until_peer_contributes(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="I would otherwise finish without A.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Provide the explicitly required independent contribution.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated the required A contribution.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="A required contribution",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "required-contributor.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Require A before settlement",
+            work_model_version=2,
+            required_contributors=["agent_a"],
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 3
+    assert len(adapter.calls["agent_a"]) == 1
+    assert "explicitly requires contribution from: agent_a" in adapter.calls["agent_c"][1]["prompt"]
+    assert "A required contribution" in adapter.calls["agent_c"][2]["prompt"]
+
+    async with runtime.db.connect() as db:
+        task = await runtime.db._fetchone(
+            db,
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at LIMIT 1",
+            (room_id,),
+        )
+    assert task is not None
+    assert task["state"] == "settled"
+    assert task["required_contributors_json"] == '["agent_a"]'
+
+    exported = await runtime.db.snapshot(room_id, event_limit=None)
+    assert exported is not None
+    active_round = exported["active_round"]
+    assert active_round["work_model_version"] == 2
+    transaction = active_round["transaction_state"]
+    assert transaction["tasks"][0]["required_contributors"] == ["agent_a"]
+    assert any(
+        item["agent_key"] == "agent_a"
+        for item in transaction["tasks"][0]["assignments"]
+    )
+    markdown = as_markdown(exported)
+    assert "### Transaction work state" in markdown
+    assert "Required contributors: agent_a" in markdown
+
+@pytest.mark.asyncio
+async def test_transaction_usage_wall_continuation_survives_restart_on_same_assignment(
+    transaction_runtime_factory,
+):
+    first_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        failures={"agent_c": [_transaction_usage_wall("Jan 1, 2020 1:00 AM")]},
+    )
+    first = await transaction_runtime_factory(first_adapter, "transaction-usage-restart.db")
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Resume explicit assignment after provider usage reset",
+            work_model_version=2,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def suspended() -> bool:
+        continuation = await first.db.get_usage_continuation(room_id, "agent_c")
+        return bool(continuation and continuation["state"] == "scheduled")
+
+    await wait_until(suspended)
+    continuation = await first.db.get_usage_continuation(room_id, "agent_c")
+    assert continuation is not None
+    assert continuation["assignment_id"] is not None
+    assignment_id = continuation["assignment_id"]
+    thread_id = first_adapter.calls["agent_c"][0]["thread_id"]
+    await first.close()
+
+    second_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        turn_id_namespace="after_restart",
+    )
+    second_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Completed after the usage reset.",
+        )
+    )
+    second = await transaction_runtime_factory(second_adapter, "transaction-usage-restart.db")
+    await second._watchdog_tick()
+    await wait_until(lambda: _room_finished(second, room_id))
+
+    assert len(second_adapter.calls["agent_c"]) == 1
+    continued = second_adapter.calls["agent_c"][0]
+    assert continued["thread_id"] == thread_id
+    assert RoomRuntime.USAGE_CONTINUATION_INSTRUCTION in continued["prompt"]
+    assert second_adapter.usage_continuation_prepares == [
+        {
+            "agent_key": "agent_c",
+            "thread_id": thread_id,
+            "cwd": continued["cwd"],
+        }
+    ]
+    completed = await second.db.get_usage_continuation(room_id, "agent_c")
+    assert completed is not None
+    assert completed["state"] == "completed"
+    assert completed["assignment_id"] == assignment_id
+
+    async with second.db.connect() as db:
+        assignments = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+        executions = await db.execute_fetchall(
+            """SELECT * FROM agent_executions
+               WHERE room_id=? AND assignment_id=?
+               ORDER BY created_at""",
+            (room_id, assignment_id),
+        )
+    assert len(assignments) == 1
+    assert assignments[0]["state"] == "completed"
+    assert len(executions) == 2
+    assert all(row["assignment_id"] == assignment_id for row in executions)
+
+@pytest.mark.asyncio
+async def test_transaction_exact_active_turn_recovers_same_assignment_after_restart(
+    transaction_runtime_factory,
+):
+    first_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {1}},
+    )
+    first = await transaction_runtime_factory(first_adapter, "transaction-active-restart.db")
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Recover the exact active transaction turn",
+            work_model_version=2,
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: len(first_adapter.calls["agent_c"]) == 1)
+
+    async def active_execution() -> bool:
+        async with first.db.connect() as db:
+            row = await first.db._fetchone(
+                db,
+                """SELECT state FROM agent_executions
+                   WHERE room_id=? AND assignment_id IS NOT NULL
+                   ORDER BY created_at DESC LIMIT 1""",
+                (room_id,),
+            )
+        return bool(row and row["state"] == "active")
+
+    await wait_until(active_execution)
+    async with first.db.connect() as db:
+        original = await first.db._fetchone(
+            db,
+            """SELECT * FROM agent_executions
+               WHERE room_id=? AND assignment_id IS NOT NULL
+               ORDER BY created_at DESC LIMIT 1""",
+            (room_id,),
+        )
+    assert original is not None
+    assignment_id = original["assignment_id"]
+    original_batch_id = original["batch_id"]
+    original_turn_id = original["sdk_turn_id"]
+    thread_id = original["sdk_thread_id"]
+    await first.close()
+
+    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Recovered exact transaction turn.",
+        )
+    )
+    second = await transaction_runtime_factory(second_adapter, "transaction-active-restart.db")
+    await wait_until(lambda: _room_finished(second, room_id))
+
+    assert len(second_adapter.calls["agent_c"]) == 1
+    recovered = second_adapter.calls["agent_c"][0]
+    assert recovered["recovered"] is True
+    assert recovered["thread_id"] == thread_id
+    assert recovered["turn_id"] == original_turn_id
+
+    async with second.db.connect() as db:
+        executions = await db.execute_fetchall(
+            """SELECT * FROM agent_executions
+               WHERE room_id=? AND assignment_id=?
+               ORDER BY created_at""",
+            (room_id, assignment_id),
+        )
+    assert len(executions) == 1
+    assert executions[0]["batch_id"] == original_batch_id
+    assert executions[0]["state"] == "settled"
+
+@pytest.mark.asyncio
+async def test_transaction_new_round_cancels_old_work_and_late_result_cannot_settle(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_a": {1}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Old-round work that will finish late.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="New round completed independently.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Late old-round result must not settle anything.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "transaction-new-round.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Old transaction round", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    old_round_id = snapshot["active_round_id"]
+    await wait_until(lambda: len(adapter.calls["agent_a"]) == 1)
+
+    prepared = await runtime.prepare_round(
+        room_id,
+        PrepareRoundRequest(
+            title="Replacement",
+            prompt="New transaction round",
+            work_model_version=2,
+        ),
+    )
+    new_round_id = prepared["active_round_id"]
+    assert new_round_id != old_round_id
+    await runtime.start_round(room_id, new_round_id)
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    adapter.release_call("agent_a", 1)
+    await wait_until(lambda: len(adapter.completed_calls["agent_a"]) == 1)
+    await asyncio.sleep(0.05)
+
+    async with runtime.db.connect() as db:
+        old_tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? AND round_id=?",
+            (room_id, old_round_id),
+        )
+        old_assignments = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=? AND t.round_id=?""",
+            (room_id, old_round_id),
+        )
+        new_tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? AND round_id=?",
+            (room_id, new_round_id),
+        )
+    assert old_tasks and all(row["state"] == "cancelled" for row in old_tasks)
+    assert old_assignments and all(
+        row["state"] in {"cancelled", "completed", "passed", "failed", "waived"}
+        for row in old_assignments
+    )
+    assert new_tasks and new_tasks[0]["state"] == "settled"
+    events = await runtime.db.get_events(room_id)
+    assert not any(
+        event["event_type"] == "agent_message"
+        and event["content"] == "Late old-round result must not settle anything."
+        for event in events
+    )
+

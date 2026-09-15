@@ -224,7 +224,8 @@ class Database:
                     agent_b_overlay TEXT,
                     close_reason TEXT,
                     last_activity_at TEXT,
-                    work_model_version INTEGER NOT NULL DEFAULT 1
+                    work_model_version INTEGER NOT NULL DEFAULT 1,
+                    required_contributors_json TEXT NOT NULL DEFAULT '[]'
                 );
 
                 CREATE TABLE IF NOT EXISTS round_agent_state (
@@ -334,6 +335,7 @@ class Database:
                     agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
                     thread_id TEXT NOT NULL,
                     source_batch_id TEXT NOT NULL,
+                    assignment_id TEXT REFERENCES assignments(id),
                     round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
                     lifecycle_version INTEGER NOT NULL,
                     worker_generation INTEGER NOT NULL,
@@ -389,10 +391,17 @@ class Database:
             await self._ensure_column(db, "rounds", "participant_private_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "participant_overlays_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "work_model_version", "INTEGER NOT NULL DEFAULT 1")
+            await self._ensure_column(db, "rounds", "required_contributors_json", "TEXT NOT NULL DEFAULT '[]'")
             await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
             await self._ensure_column(
                 db,
                 "agent_executions",
+                "assignment_id",
+                "TEXT REFERENCES assignments(id)",
+            )
+            await self._ensure_column(
+                db,
+                "usage_continuations",
                 "assignment_id",
                 "TEXT REFERENCES assignments(id)",
             )
@@ -859,8 +868,8 @@ class Database:
             await db.execute(
                 """INSERT INTO rounds
                    (id, room_id, title, prompt, created_at, status, starting_agent,
-                    work_model_version)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -870,6 +879,7 @@ class Database:
                     RoundStatus.PREPARING,
                     request.starting_agent,
                     request.work_model_version,
+                    json.dumps(request.required_contributors),
                 ),
             )
             await db.executemany(
@@ -1703,6 +1713,12 @@ class Database:
             if not configured_keys <= member_keys:
                 missing = sorted(configured_keys - member_keys)
                 raise ValueError(f"Round configuration targets non-participants: {missing}")
+            required_keys = set(request.required_contributors)
+            if not required_keys <= member_keys:
+                missing = sorted(required_keys - member_keys)
+                raise ValueError(
+                    f"Required contributors are not Room participants: {missing}"
+                )
             if room["active_round_id"]:
                 await db.execute(
                     """UPDATE rounds SET status=?, ended_at=COALESCE(ended_at, ?),
@@ -1722,8 +1738,8 @@ class Database:
                     agent_a_private, agent_b_private, task_overlay,
                     agent_a_overlay, agent_b_overlay,
                     participant_private_json, participant_overlays_json,
-                    work_model_version)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -1740,6 +1756,7 @@ class Database:
                     json.dumps(request.participant_private, ensure_ascii=False),
                     json.dumps(request.participant_overlays, ensure_ascii=False),
                     request.work_model_version,
+                    json.dumps(request.required_contributors),
                 ),
             )
             await db.executemany(
@@ -2194,6 +2211,54 @@ class Database:
             event["deliveries"] = deliveries.get(event["id"], [])
         return events
 
+    async def get_round_transaction_state(
+        self, round_id: str
+    ) -> dict[str, Any]:
+        """Return explicit version-2 work state for inspection/export."""
+        async with self.connect() as db:
+            task_rows = await db.execute_fetchall(
+                "SELECT * FROM tasks WHERE round_id=? ORDER BY created_at, id",
+                (round_id,),
+            )
+            assignment_rows = await db.execute_fetchall(
+                """SELECT x.*, a.agent_key
+                   FROM assignments x
+                   JOIN tasks t ON t.id=x.task_id
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE t.round_id=?
+                   ORDER BY x.created_at, x.id""",
+                (round_id,),
+            )
+            join_rows = await db.execute_fetchall(
+                """SELECT j.*
+                   FROM assignment_joins j
+                   JOIN tasks t ON t.id=j.task_id
+                   WHERE t.round_id=?
+                   ORDER BY j.created_at, j.id""",
+                (round_id,),
+            )
+        tasks: list[dict[str, Any]] = []
+        assignments_by_task: dict[str, list[dict[str, Any]]] = {}
+        joins_by_task: dict[str, list[dict[str, Any]]] = {}
+        for row in assignment_rows:
+            item = dict(row)
+            item["context_event_ids"] = json.loads(
+                item.pop("context_event_ids_json", "[]") or "[]"
+            )
+            assignments_by_task.setdefault(item["task_id"], []).append(item)
+        for row in join_rows:
+            item = dict(row)
+            joins_by_task.setdefault(item["task_id"], []).append(item)
+        for row in task_rows:
+            item = dict(row)
+            item["required_contributors"] = json.loads(
+                item.pop("required_contributors_json", "[]") or "[]"
+            )
+            item["assignments"] = assignments_by_task.get(item["id"], [])
+            item["joins"] = joins_by_task.get(item["id"], [])
+            tasks.append(item)
+        return {"tasks": tasks}
+
     async def snapshot(
         self, room_id: str, *, event_limit: int | None = 2000
     ) -> dict[str, Any] | None:
@@ -2221,6 +2286,10 @@ class Database:
                 event for event in room["events"] if event.get("round_id") == round_item["id"]
             ]
             round_item["agent_state"] = await self.get_round_agent_states(round_item["id"])
+            if round_item.get("work_model_version", 1) == 2:
+                round_item["transaction_state"] = await self.get_round_transaction_state(
+                    round_item["id"]
+                )
             configured_members = {
                 state["agent_key"]
                 for state in round_item["agent_state"]
@@ -2264,6 +2333,7 @@ class Database:
         round_id: str,
         origin_event_id: str,
         starting_agent: str,
+        required_contributors: list[str] | None = None,
     ) -> dict[str, Any]:
         """Create the first explicit task/assignment graph for a version-2 Round."""
         now = utc_now()
@@ -2308,14 +2378,15 @@ class Database:
             await db.execute(
                 """INSERT INTO tasks
                    (id, room_id, round_id, origin_event_id, coordinator_agent_id,
-                    state, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, 'active', ?, ?)""",
+                    state, required_contributors_json, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?)""",
                 (
                     task_id,
                     room_id,
                     round_id,
                     origin_event_id,
                     coordinator["id"],
+                    json.dumps(required_contributors or []),
                     now,
                     now,
                 ),
@@ -2420,8 +2491,9 @@ class Database:
                 await db.execute(
                     """INSERT INTO tasks
                        (id, room_id, round_id, parent_task_id, origin_event_id,
-                        coordinator_agent_id, state, created_at, updated_at)
-                       VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)""",
+                        coordinator_agent_id, state, required_contributors_json,
+                        created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)""",
                     (
                         task_id,
                         room_id,
@@ -2429,6 +2501,7 @@ class Database:
                         previous["id"] if previous else None,
                         origin_event_id,
                         coordinator["id"],
+                        round_row["required_contributors_json"] or "[]",
                         now,
                         now,
                     ),
@@ -2517,6 +2590,13 @@ class Database:
                 if assignment is None:
                     await db.rollback()
                     raise RuntimeError("Transaction execution references a missing assignment")
+                continuation_row = await self._fetchone(
+                    db,
+                    """SELECT * FROM usage_continuations
+                       WHERE continuation_batch_id=? AND assignment_id=?
+                         AND state='running'""",
+                    (execution["batch_id"], assignment["id"]),
+                )
                 await db.commit()
                 result = dict(agent)
                 result.update(
@@ -2529,6 +2609,10 @@ class Database:
                         "task_id": assignment["task_id"],
                         "recovered": True,
                         "execution": self._decode_execution(execution),
+                        "usage_continuation": (
+                            self._decode_usage_continuation(continuation_row)
+                            if continuation_row else None
+                        ),
                         "work_model_version": 2,
                     }
                 )
@@ -2561,6 +2645,22 @@ class Database:
             if assignment is None:
                 await db.commit()
                 return None
+
+            continuation_row = await self._fetchone(
+                db,
+                """SELECT * FROM usage_continuations
+                   WHERE agent_id=? AND room_id=? AND round_id=?
+                     AND lifecycle_version=? AND thread_id=?
+                     AND assignment_id=? AND state='ready'""",
+                (
+                    agent["id"],
+                    room_id,
+                    agent["active_round_id"],
+                    agent["lifecycle_version"],
+                    agent["thread_id"],
+                    assignment["id"],
+                ),
+            )
 
             selected_model = model
             selected_effort = reasoning_effort
@@ -2604,6 +2704,16 @@ class Database:
                     now,
                 ),
             )
+            if continuation_row is not None:
+                cursor = await db.execute(
+                    """UPDATE usage_continuations
+                       SET state='running', continuation_batch_id=?, updated_at=?
+                       WHERE id=? AND state='ready'""",
+                    (batch_id, now, continuation_row["id"]),
+                )
+                if cursor.rowcount != 1:
+                    await db.rollback()
+                    return None
             await db.commit()
             execution = await self._fetchone(
                 db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
@@ -2619,6 +2729,10 @@ class Database:
                 "task_id": assignment["task_id"],
                 "recovered": False,
                 "execution": self._decode_execution(execution),
+                "usage_continuation": (
+                    self._decode_usage_continuation(continuation_row)
+                    if continuation_row else None
+                ),
                 "work_model_version": 2,
             }
         )
@@ -2659,6 +2773,7 @@ class Database:
         wake_agent_keys: list[str] = []
         released_join_id: str | None = None
         task_settled = False
+        missing_required_contributors: list[str] = []
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             execution = await self._fetchone(
@@ -2897,26 +3012,77 @@ class Database:
                     and task["coordinator_agent_id"] == assignment["agent_id"]
                     and task["state"] == "active"
                 ):
-                    await db.execute(
-                        """UPDATE tasks
-                           SET state='settled', settled_at=?, updated_at=?,
-                               settlement_event_id=?, settlement_reason=?
-                           WHERE id=? AND state='active'""",
-                        (
-                            now,
-                            now,
-                            result_event_id,
-                            action.lower(),
-                            assignment["task_id"],
-                        ),
+                    required = json.loads(
+                        task["required_contributors_json"] or "[]"
                     )
-                    task_settled = True
+                    terminal_rows = await db.execute_fetchall(
+                        """SELECT DISTINCT a.agent_key
+                           FROM assignments x JOIN agents a ON a.id=x.agent_id
+                           WHERE x.task_id=? AND x.state IN
+                             ('completed','passed','failed','cancelled','waived')""",
+                        (assignment["task_id"],),
+                    )
+                    contributed = {row["agent_key"] for row in terminal_rows}
+                    missing_required_contributors = [
+                        key for key in required if key not in contributed
+                    ]
+                    if missing_required_contributors and not turn_limit_hit:
+                        coordinator = await self._fetchone(
+                            db,
+                            "SELECT agent_key FROM agents WHERE id=?",
+                            (task["coordinator_agent_id"],),
+                        )
+                        if coordinator is None:
+                            await db.rollback()
+                            raise RuntimeError(
+                                "Active transaction task has no coordinator agent"
+                            )
+                        followup_id = new_id("assignment")
+                        await db.execute(
+                            """INSERT INTO assignments
+                               (id, task_id, agent_id, origin_event_id, instruction,
+                                state, created_at, updated_at)
+                               VALUES (?, ?, ?, ?, ?, 'queued', ?, ?)""",
+                            (
+                                followup_id,
+                                assignment["task_id"],
+                                task["coordinator_agent_id"],
+                                result_event_id,
+                                (
+                                    "The human explicitly requires contribution from: "
+                                    + ", ".join(missing_required_contributors)
+                                    + ". The task cannot settle until each named participant "
+                                      "has a causally linked terminal assignment. Delegate "
+                                      "bounded work to the missing participant(s), then integrate "
+                                      "their results."
+                                ),
+                                now,
+                                now,
+                            ),
+                        )
+                        wake_agent_keys.append(coordinator["agent_key"])
+                    elif not missing_required_contributors:
+                        await db.execute(
+                            """UPDATE tasks
+                               SET state='settled', settled_at=?, updated_at=?,
+                                   settlement_event_id=?, settlement_reason=?
+                               WHERE id=? AND state='active'""",
+                            (
+                                now,
+                                now,
+                                result_event_id,
+                                action.lower(),
+                                assignment["task_id"],
+                            ),
+                        )
+                        task_settled = True
 
             await db.commit()
         return {
             "wake_agent_keys": list(dict.fromkeys(wake_agent_keys)),
             "released_join_id": released_join_id,
             "task_settled": task_settled,
+            "missing_required_contributors": missing_required_contributors,
             "turn_limit_hit": turn_limit_hit,
             "decision_applied": True,
         }
@@ -3965,10 +4131,113 @@ class Database:
         assert row is not None
         return self._decode_usage_continuation(row)
 
+    async def suspend_transaction_usage_continuation(
+        self,
+        batch: dict[str, Any],
+        agent: dict[str, Any],
+        *,
+        reported_retry_at: str,
+        wake_at: str,
+        diagnostic: str,
+        worker_generation: int,
+    ) -> dict[str, Any] | None:
+        """Park one exact version-2 assignment execution until the provider reset."""
+        now = utc_now()
+        continuation_id = new_id("usage")
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            current = await self._fetchone(
+                db,
+                """SELECT r.status, r.active_round_id, r.lifecycle_version,
+                          a.thread_id, x.state AS assignment_state
+                   FROM rooms r
+                   JOIN agents a ON a.room_id=r.id
+                   JOIN assignments x ON x.id=?
+                   WHERE r.id=? AND a.id=? AND x.agent_id=a.id""",
+                (batch["assignment_id"], batch["room_id"], agent["id"]),
+            )
+            execution = await self._fetchone(
+                db,
+                "SELECT state, assignment_id FROM agent_executions WHERE batch_id=?",
+                (batch["batch_id"],),
+            )
+            if (
+                current is None
+                or execution is None
+                or current["status"] != RoomStatus.RUNNING
+                or current["active_round_id"] != batch["round_id"]
+                or current["lifecycle_version"] != batch["lifecycle_version"]
+                or current["thread_id"] != agent["thread_id"]
+                or current["assignment_state"] != "running"
+                or execution["assignment_id"] != batch["assignment_id"]
+                or execution["state"] not in {"active", "recovering"}
+            ):
+                await db.rollback()
+                return None
+            cursor = await db.execute(
+                """UPDATE agent_executions
+                   SET state='usage_suspended', error=?, last_reconciled_at=?
+                   WHERE batch_id=? AND state IN ('active','recovering')""",
+                (diagnostic[:4000], now, batch["batch_id"]),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                return None
+            await db.execute(
+                """INSERT INTO usage_continuations
+                   (id, room_id, agent_id, thread_id, source_batch_id,
+                    assignment_id, round_id, lifecycle_version, worker_generation,
+                    input_event_ids_json, triggering_event_ids_json,
+                    reported_retry_at, wake_at, state, created_at, updated_at, last_error)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', ?, ?,
+                           'scheduled', ?, ?, ?)
+                   ON CONFLICT(agent_id) DO UPDATE SET
+                     thread_id=excluded.thread_id,
+                     source_batch_id=excluded.source_batch_id,
+                     assignment_id=excluded.assignment_id,
+                     round_id=excluded.round_id,
+                     lifecycle_version=excluded.lifecycle_version,
+                     worker_generation=excluded.worker_generation,
+                     input_event_ids_json='[]',
+                     triggering_event_ids_json='[]',
+                     reported_retry_at=excluded.reported_retry_at,
+                     wake_at=excluded.wake_at,
+                     state='scheduled', continuation_batch_id=NULL,
+                     reschedule_count=usage_continuations.reschedule_count+1,
+                     updated_at=excluded.updated_at, fired_at=NULL,
+                     completed_at=NULL, last_error=excluded.last_error""",
+                (
+                    continuation_id,
+                    batch["room_id"],
+                    agent["id"],
+                    agent["thread_id"],
+                    batch["batch_id"],
+                    batch["assignment_id"],
+                    batch["round_id"],
+                    batch["lifecycle_version"],
+                    worker_generation,
+                    reported_retry_at,
+                    wake_at,
+                    now,
+                    now,
+                    diagnostic[:4000],
+                ),
+            )
+            await db.execute(
+                "UPDATE agents SET status=?, last_error=NULL, updated_at=? WHERE id=?",
+                (AgentStatus.USAGE_SUSPENDED, now, agent["id"]),
+            )
+            row = await self._fetchone(
+                db, "SELECT * FROM usage_continuations WHERE agent_id=?", (agent["id"],)
+            )
+            await db.commit()
+        assert row is not None
+        return self._decode_usage_continuation(row)
+
     async def release_due_usage_continuations(
         self, room_id: str, now: str
     ) -> list[dict[str, Any]]:
-        """Make due, still-current suspensions claimable by their normal worker."""
+        """Make due legacy deliveries or version-2 assignments claimable again."""
         outcomes: list[dict[str, Any]] = []
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
@@ -3977,25 +4246,20 @@ class Database:
                           a.thread_id AS current_thread_id,
                           r.status AS room_status, r.active_round_id,
                           r.lifecycle_version AS current_lifecycle_version,
-                          ro.status AS round_status, x.state AS execution_state
+                          ro.status AS round_status, x.state AS execution_state,
+                          tx.state AS assignment_state
                    FROM usage_continuations u
                    JOIN agents a ON a.id=u.agent_id
                    JOIN rooms r ON r.id=u.room_id
                    LEFT JOIN rounds ro ON ro.id=u.round_id
                    LEFT JOIN agent_executions x ON x.batch_id=u.source_batch_id
+                   LEFT JOIN assignments tx ON tx.id=u.assignment_id
                    WHERE u.room_id=? AND u.state='scheduled' AND u.wake_at<=?
                    ORDER BY u.wake_at""",
                 (room_id, now),
             )
             for row in rows:
-                expected = json.loads(row["input_event_ids_json"] or "[]")
-                delivery = await self._fetchone(
-                    db,
-                    """SELECT COUNT(*) AS count FROM deliveries
-                       WHERE agent_id=? AND batch_id=? AND status='processing'""",
-                    (row["agent_id"], row["source_batch_id"]),
-                )
-                valid = (
+                base_valid = (
                     row["room_status"] == RoomStatus.RUNNING
                     and row["active_round_id"] == row["round_id"]
                     and row["current_lifecycle_version"] == row["lifecycle_version"]
@@ -4003,63 +4267,145 @@ class Database:
                     and row["current_thread_id"] == row["thread_id"]
                     and row["agent_status"] == AgentStatus.USAGE_SUSPENDED
                     and row["execution_state"] == "usage_suspended"
-                    and delivery is not None
-                    and delivery["count"] == len(expected)
-                    and bool(expected)
                 )
-                if valid:
-                    await db.execute(
-                        """UPDATE deliveries SET status='pending', attempts=CASE
-                             WHEN attempts>0 THEN attempts-1 ELSE 0 END,
-                           started_at=NULL, completed_at=NULL, error=NULL, batch_id=NULL
+                if row["assignment_id"] is not None:
+                    valid = base_valid and row["assignment_state"] == "running"
+                    if valid:
+                        cursor = await db.execute(
+                            """UPDATE assignments SET state='queued', updated_at=?
+                               WHERE id=? AND agent_id=? AND state='running'""",
+                            (now, row["assignment_id"], row["agent_id"]),
+                        )
+                        if cursor.rowcount != 1:
+                            valid = False
+                    if valid:
+                        await db.execute(
+                            """UPDATE agent_executions
+                               SET state='usage_released', settled_at=?,
+                                   last_reconciled_at=?
+                               WHERE batch_id=? AND state='usage_suspended'""",
+                            (now, now, row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE usage_continuations
+                               SET state='ready', fired_at=?, updated_at=?
+                               WHERE id=? AND state='scheduled'""",
+                            (now, now, row["id"]),
+                        )
+                        await db.execute(
+                            "UPDATE agents SET status=?, updated_at=? WHERE id=?",
+                            (AgentStatus.IDLE, now, row["agent_id"]),
+                        )
+                        state = "fired"
+                        reason = None
+                    else:
+                        reason = (
+                            "Scheduled transaction usage continuation is stale under "
+                            "current lifecycle or assignment state"
+                        )
+                        await db.execute(
+                            """UPDATE assignments
+                               SET state='cancelled', updated_at=?, completed_at=?,
+                                   resolution_reason=?
+                               WHERE id=? AND state='running'""",
+                            (now, now, reason, row["assignment_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agent_executions
+                               SET state='cancelled', settled_at=?, error=?
+                               WHERE batch_id=? AND state='usage_suspended'""",
+                            (now, reason, row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE usage_continuations SET state='cancelled',
+                               completed_at=?, updated_at=?, last_error=? WHERE id=?""",
+                            (now, now, reason, row["id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agents SET status=?, updated_at=?
+                               WHERE id=? AND status=?""",
+                            (
+                                AgentStatus.IDLE,
+                                now,
+                                row["agent_id"],
+                                AgentStatus.USAGE_SUSPENDED,
+                            ),
+                        )
+                        state = "cancelled"
+                else:
+                    expected = json.loads(row["input_event_ids_json"] or "[]")
+                    delivery = await self._fetchone(
+                        db,
+                        """SELECT COUNT(*) AS count FROM deliveries
                            WHERE agent_id=? AND batch_id=? AND status='processing'""",
                         (row["agent_id"], row["source_batch_id"]),
                     )
-                    await db.execute(
-                        """UPDATE agent_executions
-                           SET state='usage_released', settled_at=?, last_reconciled_at=?
-                           WHERE batch_id=? AND state='usage_suspended'""",
-                        (now, now, row["source_batch_id"]),
+                    valid = (
+                        base_valid
+                        and delivery is not None
+                        and delivery["count"] == len(expected)
+                        and bool(expected)
                     )
-                    await db.execute(
-                        """UPDATE usage_continuations SET state='ready', fired_at=?,
-                           updated_at=? WHERE id=? AND state='scheduled'""",
-                        (now, now, row["id"]),
-                    )
-                    await db.execute(
-                        "UPDATE agents SET status=?, updated_at=? WHERE id=?",
-                        (AgentStatus.IDLE, now, row["agent_id"]),
-                    )
-                    state = "fired"
-                    reason = None
-                else:
-                    reason = "Scheduled usage continuation is stale under current lifecycle state"
-                    await db.execute(
-                        """UPDATE deliveries SET status='cancelled', completed_at=?, error=?
-                           WHERE agent_id=? AND batch_id=? AND status='processing'""",
-                        (now, reason, row["agent_id"], row["source_batch_id"]),
-                    )
-                    await db.execute(
-                        """UPDATE agent_executions SET state='cancelled', settled_at=?, error=?
-                           WHERE batch_id=? AND state='usage_suspended'""",
-                        (now, reason, row["source_batch_id"]),
-                    )
-                    await db.execute(
-                        """UPDATE usage_continuations SET state='cancelled',
-                           completed_at=?, updated_at=?, last_error=? WHERE id=?""",
-                        (now, now, reason, row["id"]),
-                    )
-                    await db.execute(
-                        """UPDATE agents SET status=?, updated_at=?
-                           WHERE id=? AND status=?""",
-                        (
-                            AgentStatus.IDLE,
-                            now,
-                            row["agent_id"],
-                            AgentStatus.USAGE_SUSPENDED,
-                        ),
-                    )
-                    state = "cancelled"
+                    if valid:
+                        await db.execute(
+                            """UPDATE deliveries SET status='pending', attempts=CASE
+                                 WHEN attempts>0 THEN attempts-1 ELSE 0 END,
+                               started_at=NULL, completed_at=NULL, error=NULL, batch_id=NULL
+                               WHERE agent_id=? AND batch_id=? AND status='processing'""",
+                            (row["agent_id"], row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agent_executions
+                               SET state='usage_released', settled_at=?,
+                                   last_reconciled_at=?
+                               WHERE batch_id=? AND state='usage_suspended'""",
+                            (now, now, row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE usage_continuations SET state='ready', fired_at=?,
+                               updated_at=? WHERE id=? AND state='scheduled'""",
+                            (now, now, row["id"]),
+                        )
+                        await db.execute(
+                            "UPDATE agents SET status=?, updated_at=? WHERE id=?",
+                            (AgentStatus.IDLE, now, row["agent_id"]),
+                        )
+                        state = "fired"
+                        reason = None
+                    else:
+                        reason = (
+                            "Scheduled usage continuation is stale under current "
+                            "lifecycle state"
+                        )
+                        await db.execute(
+                            """UPDATE deliveries SET status='cancelled',
+                               completed_at=?, error=?
+                               WHERE agent_id=? AND batch_id=?
+                                 AND status='processing'""",
+                            (now, reason, row["agent_id"], row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agent_executions SET state='cancelled',
+                               settled_at=?, error=?
+                               WHERE batch_id=? AND state='usage_suspended'""",
+                            (now, reason, row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE usage_continuations SET state='cancelled',
+                               completed_at=?, updated_at=?, last_error=? WHERE id=?""",
+                            (now, now, reason, row["id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agents SET status=?, updated_at=?
+                               WHERE id=? AND status=?""",
+                            (
+                                AgentStatus.IDLE,
+                                now,
+                                row["agent_id"],
+                                AgentStatus.USAGE_SUSPENDED,
+                            ),
+                        )
+                        state = "cancelled"
                 item = self._decode_usage_continuation(row)
                 item.update({"agent_key": row["agent_key"], "outcome": state})
                 item["last_error"] = reason
@@ -4519,6 +4865,9 @@ class Database:
         result = dict(row)
         private = json.loads(result.pop("participant_private_json", "{}") or "{}")
         overlays = json.loads(result.pop("participant_overlays_json", "{}") or "{}")
+        required_contributors = json.loads(
+            result.pop("required_contributors_json", "[]") or "[]"
+        )
         # Preserve legacy A/B rows without synthesizing absent C configuration.
         for key in ("agent_a", "agent_b"):
             old_private = result.get(f"{key}_private")
@@ -4529,6 +4878,7 @@ class Database:
                 overlays[key] = old_overlay
         result["participant_private"] = private
         result["participant_overlays"] = overlays
+        result["required_contributors"] = required_contributors
         return result
 
     @staticmethod
