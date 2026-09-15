@@ -2498,7 +2498,7 @@ class Database:
                 db,
                 """SELECT * FROM agent_executions
                    WHERE room_id=? AND agent_id=? AND round_id=? AND assignment_id IS NOT NULL
-                     AND state IN ('claimed','active','recovering','result_ready','usage_suspended')
+                     AND state IN ('claimed','active','recovering','result_ready','usage_suspended','quarantined')
                    ORDER BY created_at LIMIT 1""",
                 (room_id, agent["id"], agent["active_round_id"]),
             )
@@ -3633,7 +3633,16 @@ class Database:
                 "SELECT COUNT(*) AS count FROM deliveries WHERE batch_id=? AND status='processing'",
                 (batch_id,),
             )
-            if processing is None or not processing["count"]:
+            assignment_live = False
+            if row["assignment_id"] is not None:
+                assignment = await self._fetchone(
+                    db,
+                    """SELECT 1 FROM assignments
+                       WHERE id=? AND agent_id=? AND state='running'""",
+                    (row["assignment_id"], row["agent_id"]),
+                )
+                assignment_live = assignment is not None
+            if (processing is None or not processing["count"]) and not assignment_live:
                 await db.rollback()
                 return False
             try:
