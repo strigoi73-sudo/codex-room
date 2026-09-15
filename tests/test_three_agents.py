@@ -1470,13 +1470,13 @@ async def test_c_can_redelegate_same_peer_with_stronger_execution_config(runtime
                 outcome=Outcome.MESSAGE,
                 message="A: handle this routine bounded pass.",
                 invoke_targets=["agent_a"],
-                execution_configs={"agent_a": "luna-medium"},
+                execution_configs=[{"target": "agent_a", "config": "luna-medium"}],
             ),
             AgentDecision(
                 outcome=Outcome.MESSAGE,
                 message="A: retry with stronger cognition because you requested escalation.",
                 invoke_targets=["agent_a"],
-                execution_configs={"agent_a": "terra-high"},
+                execution_configs=[{"target": "agent_a", "config": "terra-high"}],
             ),
             AgentDecision(outcome=Outcome.FINISH, message="Integrated escalated result"),
         ]
@@ -1521,8 +1521,8 @@ async def test_c_can_redelegate_same_peer_with_stronger_execution_config(runtime
         if event["event_type"] == "agent_message" and event["source"] == "agent_c"
     ]
     assert [event["metadata"]["execution_configs"] for event in messages] == [
-        {"agent_a": "luna-medium"},
-        {"agent_a": "terra-high"},
+        [{"target": "agent_a", "config": "luna-medium"}],
+        [{"target": "agent_a", "config": "terra-high"}],
     ]
     assert messages[0]["metadata"]["resolved_execution_configs"]["agent_a"] == {
         "config_id": "luna-medium",
@@ -1562,7 +1562,17 @@ def test_invoke_targets_validation_and_room_membership() -> None:
         AgentDecision(
             outcome=Outcome.FINISH,
             message="done",
-            execution_configs={"agent_b": "luna-medium"},
+            execution_configs=[{"target": "agent_b", "config": "luna-medium"}],
+        )
+    with pytest.raises(ValidationError, match="cannot contain duplicate targets"):
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="bad",
+            invoke_targets=["agent_a"],
+            execution_configs=[
+                {"target": "agent_a", "config": "luna-medium"},
+                {"target": "agent_a", "config": "terra-high"},
+            ],
         )
 
     decision = AgentDecision(
@@ -1582,7 +1592,7 @@ def test_invoke_targets_validation_and_room_membership() -> None:
         outcome=Outcome.MESSAGE,
         message="delegate",
         invoke_targets=["agent_a"],
-        execution_configs={"agent_a": "luna-medium"},
+        execution_configs=[{"target": "agent_a", "config": "luna-medium"}],
     )
     assert RoomRuntime._resolve_execution_configs(
         selected, "agent_c", ("agent_a",)
@@ -1595,7 +1605,7 @@ def test_invoke_targets_validation_and_room_membership() -> None:
         outcome=Outcome.MESSAGE,
         message="bad selection",
         invoke_targets=["agent_a"],
-        execution_configs={"agent_b": "terra-high"},
+        execution_configs=[{"target": "agent_b", "config": "terra-high"}],
     )
     with pytest.raises(ValueError, match="only peers C is invoking"):
         RoomRuntime._resolve_execution_configs(
