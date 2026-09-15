@@ -1662,7 +1662,7 @@ class RoomRuntime:
                     "you are waiting for a peer unless you actually use DELEGATE to create that work. "
                     "For non-DELEGATE actions, delegations must be null."
                 ),
-                self._execution_config_prompt(agent["agent_key"]),
+                self._transaction_execution_config_prompt(agent["agent_key"]),
             ]
         )
         return "\n\n".join(context_parts)
@@ -3894,6 +3894,24 @@ Respond to this event according to your own judgment. Your final response must s
 {self._execution_config_prompt(agent["agent_key"])}
 
 For MESSAGE, execution_configs is null or an array of target/config records, for example a record selecting agent_a with luna-medium. For PASS or FINISH, set invoke_targets and execution_configs to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
+
+    @staticmethod
+    def _transaction_execution_config_prompt(agent_key: str) -> str:
+        if agent_key != "agent_c":
+            return (
+                "Only Agent C may select a peer execution config in this P1 trial. "
+                "If you DELEGATE, set each delegation record's config to null. "
+                "If stronger cognition appears necessary, say so in your substantive "
+                "result or delegation instruction so C can decide whether to escalate."
+            )
+        choices = ", ".join(EXECUTION_CONFIGS)
+        return (
+            "As Agent C, each DELEGATE record may optionally select that peer's "
+            f"execution config from: {choices}. Prefer luna-medium for routine, "
+            "bounded work and spend more only for affirmative complexity, uncertainty, "
+            "risk, or verification reasons. A null config uses the Terra/high "
+            "compatibility fallback. COMPLETE and PASS contain no delegation records."
+        )
 
     @staticmethod
     def _execution_config_prompt(agent_key: str) -> str:
