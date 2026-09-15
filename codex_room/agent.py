@@ -14,7 +14,12 @@ from .custom_capability_registration import (
     CustomCapabilityVerificationError,
     VerificationReceipt,
 )
-from .models import AgentDecision, DECISION_SCHEMA
+from .models import (
+    AgentDecision,
+    DECISION_SCHEMA,
+    TransactionDecision,
+    TRANSACTION_DECISION_SCHEMA,
+)
 
 
 ROOM_MODEL = "gpt-5.6-terra"
@@ -37,7 +42,7 @@ MAX_DURABLE_CAPABILITY_RESULT_BYTES = 64 * 1024
 
 @dataclass(slots=True)
 class AgentRunResult:
-    decision: AgentDecision
+    decision: AgentDecision | TransactionDecision
     usage: dict[str, Any] | None = None
     activity: list[dict[str, Any]] = field(default_factory=list)
     thread_id: str | None = None
@@ -82,6 +87,7 @@ class AgentAdapter(Protocol):
         *,
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
+        transactional: bool = False,
     ) -> AgentRunResult: ...
 
     async def resume_agent(
@@ -91,6 +97,8 @@ class AgentAdapter(Protocol):
         thread_id: str,
         turn_id: str,
         on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        transactional: bool = False,
     ) -> AgentRunResult: ...
 
     async def compact_agent(self, agent: dict[str, Any], cwd: Path) -> None: ...
@@ -188,6 +196,7 @@ class CodexAgentAdapter:
         *,
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
+        transactional: bool = False,
     ) -> AgentRunResult:
         _assert_room_model_allowed(model)
         thread = await self._get_thread(agent, cwd)
@@ -200,10 +209,17 @@ class CodexAgentAdapter:
             prompt,
             effort=reasoning_effort,
             model=model,
-            output_schema=DECISION_SCHEMA,
+            output_schema=(
+                TRANSACTION_DECISION_SCHEMA if transactional else DECISION_SCHEMA
+            ),
         )
         return await self._consume_handle(
-            agent, thread, handle, on_started=on_started, on_progress=on_progress
+            agent,
+            thread,
+            handle,
+            on_started=on_started,
+            on_progress=on_progress,
+            transactional=transactional,
         )
 
     async def resume_agent(
@@ -213,6 +229,8 @@ class CodexAgentAdapter:
         thread_id: str,
         turn_id: str,
         on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        transactional: bool = False,
     ) -> AgentRunResult:
         """Reattach to one durable turn without starting replacement work."""
         from openai_codex import AsyncTurnHandle
@@ -227,6 +245,7 @@ class CodexAgentAdapter:
             handle,
             require_present=True,
             on_progress=on_progress,
+            transactional=transactional,
         )
 
     async def _consume_handle(
@@ -238,6 +257,7 @@ class CodexAgentAdapter:
         on_started: Callable[[str, str], Awaitable[None]] | None = None,
         require_present: bool = False,
         on_progress: Callable[[], Awaitable[None]] | None = None,
+        transactional: bool = False,
     ) -> AgentRunResult:
         async with self._active_lock:
             self._active_handles[agent["id"]] = handle
@@ -282,7 +302,12 @@ class CodexAgentAdapter:
         if not result.final_response:
             raise RuntimeError("Codex turn completed without a final response")
         try:
-            decision = AgentDecision.model_validate(json.loads(result.final_response))
+            payload = json.loads(result.final_response)
+            decision = (
+                TransactionDecision.model_validate(payload)
+                if transactional
+                else AgentDecision.model_validate(payload)
+            )
         except (json.JSONDecodeError, ValueError) as exc:
             raise RuntimeError(
                 f"Codex returned invalid Room decision JSON: {result.final_response[:500]}"
