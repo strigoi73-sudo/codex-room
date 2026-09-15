@@ -7,7 +7,7 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** A bounded QOL batch is complete in PR #76: the active Room header now shows the persistent Room ID; each agent card shows its current execution model or the last recorded model after settlement; and `Restart-Codex-Room.bat` closes a visible Codex Room browser window when identifiable, invokes the existing Kill path, waits five seconds, then launches the existing Start path. Canonical verification passed **372 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12, plus **3 browser tests** on Windows. See E-089.
+- **What just changed?** Ordinary-use Room testing reopened I-014 with two concrete continuation-economy defects: passive backlog could obscure the runnable assignment, and source investigations still produced long model/tool continuation loops with heavy cached-context replay. PR #77 fixes prompt orientation, hardens the direct/batched source path, and makes `execution_economics` report same-thread per-execution token deltas rather than presenting cumulative thread totals as execution cost. Canonical verification passed **376 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12, plus **3 browser tests** on Windows. See E-090.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
 - **What is next?** The ordered A3 remediation sequence is complete. No new remediation item is automatically implied; continue ordinary-use monitoring and select further work from demonstrated product/operational need or explicit principal direction. I-003 remains a low-priority provider-side verification candidate, D-019 remains blocked, and continuation economy remains MONITOR through useful work. No automatic router is authorized.
@@ -27,10 +27,10 @@ Ordered remediation:
 1. **I-007 — Environment and documentation truth drift (COMPLETE):** Python support-floor, README/Architecture/Operations truth, and Development Control context hygiene repaired; see E-066.
 2. **I-008 — Repository branch hygiene (COMPLETE):** merged-branch residue removed and automatic deletion of future merged PR heads enabled; see E-067.
 3. **I-009 — Runtime provenance and maintenance health (COMPLETE):** deterministic runtime/source/model-policy provenance, watchdog degradation/recovery health, and durable execution-level model/effort/usage facts implemented and canonically verified; see E-068.
-4. **P1 follow-up — Model/reasoning-effort and continuation economy (COMPLETE / LIVE VERIFIED / MONITOR):** same-thread selection is live verified; hidden SDK subagents are disabled; E-083–E-085 establish the continuation mechanism and PR #70 repair; E-086 live-verifies the repair with a 3-tool / 4-provider-response / 92,765-token correct regression. No further dedicated paid benchmarking is planned.
+4. **P1 follow-up — Model/reasoning-effort and continuation economy (COMPLETE / LIVE VERIFIED / MONITOR):** same-thread selection is live verified; hidden SDK subagents are disabled; E-083–E-086 establish the continuation mechanism and first repair; E-090 records an ordinary-use recurrence in broader source work and the verified PR #77 follow-up. No further dedicated paid benchmarking is planned.
 5. **I-012 — Authorized CORE and cross-Room read inspection (COMPLETE):** the I-010 evidence boundary was repaired and live verified under D-029 / E-078 / E-079.
 6. **I-013 — SDK-internal subagent bypass (COMPLETE):** Codex's ambient multi-agent surface is disabled so production cognition routes through persistent Room A/B/C and its execution-accounting path; see E-080.
-7. **I-014 — Deterministic retrieval economy (COMPLETE):** request-file/repeated-retrieval amplification is repaired with direct/batched source retrieval, targeted verification of delegated evidence, and compact per-execution economics telemetry; see E-081.
+7. **I-014 — Deterministic retrieval economy (COMPLETE):** E-081's original direct/batched retrieval repair remains, and E-090 closes an ordinary-use recurrence by distinguishing triggering versus passive context, hardening direct source retrieval, and correcting execution-level token telemetry.
 8. **I-010 — Persistent-data operational maintenance (COMPLETE):** offline local check/backup/verify/restore implemented and verified; see E-087.
 9. **I-011 — Verification-platform and dependency assurance (COMPLETE):** cross-platform hosted verification, pinned browser tooling, deterministic test synchronization, dependency/advisory review, and the Windows newline portability repair are implemented and canonically verified; see E-088.
 
@@ -187,8 +187,8 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 ### P1 follow-up — Model/reasoning-effort and continuation economy
 **Work state:** COMPLETE / MONITOR  
 **Reality:** IMPLEMENTED / VERIFIED mechanisms; ordinary-use savings MONITOR  
-**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076, E-077, E-080, E-081, E-082, E-083, E-084, E-085, E-086  
-**Current gate:** Dedicated paid P1 benchmarking is closed. E-085 identifies the continuation mechanism and PR #70 repair; E-086 live-verifies a major controlled improvement: 3 tool calls / 4 provider responses / 92,765 tokens with a correct answer versus pre-fix 38 / 39 / 1,805,314. Do not infer universal Room superiority from one fixture; monitor ordinary useful work and reopen only for a concrete recurring operating-economics defect.
+**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076, E-077, E-080, E-081, E-082, E-083, E-084, E-085, E-086, E-090  
+**Current gate:** Dedicated paid P1 benchmarking is closed. E-090 demonstrates that ordinary useful work can still expose continuation amplification outside the controlled E-086 fixture; PR #77 closes the demonstrated passive-context, source-retrieval, and telemetry defects deterministically. Continue naturalistic monitoring and reopen only on a concrete recurrence.
 
 The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of four admitted model/effort configurations for that peer execution. D-028 hard-prohibits Astra execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
 
@@ -206,6 +206,7 @@ P1's dedicated experimental phase is closed. The retained operating guidance is:
 - E-084's fresh blind fixture strengthens the economics finding: Desktop solved the task correctly with 8 tool calls / 279,098 tokens, while the task-only Room attempt used 38 tool calls / 1,805,314 tokens and returned no answer. The Room used 6.47x total tokens, 6.83x cached input, and 3.33x uncached input. C also violated the explicit shared-workspace-only evidence boundary and claimed it was awaiting two peer audits while structured metadata showed zero peer invocations and `invoke_targets: []`;
 - E-085 traces those 39 task provider responses to one C SDK turn with 38 tool calls; Room tool-activity events were post-turn records, not cognition triggers. Fifteen source operations were single reads versus one `read_many`, and the old capability policy imposed registry/separate-command ceremony. PR #70 now prioritizes native one-off workspace work, few/batched tool continuations, sufficient-evidence stopping, and explicit workspace-only boundaries;
 - E-086 provides the one justified post-fix regression: on the same fixture C completed correctly with 3 tool calls, 4 provider responses, 0 failures, and 92,765 tokens. Relative to pre-fix Room, tool calls fell 92.1%, provider responses 89.7%, total tokens 94.9%, and cached input 95.4%. This closes the benchmark loop; ordinary useful work is now the evidence source;
+- E-090 is the resulting ordinary-use evidence: broader source work again reached 22–31 tool/activity calls with roughly million-token cached-context replay, while a passive backlog caused one peer to answer stale work. PR #77 preserves passive cross-reading but labels triggering versus passive context, requires the direct source CLI for normal `inspect_source` work, supports explicit-file search targets, reinforces one `search-many` → one `read-many` retrieval, and reports execution-token deltas from the prior same-thread cumulative usage snapshot;
 - use the E-075 capability naturally in ordinary Rooms rather than creating more paid benchmark Rooms;
 - C should prefer `luna-medium` for routine bounded delegated work and deliberately choose a stronger admitted Terra or Sol configuration only when complexity, uncertainty, risk, or prior verification trouble provides an affirmative reason;
 - Astra is prohibited by D-028 and is not an admissible execution configuration; the runtime must fail closed if an Astra turn is attempted;
@@ -322,21 +323,24 @@ Do not count Rooms containing SDK-internal subagent activity as C-selected Room-
 
 ### I-014 — Deterministic retrieval economy
 **Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / VERIFIED on canonical `main`; ordinary-use effectiveness MONITOR  
+**Reality:** IMPLEMENTED / VERIFIED on canonical `main`; ordinary-use recurrence MONITOR  
 **Priority:** CLOSED / demonstrated operating-economics remediation  
-**Evidence:** E-081
+**Evidence:** E-081, E-090
 
-The I-010 operating-cost review demonstrated a specific expensive loop rather than a hypothetical optimization target: 27 `inspect_source` invocations were paired with 27 request-file edits, five avoidable failed requests, many small search/read continuations, no context compaction, and substantial broad re-inspection by C after delegated research had already returned.
+E-081 established the original tool-loop/context-amplification defect and PR #64 added direct/batched `inspect_source` retrieval plus execution-economics telemetry. E-086 later showed the broader PR #70 continuation-policy repair could reduce a controlled fixture to 3 tool calls / 4 provider responses / 92,765 tokens.
 
-PR #64 provides the bounded repair:
+Ordinary feature testing then demonstrated that the problem was not fully eliminated for broader source work. E-090 records two related defects: a newly invoked peer could receive earlier passive readable messages without the prompt distinguishing them from the runnable trigger, and source investigations could still take 22–31 tool/activity calls with heavy cached-context replay despite `search_many` / `read_many` being available. The same evidence showed the economics status line combined current-execution tool counts with cumulative persistent-thread token totals.
 
-- `inspect_source` v2 adds `search_many` and `read_many` with strict query/range/output limits while preserving the existing CORE/cross-Room confinement and no-write boundary;
-- `codex-room-cap source ...` invokes the same registered capability without temporary JSON request files and remains eligible for structured deterministic telemetry;
-- protected participant instructions prefer batching/direct retrieval when related lookups are already known, while avoiding speculative batches;
-- C is instructed to integrate evidence-backed delegated research and independently spot-check only consequential uncertainty, contradiction, risk, or verification needs rather than broadly repeating the investigation;
-- each settled execution records one compact mechanical `execution_economics` event from usage/activity facts already available to CORE.
+PR #77 closes that bounded recurrence without adding a planner, tool quota, automatic router, schema migration, or broader read authority:
 
-Final PR #64 head `6bea22469f0195831dfb09037f551380fde76a07` and squash merge `02c026ab29dd4bd573b8945de0e6adca9c4b27b4` share exact Git tree `9b7e163a7d685add368d7208f5010d8294f3b9e3`; both hosted runs passed **350 tests, 2 warnings**. Do not add quotas, an automatic router, a general research planner, or a metrics platform under I-014. No dedicated paid Room smoke is warranted; ordinary useful work is the correct effectiveness monitor.
+- coalesced prompt events retain passive cross-reading but are explicitly labeled `triggering` versus `passive_context`, with triggering events identified as the current work;
+- `inspect_source` search/search-many accepts an explicit regular file as well as a directory while preserving the existing allowlist, traversal, link/reparse, output, and no-write boundaries;
+- always-loaded guidance uses the direct `codex-room-cap source` surface for normal source inspection, states the relevant search limits, and makes one `search-many` followed by one `read-many` the normal pattern when several lookups are already known, with further retrieval reserved for a specific unresolved dependency;
+- `execution_economics` retains provider-reported cumulative usage in metadata but derives the visible execution token figure and tokens-per-tool-call from the immediately prior durable usage snapshot on the same SDK thread. Missing or non-monotonic counters produce an explicit unavailable/non-monotonic state rather than an invented delta.
+
+Exact PR #77 head `2d898aacecd274962a57cf39b32c983538d403fb` and squash merge `7d930127212b94580c6309032b83d654d032570e` share Git tree `e3a5e382712ac64e23f7abe9e5bc25cf2dfa3a10`. PR run `35023873652` and canonical-main push run `35024443078` both passed **376 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12, plus **3 browser tests** on Windows.
+
+No dedicated paid Room regression is warranted. Continue to use ordinary useful Rooms as the effectiveness monitor.
 
 ### I-010 — Persistent-data operational maintenance
 **Work state:** IN PROGRESS  
