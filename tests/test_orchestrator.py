@@ -1791,7 +1791,11 @@ async def test_agent_prompt_prefers_continuation_economy_before_registry_overhea
     assert "codex-room-cap inspect CAPABILITY_ID" in prompt
     assert "only when its current contract is needed" in prompt
     assert "codex-room-cap source" in prompt
-    assert "search-many/read-many" in prompt
+    assert "rather than generic inline-JSON 'invoke inspect_source'" in prompt
+    assert "Search and search-many paths may identify either a file or directory" in prompt
+    assert "max-matches within 1-100 and max-files within 1-200" in prompt
+    assert "normally use one search-many, then one read-many" in prompt
+    assert "specific unresolved dependency" in prompt
     assert "explicit workspace-only instruction forbids it" in prompt
     assert "codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT" in prompt
     assert "--input-file WORKSPACE_RELATIVE_JSON" in prompt
