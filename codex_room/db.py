@@ -2821,6 +2821,39 @@ class Database:
             )
         return self._decode_execution(row) if row else None
 
+    async def get_execution_usage_baseline(self, batch_id: str) -> dict[str, Any]:
+        """Return the nearest prior usage snapshot on this exact persistent SDK thread."""
+        async with self.connect() as db:
+            current = await self._fetchone(
+                db,
+                """SELECT rowid AS execution_rowid, agent_id, sdk_thread_id
+                   FROM agent_executions WHERE batch_id=?""",
+                (batch_id,),
+            )
+            if current is None or not current["sdk_thread_id"]:
+                return {"has_prior_execution": False, "usage": None}
+            prior = await self._fetchone(
+                db,
+                """SELECT usage_json FROM agent_executions
+                   WHERE agent_id=? AND sdk_thread_id=? AND rowid<?
+                   ORDER BY rowid DESC LIMIT 1""",
+                (
+                    current["agent_id"],
+                    current["sdk_thread_id"],
+                    current["execution_rowid"],
+                ),
+            )
+        if prior is None:
+            return {"has_prior_execution": False, "usage": None}
+        return {
+            "has_prior_execution": True,
+            "usage": (
+                json.loads(prior["usage_json"])
+                if prior["usage_json"] is not None
+                else None
+            ),
+        }
+
     async def get_usage_continuation(
         self, room_id: str, agent_key: str
     ) -> dict[str, Any] | None:

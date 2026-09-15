@@ -341,6 +341,36 @@ def test_search_many_scans_once_and_groups_queries(tmp_path: Path) -> None:
     assert [item["match_count"] for item in result["evidence"]["queries"]] == [2, 2]
 
 
+def test_search_and_search_many_accept_explicit_file_targets(tmp_path: Path) -> None:
+    current, _, root = _canonical_fixture(tmp_path)
+    target = root / "codex_room" / "single.py"
+    target.write_text("ALPHA one\nBETA two\n", encoding="utf-8")
+
+    searched = inspect_source(
+        current,
+        {
+            "operation": "search",
+            "source": "core",
+            "path": "codex_room/single.py",
+            "query": "ALPHA",
+        },
+    )
+    assert searched["evidence"]["files_searched"] == 1
+    assert searched["matches"][0]["path"] == "codex_room/single.py"
+
+    batched = inspect_source(
+        current,
+        {
+            "operation": "search_many",
+            "source": "core",
+            "path": "codex_room/single.py",
+            "queries": ["ALPHA", "BETA"],
+        },
+    )
+    assert batched["evidence"]["files_searched"] == 1
+    assert [item["match_count"] for item in batched["evidence"]["queries"]] == [1, 1]
+
+
 def test_search_many_rejects_duplicate_or_oversized_query_batch(tmp_path: Path) -> None:
     current, _, _ = _canonical_fixture(tmp_path)
 

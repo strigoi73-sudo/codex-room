@@ -128,8 +128,13 @@ class RoomRuntime:
         "Use registered capabilities when they materially add exact semantics, reuse, provenance, "
         "or useful mechanical complexity. Use 'codex-room-cap list' only when a needed capability "
         "identity is unknown, and 'codex-room-cap inspect CAPABILITY_ID' only when its current "
-        "contract is needed. For source inspection prefer the direct 'codex-room-cap source' "
-        "surface and bounded search-many/read-many operations. Do not inspect CORE or another Room "
+        "contract is needed. For source inspection use the direct 'codex-room-cap source' "
+        "surface rather than generic inline-JSON 'invoke inspect_source' when the direct surface "
+        "can express the operation. Search and search-many paths may identify either a file or "
+        "directory; keep "
+        "max-matches within 1-100 and max-files within 1-200. When several questions are already "
+        "known, normally use one search-many, then one read-many over the relevant ranges; retrieve "
+        "again only for a specific unresolved dependency. Do not inspect CORE or another Room "
         "unless the current task requires it; an explicit workspace-only instruction forbids it. "
         "Invoke known capabilities with 'codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT'; "
         "if shell quoting is fragile, use '--input-file WORKSPACE_RELATIVE_JSON'. Avoid redundant "
@@ -1865,8 +1870,16 @@ class RoomRuntime:
                     ),
                 )
                 self._publish_event(host_event)
-            economics = self._execution_economics(result, runnable_targets)
-            total_tokens = economics["usage"].get("total_tokens")
+            usage_baseline = await self.db.get_execution_usage_baseline(
+                batch["batch_id"]
+            )
+            economics = self._execution_economics(
+                result,
+                runnable_targets,
+                previous_usage=usage_baseline["usage"],
+                has_prior_execution=usage_baseline["has_prior_execution"],
+            )
+            execution_tokens = economics["usage_delta"].get("total_tokens")
             economics_event = await self.db.create_event(
                 room_id,
                 "execution_economics",
@@ -1876,9 +1889,9 @@ class RoomRuntime:
                     f"{agent['name']}: execution economics — "
                     f"{economics['tool_calls']} tool call(s), "
                     + (
-                        f"{total_tokens} reported token(s)"
-                        if total_tokens is not None
-                        else "token total unavailable"
+                        f"{execution_tokens} execution token(s)"
+                        if execution_tokens is not None
+                        else "execution token delta unavailable"
                     )
                 ),
                 related_event_id=first_event["id"],
@@ -1932,9 +1945,31 @@ class RoomRuntime:
         await self._maybe_compact_context(batch, agent, result)
 
     @staticmethod
+    def _usage_token_fields(usage: dict[str, Any] | None) -> dict[str, int | float]:
+        raw = usage if isinstance(usage, dict) else {}
+        usage_total = raw.get("total") if isinstance(raw.get("total"), dict) else raw
+        return {
+            key: usage_total.get(key)
+            for key in (
+                "input_tokens",
+                "cached_input_tokens",
+                "cache_write_input_tokens",
+                "output_tokens",
+                "reasoning_output_tokens",
+                "total_tokens",
+            )
+            if isinstance(usage_total.get(key), (int, float))
+            and not isinstance(usage_total.get(key), bool)
+        }
+
+    @classmethod
     def _execution_economics(
+        cls,
         result: AgentRunResult,
         runnable_targets: list[str],
+        *,
+        previous_usage: dict[str, Any] | None = None,
+        has_prior_execution: bool = False,
     ) -> dict[str, Any]:
         activity_counts: dict[str, int] = {}
         failed_tool_calls = 0
@@ -1955,26 +1990,30 @@ class RoomRuntime:
                 or item.get("ok") is False
             )
         )
-        usage = result.usage if isinstance(result.usage, dict) else {}
-        usage_total = (
-            usage.get("total")
-            if isinstance(usage.get("total"), dict)
-            else usage
-        )
-        token_fields = {
-            key: usage_total.get(key)
-            for key in (
-                "input_tokens",
-                "cached_input_tokens",
-                "cache_write_input_tokens",
-                "output_tokens",
-                "reasoning_output_tokens",
-                "total_tokens",
-            )
-            if isinstance(usage_total.get(key), (int, float))
-            and not isinstance(usage_total.get(key), bool)
-        }
-        total_tokens = token_fields.get("total_tokens")
+        token_fields = cls._usage_token_fields(result.usage)
+        previous_fields = cls._usage_token_fields(previous_usage)
+        usage_delta: dict[str, int | float] = {}
+        if not token_fields:
+            usage_delta_status = "unavailable"
+        elif not has_prior_execution:
+            usage_delta = dict(token_fields)
+            usage_delta_status = "first_execution"
+        elif not previous_fields:
+            usage_delta_status = "unavailable"
+        else:
+            comparable = set(token_fields).intersection(previous_fields)
+            if not comparable or "total_tokens" not in comparable:
+                usage_delta_status = "unavailable"
+            elif any(token_fields[key] < previous_fields[key] for key in comparable):
+                usage_delta_status = "non_monotonic"
+            else:
+                usage_delta = {
+                    key: token_fields[key] - previous_fields[key]
+                    for key in comparable
+                }
+                usage_delta_status = "computed"
+
+        execution_total = usage_delta.get("total_tokens")
         return {
             "type": "execution_economics",
             "tool_calls": tool_calls,
@@ -1990,9 +2029,11 @@ class RoomRuntime:
             "sub_agent_activity": activity_counts.get("sub_agent_activity", 0),
             "peer_invocations": len(runnable_targets),
             "usage": token_fields,
+            "usage_delta": usage_delta,
+            "usage_delta_status": usage_delta_status,
             "tokens_per_tool_call": (
-                round(float(total_tokens) / tool_calls, 1)
-                if tool_calls and total_tokens is not None
+                round(float(execution_total) / tool_calls, 1)
+                if tool_calls and execution_total is not None
                 else None
             ),
         }
@@ -3257,21 +3298,38 @@ class RoomRuntime:
             if overlay:
                 context_parts.append(f"Temporary overlay for you in this round:\n{overlay}")
             context_parts.append("</stored_round_context>")
+        has_passive_context = any(
+            not bool(event.get("delivery_runnable")) for event in events
+        )
         event_parts = ["<unread_room_events>"]
         for event in events:
             privacy = " private-to-you" if (
                 event["event_type"] == "observer_message"
                 and event["destination"] not in {"all", "both"}
             ) else ""
+            delivery_role = (
+                "triggering" if bool(event.get("delivery_runnable")) else "passive_context"
+            )
             event_parts.extend(
                 [
                     f"<event id=\"{event['id']}\" type=\"{event['event_type']}\" "
+                    f"role=\"{delivery_role}\" "
                     f"source=\"{source_labels.get(event['source'], event['source'])}\"{privacy}>",
                     event["content"],
                     "</event>",
                 ]
             )
         event_parts.append("</unread_room_events>")
+        event_role_instruction = (
+            "<room_event_roles>\n"
+            "Events with role=\"triggering\" caused this execution and define the current work "
+            "that requires your response. Events with role=\"passive_context\" are earlier "
+            "readable context coalesced for continuity; consider them when relevant, but do not "
+            "mistake them for a new request.\n"
+            "</room_event_roles>\n\n"
+            if has_passive_context
+            else ""
+        )
         heading = "NEW TOPIC / ROUND TURN" if any(
             event["event_type"] == "round_start_turn" for event in events
         ) else "COALESCED ROOM EVENTS"
@@ -3281,7 +3339,7 @@ Unread event count: {len(events)}
 
 {chr(10).join(context_parts)}
 
-{chr(10).join(event_parts)}
+{event_role_instruction}{chr(10).join(event_parts)}
 
 {self.DETERMINISTIC_CAPABILITY_INSTRUCTION}
 
