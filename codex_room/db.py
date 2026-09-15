@@ -3087,6 +3087,33 @@ class Database:
             "task_failed": task_failed,
         }
 
+    async def has_open_transaction_assignment(
+        self,
+        room_id: str,
+        agent_key: str,
+        round_id: str | None = None,
+    ) -> bool:
+        async with self.connect() as db:
+            params: list[Any] = [room_id, agent_key]
+            round_clause = ""
+            if round_id is not None:
+                round_clause = " AND t.round_id=?"
+                params.append(round_id)
+            row = await self._fetchone(
+                db,
+                f"""SELECT 1
+                    FROM assignments x
+                    JOIN tasks t ON t.id=x.task_id
+                    JOIN agents a ON a.id=x.agent_id
+                    WHERE t.room_id=? AND a.agent_key=?
+                      AND t.state='active'
+                      AND x.state IN ('queued','running','waiting_join')
+                      {round_clause}
+                    LIMIT 1""",
+                tuple(params),
+            )
+        return row is not None
+
     async def has_active_transaction_task(
         self, room_id: str, round_id: str
     ) -> bool:
