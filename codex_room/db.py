@@ -3087,6 +3087,18 @@ class Database:
             "task_failed": task_failed,
         }
 
+    async def has_active_transaction_task(
+        self, room_id: str, round_id: str
+    ) -> bool:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                """SELECT 1 FROM tasks
+                   WHERE room_id=? AND round_id=? AND state='active' LIMIT 1""",
+                (room_id, round_id),
+            )
+        return row is not None
+
     async def cancel_transaction_work(
         self, room_id: str, round_id: str | None = None
     ) -> None:
