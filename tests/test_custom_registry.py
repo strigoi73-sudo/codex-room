@@ -452,6 +452,7 @@ def test_dynamic_registry_lists_inspects_and_invokes_bound_custom_capability(
         "compare_files",
         "count_lines",
         "find_files",
+        "inspect_source",
         "search_text",
     ]
     custom_summary = next(item for item in registry["capabilities"] if item["id"] == "count_lines")
