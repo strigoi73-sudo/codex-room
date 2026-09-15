@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and **A3 — Whole-system housekeeping, efficiency, and operational assurance audit** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-009 is complete and live-verified locally: `/api/health` reported exact canonical revision `6168c80938c7e9172a86651d3a9953fb66c2e219`, clean source, Python 3.12.10, `openai-codex` 0.147.0, Terra/high policy, and a healthy zero-failure watchdog; see E-068/E-069.
+- **What just changed?** P1 advanced the canonical Codex SDK/runtime standard from 0.147.0 to the matched 0.154.0 pair under PR #59 / E-071. Production Room policy remains Terra/high; local reinstall/restart and an unfiltered zero-turn catalog check are next.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** P1 is now in progress. First run a zero-turn local model-catalog probe; then execute the smallest useful model/effort comparison before considering any policy change. I-010 and I-011 remain after P1.
+- **What is next?** P1 is in progress. Pull/reinstall/restart the locally verified 0.154.0 standard, confirm `/api/health`, then rerun the unfiltered zero-turn model catalog to establish Astra's SDK-visible contract before spending any benchmark turns. I-010 and I-011 remain after P1.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -184,18 +184,21 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 ### P1 follow-up — Model/reasoning-effort economy
 **Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
-**Evidence:** E-065, E-068, E-069, E-070  
-**Current gate:** bounded 12-turn admission benchmark across Luna/medium, Terra/medium, Terra/high baseline, and Sol/medium; GPT-5.5 is available but deferred as a legacy comparator, and Astra is absent from the currently deployed local catalog.
+**Evidence:** E-065, E-068, E-069, E-070, E-071  
+**Current gate:** deploy canonical Codex SDK/runtime 0.154.0 locally, verify provenance/health, then rerun the full zero-turn model catalog before defining the paid comparison matrix.
 
-Current source pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. A3 found no settled evidence that this universal policy is the best quality/cost tradeoff for every task. I-009 now provides verified per-execution model, reasoning-effort, and usage facts plus live runtime provenance.
+Current production source still pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. A3 found no settled evidence that this universal policy is the best quality/cost tradeoff for every task. I-009 provides verified per-execution model, reasoning-effort, and usage facts plus live runtime provenance.
 
-P1 proceeds by measurement, not automatic routing:
+E-070 established that the former 0.147 runtime exposed Sol, Terra, Luna, and GPT-5.5 through its SDK catalog while the principal's desktop Codex UI visibly exposed Astra. E-071 therefore advances the canonical SDK/runtime standard to the matched published 0.154.0 pair, verified with 327 tests on exact PR and canonical-main commits. This dependency upgrade does **not** change production model selection.
 
-- the zero-turn authenticated local model-catalog gate is complete under E-070;
-- compare the admitted four-cell matrix — Luna/medium, Terra/medium, Terra/high, and Sol/medium — so medium-effort model-tier effects and Terra medium→high effort effects are separately visible;
-- use fresh isolated threads and identical bounded tasks so persistent context does not confound the comparison;
-- record token usage, latency/duration where available, completion/failure behavior, and task-quality evidence;
-- only if the admission comparison shows material economic value should P1 expand into participant-specific, delegation-selected, self-adjusted, or dynamic model policy design.
+P1 now proceeds:
+
+- update the principal's local environment to canonical 0.154.0 and restart Codex Room;
+- verify `/api/health` reports the new SDK version, clean canonical source, Terra/high production policy, and healthy maintenance state;
+- rerun the **unfiltered** zero-turn `codex.models()` probe and record Astra's exact SDK model ID, default effort, and supported reasoning efforts if exposed;
+- only then define the smallest paid comparison matrix, keeping fresh isolated threads and identical bounded tasks so persistent context does not confound results;
+- record token usage, duration, completion/failure behavior, and task-quality evidence;
+- only if comparison evidence shows material economic value should P1 consider participant-specific, delegation-selected, self-adjusted, or dynamic model policy design.
 
 No production model-selection policy change is authorized until this evidence exists.
 
