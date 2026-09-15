@@ -3234,3 +3234,37 @@ A staged implementation can therefore introduce transaction tables/state alongsi
 
 **Status:** source-level architecture finding supporting I-015; redesign remains EXPLORATORY / NOT IMPLEMENTED.
 
+### E-094 — I-015 Stage A transaction kernel implemented and hosted-verified
+**Date:** 2026-09-15  
+**Kind:** [CORE] implementation + deterministic hosted verification
+
+D-030 Stage A was implemented in two bounded pull requests while preserving legacy work-model-v1 behavior by default.
+
+**PR #81 — foundation**
+
+Merged to canonical `main` as:
+
+`3043a3789d03013e4c3618eb3f6aff2861cb60df` — `Implement I-015 Stage A transaction kernel foundation`
+
+This slice introduced the version-2 structured decision contract (`COMPLETE | DELEGATE | PASS`), durable Task/Assignment/Join state, exact assignment-to-execution binding, explicit assignment claiming, atomic delegation/join creation, nested delegation, task-level settlement, transaction failure release, stop cancellation, turn-budget enforcement, pause/resume support, transaction quiescence, and protection against profile rebind while transaction work is open.
+
+**PR #82 — remaining Stage A invariants**
+
+Merged to canonical `main` as:
+
+`a4f53a7c4f62a5d03a0907365f5024d266801e1c` — `Complete I-015 Stage A transaction invariants`
+
+This slice added explicit required-contributor controls and settlement enforcement, transaction state in snapshots and exports, transaction-aware usage-wall suspension/release on the same logical assignment, exact restart recovery for active transaction turns, new-Round cancellation/stale-result protection, participant validation, and follow-up inheritance of Round contributor requirements.
+
+**Hosted verification**
+
+Post-merge GitHub Actions run `35036898229` for canonical `main` completed successfully. All three matrix jobs concluded **success**:
+
+- Ubuntu / Python 3.11;
+- Ubuntu / Python 3.12;
+- Windows / Python 3.12 + browser.
+
+**Status:** IMPLEMENTED / VERIFIED for the opt-in Stage A coordination kernel at `a4f53a7c4f62a5d03a0907365f5024d266801e1c`.
+
+**Activation limit:** this evidence does not establish ordinary-use quality or economics. Work-model v1 remains the default; work-model v2 is ready for bounded paid naturalistic validation before any default-activation decision.
+
