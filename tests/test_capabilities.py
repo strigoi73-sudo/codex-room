@@ -952,7 +952,7 @@ def test_source_cli_avoids_json_request_files_and_batches_workspace_reads(
     ) == 0
     searched = json.loads(capsys.readouterr().out.strip())
     assert searched["capability"] == "inspect_source"
-    assert searched["capability_version"] == "2"
+    assert searched["capability_version"] == "3"
     assert searched["evidence"]["operation"] == "search_many"
     assert searched["evidence"]["query_count"] == 2
     assert [item["query"] for item in searched["results"]] == ["ALPHA", "BETA"]
@@ -982,7 +982,7 @@ def test_source_cli_avoids_json_request_files_and_batches_workspace_reads(
 def test_inspect_source_manifest_advertises_direct_source_cli() -> None:
     inspected = inspect_capability("inspect_source")["capability"]
 
-    assert inspected["version"] == "2"
+    assert inspected["version"] == "3"
     assert inspected["invocation"]["source_cli"] == "codex-room-cap source --help"
     assert inspected["verification"] == {"status": "verified", "evidence": ["E-078", "E-081"]}
 
