@@ -225,6 +225,9 @@ async def test_personality_overrides_replace_defaults_but_preserve_protected_lay
     assert "temporary task-specific working postures" in agents["agent_c"]["developer_instructions"]
     assert "temporary roles/personas" in agents["agent_c"]["developer_instructions"]
     assert "do not authorize C to dictate a conclusion" in agents["agent_c"]["developer_instructions"]
+    for key in ("agent_a", "agent_b", "agent_c"):
+        assert "Invocation requests cognition, not visibility" in agents[key]["developer_instructions"]
+        assert "ordinary cross-reading does not require invocation" in agents[key]["developer_instructions"]
     assert "the first return is only a partial result" in agents["agent_c"]["developer_instructions"]
     assert "Wait until every requested contribution has returned" in agents["agent_c"]["developer_instructions"]
 
@@ -263,6 +266,24 @@ def test_standard_default_profiles_are_identically_neutral() -> None:
         "agent_c": AGENT_C_DEFAULT_PERSONALITY,
     }
     assert defaults == {"agent_a": "", "agent_b": "", "agent_c": ""}
+
+
+def test_room_protocol_makes_invocation_cognition_not_visibility_for_all_agents() -> None:
+    instructions = {
+        key: default_agent_instructions(name, "unused")
+        for key, name in {
+            "agent_a": "Agent A",
+            "agent_b": "Agent B",
+            "agent_c": "Agent C",
+        }.items()
+    }
+
+    for text in instructions.values():
+        assert "Invocation requests cognition, not visibility" in text
+        assert "do not invoke a participant merely so they can see" in text
+        assert "If no additional peer cognition is needed, do not request a runnable peer" in text
+        assert "normally return the result to C without invoking the other delegated peer" in text
+        assert "ordinary cross-reading does not require invocation" in text
 
 
 def test_c_structural_role_requires_economical_differentiated_dual_peer_delegation() -> None:
