@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, **A3 — Whole-system housekeeping, efficiency, and operational assurance audit**, and **I-012 — authorized CORE/cross-Room read inspection** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** E-081 turned the expensive I-010 investigation into a concrete operating-economics finding: repeated request-file plumbing, many small source retrievals, and broad re-investigation of delegated evidence amplified one C turn to 2.55M reported tokens. I-014 now implements direct/batched deterministic retrieval, targeted verification of delegated evidence, and compact execution-economics telemetry; PR #64's current implementation head is verified with **350 tests, 2 warnings**.
+- **What just changed?** E-081 turned the expensive I-010 investigation into a concrete operating-economics finding: repeated request-file plumbing, many small source retrievals, and broad re-investigation of delegated evidence amplified one C turn to 2.55M reported tokens. I-014 is now complete on canonical `main`: direct/batched deterministic retrieval, targeted verification of delegated evidence, and compact execution-economics telemetry are implemented and verified.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Finish canonical verification/merge of **I-014**, then continue I-010 outside the protected Room using the grounded candidate specification from E-080. P1 remains in progress, but no dedicated paid smoke or synthetic model comparison is warranted. The next useful Room should naturally show whether direct/batched retrieval reduces tool-loop amplification and should also be monitored for any recurrence of `sub_agent_activity`. No automatic router is authorized.
+- **What is next?** Continue **I-010** outside the protected Room using the grounded candidate specification from E-080. P1 remains in progress, but no dedicated paid smoke or synthetic model comparison is warranted. The next useful Room should naturally show whether I-014 reduces tool-loop amplification and should also be monitored for any recurrence of `sub_agent_activity`. No automatic router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -30,8 +30,8 @@ Ordered remediation:
 4. **P1 follow-up — Model/reasoning-effort economy:** same-thread C-selected peer switching is live verified; E-080 invalidated one apparent naturalistic allocation because cognition went through SDK-internal subagents rather than Room A/B.
 5. **I-012 — Authorized CORE and cross-Room read inspection (COMPLETE):** the I-010 evidence boundary was repaired and live verified under D-029 / E-078 / E-079.
 6. **I-013 — SDK-internal subagent bypass (COMPLETE):** Codex's ambient multi-agent surface is disabled so production cognition routes through persistent Room A/B/C and its execution-accounting path; see E-080.
-7. **I-014 — Deterministic retrieval economy:** close the demonstrated request-file/repeated-retrieval amplification with direct/batched source retrieval, targeted verification of delegated evidence, and compact per-execution economics telemetry; see E-081.
-8. **I-010 — Persistent-data operational maintenance:** repository-grounded investigation is complete enough to begin bounded Project-level design/implementation review after I-014 canonical closure; keep the solution small.
+7. **I-014 — Deterministic retrieval economy (COMPLETE):** request-file/repeated-retrieval amplification is repaired with direct/batched source retrieval, targeted verification of delegated evidence, and compact per-execution economics telemetry; see E-081.
+8. **I-010 — Persistent-data operational maintenance:** repository-grounded investigation is complete enough to begin bounded Project-level design/implementation review; keep the solution small.
 9. **I-011 — Verification-platform and dependency assurance:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
 
 Lower-value audit findings remain MONITOR/DEFERRED until evidence shows they are expensive: shareable/redacted exports, explicit non-loopback safeguards, WebSocket overflow resync, formal numbered schema migrations, large-module refactoring, storage optimization, and stronger per-capability isolation.
@@ -316,9 +316,9 @@ PR #63 closes that bypass by adding app-server overrides `agents.enabled=false` 
 Do not count Rooms containing SDK-internal subagent activity as C-selected Room-peer allocation evidence. No dedicated paid model smoke is warranted; simply monitor the next useful Room for absence of `sub_agent_activity` and reopen I-013 only on demonstrated recurrence.
 
 ### I-014 — Deterministic retrieval economy
-**Work state:** IN PROGRESS  
-**Reality:** IMPLEMENTED / VERIFIED on PR #64 head; canonical `main` pending  
-**Priority:** ACTIVE / demonstrated operating-economics remediation  
+**Work state:** COMPLETE  
+**Reality:** IMPLEMENTED / VERIFIED on canonical `main`; ordinary-use effectiveness MONITOR  
+**Priority:** CLOSED / demonstrated operating-economics remediation  
 **Evidence:** E-081
 
 The I-010 operating-cost review demonstrated a specific expensive loop rather than a hypothetical optimization target: 27 `inspect_source` invocations were paired with 27 request-file edits, five avoidable failed requests, many small search/read continuations, no context compaction, and substantial broad re-inspection by C after delegated research had already returned.
@@ -331,12 +331,12 @@ PR #64 provides the bounded repair:
 - C is instructed to integrate evidence-backed delegated research and independently spot-check only consequential uncertainty, contradiction, risk, or verification needs rather than broadly repeating the investigation;
 - each settled execution records one compact mechanical `execution_economics` event from usage/activity facts already available to CORE.
 
-The exact implementation head `0f075bd5ea5fa408a1c0e94606d74e85513e44c4` passed **350 tests, 2 warnings**. Final PR-head and canonical-main verification remain before closure. Do not add quotas, an automatic router, a general research planner, or a metrics platform under I-014. No dedicated paid Room smoke is warranted; ordinary useful work is the correct post-merge monitor.
+Final PR #64 head `6bea22469f0195831dfb09037f551380fde76a07` and squash merge `02c026ab29dd4bd573b8945de0e6adca9c4b27b4` share exact Git tree `9b7e163a7d685add368d7208f5010d8294f3b9e3`; both hosted runs passed **350 tests, 2 warnings**. Do not add quotas, an automatic router, a general research planner, or a metrics platform under I-014. No dedicated paid Room smoke is warranted; ordinary useful work is the correct effectiveness monitor.
 
 ### I-010 — Persistent-data operational maintenance
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / repository-grounded candidate specification  
-**Priority:** MEDIUM / resume after I-014 canonical closure  
+**Priority:** MEDIUM / ACTIVE after I-014 closure  
 **Evidence:** E-065, E-080
 
 E-080 establishes the actual persistence surface and maintenance gap from current CORE: SQLite plus durable Room workspace and institutional/custom-capability material live beneath the Personal data root, while no bounded integrity/backup/verify/restore maintenance command exists.
@@ -387,4 +387,4 @@ Keep these behind the active A3 remediation sequence unless the human principal 
 
 ## Open questions
 
-No high-priority conceptual question blocks the active sequence. I-014 has a verified PR-head implementation and needs final exact-head/canonical-main closure; I-010 then resumes with repository-grounded candidate design evidence. P1 should gather only naturalistic useful-work evidence and now includes retrieval/tool-loop economics as well as persistent-Room-peer allocation. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
+No high-priority conceptual question blocks the active sequence. I-014 is closed and I-010 resumes with repository-grounded candidate design evidence. P1 should gather only naturalistic useful-work evidence and now includes retrieval/tool-loop economics as well as persistent-Room-peer allocation. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
