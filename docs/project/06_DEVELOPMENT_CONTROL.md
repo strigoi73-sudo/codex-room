@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, **A3 — Whole-system housekeeping, efficiency, and operational assurance audit**, and **I-012 — authorized CORE/cross-Room read inspection** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The first repository-grounded I-010 Room exposed a hidden Codex SDK subagent path: C's final report claimed Room A/B allocations that never occurred, while the export recorded only C plus SDK `sub_agent_activity`. E-080 preserves the useful I-010 findings but invalidates that allocation claim for P1. I-013 now closes that bypass on canonical `main` so production cognition stays on the persistent A/B/C Room path.
+- **What just changed?** E-081 turned the expensive I-010 investigation into a concrete operating-economics finding: repeated request-file plumbing, many small source retrievals, and broad re-investigation of delegated evidence amplified one C turn to 2.55M reported tokens. I-014 now implements direct/batched deterministic retrieval, targeted verification of delegated evidence, and compact execution-economics telemetry; PR #64's current implementation head is verified with **350 tests, 2 warnings**.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Continue I-010 outside the protected Room using the grounded candidate specification from E-080. P1 remains in progress: E-077 proves switching mechanics, but E-080 does **not** count as naturalistic Room-peer allocation evidence because C used SDK-internal subagents instead of persistent A/B. The next useful Room should simply be monitored for absence of `sub_agent_activity`; no dedicated paid smoke is warranted. No automatic router is authorized.
+- **What is next?** Finish canonical verification/merge of **I-014**, then continue I-010 outside the protected Room using the grounded candidate specification from E-080. P1 remains in progress, but no dedicated paid smoke or synthetic model comparison is warranted. The next useful Room should naturally show whether direct/batched retrieval reduces tool-loop amplification and should also be monitored for any recurrence of `sub_agent_activity`. No automatic router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -30,8 +30,9 @@ Ordered remediation:
 4. **P1 follow-up — Model/reasoning-effort economy:** same-thread C-selected peer switching is live verified; E-080 invalidated one apparent naturalistic allocation because cognition went through SDK-internal subagents rather than Room A/B.
 5. **I-012 — Authorized CORE and cross-Room read inspection (COMPLETE):** the I-010 evidence boundary was repaired and live verified under D-029 / E-078 / E-079.
 6. **I-013 — SDK-internal subagent bypass (COMPLETE):** Codex's ambient multi-agent surface is disabled so production cognition routes through persistent Room A/B/C and its execution-accounting path; see E-080.
-7. **I-010 — Persistent-data operational maintenance:** repository-grounded investigation is complete enough to begin bounded Project-level design/implementation review; keep the solution small.
-8. **I-011 — Verification-platform and dependency assurance:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
+7. **I-014 — Deterministic retrieval economy:** close the demonstrated request-file/repeated-retrieval amplification with direct/batched source retrieval, targeted verification of delegated evidence, and compact per-execution economics telemetry; see E-081.
+8. **I-010 — Persistent-data operational maintenance:** repository-grounded investigation is complete enough to begin bounded Project-level design/implementation review after I-014 canonical closure; keep the solution small.
+9. **I-011 — Verification-platform and dependency assurance:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
 
 Lower-value audit findings remain MONITOR/DEFERRED until evidence shows they are expensive: shareable/redacted exports, explicit non-loopback safeguards, WebSocket overflow resync, formal numbered schema migrations, large-module refactoring, storage optimization, and stronger per-capability isolation.
 
@@ -186,8 +187,8 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 ### P1 follow-up — Model/reasoning-effort economy
 **Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
-**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076, E-077, E-080  
-**Current gate:** same-thread C-selected peer execution is live verified under E-077. I-013 has closed the SDK-internal subagent bypass; gather naturalistic allocation evidence only from persistent Room A/B executions, and treat any recurrence of `sub_agent_activity` as a regression rather than P1 evidence.
+**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076, E-077, E-080, E-081  
+**Current gate:** same-thread C-selected peer execution is live verified under E-077. E-081 establishes tool-loop/context amplification as a concrete operating-economics problem and I-014 is its bounded remediation. After I-014 closes, gather naturalistic allocation/retrieval evidence only from useful work; treat any recurrence of `sub_agent_activity` as a regression rather than P1 evidence.
 
 The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of four admitted model/effort configurations for that peer execution. D-028 hard-prohibits Astra execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
 
@@ -199,6 +200,7 @@ P1 now proceeds by representative real work only:
 
 - E-077 already verifies the live same-thread switching mechanics; do not repeat the forced two-configuration commissioning test;
 - E-080 shows that Codex SDK-internal subagents can bypass `invoke_targets` and Room execution accounting when the ambient multi-agent surface is available; exclude such work from P1 allocation conclusions and keep I-013 ahead of further evidence gathering;
+- E-081 shows that repeated deterministic tool continuations can dominate usage even inside one visible Room turn; prefer reducing tool-loop/context amplification before spending more allowance on model-ranking experiments;
 - use the E-075 capability naturally in ordinary Rooms rather than creating more paid benchmark Rooms;
 - C should prefer `luna-medium` for routine bounded delegated work and deliberately choose a stronger admitted Terra or Sol configuration only when complexity, uncertainty, risk, or prior verification trouble provides an affirmative reason;
 - Astra is prohibited by D-028 and is not an admissible execution configuration; the runtime must fail closed if an Astra turn is attempted;
@@ -313,10 +315,28 @@ PR #63 closes that bypass by adding app-server overrides `agents.enabled=false` 
 
 Do not count Rooms containing SDK-internal subagent activity as C-selected Room-peer allocation evidence. No dedicated paid model smoke is warranted; simply monitor the next useful Room for absence of `sub_agent_activity` and reopen I-013 only on demonstrated recurrence.
 
+### I-014 — Deterministic retrieval economy
+**Work state:** IN PROGRESS  
+**Reality:** IMPLEMENTED / VERIFIED on PR #64 head; canonical `main` pending  
+**Priority:** ACTIVE / demonstrated operating-economics remediation  
+**Evidence:** E-081
+
+The I-010 operating-cost review demonstrated a specific expensive loop rather than a hypothetical optimization target: 27 `inspect_source` invocations were paired with 27 request-file edits, five avoidable failed requests, many small search/read continuations, no context compaction, and substantial broad re-inspection by C after delegated research had already returned.
+
+PR #64 provides the bounded repair:
+
+- `inspect_source` v2 adds `search_many` and `read_many` with strict query/range/output limits while preserving the existing CORE/cross-Room confinement and no-write boundary;
+- `codex-room-cap source ...` invokes the same registered capability without temporary JSON request files and remains eligible for structured deterministic telemetry;
+- protected participant instructions prefer batching/direct retrieval when related lookups are already known, while avoiding speculative batches;
+- C is instructed to integrate evidence-backed delegated research and independently spot-check only consequential uncertainty, contradiction, risk, or verification needs rather than broadly repeating the investigation;
+- each settled execution records one compact mechanical `execution_economics` event from usage/activity facts already available to CORE.
+
+The exact implementation head `0f075bd5ea5fa408a1c0e94606d74e85513e44c4` passed **350 tests, 2 warnings**. Final PR-head and canonical-main verification remain before closure. Do not add quotas, an automatic router, a general research planner, or a metrics platform under I-014. No dedicated paid Room smoke is warranted; ordinary useful work is the correct post-merge monitor.
+
 ### I-010 — Persistent-data operational maintenance
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / repository-grounded candidate specification  
-**Priority:** MEDIUM / resume after I-013 canonical closure  
+**Priority:** MEDIUM / resume after I-014 canonical closure  
 **Evidence:** E-065, E-080
 
 E-080 establishes the actual persistence surface and maintenance gap from current CORE: SQLite plus durable Room workspace and institutional/custom-capability material live beneath the Personal data root, while no bounded integrity/backup/verify/restore maintenance command exists.
@@ -367,4 +387,4 @@ Keep these behind the active A3 remediation sequence unless the human principal 
 
 ## Open questions
 
-No high-priority conceptual question blocks the active sequence. I-013 is closed; I-010 now has repository-grounded candidate design evidence and can proceed through bounded Project-level implementation review. P1 still needs naturalistic persistent-Room-peer allocation evidence before any recommendation to routinize C-selected switching or compile routing rules. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
+No high-priority conceptual question blocks the active sequence. I-014 has a verified PR-head implementation and needs final exact-head/canonical-main closure; I-010 then resumes with repository-grounded candidate design evidence. P1 should gather only naturalistic useful-work evidence and now includes retrieval/tool-loop economics as well as persistent-Room-peer allocation. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.

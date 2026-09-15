@@ -913,6 +913,20 @@ class CodexAgentAdapter:
             if len(parts) < 3:
                 return None
             return operation, parts[2].strip('"').strip("'")
+        if operation == "source":
+            if len(parts) < 3:
+                return None
+            source_operation = parts[2].strip('"').strip("'").lower()
+            if source_operation in {
+                "sources",
+                "find",
+                "search",
+                "search-many",
+                "read",
+                "read-many",
+            }:
+                return "invoke", "inspect_source"
+            return None
         if operation == "assert-file":
             return "invoke", "assert_file"
         return None

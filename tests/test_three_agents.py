@@ -284,6 +284,7 @@ def test_room_protocol_makes_invocation_cognition_not_visibility_for_all_agents(
         assert "If no additional peer cognition is needed, set invoke_targets to `[]`" in text
         assert "normally return the result to C without invoking the other delegated peer" in text
         assert "ordinary cross-reading does not require invocation" in text
+        assert "prefer bounded batched retrieval and the direct source-inspection CLI" in text
 
 
 def test_c_structural_role_requires_economical_differentiated_dual_peer_delegation() -> None:
@@ -304,6 +305,9 @@ def test_c_structural_role_requires_economical_differentiated_dual_peer_delegati
     assert "They do not change a participant's persistent identity, saved profile" in c_instructions
     assert "they do not authorize C to dictate a conclusion" in c_instructions
     assert "may challenge the framing" in c_instructions
+
+    assert "should normally use that result rather than broadly repeating the same investigation" in c_instructions
+    assert "Prefer targeted spot checks over redoing delegated evidence gathering" in c_instructions
 
     assert "Every additional peer invocation must be expected to earn its cognitive and token cost" not in a_instructions
     assert "Every additional peer invocation must be expected to earn its cognitive and token cost" not in b_instructions

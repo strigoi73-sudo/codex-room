@@ -1249,3 +1249,51 @@ def test_safe_activity_promotes_file_input_capability_invocation() -> None:
     assert activity[0]["capability"] == "assert_file"
     assert activity[0]["result"]["ok"] is True
 
+def test_safe_activity_promotes_direct_source_cli_without_persisting_transient_content() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "inspect_source",
+        "capability_version": "2",
+        "implementation_sha256": "a" * 64,
+        "ok": True,
+        "durable_result_fields": ["evidence"],
+        "evidence": {
+            "operation": "search_many",
+            "query_count": 2,
+            "match_count": 3,
+        },
+        "results": [
+            {"query": "sqlite", "matches": [{"excerpt": "private transient"}]}
+        ],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command=(
+            "codex-room-cap source search-many core codex_room "
+            "--query sqlite --query backup"
+        ),
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    assert activity == [
+        {
+            "type": "deterministic_capability",
+            "status": "completed",
+            "capability": "inspect_source",
+            "ok": True,
+            "result": {
+                "codex_room_capability": 1,
+                "capability": "inspect_source",
+                "capability_version": "2",
+                "implementation_sha256": "a" * 64,
+                "ok": True,
+                "durable_result_fields": ["evidence"],
+                "evidence": payload["evidence"],
+            },
+        }
+    ]
+
