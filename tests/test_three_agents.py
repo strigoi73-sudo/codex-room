@@ -1708,3 +1708,47 @@ async def _agents_have_statuses(
 ) -> bool:
     agents = {item["agent_key"]: item["status"] for item in await runtime.db.get_agents(room_id)}
     return all(agents.get(key) == value for key, value in expected.items())
+
+@pytest.mark.asyncio
+async def test_snapshot_exposes_current_then_last_agent_model(runtime_factory):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [(Outcome.PASS, "")]},
+        blocked_calls={"agent_a": {1}},
+    )
+    runtime = await runtime_factory(adapter, "model-card.db")
+    created = await runtime.create_room(
+        CreateRoomRequest(topic="Show the execution model", starting_agent="agent_a")
+    )
+    room_id = created["id"]
+
+    await wait_until(lambda: len(adapter.calls["agent_a"]) == 1)
+    running = await runtime.snapshot(room_id)
+    assert running is not None
+    running_a = next(
+        agent for agent in running["agents"] if agent["agent_key"] == "agent_a"
+    )
+    assert running_a["execution"]["model"] == "gpt-5.6-terra"
+    assert running_a["execution"]["reasoning_effort"] == "high"
+    assert running_a["execution"]["model_recency"] == "current"
+
+    adapter.release_call("agent_a", 1)
+    await wait_until(lambda: len(adapter.completed_calls["agent_a"]) == 1)
+    async def settled_model_is_visible():
+        snapshot = await runtime.snapshot(room_id)
+        if snapshot is None:
+            return False
+        agent = next(
+            item for item in snapshot["agents"] if item["agent_key"] == "agent_a"
+        )
+        return agent["execution"]["model_recency"] == "last"
+
+    await wait_until(settled_model_is_visible)
+    settled = await runtime.snapshot(room_id)
+    assert settled is not None
+    settled_a = next(
+        agent for agent in settled["agents"] if agent["agent_key"] == "agent_a"
+    )
+    assert settled_a["execution"]["model"] == "gpt-5.6-terra"
+    assert settled_a["execution"]["reasoning_effort"] == "high"
+    assert settled_a["execution"]["model_recency"] == "last"
+
