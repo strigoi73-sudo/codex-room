@@ -47,8 +47,6 @@ def as_markdown(snapshot: dict[str, Any]) -> str:
                 "",
                 round_item.get("prompt") or snapshot.get("topic", ""),
                 "",
-                "### Events",
-                "",
             ]
         )
         transaction = round_item.get("transaction_state")
@@ -87,7 +85,7 @@ def as_markdown(snapshot: dict[str, Any]) -> str:
                         f"released={join.get('released_assignment_id') or 'none'}"
                     )
                 lines.append("")
-            lines.extend(["### Events", ""])
+        lines.extend(["### Events", ""])
         for event in round_item.get("events", []):
             speaker = names.get(event["source"], event["source"])
             destination = event["destination"]
