@@ -279,7 +279,7 @@ PR #58 and the exact canonical merge commit are verified under E-068. Canonical-
 
 ### I-012 — Authorized CORE and cross-Room read inspection
 **Work state:** IN PROGRESS  
-**Reality:** IMPLEMENTED / VERIFIED on PR #62 head; canonical `main` and live-Room verification pending  
+**Reality:** IMPLEMENTED / VERIFIED on canonical `main`; live-Room verification pending  
 **Decision:** D-029  
 **Evidence:** E-077, E-078  
 **Priority:** ACTIVE / raised directly by the I-010/P1 live trial
@@ -294,7 +294,7 @@ PR #62 implements the bounded remediation through registered CORE capability `in
 - reject traversal plus symlink/reparse escapes and keep read/search payload content transient while durable telemetry records only bounded provenance/evidence;
 - preserve all existing cross-boundary write restrictions.
 
-Repaired code-bearing PR head `b70d67f0d743b8a1228b29fd942f2aae666302cc` passed **341 tests, 2 warnings** in run `34956587939`. Do not close I-012 until the final exact PR head and canonical-main merge commit pass, followed by a fresh local Room smoke for the actual sandbox/runtime read path.
+Final PR head `a64acf828cd32202038529d180311934ac1c26f5` and squash merge `e60ad2b1d4a3339c30ef1837f3bca53366929acd` share exact Git tree `c24f31635065252fd4e9d2bd0d2460549f5243e0`; both hosted runs passed **341 tests, 2 warnings**. The remaining gate is one fresh local Room smoke proving the deployed Windows/Codex sandbox can use `inspect_source` against CORE and another Room shared workspace. Do not close I-012 until that live gate passes.
 
 ### I-010 — Persistent-data operational maintenance
 **Work state:** PLANNED  
