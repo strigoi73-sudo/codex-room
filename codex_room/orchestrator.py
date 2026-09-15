@@ -4232,6 +4232,7 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
                             "reported_retry_at": continuation["reported_retry_at"],
                             "wake_at": continuation["wake_at"],
                             "thread_id": continuation["thread_id"],
+                            "assignment_id": continuation.get("assignment_id"),
                             "outcome": continuation["outcome"],
                             "reason": continuation.get("last_error"),
                         },
