@@ -82,6 +82,7 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert 'id="add-agent-c"' in html
     assert "Upgrade legacy Room to triad" in html
     assert 'id="agent-strip"' in html
+    assert 'id="room-id"' in html
     assert '<option value="all">All agents</option>' in html
     assert 'roomAction("agents", { agent_key: "agent_c" })' in javascript
     assert 'new Option("All participants independently", "either")' in javascript
@@ -91,6 +92,10 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert "renderAgentStrip(room.agents || [])" in javascript
     assert "participant_private" in javascript and "participant_overlays" in javascript
     assert "executionSummary(agent.execution)" in javascript
+    assert '$("#room-id").textContent = `Room ID ${room.id}`' in javascript
+    assert 'modelEl.className = "model-state"' in javascript
+    assert '"Model not run yet"' in javascript
+    assert '`Model ${model}${effort ? ` · ${effort}` : ""}`' in javascript
     assert "Execution: ${phase} · ${health}" in javascript
     assert "execution.reason" in javascript
     assert 'setAttribute("aria-label", `${execution.text}. ${execution.title}`)' in javascript

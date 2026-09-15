@@ -1450,6 +1450,15 @@ class RoomRuntime:
             slot = self._worker_slots.get(key)
             evidence = durable.get(agent["agent_key"], {})
             durable_execution = evidence.get("execution") or {}
+            last_execution = evidence.get("last_execution") or {}
+            displayed_execution = (
+                durable_execution if durable_execution.get("model") else last_execution
+            )
+            model_recency = (
+                "current"
+                if durable_execution.get("model")
+                else ("last" if last_execution.get("model") else None)
+            )
             alive = bool(slot and slot.task is not None and not slot.task.done())
             active = await self._adapter_has_active_run(agent["id"])
             pending = int(evidence.get("pending_count", 0))
@@ -1513,6 +1522,9 @@ class RoomRuntime:
                 "sdk_thread_id": durable_execution.get("sdk_thread_id"),
                 "sdk_turn_id": durable_execution.get("sdk_turn_id"),
                 "completion_source": durable_execution.get("completion_source"),
+                "model": displayed_execution.get("model"),
+                "reasoning_effort": displayed_execution.get("reasoning_effort"),
+                "model_recency": model_recency,
                 "usage_continuation": usage_continuation or None,
             }
 

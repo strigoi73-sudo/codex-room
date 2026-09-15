@@ -49,3 +49,16 @@ def test_maintenance_wrapper_uses_repository_virtual_environment() -> None:
     assert ".venv\\Scripts\\python.exe" in wrapper
     assert "-m codex_room.maintenance %*" in wrapper
     assert "exit /b %ERRORLEVEL%" in wrapper
+
+def test_restart_script_closes_codex_room_browser_then_restarts() -> None:
+    restart = (ROOT / "Restart-Codex-Room.bat").read_text(encoding="utf-8")
+
+    assert "Codex Room" in restart
+    assert "MainWindowTitle" in restart
+    assert "CloseMainWindow" in restart
+    assert "Kill-Codex-Room.bat" in restart
+    assert "timeout /t 5 /nobreak" in restart
+    assert "Start-Codex-Room.cmd" in restart
+    assert restart.index("Kill-Codex-Room.bat") < restart.index("timeout /t 5 /nobreak")
+    assert restart.index("timeout /t 5 /nobreak") < restart.index("Start-Codex-Room.cmd")
+

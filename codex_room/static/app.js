@@ -145,6 +145,8 @@ function renderRoom({ replaceTranscript = false } = {}) {
   const room = state.room;
   if (!room) return;
   $("#room-title").textContent = room.title;
+  $("#room-id").textContent = `Room ID ${room.id}`;
+  $("#room-id").title = room.id;
   $("#room-status").textContent = room.status;
   $("#room-status").className = `status-pill ${room.status}`;
   const round = room.active_round;
@@ -188,6 +190,18 @@ function renderAgentStrip(agents) {
     threadEl.textContent = `Thread ${thread}`;
     threadEl.title = thread;
     info.append(name, threadEl);
+    const modelEl = document.createElement("small");
+    modelEl.className = "model-state";
+    const model = agent.execution?.model;
+    const effort = agent.execution?.reasoning_effort;
+    const recency = agent.execution?.model_recency;
+    modelEl.textContent = model
+      ? `Model ${model}${effort ? ` · ${effort}` : ""}`
+      : "Model not run yet";
+    modelEl.title = model
+      ? `${recency === "current" ? "Current" : "Last"} execution model${effort ? ` · reasoning ${effort}` : ""}`
+      : "This agent has not recorded a model execution yet.";
+    info.append(modelEl);
     const execution = executionSummary(agent.execution);
     if (execution) {
       const executionEl = document.createElement("small");
