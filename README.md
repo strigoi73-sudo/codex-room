@@ -117,7 +117,7 @@ Reusable A/B/C profile bodies live separately from protected institutional/Room-
 
 The automated suite verifies distinct identities, N-participant routing and settlement, separate histories, PASS behavior, observer targeting, pause/resume, persistence across runtime restarts, runaway limits, compaction continuity, deliberate reset/archive auditing, exports, two-agent compatibility, and Agent C's fresh-context boundary.
 
-`test-transcript-stability.ps1` is a specialized browser transcript check. It is excluded from the routine Python test suite because it requires Node.js plus an installed Chrome or Edge browser; run it separately when that browser-level coverage is needed.
+`test-transcript-stability.ps1` is a specialized browser transcript check using pinned `@playwright/test@1.63.0`. It remains separate from the canonical Python command because it requires Node.js plus installed Chrome or Edge; the hosted Windows CI lane runs it automatically, and operators can still run it directly when browser-level verification is needed. Hosted Python CI covers the supported Python 3.11 floor on Ubuntu, the primary Python 3.12 lane on Ubuntu, and Python 3.12 on Windows. A separate dependency-review workflow runs a pinned `pip-audit` advisory scan and an informational outdated-package report on dependency changes, on demand, and monthly; dependency upgrades remain deliberate.
 
 ## Roadmap
 

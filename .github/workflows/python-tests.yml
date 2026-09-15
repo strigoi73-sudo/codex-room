@@ -15,11 +15,30 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Ubuntu / Python 3.11
+            os: ubuntu-latest
+            python: "3.11"
+          - label: Ubuntu / Python 3.12
+            os: ubuntu-latest
+            python: "3.12"
+          - label: Windows / Python 3.12 + browser
+            os: windows-latest
+            python: "3.12"
+            browser: true
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
       - run: python -m pip install -c constraints-test.txt ".[test]"
       - run: python -m pytest -q
+      - name: Browser transcript stability
+        if: matrix.browser
+        shell: pwsh
+        run: ./test-transcript-stability.ps1

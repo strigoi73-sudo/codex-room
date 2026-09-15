@@ -775,11 +775,22 @@ async def test_finish_preserves_peer_turn_that_is_already_running(runtime_factor
             "agent_b": [(Outcome.MESSAGE, "B's in-flight result")],
         },
         synchronize_first_topic=True,
-        delays={"agent_a": [0.01, 0.01], "agent_b": [0.15]},
+        blocked_calls={"agent_b": {1}},
     )
     runtime = await runtime_factory(adapter)
     snapshot = await runtime.create_room(CreateRoomRequest(topic="Preserve the peer turn"))
     room_id = snapshot["id"]
+
+    async def finish_waits_for_running_peer():
+        events = await runtime.db.get_events(room_id)
+        return any(
+            event["event_type"] == "finish_waiting"
+            and event["metadata"].get("peer_status") == "running"
+            for event in events
+        )
+
+    await wait_until(finish_waits_for_running_peer)
+    adapter.release_call("agent_b", 1)
 
     async def closed_after_preserved_result():
         room = await runtime.db.get_room(room_id)
@@ -1265,7 +1276,6 @@ async def test_stop_before_lease_expiry_cancels_without_false_error_or_retry(run
         interrupt_outcomes={"agent_a": InterruptOutcome.ALREADY_INACTIVE},
     )
     runtime = await runtime_factory(adapter)
-    runtime.AGENT_TURN_TIMEOUT_SECONDS = 0.2
     snapshot = await runtime.create_room(
         CreateRoomRequest(topic="Stop wins the timeout race", starting_agent="agent_a")
     )
@@ -1273,7 +1283,7 @@ async def test_stop_before_lease_expiry_cancels_without_false_error_or_retry(run
     await wait_until(lambda: len(adapter.calls["agent_a"]) == 1)
 
     await runtime.stop(room_id)
-    await asyncio.sleep(0.25)
+    await wait_until(lambda: runtime._workers[(room_id, "agent_a")].done())
 
     events = await runtime.db.get_events(room_id)
     assert (await runtime.db.get_room(room_id))["status"] == RoomStatus.STOPPED

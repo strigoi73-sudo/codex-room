@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 
@@ -205,6 +206,27 @@ def test_workspace_source_remains_available_outside_canonical_room(tmp_path: Pat
 
     assert result["content"] == "LOCAL_CANARY\n"
     assert result["evidence"]["source"] == {"kind": "workspace"}
+
+
+def test_read_normalizes_platform_newlines_without_changing_raw_file_evidence(
+    tmp_path: Path,
+) -> None:
+    raw = b"FIRST\r\nSECOND\rTHIRD\n"
+    path = tmp_path / "mixed.txt"
+    path.write_bytes(raw)
+
+    result = inspect_source(
+        tmp_path,
+        {
+            "operation": "read",
+            "source": "workspace",
+            "path": "mixed.txt",
+        },
+    )
+
+    assert result["content"] == "FIRST\nSECOND\nTHIRD\n"
+    assert result["evidence"]["size_bytes"] == len(raw)
+    assert result["evidence"]["sha256"] == hashlib.sha256(raw).hexdigest()
 
 
 def test_cross_boundary_sources_require_canonical_room_context(tmp_path: Path) -> None:
