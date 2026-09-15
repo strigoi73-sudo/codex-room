@@ -2627,6 +2627,22 @@ class Database:
                 await db.commit()
                 return None
 
+            continuation_row = await self._fetchone(
+                db,
+                """SELECT * FROM usage_continuations
+                   WHERE agent_id=? AND room_id=? AND round_id=?
+                     AND lifecycle_version=? AND thread_id=?
+                     AND assignment_id=? AND state='ready'""",
+                (
+                    agent["id"],
+                    room_id,
+                    agent["active_round_id"],
+                    agent["lifecycle_version"],
+                    agent["thread_id"],
+                    assignment["id"],
+                ),
+            )
+
             selected_model = model
             selected_effort = reasoning_effort
             config_id = assignment["execution_config_id"]
@@ -2669,6 +2685,16 @@ class Database:
                     now,
                 ),
             )
+            if continuation_row is not None:
+                cursor = await db.execute(
+                    """UPDATE usage_continuations
+                       SET state='running', continuation_batch_id=?, updated_at=?
+                       WHERE id=? AND state='ready'""",
+                    (batch_id, now, continuation_row["id"]),
+                )
+                if cursor.rowcount != 1:
+                    await db.rollback()
+                    return None
             await db.commit()
             execution = await self._fetchone(
                 db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
@@ -2684,6 +2710,10 @@ class Database:
                 "task_id": assignment["task_id"],
                 "recovered": False,
                 "execution": self._decode_execution(execution),
+                "usage_continuation": (
+                    self._decode_usage_continuation(continuation_row)
+                    if continuation_row else None
+                ),
                 "work_model_version": 2,
             }
         )
