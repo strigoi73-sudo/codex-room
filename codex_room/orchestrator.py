@@ -1727,6 +1727,16 @@ class RoomRuntime:
         if agent is None:
             return
         execution = batch.get("execution") or {}
+        if execution.get("state") == "quarantined":
+            slot = self._worker_slots.get((room_id, agent_key))
+            if slot is not None and slot.generation == generation:
+                slot.quarantined = True
+                slot.phase = "quarantined"
+                slot.reason = execution.get("error") or (
+                    "The transaction claim has no exact Codex turn identity; replay is blocked."
+                )
+            await self.publish_state(room_id)
+            return
         await self.publish_state(room_id)
         activity = await self.db.create_event(
             room_id,
