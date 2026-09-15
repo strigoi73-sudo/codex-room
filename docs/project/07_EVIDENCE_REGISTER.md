@@ -2644,7 +2644,14 @@ Verification history:
 - repaired code-bearing PR head `b70d67f0d743b8a1228b29fd942f2aae666302cc` passed **341 tests, 2 warnings** in GitHub Actions run `34956587939`;
 - regression coverage includes CORE-source allowlisting, `data/` and `.env` rejection, cross-Room shared-only confinement, traversal rejection, symlink/reparse escape rejection, bounded reads, source discovery, and find/search behavior.
 
-Evidence boundary: this record establishes deterministic implementation and hosted test verification on the stated PR head. Canonical-`main` merge verification and a fresh local live Room smoke remain separate gates.
+Canonical verification:
 
-**Status:** IMPLEMENTED / VERIFIED on the tested PR head; canonical-main and live-Room verification pending.
+- final exact PR head `a64acf828cd32202038529d180311934ac1c26f5` passed **341 tests, 2 warnings** in GitHub Actions run `34956844117`;
+- PR #62 squash-merged as `e60ad2b1d4a3339c30ef1837f3bca53366929acd`;
+- the merge commit carries the exact same Git tree as the verified PR head: `c24f31635065252fd4e9d2bd0d2460549f5243e0`;
+- canonical-`main` GitHub Actions run `34957034618` passed **341 tests, 2 warnings** on that exact merge commit.
+
+Evidence boundary: deterministic implementation and hosted verification are complete on canonical `main`. A fresh local live Room smoke remains necessary to prove that the deployed Windows/Codex sandbox can exercise the new cross-boundary read path end to end.
+
+**Status:** IMPLEMENTED / VERIFIED on canonical `main`; fresh local live-Room verification pending.
 
