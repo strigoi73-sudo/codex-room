@@ -2198,6 +2198,54 @@ class Database:
             event["deliveries"] = deliveries.get(event["id"], [])
         return events
 
+    async def get_round_transaction_state(
+        self, round_id: str
+    ) -> dict[str, Any]:
+        """Return explicit version-2 work state for inspection/export."""
+        async with self.connect() as db:
+            task_rows = await db.execute_fetchall(
+                "SELECT * FROM tasks WHERE round_id=? ORDER BY created_at, id",
+                (round_id,),
+            )
+            assignment_rows = await db.execute_fetchall(
+                """SELECT x.*, a.agent_key
+                   FROM assignments x
+                   JOIN tasks t ON t.id=x.task_id
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE t.round_id=?
+                   ORDER BY x.created_at, x.id""",
+                (round_id,),
+            )
+            join_rows = await db.execute_fetchall(
+                """SELECT j.*
+                   FROM assignment_joins j
+                   JOIN tasks t ON t.id=j.task_id
+                   WHERE t.round_id=?
+                   ORDER BY j.created_at, j.id""",
+                (round_id,),
+            )
+        tasks: list[dict[str, Any]] = []
+        assignments_by_task: dict[str, list[dict[str, Any]]] = {}
+        joins_by_task: dict[str, list[dict[str, Any]]] = {}
+        for row in assignment_rows:
+            item = dict(row)
+            item["context_event_ids"] = json.loads(
+                item.pop("context_event_ids_json", "[]") or "[]"
+            )
+            assignments_by_task.setdefault(item["task_id"], []).append(item)
+        for row in join_rows:
+            item = dict(row)
+            joins_by_task.setdefault(item["task_id"], []).append(item)
+        for row in task_rows:
+            item = dict(row)
+            item["required_contributors"] = json.loads(
+                item.pop("required_contributors_json", "[]") or "[]"
+            )
+            item["assignments"] = assignments_by_task.get(item["id"], [])
+            item["joins"] = joins_by_task.get(item["id"], [])
+            tasks.append(item)
+        return {"tasks": tasks}
+
     async def snapshot(
         self, room_id: str, *, event_limit: int | None = 2000
     ) -> dict[str, Any] | None:
@@ -2225,6 +2273,10 @@ class Database:
                 event for event in room["events"] if event.get("round_id") == round_item["id"]
             ]
             round_item["agent_state"] = await self.get_round_agent_states(round_item["id"])
+            if round_item.get("work_model_version", 1) == 2:
+                round_item["transaction_state"] = await self.get_round_transaction_state(
+                    round_item["id"]
+                )
             configured_members = {
                 state["agent_key"]
                 for state in round_item["agent_state"]
