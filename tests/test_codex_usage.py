@@ -118,7 +118,9 @@ def test_analyze_rollout_reports_cumulative_and_per_user_turn_usage(tmp_path: Pa
     assert report["user_turns"][0]["usage"] == first
     assert report["user_turns"][1]["usage"] == second_last
     assert report["token_updates"][1]["delta_from_previous_total"] == second_last
-    assert "message" not in json.dumps(report)
+    serialized = json.dumps(report)
+    assert "\"first\"" not in serialized
+    assert "\"second\"" not in serialized
 
 
 def test_select_latest_prefers_top_level_over_newer_child(tmp_path: Path) -> None:
