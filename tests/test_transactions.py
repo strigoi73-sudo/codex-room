@@ -701,7 +701,10 @@ async def test_transaction_usage_wall_continuation_survives_restart_on_same_assi
     thread_id = first_adapter.calls["agent_c"][0]["thread_id"]
     await first.close()
 
-    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        turn_id_namespace="after_restart",
+    )
     second_adapter.decisions["agent_c"].append(
         TransactionDecision(
             action=TransactionAction.COMPLETE,
