@@ -1461,7 +1461,7 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
             "external_process": False,
         },
         side_effects="none",
-        verification={"status": "verification_pending", "evidence": ["E-078"]},
+        verification={"status": "verified", "evidence": ["E-078", "E-081"]},
         handler=_invoke_inspect_source,
         implementation_components=(
             *INSPECT_SOURCE_IMPLEMENTATION_COMPONENTS,
