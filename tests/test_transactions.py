@@ -543,3 +543,47 @@ async def test_transaction_quiescent_reconciler_does_not_close_active_task_witho
     assert room is not None
     assert room["status"] == RoomStatus.RUNNING
     assert await runtime.db.has_active_transaction_task(room_id, round_id)
+
+
+@pytest.mark.asyncio
+async def test_transaction_completion_while_paused_settles_task_then_resume_closes_round(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {1}},
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="C completed while the Room was paused.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "paused-complete.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Complete while paused", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+
+    await runtime.pause(room_id)
+    adapter.release_call("agent_c", 1)
+    await wait_until(lambda: len(adapter.completed_calls["agent_c"]) == 1)
+
+    async def task_settled() -> bool:
+        async with runtime.db.connect() as db:
+            row = await runtime.db._fetchone(
+                db,
+                "SELECT state FROM tasks WHERE room_id=? ORDER BY created_at DESC LIMIT 1",
+                (room_id,),
+            )
+        return bool(row and row["state"] == "settled")
+
+    await wait_until(task_settled)
+    paused = await runtime.db.get_room(room_id)
+    assert paused is not None
+    assert paused["status"] == RoomStatus.PAUSED
+
+    await runtime.resume(room_id)
+    await wait_until(lambda: _room_finished(runtime, room_id))
