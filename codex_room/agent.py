@@ -29,6 +29,8 @@ def _assert_room_model_allowed(model: str) -> None:
 ROOM_CODEX_CONFIG_OVERRIDES = (
     f'model="{ROOM_MODEL}"',
     f'model_reasoning_effort="{ROOM_REASONING_EFFORT}"',
+    "agents.enabled=false",
+    "features.multi_agent_v2.enabled=false",
 )
 MAX_DURABLE_CAPABILITY_RESULT_BYTES = 64 * 1024
 

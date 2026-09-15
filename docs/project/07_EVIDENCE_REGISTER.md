@@ -2684,3 +2684,44 @@ Interpretation:
 
 **Status:** I-012 functional read boundary LIVE VERIFIED; bounded telemetry/quoting observation retained as MONITOR, not a completion blocker.
 
+### E-080 — I-010 grounded maintenance investigation exposed SDK-internal subagent bypass
+**Date:** 2026-09-15  
+**Scope:** [ROOM / P1 / CORE] I-010 representative work and hidden-cognition-path observation.
+
+Fresh Room `room_6a9dd827148f40739ce3f3a4c7601bac` ran the repository-grounded I-010 investigation after I-012 live verification.
+
+Useful I-010 evidence:
+
+- C successfully used registered `inspect_source` to inspect current CORE rather than relying on the earlier empty-workspace inference;
+- source evidence confirmed the default Personal root at `data/`, SQLite at `data/codex-room.db`, Room shared workspaces under `data/rooms/<room-id>/shared`, durable institutional/custom-capability registry material under the data root, WAL/foreign-key/busy-timeout and restart/recovery safeguards, and the absence of a current backup/integrity/restore maintenance command or explicit SQLite `user_version` contract;
+- C produced a bounded candidate I-010 direction: one local operator-only maintenance CLI covering integrity check, backup, backup verification, and guarded restore while explicitly excluding cloud sync, scheduling, retention, dashboards, and an agent-callable backup service.
+
+The execution-allocation record in C's final response was not valid Room evidence. It claimed that persistent Agent A ran at `luna-medium` and persistent Agent B at `terra-medium`, but the complete export shows:
+
+- Room `turn_count = 1`;
+- every model/tool activity event belongs to Agent C;
+- A and B have no conversational/source events and did not consume the Round context;
+- no C MESSAGE with `invoke_targets` / `execution_configs` delegated Room work to A or B;
+- C's single turn contains four `sub_agent_activity` tool events instead.
+
+Therefore the additional cognition came from Codex SDK-internal subagents inside C's turn, not the persistent Room peers. The Room's claimed Luna/Terra peer allocation must not be counted as P1 evidence.
+
+Pinned Codex 0.154 source confirms the mechanism:
+
+- `[agents].enabled` defaults to true;
+- enabled `features.multi_agent_v2` takes precedence over that switch;
+- the multi-agent spawn surface states that spawned agents inherit the parent model by default.
+
+Codex Room's adapter previously supplied only model and reasoning-effort app-server overrides, so the internal multi-agent surface remained available. This creates an untracked/poorly attributed cognition path outside `invoke_targets`, Room peer execution rows, and P1's C-selected peer configuration mechanism.
+
+Bounded remediation PR #63 adds `agents.enabled=false` plus `features.multi_agent_v2.enabled=false` to the Codex Room app-server config overrides and updates the existing adapter-initialization regression assertion. Exact code-bearing head `571bc2effe75b7b63df3f4094ed1b56099a3264d` passed **341 tests, 2 warnings** in GitHub Actions run `34981186463`.
+
+Interpretation:
+
+- the I-010 investigation produced useful repository-grounded design evidence, but its peer-allocation narrative is false and does not satisfy the P1 naturalistic-allocation gate;
+- internal SDK subagents are not needed for Personal production because deliberate production cognition already has the persistent A/B/C Room path;
+- I-013 should close this bypass before further P1 evidence is accepted from ordinary Rooms;
+- the I-010 design remains a candidate specification for Project-level review; recommendations such as installation identity, explicit SQLite `user_version`, and a particular restore-lock protocol are proposals, not existing implementation facts.
+
+**Status:** I-010 repository investigation useful; claimed A/B allocation INVALID; SDK-internal subagent bypass OBSERVED; bounded CORE remediation verified on PR #63 head, canonical-main verification pending.
+
