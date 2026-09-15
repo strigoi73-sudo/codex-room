@@ -10,7 +10,7 @@
 - **What just changed?** A fresh science-fair Room live-verified D-027. C differentiated A/B work; A used `invoke_targets: []`; B targeted only C; neither peer woke the other; the delegation cohort integrated once; and no reopen cascade occurred. See E-064.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** No new implementation slice is currently selected. D-027 is live verified. Choose the next priority deliberately; D-019 daily usage pacing remains approved and planned but unscheduled.
+- **What is next?** No new implementation slice is currently selected. D-027 is live verified. D-019 daily usage pacing is deferred until mixed subscription-allowance / purchased-credit semantics are understood well enough to define correct pacing behavior.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -788,11 +788,12 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 ## Approved planned development
 
 ### Personal daily usage pacing limit
-**Work state:** PLANNED  
+**Work state:** DEFERRED  
 **Reality:** DECIDED / NOT IMPLEMENTED  
 **Decision:** D-019  
 **Feasibility evidence:** E-026  
-**Scheduling:** approved for development; P4 is complete, but this item has not yet been selected as the next active implementation slice.
+**Readiness constraint:** mixed subscription-allowance / purchased-credit semantics are unresolved. E-026 proves structured rate-limit data exists, but does not establish how mixed usage pools are represented, prioritized, or consumed well enough to enforce the intended pacing policy correctly.
+**Scheduling:** do not begin implementation until this usage-pool model is understood and the pacing semantics are deliberately resolved.
 
 Core approved behavior:
 
@@ -804,6 +805,8 @@ Core approved behavior:
 - provider enforcement remains authoritative.
 
 Implementation details such as warning thresholds, UI presentation, carry-forward semantics, daily-period/time-zone semantics, polling cadence, and exact SDK/app-server integration remain open until implementation design.
+
+Before implementation, resolve at least: whether purchased credits form a distinct consumable pool from the subscription allowance; which pool or combination the daily pacing limit governs; what provider-reported fields can distinguish those pools; and how pacing should behave when one pool is exhausted while another remains available.
 
 ## Maintenance issues
 
@@ -833,4 +836,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question currently blocks work. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-027 is complete and live verified; the next implementation slice has not yet been selected.
+No high-priority open question blocks the repository generally. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-027 is complete and live verified; the next implementation slice has not yet been selected. D-019 is specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
