@@ -10,16 +10,16 @@
 - **What just changed?** A clean household-move Room live-verified D-026: C invoked both peers with meaningfully differentiated assignments and integrated complementary outputs. The same trace exposed a broader routing inefficiency when B made A runnable after posting an already-public return, causing an extra A review and C reopen. D-027 now defines invocation as a purchase of immediate cognition, not visibility. See E-062.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Verify D-027 on the implementation PR, then run one fresh Room to confirm peers no longer wake each other merely for visibility while preserving direct collaboration when extra cognition is actually needed.
+- **What is next?** Run one fresh Room to confirm peers no longer wake each other merely for visibility while preserving direct collaboration when extra cognition is actually needed.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### Room-wide invocation economy
-**Work state:** IN PROGRESS  
-**Reality:** D-027 DECIDED; implementation pending hosted verification  
+**Work state:** COMPLETE for implementation; MONITOR for live compliance  
+**Reality:** IMPLEMENTED / VERIFIED deterministically  
 **Decision:** D-027  
-**Evidence:** E-062
+**Evidence:** E-062, E-063
 
 D-027 generalizes the token-economy rule to every use of `invoke_targets`:
 
@@ -30,7 +30,9 @@ D-027 generalizes the token-economy rule to every use of `invoke_targets`:
 - a peer completing bounded work for C should normally return to C without waking the other delegated peer;
 - direct A/B collaboration remains allowed when that peer's additional cognition is materially necessary.
 
-The initial implementation belongs primarily in the protected shared Room protocol, because A, B, and C all control `invoke_targets`. One minimal schema/runtime compatibility change is also required: `invoke_targets: []` must be accepted as an explicit no-runnable-peer MESSAGE, while `null` remains the legacy all-peer fanout. No scheduler or UI redesign is warranted.
+PR #55 / E-063 verify the shared protocol and explicit no-wake routing primitive. `invoke_targets: []` publishes a public/readable MESSAGE with no runnable peers; `null` remains the legacy all-peer fanout. No scheduler or UI redesign was required.
+
+Live compliance remains a MONITOR item: confirm in a fresh Room that peers normally return bounded delegated work to C without waking each other merely for visibility, while still invoking direct peer cognition when it materially improves the work.
 
 ### C peer-allocation economy and temporary cognitive framing
 **Work state:** COMPLETE  
@@ -93,6 +95,15 @@ PR #49 and E-058 verify the implementation: fresh standard composition has no de
 D-025 now authorizes an initial semantic form of dynamic cognitive framing through C's protected coordination instructions. A heavier posture registry/data model/UI remains **NOT IMPLEMENTED** and should not be added unless ordinary use demonstrates a need.
 
 ## Recently completed work
+
+### D-027 room-wide invocation economy
+**Work state:** COMPLETE for implementation  
+**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Decision:** D-027  
+**Evidence:** E-062, E-063
+
+PR #55 makes invocation an explicit purchase of immediate cognition for all participants and adds `invoke_targets: []` as a public/readable no-wake MESSAGE. Corrected PR-head and canonical-main suites both passed **324 tests, 2 warnings**.
+
 
 ### D-026 live behavioral verification
 **Work state:** COMPLETE  

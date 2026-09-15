@@ -2075,3 +2075,40 @@ This observation motivates D-027: invocation should request immediate cognition,
 
 **Status:** D-026 LIVE VERIFIED. Peer-to-peer invocation economy OBSERVED ISSUE motivating D-027.
 
+### E-063 — D-027 room-wide invocation economy and explicit no-wake MESSAGE
+**Date:** 2026-09-14  
+**Scope:** [CORE] shared Room protocol and routing-schema support implementing D-027.
+
+PR #55 implements invocation economy for all participants:
+
+- the protected Room protocol tells A/B/C that invocation requests immediate cognition, not visibility;
+- messages remain public/readable without making every reader runnable;
+- peers should invoke only participants whose immediate cognition is expected to add material value;
+- a peer completing bounded work for C should normally return to C without waking the other delegated peer unless that peer's cognition is materially needed;
+- direct A/B collaboration remains permitted when additional peer cognition is useful;
+- `invoke_targets: []` is now a valid MESSAGE value meaning public/readable delivery with no runnable peers;
+- `invoke_targets: null` retains legacy all-peer fanout compatibility;
+- the runtime's existing target resolver already maps an explicit empty target list to no runnable peers, so the implementation required removing the model-level empty-list rejection and exposing the semantics in the runtime prompt/protected protocol rather than changing scheduler behavior.
+
+Regression coverage verifies:
+
+- all three effective default instruction sets include the invocation-economy rule;
+- empty `invoke_targets` is accepted for MESSAGE;
+- a public MESSAGE with `invoke_targets: []` remains readable by both peers while waking neither;
+- metadata records empty requested/runnable recipients and counts both legacy fanout invocations as avoided;
+- existing selective routing, C delegation-cohort timing, integration, and other Room behavior remain under the full regression suite.
+
+Verification:
+
+- first PR-head run `34911744037` on head `b76c7463c0d1d88e94e7fa57da4e8c8b1537bc51`: **323 passed, 1 failed, 2 warnings**. The sole failure was an obsolete test that still expected empty `invoke_targets` to raise `ValidationError`; the new no-wake runtime test itself passed;
+- corrected PR #55 exact head: `493b917108a78e8e6a5778a1734e02ce71c92778`;
+- corrected tested PR-head Git tree: `da51b39fb0f18d66f062470e50652a76572243a7`;
+- corrected PR Actions run `34911927151`: **324 passed, 2 warnings** in 64.09s;
+- squash merge: `18337b2c678bdf258f84591b6f9443e969c65d1c`;
+- merge Git tree: `da51b39fb0f18d66f062470e50652a76572243a7`, exactly matching the corrected tested PR-head tree;
+- canonical-main Actions run `34912081457`: **324 passed, 2 warnings** in 63.70s.
+
+**Evidence boundary:** E-063 verifies the exact implementation, protected instruction composition, and no-wake routing primitive. It does not yet establish that live A/B/C behavior will consistently choose economical `invoke_targets` in ordinary Rooms.
+
+**Status:** IMPLEMENTED / VERIFIED deterministically. Live behavioral compliance remains to be observed.
+
