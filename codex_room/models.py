@@ -65,15 +65,18 @@ EXECUTION_CONFIGS: dict[str, tuple[str, str]] = {
 }
 
 
+class ExecutionSelection(BaseModel):
+    target: Literal["agent_a", "agent_b", "agent_c"]
+    config: ExecutionConfigId
+
+
 class AgentDecision(BaseModel):
     outcome: Outcome
     message: str = ""
     invoke_targets: list[
         Literal["all", "agent_a", "agent_b", "agent_c"]
     ] | None = None
-    execution_configs: dict[
-        Literal["agent_a", "agent_b", "agent_c"], ExecutionConfigId
-    ] | None = None
+    execution_configs: list[ExecutionSelection] | None = None
 
     @model_validator(mode="after")
     def message_required_for_message(self) -> "AgentDecision":
@@ -89,6 +92,10 @@ class AgentDecision(BaseModel):
                 raise ValueError("invoke_targets cannot contain duplicates")
             if "all" in self.invoke_targets and len(self.invoke_targets) != 1:
                 raise ValueError("invoke_targets 'all' cannot be combined with participants")
+        if self.execution_configs is not None:
+            targets = [selection.target for selection in self.execution_configs]
+            if len(targets) != len(set(targets)):
+                raise ValueError("execution_configs cannot contain duplicate targets")
         return self
 
 
@@ -112,40 +119,28 @@ DECISION_SCHEMA: dict[str, Any] = {
         "execution_configs": {
             "anyOf": [
                 {
-                    "type": "object",
-                    "properties": {
-                        "agent_a": {
-                            "type": "string",
-                            "enum": [
-                                "luna-medium",
-                                "terra-medium",
-                                "terra-high",
-                                "sol-medium",
-                                "astra-medium",
-                            ],
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "target": {
+                                "type": "string",
+                                "enum": ["agent_a", "agent_b", "agent_c"],
+                            },
+                            "config": {
+                                "type": "string",
+                                "enum": [
+                                    "luna-medium",
+                                    "terra-medium",
+                                    "terra-high",
+                                    "sol-medium",
+                                    "astra-medium",
+                                ],
+                            },
                         },
-                        "agent_b": {
-                            "type": "string",
-                            "enum": [
-                                "luna-medium",
-                                "terra-medium",
-                                "terra-high",
-                                "sol-medium",
-                                "astra-medium",
-                            ],
-                        },
-                        "agent_c": {
-                            "type": "string",
-                            "enum": [
-                                "luna-medium",
-                                "terra-medium",
-                                "terra-high",
-                                "sol-medium",
-                                "astra-medium",
-                            ],
-                        },
+                        "required": ["target", "config"],
+                        "additionalProperties": False,
                     },
-                    "additionalProperties": False,
                 },
                 {"type": "null"},
             ]
