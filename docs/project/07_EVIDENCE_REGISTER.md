@@ -2351,22 +2351,24 @@ This closes the deployment-evidence boundary left open by E-068: the new I-009 p
 **Date:** 2026-09-15  
 **Scope:** [P1 exploratory / zero-turn] Principal's authenticated local `openai-codex==0.147.0` runtime on ChatGPT Plus.
 
-A direct SDK `codex.models()` probe was run without invoking a model turn. The local runtime exposed all three intended comparison tiers:
+An initial targeted SDK `codex.models()` probe confirmed Sol, Terra, and Luna but was later recognized as incomplete because the probe filtered to those IDs. A corrected unfiltered zero-turn probe then returned the complete visible local catalog:
 
-- `gpt-5.6-luna` — default reasoning effort `medium`; supports `low`, `medium`, `high`, `xhigh`, `max`;
-- `gpt-5.6-terra` — default reasoning effort `medium`; supports `low`, `medium`, `high`, `xhigh`, `max`, `ultra`;
-- `gpt-5.6-sol` — local catalog marks this model as default with default reasoning effort `low`; supports `low`, `medium`, `high`, `xhigh`, `max`, `ultra`.
+- `gpt-5.6-sol` — visible; catalog default; default reasoning effort `low`; supports `low`, `medium`, `high`, `xhigh`, `max`, `ultra`;
+- `gpt-5.6-terra` — visible; default reasoning effort `medium`; supports `low`, `medium`, `high`, `xhigh`, `max`, `ultra`;
+- `gpt-5.6-luna` — visible; default reasoning effort `medium`; supports `low`, `medium`, `high`, `xhigh`, `max`;
+- `gpt-5.5` — visible previous-generation model; default reasoning effort `medium`; supports `low`, `medium`, `high`, `xhigh`.
 
-All three are visible (not hidden) and accept text/image input. The probe also exposed an optional `fast`/priority speed tier, but P1 admission testing will not vary service tier because that would confound model/effort economy with a separate increased-usage speed choice.
+The local catalog returned no Astra model. This evidence establishes only the capabilities of the principal's currently deployed authenticated SDK/runtime; it does not by itself establish whether Astra would become available after a supported runtime upgrade or under different account/workspace conditions.
 
-Admission matrix selected from this exact local catalog:
+The optional `fast`/priority service tier is visible for all returned models but remains outside the P1 admission test because changing speed tier would confound model/effort economy with a separate increased-usage choice.
 
-1. Luna / medium — low-cost tier reference;
-2. Terra / medium — same-model lower-effort comparison;
+First admission matrix remains:
+
+1. Luna / medium — low-cost current-generation reference;
+2. Terra / medium — current-generation balanced model at default effort;
 3. Terra / high — current production baseline;
-4. Sol / medium — higher-capability tier at moderate effort.
+4. Sol / medium — current-generation higher-capability comparison at moderate effort.
 
-This matrix isolates model-tier effects at constant `medium` effort while separately measuring the marginal effect of Terra `medium → high`. Higher reasoning levels (`xhigh`, `max`, `ultra`) are not admitted to the first comparison because no evidence yet justifies their additional spend.
+GPT-5.5 is retained as an available legacy comparator but is not admitted to the first benchmark unless later evidence makes it economically relevant. Higher reasoning levels (`xhigh`, `max`, `ultra`) are likewise deferred until the first comparison shows a reason to spend on them.
 
-**Status:** P1 catalog gate PASSED. No production model-selection policy changed.
-
+**Status:** P1 catalog gate PASSED after corrected unfiltered probe. No production model-selection policy changed.
