@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 import codex_room.db as db_module
+from codex_room.agent import AgentRunResult
 from codex_room.db import Database
 from codex_room.models import (
     AddAgentRequest,
@@ -30,6 +31,112 @@ from codex_room.personalities import (
 from codex_room.orchestrator import RoomRuntime
 
 from .fakes import FakeAgentAdapter, wait_until
+
+
+def test_execution_economics_uses_cumulative_usage_delta() -> None:
+    result = AgentRunResult(
+        decision=AgentDecision(outcome=Outcome.PASS, message=""),
+        usage={
+            "total": {
+                "input_tokens": 150,
+                "cached_input_tokens": 120,
+                "output_tokens": 12,
+                "total_tokens": 162,
+            }
+        },
+        activity=[{"type": "command_execution", "status": "completed"}],
+    )
+
+    economics = RoomRuntime._execution_economics(
+        result,
+        [],
+        previous_usage={
+            "total": {
+                "input_tokens": 100,
+                "cached_input_tokens": 80,
+                "output_tokens": 7,
+                "total_tokens": 107,
+            }
+        },
+        has_prior_execution=True,
+    )
+
+    assert economics["usage"]["total_tokens"] == 162
+    assert economics["usage_delta"] == {
+        "input_tokens": 50,
+        "cached_input_tokens": 40,
+        "output_tokens": 5,
+        "total_tokens": 55,
+    }
+    assert economics["usage_delta_status"] == "computed"
+    assert economics["tokens_per_tool_call"] == 55.0
+
+
+def test_execution_economics_refuses_non_monotonic_usage_delta() -> None:
+    result = AgentRunResult(
+        decision=AgentDecision(outcome=Outcome.PASS, message=""),
+        usage={"total_tokens": 90},
+    )
+
+    economics = RoomRuntime._execution_economics(
+        result,
+        [],
+        previous_usage={"total_tokens": 100},
+        has_prior_execution=True,
+    )
+
+    assert economics["usage_delta"] == {}
+    assert economics["usage_delta_status"] == "non_monotonic"
+    assert economics["tokens_per_tool_call"] is None
+
+
+@pytest.mark.asyncio
+async def test_execution_usage_baseline_uses_previous_same_thread(runtime_factory):
+    runtime = await runtime_factory(FakeAgentAdapter(), "usage-baseline.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="usage baseline", auto_start=False)
+    )
+    agent = await runtime.db.get_agent(snapshot["id"], "agent_c")
+    assert agent is not None
+    round_id = snapshot["active_round_id"]
+
+    async with runtime.db.connect() as db:
+        await db.execute(
+            """INSERT INTO agent_executions
+               (batch_id, room_id, agent_id, round_id, lifecycle_version,
+                worker_generation, sdk_thread_id, state, usage_json, created_at)
+               VALUES (?, ?, ?, ?, 0, 0, ?, 'settled', ?, ?)""",
+            (
+                "batch_previous",
+                snapshot["id"],
+                agent["id"],
+                round_id,
+                agent["thread_id"],
+                '{"total_tokens":100}',
+                "2026-09-15T10:00:00.000+00:00",
+            ),
+        )
+        await db.execute(
+            """INSERT INTO agent_executions
+               (batch_id, room_id, agent_id, round_id, lifecycle_version,
+                worker_generation, sdk_thread_id, state, created_at)
+               VALUES (?, ?, ?, ?, 0, 0, ?, 'result_ready', ?)""",
+            (
+                "batch_current",
+                snapshot["id"],
+                agent["id"],
+                round_id,
+                agent["thread_id"],
+                "2026-09-15T10:01:00.000+00:00",
+            ),
+        )
+        await db.commit()
+
+    baseline = await runtime.db.get_execution_usage_baseline("batch_current")
+    assert baseline == {
+        "has_prior_execution": True,
+        "usage": {"total_tokens": 100},
+    }
 
 
 class FailingCAgentAdapter(FakeAgentAdapter):
