@@ -129,7 +129,10 @@ class RoomRuntime:
         "or useful mechanical complexity. Use 'codex-room-cap list' only when a needed capability "
         "identity is unknown, and 'codex-room-cap inspect CAPABILITY_ID' only when its current "
         "contract is needed. For source inspection prefer the direct 'codex-room-cap source' "
-        "surface and bounded search-many/read-many operations. Do not inspect CORE or another Room "
+        "surface. Search and search-many paths may identify either a file or directory; keep "
+        "max-matches within 1-100 and max-files within 1-200. When several questions are already "
+        "known, normally use one search-many, then one read-many over the relevant ranges; retrieve "
+        "again only for a specific unresolved dependency. Do not inspect CORE or another Room "
         "unless the current task requires it; an explicit workspace-only instruction forbids it. "
         "Invoke known capabilities with 'codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT'; "
         "if shell quoting is fragile, use '--input-file WORKSPACE_RELATIVE_JSON'. Avoid redundant "
@@ -3257,21 +3260,38 @@ class RoomRuntime:
             if overlay:
                 context_parts.append(f"Temporary overlay for you in this round:\n{overlay}")
             context_parts.append("</stored_round_context>")
+        has_passive_context = any(
+            not bool(event.get("delivery_runnable")) for event in events
+        )
         event_parts = ["<unread_room_events>"]
         for event in events:
             privacy = " private-to-you" if (
                 event["event_type"] == "observer_message"
                 and event["destination"] not in {"all", "both"}
             ) else ""
+            delivery_role = (
+                "triggering" if bool(event.get("delivery_runnable")) else "passive_context"
+            )
             event_parts.extend(
                 [
                     f"<event id=\"{event['id']}\" type=\"{event['event_type']}\" "
+                    f"role=\"{delivery_role}\" "
                     f"source=\"{source_labels.get(event['source'], event['source'])}\"{privacy}>",
                     event["content"],
                     "</event>",
                 ]
             )
         event_parts.append("</unread_room_events>")
+        event_role_instruction = (
+            "<room_event_roles>\n"
+            "Events with role=\"triggering\" caused this execution and define the current work "
+            "that requires your response. Events with role=\"passive_context\" are earlier "
+            "readable context coalesced for continuity; consider them when relevant, but do not "
+            "mistake them for a new request.\n"
+            "</room_event_roles>\n\n"
+            if has_passive_context
+            else ""
+        )
         heading = "NEW TOPIC / ROUND TURN" if any(
             event["event_type"] == "round_start_turn" for event in events
         ) else "COALESCED ROOM EVENTS"
@@ -3281,7 +3301,7 @@ Unread event count: {len(events)}
 
 {chr(10).join(context_parts)}
 
-{chr(10).join(event_parts)}
+{event_role_instruction}{chr(10).join(event_parts)}
 
 {self.DETERMINISTIC_CAPABILITY_INSTRUCTION}
 
