@@ -1734,12 +1734,14 @@ class RoomRuntime:
             for target in outcome["wake_agent_keys"]:
                 self.wake(batch["room_id"], target)
             if outcome["task_failed"]:
-                await self._close_discussion(
-                    batch["room_id"],
-                    batch["round_id"],
-                    "transaction_failed",
-                    "Transaction task closed after a terminal coordinator assignment failure.",
-                )
+                current = await self.db.get_room(batch["room_id"])
+                if current and current["status"] == RoomStatus.RUNNING:
+                    await self._close_discussion(
+                        batch["room_id"],
+                        batch["round_id"],
+                        "transaction_failed",
+                        "Transaction task closed after a terminal coordinator assignment failure.",
+                    )
         await self.publish_state(batch["room_id"])
 
     async def _process_assignment(
@@ -2105,7 +2107,7 @@ class RoomRuntime:
             await self.ensure_workers(room_id)
             for target in settlement["wake_agent_keys"]:
                 self.wake(room_id, target)
-            if settlement["task_settled"]:
+            if settlement["task_settled"] and current["status"] == RoomStatus.RUNNING:
                 await self._close_discussion(
                     room_id,
                     batch["round_id"],
