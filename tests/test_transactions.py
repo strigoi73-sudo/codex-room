@@ -502,3 +502,44 @@ async def test_transaction_pause_resume_uses_explicit_task_state_not_deliveries(
 
     assert len(adapter.calls["agent_c"]) == 2
     assert "A completed while paused." in adapter.calls["agent_c"][1]["prompt"]
+
+
+@pytest.mark.asyncio
+async def test_transaction_quiescent_reconciler_does_not_close_active_task_without_deliveries(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    runtime = await transaction_runtime_factory(adapter, "quiescence.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Explicit task is authoritative",
+            work_model_version=2,
+            auto_start=False,
+        )
+    )
+    room_id = snapshot["id"]
+    round_id = snapshot["active_round_id"]
+    await runtime.db.start_round(room_id, round_id)
+    origin = await runtime.db.create_event(
+        room_id,
+        "round_start_turn",
+        "room",
+        "agent_c",
+        "Begin explicit transaction work.",
+        round_id=round_id,
+        discussion_id=round_id,
+    )
+    await runtime.db.create_transaction_task(
+        room_id,
+        round_id,
+        origin["id"],
+        "agent_c",
+    )
+
+    closed = await runtime._reconcile_quiescent_room(room_id, round_id)
+
+    assert closed is False
+    room = await runtime.db.get_room(room_id)
+    assert room is not None
+    assert room["status"] == RoomStatus.RUNNING
+    assert await runtime.db.has_active_transaction_task(room_id, round_id)
