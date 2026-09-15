@@ -1,6 +1,6 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-14  
+**Last updated:** 2026-09-15  
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.  
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
@@ -187,7 +187,7 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 **Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075  
 **Current gate:** deploy/use the verified C-selected peer-execution capability in representative real work; no further dedicated paid synthetic benchmarks.
 
-The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of five admitted model/effort configurations for that peer execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
+The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of four admitted model/effort configurations for that peer execution. D-028 hard-prohibits Astra execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
 
 E-070 established that the former 0.147 runtime exposed Sol, Terra, Luna, and GPT-5.5 through its SDK catalog while the principal's desktop Codex UI visibly exposed Astra. E-071 advanced the canonical SDK/runtime standard to the matched published 0.154.0 pair, verified with 327 tests on exact PR and canonical-main commits. E-072 then live-verified the local 0.154.0 runtime and confirmed the same SDK now exposes `gpt-6-astra`. This dependency upgrade does **not** change production model selection.
 
@@ -196,7 +196,8 @@ The two paid synthetic matrices are complete under E-073/E-074. Routine structur
 P1 now proceeds by representative real work only:
 
 - deploy/use the E-075 capability in normal Rooms rather than creating more paid benchmark Rooms;
-- C should prefer `luna-medium` for routine bounded delegated work and deliberately choose a stronger admitted configuration only when complexity, uncertainty, risk, or prior verification trouble provides an affirmative reason;
+- C should prefer `luna-medium` for routine bounded delegated work and deliberately choose a stronger admitted Terra or Sol configuration only when complexity, uncertainty, risk, or prior verification trouble provides an affirmative reason;
+- Astra is prohibited by D-028 and is not an admissible execution configuration; the runtime must fail closed if an Astra turn is attempted;
 - A/B should request escalation from C when the assigned work appears underpowered rather than silently self-routing;
 - collect the already-persisted model/effort/usage facts and normal verification outcomes from work the principal actually wanted completed;
 - avoid duplicate model calls solely to compare models; use deterministic checks and already-required independent review where they naturally exist;

@@ -461,6 +461,21 @@ async def test_run_agent_uses_explicit_per_turn_model_and_effort(tmp_path: Path)
 
 
 @pytest.mark.asyncio
+async def test_run_agent_rejects_prohibited_astra_model(tmp_path: Path):
+    adapter = CodexAgentAdapter()
+    agent = {"id": "agent-one", "thread_id": "thread-one"}
+
+    with pytest.raises(ValueError, match="prohibited for Codex Room execution"):
+        await adapter.run_agent(
+            agent,
+            tmp_path,
+            "prompt",
+            model="gpt-6-astra",
+            reasoning_effort="medium",
+        )
+
+
+@pytest.mark.asyncio
 async def test_completed_turn_with_different_id_cannot_satisfy_execution(tmp_path: Path):
     adapter = CodexAgentAdapter()
     adapter._client = object()

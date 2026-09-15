@@ -19,6 +19,13 @@ from .models import AgentDecision, DECISION_SCHEMA
 
 ROOM_MODEL = "gpt-5.6-terra"
 ROOM_REASONING_EFFORT = "high"
+PROHIBITED_ROOM_MODELS = frozenset({"gpt-6-astra"})
+
+
+def _assert_room_model_allowed(model: str) -> None:
+    if model in PROHIBITED_ROOM_MODELS:
+        raise ValueError(f"Model {model!r} is prohibited for Codex Room execution")
+
 ROOM_CODEX_CONFIG_OVERRIDES = (
     f'model="{ROOM_MODEL}"',
     f'model_reasoning_effort="{ROOM_REASONING_EFFORT}"',
@@ -154,6 +161,7 @@ class CodexAgentAdapter:
         from openai_codex import Sandbox
 
         self._require_client()
+        _assert_room_model_allowed(ROOM_MODEL)
         cwd.mkdir(parents=True, exist_ok=True)
         thread = await self._client.thread_start(
             cwd=str(cwd),
@@ -179,6 +187,7 @@ class CodexAgentAdapter:
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
     ) -> AgentRunResult:
+        _assert_room_model_allowed(model)
         thread = await self._get_thread(agent, cwd)
         usage_continuation = agent["id"] in self._usage_continuation_agents
         self._usage_continuation_agents.discard(agent["id"])

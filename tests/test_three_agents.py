@@ -1574,6 +1574,13 @@ def test_invoke_targets_validation_and_room_membership() -> None:
                 {"target": "agent_a", "config": "terra-high"},
             ],
         )
+    with pytest.raises(ValidationError):
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="Astra is prohibited",
+            invoke_targets=["agent_a"],
+            execution_configs=[{"target": "agent_a", "config": "astra-medium"}],
+        )
 
     decision = AgentDecision(
         outcome=Outcome.MESSAGE,
