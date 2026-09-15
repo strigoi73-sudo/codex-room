@@ -224,7 +224,8 @@ class Database:
                     agent_b_overlay TEXT,
                     close_reason TEXT,
                     last_activity_at TEXT,
-                    work_model_version INTEGER NOT NULL DEFAULT 1
+                    work_model_version INTEGER NOT NULL DEFAULT 1,
+                    required_contributors_json TEXT NOT NULL DEFAULT '[]'
                 );
 
                 CREATE TABLE IF NOT EXISTS round_agent_state (
@@ -389,6 +390,7 @@ class Database:
             await self._ensure_column(db, "rounds", "participant_private_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "participant_overlays_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "work_model_version", "INTEGER NOT NULL DEFAULT 1")
+            await self._ensure_column(db, "rounds", "required_contributors_json", "TEXT NOT NULL DEFAULT '[]'")
             await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
             await self._ensure_column(
                 db,
@@ -859,8 +861,8 @@ class Database:
             await db.execute(
                 """INSERT INTO rounds
                    (id, room_id, title, prompt, created_at, status, starting_agent,
-                    work_model_version)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -870,6 +872,7 @@ class Database:
                     RoundStatus.PREPARING,
                     request.starting_agent,
                     request.work_model_version,
+                    json.dumps(request.required_contributors),
                 ),
             )
             await db.executemany(
@@ -1722,8 +1725,8 @@ class Database:
                     agent_a_private, agent_b_private, task_overlay,
                     agent_a_overlay, agent_b_overlay,
                     participant_private_json, participant_overlays_json,
-                    work_model_version)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -1740,6 +1743,7 @@ class Database:
                     json.dumps(request.participant_private, ensure_ascii=False),
                     json.dumps(request.participant_overlays, ensure_ascii=False),
                     request.work_model_version,
+                    json.dumps(request.required_contributors),
                 ),
             )
             await db.executemany(
@@ -2264,6 +2268,7 @@ class Database:
         round_id: str,
         origin_event_id: str,
         starting_agent: str,
+        required_contributors: list[str] | None = None,
     ) -> dict[str, Any]:
         """Create the first explicit task/assignment graph for a version-2 Round."""
         now = utc_now()
@@ -2308,14 +2313,15 @@ class Database:
             await db.execute(
                 """INSERT INTO tasks
                    (id, room_id, round_id, origin_event_id, coordinator_agent_id,
-                    state, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, 'active', ?, ?)""",
+                    state, required_contributors_json, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?)""",
                 (
                     task_id,
                     room_id,
                     round_id,
                     origin_event_id,
                     coordinator["id"],
+                    json.dumps(required_contributors or []),
                     now,
                     now,
                 ),
@@ -4519,6 +4525,9 @@ class Database:
         result = dict(row)
         private = json.loads(result.pop("participant_private_json", "{}") or "{}")
         overlays = json.loads(result.pop("participant_overlays_json", "{}") or "{}")
+        required_contributors = json.loads(
+            result.pop("required_contributors_json", "[]") or "[]"
+        )
         # Preserve legacy A/B rows without synthesizing absent C configuration.
         for key in ("agent_a", "agent_b"):
             old_private = result.get(f"{key}_private")
@@ -4529,6 +4538,7 @@ class Database:
                 overlays[key] = old_overlay
         result["participant_private"] = private
         result["participant_overlays"] = overlays
+        result["required_contributors"] = required_contributors
         return result
 
     @staticmethod
