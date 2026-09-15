@@ -853,8 +853,9 @@ class Database:
             )
             await db.execute(
                 """INSERT INTO rounds
-                   (id, room_id, title, prompt, created_at, status, starting_agent)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                   (id, room_id, title, prompt, created_at, status, starting_agent,
+                    work_model_version)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -863,6 +864,7 @@ class Database:
                     now,
                     RoundStatus.PREPARING,
                     request.starting_agent,
+                    request.work_model_version,
                 ),
             )
             await db.executemany(
@@ -1714,8 +1716,9 @@ class Database:
                    (id, room_id, title, prompt, created_at, status, starting_agent,
                     agent_a_private, agent_b_private, task_overlay,
                     agent_a_overlay, agent_b_overlay,
-                    participant_private_json, participant_overlays_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    participant_private_json, participant_overlays_json,
+                    work_model_version)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -1731,6 +1734,7 @@ class Database:
                     request.agent_b_overlay,
                     json.dumps(request.participant_private, ensure_ascii=False),
                     json.dumps(request.participant_overlays, ensure_ascii=False),
+                    request.work_model_version,
                 ),
             )
             await db.executemany(
