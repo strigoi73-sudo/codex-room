@@ -26,6 +26,7 @@ from .models import (
     RolloverRoomRequest,
     RoomStatus,
     RoundStatus,
+    EXECUTION_CONFIGS,
 )
 
 
@@ -222,7 +223,8 @@ class Database:
                     agent_a_overlay TEXT,
                     agent_b_overlay TEXT,
                     close_reason TEXT,
-                    last_activity_at TEXT
+                    last_activity_at TEXT,
+                    work_model_version INTEGER NOT NULL DEFAULT 1
                 );
 
                 CREATE TABLE IF NOT EXISTS round_agent_state (
@@ -240,6 +242,7 @@ class Database:
                     room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
                     agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
                     round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+                    assignment_id TEXT REFERENCES assignments(id),
                     lifecycle_version INTEGER NOT NULL,
                     worker_generation INTEGER NOT NULL,
                     model TEXT,
@@ -325,7 +328,9 @@ class Database:
             await self._ensure_column(db, "rounds", "last_activity_at", "TEXT")
             await self._ensure_column(db, "rounds", "participant_private_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "participant_overlays_json", "TEXT NOT NULL DEFAULT '{}'")
+            await self._ensure_column(db, "rounds", "work_model_version", "INTEGER NOT NULL DEFAULT 1")
             await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
+            await self._ensure_column(db, "agent_executions", "assignment_id", "TEXT")
 
             now = utc_now()
             await db.executemany(
