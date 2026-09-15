@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import codex_room.maintenance as maintenance
 from codex_room.maintenance import (
     MaintenanceError,
     check_data_root,
@@ -181,3 +182,38 @@ def test_payload_symlink_is_rejected_when_supported(tmp_path: Path) -> None:
 
     with pytest.raises(MaintenanceError, match="symlink|reparse"):
         check_data_root(root)
+
+
+def test_restore_rolls_back_if_candidate_swap_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _make_data_root(tmp_path / "data")
+    backup = Path(create_backup(root, offline_confirmed=True)["backup"])
+    connection = sqlite3.connect(root / "codex-room.db")
+    connection.execute("UPDATE parent SET value='current' WHERE id=1")
+    connection.commit()
+    connection.close()
+
+    real_replace = maintenance.os.replace
+    calls = 0
+
+    def fail_candidate_swap(source, destination):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise OSError("simulated candidate swap failure")
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(maintenance.os, "replace", fail_candidate_swap)
+
+    with pytest.raises(OSError, match="simulated candidate swap failure"):
+        restore_backup(
+            backup,
+            root,
+            offline_confirmed=True,
+            confirm_replace_data=True,
+        )
+
+    assert _database_value(root) == "current"
+    assert not list(root.parent.glob(f".{root.name}.restore-*"))
+    assert not list(root.parent.glob(f".{root.name}.rollback-*"))
