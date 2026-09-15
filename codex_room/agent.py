@@ -70,6 +70,9 @@ class AgentAdapter(Protocol):
         prompt: str,
         on_started: Callable[[str, str], Awaitable[None]] | None = None,
         on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        model: str = ROOM_MODEL,
+        reasoning_effort: str = ROOM_REASONING_EFFORT,
     ) -> AgentRunResult: ...
 
     async def resume_agent(
@@ -172,6 +175,9 @@ class CodexAgentAdapter:
         prompt: str,
         on_started: Callable[[str, str], Awaitable[None]] | None = None,
         on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        model: str = ROOM_MODEL,
+        reasoning_effort: str = ROOM_REASONING_EFFORT,
     ) -> AgentRunResult:
         thread = await self._get_thread(agent, cwd)
         usage_continuation = agent["id"] in self._usage_continuation_agents
@@ -181,8 +187,8 @@ class CodexAgentAdapter:
         )
         handle = await thread.turn(
             prompt,
-            effort=ROOM_REASONING_EFFORT,
-            model=ROOM_MODEL,
+            effort=reasoning_effort,
+            model=model,
             output_schema=DECISION_SCHEMA,
         )
         return await self._consume_handle(

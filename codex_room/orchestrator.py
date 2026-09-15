@@ -50,6 +50,7 @@ from .models import (
     AgentStatus,
     BindInstitutionalReleaseRequest,
     CreateRoomRequest,
+    EXECUTION_CONFIGS,
     NewTopicRequest,
     ObserverMessageRequest,
     Outcome,
@@ -1656,6 +1657,11 @@ class RoomRuntime:
                         prompt,
                         on_started=bind_turn,
                         on_progress=progress,
+                        model=execution.get("model") or ROOM_MODEL,
+                        reasoning_effort=(
+                            execution.get("reasoning_effort")
+                            or ROOM_REASONING_EFFORT
+                        ),
                     ),
                     (room_id, agent_key),
                     generation,
@@ -1721,10 +1727,16 @@ class RoomRuntime:
             return
 
         try:
-            self._resolve_invoke_targets(
+            participants = await self.db.get_agents(room_id)
+            runnable_targets = self._resolve_invoke_targets(
                 result.decision,
                 agent["agent_key"],
-                await self.db.get_agents(room_id),
+                participants,
+            )
+            self._resolve_execution_configs(
+                result.decision,
+                agent["agent_key"],
+                runnable_targets,
             )
         except ValueError as exc:
             await self._handle_turn_failure(
@@ -2098,6 +2110,11 @@ class RoomRuntime:
             for target in requested_runnable_targets
             if not (defer_c_return and target == "agent_c")
         )
+        resolved_execution_configs = self._resolve_execution_configs(
+            decision,
+            agent_key,
+            requested_runnable_targets,
+        )
         peer_keys = tuple(item["agent_key"] for item in peers)
         ready_peers = {
             item["agent_key"] for item in peers if item["status"] == AgentStatus.READY_TO_FINISH
@@ -2118,6 +2135,15 @@ class RoomRuntime:
                     "passive_event_ids": batch["passive_event_ids"],
                     "batch_id": batch["batch_id"],
                     "invoke_targets": decision.invoke_targets,
+                    "execution_configs": (
+                        [
+                            selection.model_dump(mode="json")
+                            for selection in decision.execution_configs
+                        ]
+                        if decision.execution_configs is not None
+                        else None
+                    ),
+                    "resolved_execution_configs": resolved_execution_configs,
                     "readable_recipients": list(peer_keys),
                     "requested_runnable_recipients": list(requested_runnable_targets),
                     "runnable_recipients": list(runnable_targets),
@@ -2500,6 +2526,39 @@ class RoomRuntime:
             )
         requested_set = set(requested)
         return tuple(key for key in peer_keys if key in requested_set)
+
+    @staticmethod
+    def _resolve_execution_configs(
+        decision: AgentDecision,
+        sender_key: str,
+        runnable_targets: tuple[str, ...],
+    ) -> dict[str, dict[str, str]]:
+        """Resolve C's bounded per-invocation cognition choices to exact SDK settings."""
+        if (
+            decision.outcome != Outcome.MESSAGE
+            or sender_key != "agent_c"
+            or not decision.execution_configs
+        ):
+            return {}
+        requested = {
+            selection.target: selection.config
+            for selection in decision.execution_configs
+        }
+        unauthorized = set(requested) - set(runnable_targets)
+        if unauthorized:
+            raise ValueError(
+                "execution_configs may name only peers C is invoking now: "
+                + ", ".join(sorted(unauthorized))
+            )
+        resolved: dict[str, dict[str, str]] = {}
+        for target, config_id in requested.items():
+            model, effort = EXECUTION_CONFIGS[config_id]
+            resolved[target] = {
+                "config_id": config_id,
+                "model": model,
+                "reasoning_effort": effort,
+            }
+        return resolved
 
     async def _schedule_c_integration_if_needed(
         self, room_id: str, round_id: str
@@ -3132,7 +3191,32 @@ Unread event count: {len(events)}
 
 {self.DETERMINISTIC_CAPABILITY_INSTRUCTION}
 
-Respond to this event according to your own judgment. Your final response must satisfy the Room's structured schema: outcome MESSAGE, PASS, or FINISH; message text; and invoke_targets. For MESSAGE, invoke_targets may be {available_peer_targets}, ["all"] for every peer, or [] for a public/readable message that should make no peer runnable. The message remains public/readable to every authorized peer, but only named invoke_targets become runnable. Use null to retain legacy all-peer invocation. For PASS or FINISH, set invoke_targets to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
+Respond to this event according to your own judgment. Your final response must satisfy the Room's structured schema: outcome MESSAGE, PASS, or FINISH; message text; invoke_targets; and execution_configs. For MESSAGE, invoke_targets may be {available_peer_targets}, ["all"] for every peer, or [] for a public/readable message that should make no peer runnable. The message remains public/readable to every authorized peer, but only named invoke_targets become runnable. Use null to retain legacy all-peer invocation.
+
+{self._execution_config_prompt(agent["agent_key"])}
+
+For MESSAGE, execution_configs is null or an array of target/config records, for example a record selecting agent_a with luna-medium. For PASS or FINISH, set invoke_targets and execution_configs to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
+
+    @staticmethod
+    def _execution_config_prompt(agent_key: str) -> str:
+        if agent_key != "agent_c":
+            return (
+                "Only Agent C may select peer execution_configs in this P1 trial. "
+                "Set execution_configs to null. If the assigned work appears to need "
+                "stronger cognition, report that to C in a MESSAGE and request escalation."
+            )
+        choices = ", ".join(EXECUTION_CONFIGS)
+        return (
+            "As Agent C, you may set execution_configs only for peers you are invoking "
+            "in this MESSAGE. Allowed bounded P1 configs are: "
+            f"{choices}. Prefer luna-medium for routine, bounded delegated work. "
+            "Choose a more expensive config only when complexity, uncertainty, risk, "
+            "or prior verification trouble gives an affirmative reason to spend more. "
+            "A peer may ask you to escalate later; you can redelegate with a stronger "
+            "config. If an invoked peer has no explicit execution_configs entry, the "
+            "compatibility fallback remains the current Terra/high policy. "
+            "Set execution_configs to null when no peer cognition is invoked."
+        )
 
     async def _system_event(
         self, room_id: str, event_type: str, content: str, status: str = "recorded"

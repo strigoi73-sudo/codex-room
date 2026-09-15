@@ -95,10 +95,19 @@ class FakeAgentAdapter:
         prompt: str,
         on_started: Callable[[str, str], Awaitable[None]] | None = None,
         on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        model: str = "gpt-5.6-terra",
+        reasoning_effort: str = "high",
     ) -> AgentRunResult:
         self._inactive_agents.discard(agent["agent_key"])
         self.calls[agent["agent_key"]].append(
-            {"thread_id": agent["thread_id"], "prompt": prompt, "cwd": str(cwd)}
+            {
+                "thread_id": agent["thread_id"],
+                "prompt": prompt,
+                "cwd": str(cwd),
+                "model": model,
+                "reasoning_effort": reasoning_effort,
+            }
         )
         if self.synchronize_first_topic and "NEW TOPIC" in prompt and len(self.calls[agent["agent_key"]]) == 1:
             self._topic_started += 1

@@ -2397,6 +2397,12 @@ class Database:
             if not rows:
                 await db.commit()
                 return None
+            selected_model, selected_effort = self._batch_execution_config(
+                rows,
+                agent_key,
+                default_model=model,
+                default_reasoning_effort=reasoning_effort,
+            )
             continuation_row = await self._fetchone(
                 db,
                 """SELECT * FROM usage_continuations
@@ -2437,8 +2443,8 @@ class Database:
                     agent["active_round_id"],
                     agent["lifecycle_version"],
                     worker_generation,
-                    model,
-                    reasoning_effort,
+                    selected_model,
+                    selected_effort,
                     now,
                 ),
             )
@@ -2521,6 +2527,29 @@ class Database:
             }
         )
         return result
+
+    @staticmethod
+    def _batch_execution_config(
+        rows: Iterable[aiosqlite.Row],
+        agent_key: str,
+        *,
+        default_model: str | None,
+        default_reasoning_effort: str | None,
+    ) -> tuple[str | None, str | None]:
+        """Use only the newest runnable event's explicit C-selected execution config."""
+        for row in reversed(list(rows)):
+            if not bool(row["delivery_runnable"]):
+                continue
+            metadata = json.loads(row["metadata_json"] or "{}")
+            resolved = metadata.get("resolved_execution_configs")
+            selected = resolved.get(agent_key) if isinstance(resolved, dict) else None
+            if isinstance(selected, dict):
+                model = selected.get("model")
+                effort = selected.get("reasoning_effort")
+                if isinstance(model, str) and isinstance(effort, str):
+                    return model, effort
+            break
+        return default_model, default_reasoning_effort
 
     async def has_open_delivery(
         self, room_id: str, agent_key: str, discussion_id: str
