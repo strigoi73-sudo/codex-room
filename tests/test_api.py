@@ -5,9 +5,43 @@ import time
 
 from fastapi.testclient import TestClient
 
+from codex_room.agent import ROOM_MODEL, ROOM_REASONING_EFFORT
 from codex_room.main import create_app
 
 from .fakes import FakeAgentAdapter
+
+
+def test_health_exposes_runtime_provenance_and_maintenance_state(tmp_path):
+    adapter = FakeAgentAdapter()
+    app = create_app(
+        database_path=tmp_path / "health.db",
+        data_root=tmp_path / "data",
+        adapter=adapter,
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/api/health")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["codex"] == {"authenticated": True, "provider": "fake"}
+
+    provenance = payload["provenance"]
+    assert provenance["application"]["version"] == "0.1.0"
+    assert len(provenance["application"]["source_fingerprint_sha256"]) == 64
+    assert provenance["runtime"]["python_version"]
+    assert "openai_codex_version" in provenance["runtime"]
+    assert provenance["room_policy"] == {
+        "model": ROOM_MODEL,
+        "reasoning_effort": ROOM_REASONING_EFFORT,
+    }
+
+    watchdog = payload["maintenance"]["watchdog"]
+    assert watchdog["status"] in {"starting", "healthy"}
+    assert watchdog["failure_count"] == 0
+    assert watchdog["consecutive_failures"] == 0
+    assert watchdog["last_error"] is None
 
 
 def test_http_create_state_and_exports(tmp_path):
