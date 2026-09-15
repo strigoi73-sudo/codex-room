@@ -54,6 +54,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-009` | Runtime provenance and maintenance health | Development Control |
 | `I-010` | Persistent-data operational maintenance | Development Control |
 | `I-011` | Verification-platform and dependency assurance | Development Control |
+| `I-012` | Authorized CORE and cross-Room read inspection | Development Control |
 
 ## 4. Decision and evidence identifiers
 
