@@ -1,6 +1,6 @@
 # Codex Room — Repository & Operations Reference
 
-**Last synthesized:** 2026-09-12  
+**Last synthesized:** 2026-09-14  
 **Scope:** Compact technical reference for source/runtime layout, maintenance boundaries, source-control workflow, recovery, and verification practices.  
 **Freshness:** Repository details are time-bounded. Prefer current live source and Git state when available.
 
@@ -58,11 +58,11 @@ Use the repository sources selectively rather than loading the full package by d
 
 Current clean-development procedure:
 
-1. create a Python virtual environment;
+1. use Python 3.11 or later and create a virtual environment;
 2. install with `python -m pip install -c constraints-test.txt ".[test]"`;
 3. run the canonical routine suite with `python -m pytest -q`.
 
-`constraints-test.txt` records the known-good application/test dependency set for routine development and CI while `pyproject.toml` retains broader supported ranges. Clean-environment verification collected and passed **129 tests**. `test-transcript-stability.ps1` remains a separate specialized browser check because it requires Node.js plus Chrome or Edge.
+`constraints-test.txt` records the known-good application/test dependency set for routine development and CI while `pyproject.toml` retains broader supported dependency ranges. The supported Python floor is 3.11+. Historical clean-environment evidence began at 129 tests; the latest code-bearing canonical-main verification recorded in E-063 passed **324 tests, 2 warnings**. `test-transcript-stability.ps1` remains a separate specialized browser check because it requires Node.js plus Chrome or Edge.
 
 Minimal CI lives at `.github/workflows/python-tests.yml`. It runs on pushes to `main` and pull requests targeting `main`, uses Python 3.12 on Ubuntu, grants `contents: read`, installs through `constraints-test.txt`, and runs the canonical pytest command. Commits or pull requests whose changed paths are entirely under `docs/project/**` are ignored by this Python-test workflow; mixed code + Project-document changes still run CI. Dependency upgrades should be deliberate changes to the constraint set rather than incidental resolver drift.
 
@@ -106,6 +106,7 @@ Important runtime locations still include:
 - `data/codex-room.db`
 - `data/rooms/`
 - `data/institutional/`
+- `data/custom-capabilities/`
 
 Generated/runtime data is not evidence of canonical source history merely because it exists under the project root.
 
@@ -114,10 +115,15 @@ Generated/runtime data is not evidence of canonical source history merely becaus
 Current canonical source includes these useful areas/symbols:
 
 - `codex_room/models.py` — `AgentDecision`, MESSAGE/PASS/FINISH schema, `invoke_targets`;
-- `codex_room/orchestrator.py` — routing/settlement, selective invocation, compaction policy, retry observability, usage-wall scheduling/watchdog;
-- `codex_room/db.py` — durable events/deliveries, compaction baseline persistence, `usage_continuations`, execution state;
-- `codex_room/agent.py` — persistent SDK-thread interaction, compaction completion checks, same-thread usage-continuation preparation;
-- `tests/` — regression coverage including selective routing, compaction baseline, usage-wall continuation, three-agent behavior, rollover, API, and institutional behavior.
+- `codex_room/personalities.py` — protected institutional/structural/protocol instruction composition and neutral default profile bodies;
+- `codex_room/orchestrator.py` — routing/settlement, D-026/D-027 invocation economy, delegation-cohort timing, compaction, retry/usage-wall recovery, maintenance watchdog;
+- `codex_room/db.py` — durable events/deliveries, profiles/Rounds, exact execution state, migrations, usage continuations, rollover state;
+- `codex_room/agent.py` — persistent SDK-thread interaction, fixed current model/effort boundary, exact-turn reconciliation, compaction and continuation preparation;
+- `codex_room/capabilities.py` — CORE deterministic registry, list/inspect/invoke surface, and minimal built-in library;
+- `codex_room/custom_capabilities.py`, `custom_capability_registration.py`, `custom_registry.py` — custom package validation, deterministic verification/publication, protected Room binding, unified custom discovery/invocation;
+- `codex_room/rollover.py` / rollover paths in runtime/database code — lineage continuation and exact inherited custom-capability bindings;
+- `Start-Codex-Room.cmd`, `Kill-Codex-Room.bat`, `codex-room-cap.cmd` — normal Windows launch/shutdown and agent capability wrapper;
+- `tests/` — regression coverage including routing/settlement, persistent execution recovery, profiles, capabilities, rollover, Windows launcher contracts, API, and UI behavior.
 
 Locate and inspect current definitions before consequential edits; this list is a navigation aid, not a substitute for source inspection.
 
@@ -172,7 +178,7 @@ Current implementation behavior, historically verified 2026-09-09:
 - stop/lifecycle changes cancel stale continuation work;
 - unrecognized retry formats fail closed.
 
-Exact-byte independent review of this P3 implementation remains pending but non-blocking.
+Current A2 source/test review retired the earlier exact-byte-review caveat for P3; see E-028. Later changes still require version-appropriate verification rather than inheriting that historical result automatically.
 
 ## 10. Historical external artifacts
 

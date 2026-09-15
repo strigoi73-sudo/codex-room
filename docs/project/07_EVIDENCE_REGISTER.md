@@ -2169,3 +2169,28 @@ Resulting work allocation:
 
 **Assessment:** A3 COMPLETE. Core runtime/coordination: GOOD. Housekeeping, operational observability, and model/effort economy: PARTIAL with bounded remediation work identified.
 
+### E-066 — I-007 environment/document truth and context-hygiene repair
+**Date:** 2026-09-14  
+**Scope:** [CORE metadata + documentation] first A3 remediation item.
+
+PR #57 repairs the concrete I-007 drift identified by E-065 without changing Room routing, model policy, agent cognition, or persistent runtime behavior.
+
+Changed contracts/synthesis:
+
+- `pyproject.toml` now declares Python **3.11+**, matching the current source runtime surface instead of advertising unsupported Python 3.10;
+- README now describes the SDK-pinned Codex runtime as the default, treats the current Terra/high configuration as implementation state rather than settled final economics, describes A/B/C replaceable profile bodies plus C's protected coordination structure, and delegates roadmap ownership to Development Control/Product Vision instead of maintaining a stale duplicate feature list;
+- Architecture & Current State is resynthesized through 2026-09-14, closes P4.5 using E-040, preserves the neutral-profile/protected-structure model, and points to E-064 as the latest D-027 live behavior;
+- Decision Register and Repository & Operations freshness/landmarks are updated to current maintained state, including the Python 3.11 floor, P4/custom-capability source landmarks, and the A2-retired P3 review caveat;
+- Development Control removes roughly **58.6 KB** of duplicated completed implementation/experiment narration, replacing it with a compact current-result table that points to the existing Decision/Evidence owners. Historical personality experiments remain preserved in E-042 through E-057 rather than being duplicated in the volatile control document.
+
+Exact PR-head verification before closeout documentation:
+
+- PR #57 head: `ab70c6dec2fb650fc32797ac3ce9ab45d0b7a7eb`;
+- GitHub Actions run `34916314320`;
+- constrained installation completed successfully under the corrected package metadata;
+- the canonical `python -m pytest -q` step completed successfully.
+
+**Evidence boundary:** the Python support-floor repair declares 3.11+ based on the current source/runtime contract; CI continues to execute Python 3.12 only. Cross-version/cross-platform matrix expansion belongs to I-011, not I-007.
+
+**Status:** I-007 COMPLETE on the reviewed PR branch, pending merge/canonical-main confirmation.
+
