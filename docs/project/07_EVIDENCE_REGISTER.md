@@ -2798,7 +2798,14 @@ The implementation deliberately treats cumulative usage as authoritative for a c
 
 Exact implementation head `5a4473b6718ac2cec6e0396d8a7ad02ef22f6b40` passed **356 tests, 3 warnings** in GitHub Actions run `34991882483`. The extra warning did not fail the suite and belongs to the already-known test-platform warning/nondeterminism surface rather than an extractor assertion failure.
 
-Evidence boundary: deterministic extraction behavior is verified on the PR head. A real local Desktop rollout should be sampled only when useful comparison work is ready; no paid/model smoke is necessary merely to prove the parser.
+Final canonical verification:
 
-**Status:** IMPLEMENTED / VERIFIED on PR #65 implementation head; final PR/canonical-main verification pending.
+- final exact PR #65 head `5ce7c769561ebf303b52a7ef59c660a96e992375` passed **356 tests, 2 warnings** in GitHub Actions run `34992234417`;
+- PR #65 squash-merged as `8d1851ca74c2e69dd5085e8ac47134011653ba70`;
+- final PR head and merge commit carry the exact same Git tree `7b5a8f3af71588bb1f6545ad0deed6409a7bc8b4`;
+- canonical-`main` run `34992448459` passed **356 tests, 2 warnings** on that exact merge commit.
+
+Evidence boundary: deterministic extraction behavior is verified on canonical `main`. A real local Desktop rollout should be sampled only when useful comparison work is ready; no paid/model smoke is necessary merely to prove the parser.
+
+**Status:** IMPLEMENTED / VERIFIED on canonical `main`; useful-work comparison evidence pending.
 
