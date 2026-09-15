@@ -4082,6 +4082,109 @@ class Database:
         assert row is not None
         return self._decode_usage_continuation(row)
 
+    async def suspend_transaction_usage_continuation(
+        self,
+        batch: dict[str, Any],
+        agent: dict[str, Any],
+        *,
+        reported_retry_at: str,
+        wake_at: str,
+        diagnostic: str,
+        worker_generation: int,
+    ) -> dict[str, Any] | None:
+        """Park one exact version-2 assignment execution until the provider reset."""
+        now = utc_now()
+        continuation_id = new_id("usage")
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            current = await self._fetchone(
+                db,
+                """SELECT r.status, r.active_round_id, r.lifecycle_version,
+                          a.thread_id, x.state AS assignment_state
+                   FROM rooms r
+                   JOIN agents a ON a.room_id=r.id
+                   JOIN assignments x ON x.id=?
+                   WHERE r.id=? AND a.id=? AND x.agent_id=a.id""",
+                (batch["assignment_id"], batch["room_id"], agent["id"]),
+            )
+            execution = await self._fetchone(
+                db,
+                "SELECT state, assignment_id FROM agent_executions WHERE batch_id=?",
+                (batch["batch_id"],),
+            )
+            if (
+                current is None
+                or execution is None
+                or current["status"] != RoomStatus.RUNNING
+                or current["active_round_id"] != batch["round_id"]
+                or current["lifecycle_version"] != batch["lifecycle_version"]
+                or current["thread_id"] != agent["thread_id"]
+                or current["assignment_state"] != "running"
+                or execution["assignment_id"] != batch["assignment_id"]
+                or execution["state"] not in {"active", "recovering"}
+            ):
+                await db.rollback()
+                return None
+            cursor = await db.execute(
+                """UPDATE agent_executions
+                   SET state='usage_suspended', error=?, last_reconciled_at=?
+                   WHERE batch_id=? AND state IN ('active','recovering')""",
+                (diagnostic[:4000], now, batch["batch_id"]),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                return None
+            await db.execute(
+                """INSERT INTO usage_continuations
+                   (id, room_id, agent_id, thread_id, source_batch_id,
+                    assignment_id, round_id, lifecycle_version, worker_generation,
+                    input_event_ids_json, triggering_event_ids_json,
+                    reported_retry_at, wake_at, state, created_at, updated_at, last_error)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', '[]', ?, ?,
+                           'scheduled', ?, ?, ?)
+                   ON CONFLICT(agent_id) DO UPDATE SET
+                     thread_id=excluded.thread_id,
+                     source_batch_id=excluded.source_batch_id,
+                     assignment_id=excluded.assignment_id,
+                     round_id=excluded.round_id,
+                     lifecycle_version=excluded.lifecycle_version,
+                     worker_generation=excluded.worker_generation,
+                     input_event_ids_json='[]',
+                     triggering_event_ids_json='[]',
+                     reported_retry_at=excluded.reported_retry_at,
+                     wake_at=excluded.wake_at,
+                     state='scheduled', continuation_batch_id=NULL,
+                     reschedule_count=usage_continuations.reschedule_count+1,
+                     updated_at=excluded.updated_at, fired_at=NULL,
+                     completed_at=NULL, last_error=excluded.last_error""",
+                (
+                    continuation_id,
+                    batch["room_id"],
+                    agent["id"],
+                    agent["thread_id"],
+                    batch["batch_id"],
+                    batch["assignment_id"],
+                    batch["round_id"],
+                    batch["lifecycle_version"],
+                    worker_generation,
+                    reported_retry_at,
+                    wake_at,
+                    now,
+                    now,
+                    diagnostic[:4000],
+                ),
+            )
+            await db.execute(
+                "UPDATE agents SET status=?, last_error=NULL, updated_at=? WHERE id=?",
+                (AgentStatus.USAGE_SUSPENDED, now, agent["id"]),
+            )
+            row = await self._fetchone(
+                db, "SELECT * FROM usage_continuations WHERE agent_id=?", (agent["id"],)
+            )
+            await db.commit()
+        assert row is not None
+        return self._decode_usage_continuation(row)
+
     async def release_due_usage_continuations(
         self, room_id: str, now: str
     ) -> list[dict[str, Any]]:
