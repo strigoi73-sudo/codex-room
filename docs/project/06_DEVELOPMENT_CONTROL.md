@@ -225,7 +225,7 @@ Before implementation, resolve at least: whether purchased credits form a distin
 
 ### I-007 — Environment and documentation truth drift
 **Work state:** COMPLETE  
-**Reality / evidence:** IMPLEMENTED / VERIFIED on PR #57  
+**Reality / evidence:** IMPLEMENTED / VERIFIED on canonical `main`  
 **Evidence:** E-065, E-066  
 **Priority:** CLOSED / first A3 remediation item
 
@@ -238,7 +238,7 @@ A3 found multiple low-risk truth/maintenance defects:
 - Development Control retains substantial completed experimental narration already owned by durable decision/evidence sources, increasing routine retrieval/context cost;
 - Repository & Operations has not yet been refreshed for major later architecture such as P4 and current routing/profile behavior.
 
-Repair completed on PR #57. The owning sources were updated in place rather than adding a new documentation layer; completed experimental detail remains in its Decision/Evidence owners, and Development Control is again a compact volatile control surface.
+Repair completed through PR #57 and canonical-main verification. The owning sources were updated in place rather than adding a new documentation layer; completed experimental detail remains in its Decision/Evidence owners, and Development Control is again a compact volatile control surface.
 
 ### I-008 — Repository branch hygiene
 **Work state:** PLANNED  
