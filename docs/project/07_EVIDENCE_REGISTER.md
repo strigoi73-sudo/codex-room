@@ -2733,3 +2733,41 @@ Interpretation:
 
 **Status:** I-010 repository investigation useful; claimed A/B allocation INVALID; I-013 IMPLEMENTED / VERIFIED on canonical `main`; next useful Room should monitor for recurrence.
 
+### E-081 — I-010 tool-loop amplification and deterministic retrieval economy
+**Date:** 2026-09-15  
+**Scope:** [ROOM / CORE / P1] Operating-economics evidence and I-014 bounded remediation.
+
+The principal observed roughly **19% of the five-hour Codex allowance** consumed during the recent hour that included I-012 live verification and the repository-grounded I-010 investigation. That allowance reading is an aggregate provider meter and does not by itself attribute exact percentages to individual turns.
+
+The I-010 Room export and C's same-thread retrospective establish a concrete amplification mechanism:
+
+- the initial I-010 C turn reported **2,549,213 total tokens**: 2,534,360 input, 2,391,296 cached input, 14,853 output, and 6,165 reasoning-output tokens;
+- no context-compaction activity occurred during that turn;
+- C deliberately spawned two temporary SDK workers with full-history forks, explicitly selecting Luna/medium for the bounded persistence audit and Terra/medium for the lifecycle/restore audit; both returned materially useful results, so this evidence does not establish that temporary helpers themselves were wasteful;
+- C then performed 27 direct `inspect_source` invocations: 3 source-discovery attempts, 2 find attempts, 11 search attempts, and 11 reads;
+- 22 inspection invocations succeeded and 5 failed on avoidable request/contract mistakes;
+- because Windows command-line JSON was fragile, C also performed **27 `apply_patch` operations** against four temporary JSON request files solely to feed those 27 inspections; the files were not I-010 work product;
+- C's retrospective therefore identifies 58 direct actions across two worker spawns, registry list/inspect, 27 request-file edits, and 27 source invocations, before counting provider-internal continuation boundaries not separately exposed;
+- after receiving useful delegated research, C independently inspected substantial overlapping persistence/lifecycle evidence rather than limiting itself to consequential spot checks.
+
+Interpretation: the demonstrated expensive problem is **tool-loop/context amplification**. A mechanical evidence lookup could require a request-file write plus a capability invocation, and repeated small reads/searches repeatedly returned control to the model while prior tool context accumulated. This is a more concrete P1/P2 operating-economics problem than further synthetic model-ranking work.
+
+I-014 implements the bounded remediation:
+
+- `inspect_source` advances to version 2 and adds `search_many` (up to 16 known literal queries in one bounded source scan) plus `read_many` (up to 16 bounded ranges with a shared 128-KiB output ceiling);
+- `codex-room-cap source ...` provides a JSON-free scalar CLI for sources/find/search/search-many/read/read-many while translating into the same registered `inspect_source` handler and preserving its path confinement, symlink/reparse rejection, source allowlists, output bounds, no-write permissions, and transient raw-content contract;
+- adapter telemetry recognizes the direct source CLI as `deterministic_capability`, including structured failure attribution, without persisting transient search excerpts/read content;
+- protected agent instructions tell participants to prefer bounded batching/direct source retrieval when related lookups are already known, while avoiding speculative batches whose need depends on prior results;
+- C's structural instructions now require evidence-backed delegated research to be integrated normally, with independent re-inspection limited to consequential uncertainty, contradiction, risk, or verification needs rather than broad reassurance-driven repetition;
+- each settled execution now emits one mechanical/status `execution_economics` event derived from already-available usage/activity data: tool/activity counts, failed-tool and capability-failure counts, file changes, context compactions, subagent-activity count, peer-invocation count, available token fields, failed-tool fraction, and tokens-per-tool-call. No new metrics database or quota/enforcement mechanism is introduced.
+
+Verification history:
+
+- the first PR #64 run exposed one stale test that still expected `inspect_source` version 1; all other tests passed (**348 passed, 1 failed, 2 warnings**);
+- after updating that exact assertion, head `7a7d0b5f724e280db9dc3f2a595dd33501ce3722` passed **350 tests, 2 warnings** in run `34986727410`;
+- the later exact implementation head `0f075bd5ea5fa408a1c0e94606d74e85513e44c4`, including explicit status classification for execution-economics telemetry, passed **350 tests, 2 warnings** in run `34986799530`.
+
+Evidence boundary: deterministic implementation and PR-head verification are complete. Canonical-main verification remains pending until PR #64 is finalized and merged. No dedicated paid Room smoke is warranted; the next useful Room can provide naturalistic evidence on whether direct/batched retrieval reduces file-change/tool-loop amplification.
+
+**Status:** I-014 IMPLEMENTED / VERIFIED on PR #64 head; canonical-main verification pending.
+
