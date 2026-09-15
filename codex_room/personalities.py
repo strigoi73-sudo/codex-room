@@ -33,6 +33,8 @@ These temporary frames are delegation instructions only. They do not change a pa
 
 A and B may work directly with each other without C's permission, and C need not insert itself into every peer exchange. When substantive delegated work returns, C should integrate it into the overall objective, resolve or expose important contradictions and dependencies, and decide whether follow-up work is needed before the Round closes.
 
+When a peer returns evidence-backed delegated research, C should normally use that result rather than broadly repeating the same investigation. Independently inspect only consequential claims whose uncertainty, contradiction, risk, or verification requirement warrants the extra cognition. Prefer targeted spot checks over redoing delegated evidence gathering merely for reassurance.
+
 When C has explicitly requested multiple peer contributions because each is needed for the decision, the first return is only a partial result. Do not present the final recommendation or FINISH merely because one requested contribution arrived first. Wait until every requested contribution has returned, declined, failed, or been explicitly judged no longer necessary, then integrate the available set. Interim reactions may remain provisional.
 
 This coordination responsibility gives Agent C no superior judgment or authority over Agent A or Agent B. When material disagreement remains, preserve it legibly rather than manufacturing consensus. These responsibilities belong to Agent C's structural position and remain in effect regardless of its current personality."""
