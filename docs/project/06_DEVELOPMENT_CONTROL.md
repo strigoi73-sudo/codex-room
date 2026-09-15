@@ -7,19 +7,20 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** A clean household-move Room live-verified D-026: C invoked both peers with meaningfully differentiated assignments and integrated complementary outputs. The same trace exposed a broader routing inefficiency when B made A runnable after posting an already-public return, causing an extra A review and C reopen. D-027 now defines invocation as a purchase of immediate cognition, not visibility. See E-062.
+- **What just changed?** A fresh science-fair Room live-verified D-027. C differentiated A/B work; A used `invoke_targets: []`; B targeted only C; neither peer woke the other; the delegation cohort integrated once; and no reopen cascade occurred. See E-064.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Run one fresh Room to confirm peers no longer wake each other merely for visibility while preserving direct collaboration when extra cognition is actually needed.
+- **What is next?** No new implementation slice is currently selected. D-027 is live verified. Choose the next priority deliberately; D-019 daily usage pacing remains approved and planned but unscheduled.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### Room-wide invocation economy
-**Work state:** COMPLETE for implementation; MONITOR for live compliance  
-**Reality:** IMPLEMENTED / VERIFIED deterministically  
+**Work state:** COMPLETE  
+**Follow-up:** MONITOR through ordinary use  
+**Reality:** IMPLEMENTED / LIVE VERIFIED  
 **Decision:** D-027  
-**Evidence:** E-062, E-063
+**Evidence:** E-062, E-063, E-064
 
 D-027 generalizes the token-economy rule to every use of `invoke_targets`:
 
@@ -32,7 +33,7 @@ D-027 generalizes the token-economy rule to every use of `invoke_targets`:
 
 PR #55 / E-063 verify the shared protocol and explicit no-wake routing primitive. `invoke_targets: []` publishes a public/readable MESSAGE with no runnable peers; `null` remains the legacy all-peer fanout. No scheduler or UI redesign was required.
 
-Live compliance remains a MONITOR item: confirm in a fresh Room that peers normally return bounded delegated work to C without waking each other merely for visibility, while still invoking direct peer cognition when it materially improves the work.
+E-064 provides the fresh-Room live pass. C differentiated A/B work; A returned with no runnable peer; B targeted only C; neither peer woke the other; one cohort trigger caused one C integration turn; and the earlier E-062 review/reopen cascade did not recur. No further dedicated D-027 test is warranted. Monitor ordinary use for regressions or cases where direct A/B invocation is genuinely useful.
 
 ### C peer-allocation economy and temporary cognitive framing
 **Work state:** COMPLETE  
@@ -97,12 +98,12 @@ D-025 now authorizes an initial semantic form of dynamic cognitive framing throu
 ## Recently completed work
 
 ### D-027 room-wide invocation economy
-**Work state:** COMPLETE for implementation  
-**Reality / evidence:** IMPLEMENTED / VERIFIED deterministically — 2026-09-14  
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / LIVE VERIFIED — 2026-09-14  
 **Decision:** D-027  
-**Evidence:** E-062, E-063
+**Evidence:** E-062, E-063, E-064
 
-PR #55 makes invocation an explicit purchase of immediate cognition for all participants and adds `invoke_targets: []` as a public/readable no-wake MESSAGE. Corrected PR-head and canonical-main suites both passed **324 tests, 2 warnings**.
+PR #55 makes invocation an explicit purchase of immediate cognition for all participants and adds `invoke_targets: []` as a public/readable no-wake MESSAGE. Corrected PR-head and canonical-main suites both passed **324 tests, 2 warnings**. E-064 then live-verified the intended economy in a fresh science-fair Room: no A↔B visibility wake, one cohort integration turn, and no reopen cascade.
 
 
 ### D-026 live behavioral verification
@@ -832,4 +833,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question blocks the current personality-design work. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. I-004 is closed. The former protected-institutional-layer design concern is resolved by D-023 / E-041; the open question is now the exact content and empirical differentiation quality of the three standard default personalities.
+No high-priority open question currently blocks work. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-027 is complete and live verified; the next implementation slice has not yet been selected.
