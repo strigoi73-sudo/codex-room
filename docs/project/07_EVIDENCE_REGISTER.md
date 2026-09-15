@@ -3184,5 +3184,7 @@ Verification:
 
 Evidence boundary: CI verifies launcher contents/sequencing and the existing browser UI suite; it does not physically exercise the principal's exact installed Chrome window/tab topology. The previous E-089 claim that Restart intentionally requests browser-window closure is **SUPERSEDED** by this correction. Local principal confirmation of the new retained-tab restart behavior remains useful naturalistic verification.
 
-**Status:** browser-preserving restart correction IMPLEMENTED / VERIFIED on canonical `main`; local principal confirmation pending.
+**Local principal confirmation:** after pulling the correction, the principal ran `Restart-Codex-Room.bat` on the Personal Windows installation and confirmed that the existing Chrome window/tab remained open and Codex Room recovered successfully after restart.
+
+**Status:** browser-preserving restart correction IMPLEMENTED / VERIFIED on canonical `main` / LOCALLY CONFIRMED.
 
