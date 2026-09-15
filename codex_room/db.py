@@ -335,6 +335,7 @@ class Database:
                     agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
                     thread_id TEXT NOT NULL,
                     source_batch_id TEXT NOT NULL,
+                    assignment_id TEXT REFERENCES assignments(id),
                     round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
                     lifecycle_version INTEGER NOT NULL,
                     worker_generation INTEGER NOT NULL,
@@ -395,6 +396,12 @@ class Database:
             await self._ensure_column(
                 db,
                 "agent_executions",
+                "assignment_id",
+                "TEXT REFERENCES assignments(id)",
+            )
+            await self._ensure_column(
+                db,
+                "usage_continuations",
                 "assignment_id",
                 "TEXT REFERENCES assignments(id)",
             )
