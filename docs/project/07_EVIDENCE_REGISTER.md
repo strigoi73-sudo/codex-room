@@ -2200,3 +2200,80 @@ Merge/canonical-main confirmation:
 
 **Status:** I-007 COMPLETE / IMPLEMENTED / VERIFIED on canonical `main`.
 
+### E-067 — I-008 repository branch-hygiene preflight
+**Date:** 2026-09-14  
+**Scope:** Read-only GitHub repository-state verification for the second A3 remediation item.
+
+Fresh canonical GitHub inspection after I-007 established:
+
+- canonical `main` at audit time: `03eef56b8836a96ba1e34169399d6f8c53abdc37`;
+- **56** non-`main` branches exist;
+- **all 56** names are heads of pull requests with non-null `merged_at`;
+- **zero** pull requests are open;
+- no non-`main` branch is the head of an open pull request;
+- repository setting `delete_branch_on_merge` remains `false`;
+- a ruleset read returned HTTP 403 with GitHub's message that this private repository requires GitHub Pro (or public visibility) for that feature.
+
+Verified safe-delete branch set:
+
+- `core/default-personality-redesign`
+- `core/personality-layer-composition`
+- `d020-c-delegation-settlement`
+- `d020-delegation-cohort-timing`
+- `d020-triad-migration`
+- `d023-temperament-only-defaults`
+- `d023-v6-2-personality-contracts`
+- `d023-v7-complementary-work-products`
+- `d024-neutral-default-agents`
+- `d025-c-temporary-cognitive-framing`
+- `d026-peer-economy-differentiation`
+- `d027-invocation-economy`
+- `docs-cg1-settlement-state`
+- `docs-d020-delegation-timing`
+- `docs-d020-timing-live-verified`
+- `docs-d023-calibration-monitor`
+- `docs-d023-coordination-gate`
+- `docs-d023-roleplay-personality-eval`
+- `docs-d023-v6-2-state`
+- `docs-d023-v7-state`
+- `docs-d024-neutral-default-verification`
+- `docs-d025-cognitive-framing-verification`
+- `docs-d026-peer-economy-verification`
+- `docs-d027-invocation-economy-verification`
+- `docs/default-personality-implementation`
+- `docs/personality-layer-governance`
+- `docs/personality-v4-evidence`
+- `docs/personality-v5-evidence`
+- `fix/early-triad-profile-migration`
+- `fix/i-001-complete-event-history`
+- `fix/p4-1-capability-shell-wrapper`
+- `fix/p4-1-sdk-activity-types`
+- `fix/p4-2-compact-list-test`
+- `fix/reproducible-test-deps`
+- `i-004-readme-triad-cleanup`
+- `i007-truth-context-hygiene`
+- `p4-1-deterministic-assertions`
+- `p4-2-capability-registry`
+- `p4-2-powershell-provenance`
+- `p4-2-registry-preference`
+- `p4-3a-capability-telemetry`
+- `p4-3b-find-files`
+- `p4-3c-search-text`
+- `p4-3d-compare-files`
+- `p4-3e-standalone-capability-invocations`
+- `p4-4a-custom-capability-package`
+- `p4-4b-verify-register-custom-capabilities`
+- `p4-4c-dynamic-custom-registry`
+- `p4-4d-agent-custom-capability-authoring`
+- `p4-4e-robust-capability-input-transport`
+- `p4-5-live-proof-closeout`
+- `p4-5a-lineage-binding-inheritance`
+- `p4-umbrella-closeout`
+- `personality-v4`
+- `personality-v5`
+- `support-kill-full-room-tree`
+
+The connected GitHub tool surface available to this Project exposes no branch-ref deletion action and no repository-settings write action. Therefore E-067 proves the safe deletion set and configuration gap but does not claim those mutations were performed.
+
+**Status:** I-008 IN PROGRESS. Mechanical operator action remains: delete the exact verified merged-branch set and enable automatic deletion of future merged PR branches. Minimal `main` protection is not currently available through the checked ruleset path on this private-repository plan and should not block branch cleanup.
+
