@@ -2406,3 +2406,40 @@ Evidence boundary:
 
 **Status:** Codex SDK/runtime 0.154.0 IMPLEMENTED / VERIFIED on canonical `main`; local live deployment verification pending.
 
+### E-072 — P1 local 0.154 deployment and Astra SDK exposure
+**Date:** 2026-09-15  
+**Scope:** [P1 exploratory / live local verification] Principal's Windows Codex Room after pulling/reinstalling/restarting canonical CORE.
+
+Live `/api/health` reported:
+
+- application source revision `3cfae1d7c730f38b85f2968fc07a2679f76b67ea`, matching canonical `main` at verification time;
+- `source_dirty=false`;
+- source fingerprint `41602ee1959273e0fe12cc39e564cc5fa8e7047435a1451735a50ef4bb3ccfd3`;
+- Python `3.12.10`;
+- `openai-codex==0.154.0`;
+- production Room policy unchanged at `gpt-5.6-terra` / `high`;
+- authenticated ChatGPT Plus account;
+- watchdog state `starting` immediately after restart with zero cumulative/consecutive failures and no recorded error. This capture occurred before the first watchdog cycle and therefore is not evidence of the later `healthy` state.
+
+The principal then ran the corrected **unfiltered** zero-turn `codex.models()` probe through the same local virtual environment. The complete visible catalog was:
+
+- `gpt-6-astra` — visible, SDK default, default effort `low`, supports `low`, `medium`, `high`, `xhigh`, `max`, `ultra`; `multi_agent_version=v2`;
+- `gpt-5.6-sol` — visible, default effort `low`, same six reasoning levels; `multi_agent_version=v2`;
+- `gpt-5.6-terra` — visible, default effort `medium`, same six reasoning levels; `multi_agent_version=v2`;
+- `gpt-5.6-luna` — visible, default effort `medium`, supports through `max` but not `ultra`; `multi_agent_version=v1`;
+- `gpt-5.5` — visible previous-generation comparator, default effort `medium`, supports `low` through `xhigh`.
+
+This resolves the earlier UI/SDK discrepancy: Astra access was present on the account, but the former 0.147 SDK/runtime did not expose it. The verified 0.154.0 standard does.
+
+First paid P1 admission matrix is therefore:
+
+1. Luna / medium;
+2. Terra / medium;
+3. Terra / high — current production baseline;
+4. Sol / medium;
+5. Astra / medium.
+
+Using `medium` across Luna/Terra/Sol/Astra isolates model-tier effects at one common effort; Terra `medium → high` separately measures the marginal value of the current extra reasoning spend. Astra `low` is intentionally deferred until Astra first demonstrates enough quality/economic value to justify a second-stage effort comparison.
+
+**Status:** P1 local runtime/catalog gate PASSED. Astra is admitted to the first paid comparison. No production model-selection policy changed.
+
