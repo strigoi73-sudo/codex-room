@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and **A3 — Whole-system housekeeping, efficiency, and operational assurance audit** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-008 is complete: the 56 merged-PR residue branches are gone, only `main` remains, zero PRs are open, and automatic deletion of future merged PR head branches is enabled; see E-067.
+- **What just changed?** I-009 is complete in canonical CORE: `/api/health` now exposes deterministic runtime/source/model-policy provenance and watchdog health, and durable execution records retain model/effort beside existing usage facts; see E-068.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** I-009 repository branch hygiene is next after I-007. Then I-009 runtime provenance/maintenance observability, the P1 model/reasoning-effort economy investigation, I-010 persistent-data maintenance, and I-011 verification-platform/dependency assurance.
+- **What is next?** The bounded P1 model/reasoning-effort economy investigation is next, using the execution-level model/effort/usage facts added by I-009. Then I-010 persistent-data maintenance and I-011 verification-platform/dependency assurance.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -25,8 +25,8 @@ A3 found the core execution/coordination architecture structurally healthy enoug
 Ordered remediation:
 
 1. **I-007 — Environment and documentation truth drift (COMPLETE):** Python support-floor, README/Architecture/Operations truth, and Development Control context hygiene repaired; see E-066.
-2. **I-008 — Repository branch hygiene:** remove merged-branch residue and adopt cheap automatic cleanup / minimal protection against destructive ref movement.
-3. **I-009 — Runtime provenance and maintenance health:** expose deterministic live build/runtime/model/effort provenance, surface unexpected maintenance/watchdog degradation, and provide the usage instrumentation needed for the next P1 investigation.
+2. **I-008 — Repository branch hygiene (COMPLETE):** merged-branch residue removed and automatic deletion of future merged PR heads enabled; see E-067.
+3. **I-009 — Runtime provenance and maintenance health (COMPLETE):** deterministic runtime/source/model-policy provenance, watchdog degradation/recovery health, and durable execution-level model/effort/usage facts implemented and canonically verified; see E-068.
 4. **P1 follow-up — Model/reasoning-effort economy:** measure representative work before deciding whether universal Terra/high, participant-specific defaults, delegation-selected effort, or another policy is economically justified.
 5. **I-010 — Persistent-data operational maintenance:** add the smallest deterministic integrity/backup/restore path warranted for durable Personal state.
 6. **I-011 — Verification-platform and dependency assurance:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
@@ -255,16 +255,19 @@ Bounded remediation:
 - `main` protection remains a plan/account-capability constraint rather than a reason to invent heavier ceremony.
 
 ### I-009 — Runtime provenance and maintenance health
-**Work state:** PLANNED  
-**Reality:** OBSERVED ISSUE  
+**Work state:** COMPLETE  
+**Reality:** IMPLEMENTED / VERIFIED  
 **Priority:** HIGH / prerequisite for P1 empirical follow-up  
-**Evidence:** E-065
+**Evidence:** E-065, E-068
 
-Current health/status does not expose exact running Codex Room source/build identity, SDK/runtime version, or configured Room model/effort. Unexpected watchdog exceptions can also be retried without an operator-visible degraded-health signal.
+The bounded remediation is complete on canonical CORE:
 
-Bounded remediation should provide deterministic provenance/health sufficient to answer what exact code/runtime/model policy is live and whether maintenance loops are healthy. It should also expose or persist the execution-level model/effort/usage facts needed for the P1 model-economy investigation.
+- `/api/health` exposes process-start application/source provenance, Python and installed Codex SDK version, and configured Room model/reasoning effort;
+- the maintenance watchdog exposes `starting` / `healthy` / `degraded` state plus last success/error and cumulative/consecutive unexpected-failure facts instead of silently swallowing arbitrary exceptions;
+- durable `agent_executions` rows retain the execution model and reasoning effort beside the existing SDK usage JSON, providing the empirical input needed for P1;
+- no dashboard, general observability platform, or automatic model-routing policy was introduced.
 
-Do not turn this item into a general observability platform.
+PR #58 and the exact canonical merge commit are verified under E-068. Canonical-main CI passed **327 tests, 2 warnings**. The principal's currently running local process must still pull/restart before the new health surface can be called live on that machine; that deployment fact does not reopen the canonical implementation item.
 
 ### I-010 — Persistent-data operational maintenance
 **Work state:** PLANNED  
