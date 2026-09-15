@@ -861,9 +861,17 @@ async def test_c_multi_peer_delegation_batches_returns_until_full_cohort_settles
         and len(adapter.calls["agent_b"]) == 1
     )
     await wait_until(lambda: len(adapter.completed_calls["agent_b"]) == 1)
-    await asyncio.sleep(0.05)
     assert len(adapter.calls["agent_c"]) == 1
 
+    async def b_return_is_durable() -> bool:
+        return any(
+            event["event_type"] == "agent_message"
+            and event["source"] == "agent_b"
+            and event["content"] == "B implementation return"
+            for event in await runtime.db.get_events(room_id)
+        )
+
+    await wait_until(b_return_is_durable)
     events = await runtime.db.get_events(room_id)
     b_return = next(
         event
