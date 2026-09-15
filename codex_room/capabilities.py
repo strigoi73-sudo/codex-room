@@ -1989,7 +1989,11 @@ def main(argv: list[str] | None = None) -> int:
         else:
             raise CapabilityUsageError(f"unsupported command: {args.command}")
     except CapabilityUsageError as exc:
-        capability_id = getattr(args, "capability_id", None)
+        capability_id = (
+            "inspect_source"
+            if args.command == "source"
+            else getattr(args, "capability_id", None)
+        )
         operation = (
             args.command
             if args.command in {"list", "authoring", "inspect", "register"}
