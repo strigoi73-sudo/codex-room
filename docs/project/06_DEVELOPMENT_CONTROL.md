@@ -26,11 +26,11 @@ D-027 generalizes the token-economy rule to every use of `invoke_targets`:
 - invocation requests immediate cognition, not visibility;
 - public messages remain readable without waking a peer;
 - use `all` only when every peer genuinely needs to run;
-- if no additional cognition is needed, do not request a runnable peer;
+- if no additional cognition is needed, use `invoke_targets: []` for a public/readable MESSAGE with no runnable peer;
 - a peer completing bounded work for C should normally return to C without waking the other delegated peer;
 - direct A/B collaboration remains allowed when that peer's additional cognition is materially necessary.
 
-The initial implementation belongs in the protected shared Room protocol, because A, B, and C all control `invoke_targets`. No routing-engine or UI change is warranted unless the semantic rule proves insufficient.
+The initial implementation belongs primarily in the protected shared Room protocol, because A, B, and C all control `invoke_targets`. One minimal schema/runtime compatibility change is also required: `invoke_targets: []` must be accepted as an explicit no-runnable-peer MESSAGE, while `null` remains the legacy all-peer fanout. No scheduler or UI redesign is warranted.
 
 ### C peer-allocation economy and temporary cognitive framing
 **Work state:** COMPLETE  
