@@ -1452,8 +1452,13 @@ async def test_passive_and_runnable_state_survives_restart(tmp_path):
 
 
 def test_invoke_targets_validation_and_room_membership() -> None:
-    with pytest.raises(ValidationError, match="cannot be empty"):
-        AgentDecision(outcome=Outcome.MESSAGE, message="bad", invoke_targets=[])
+    no_wake = AgentDecision(
+        outcome=Outcome.MESSAGE,
+        message="public without runnable peers",
+        invoke_targets=[],
+    )
+    assert no_wake.invoke_targets == []
+
     with pytest.raises(ValidationError, match="cannot contain duplicates"):
         AgentDecision(
             outcome=Outcome.MESSAGE,
