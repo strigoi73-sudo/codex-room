@@ -107,6 +107,7 @@ def test_registry_exposes_assert_file_as_versioned_core_capability() -> None:
         "assert_file",
         "compare_files",
         "find_files",
+        "inspect_source",
         "search_text",
     ]
     manifest = registry["capabilities"][0]

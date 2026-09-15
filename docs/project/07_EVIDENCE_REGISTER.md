@@ -2592,3 +2592,59 @@ Verification:
 The governing decision is D-028: Astra is prohibited for Codex Room execution and prompts or later allocation/routing logic may not override the rule. Luna, Terra, and Sol remain admitted to the bounded P1 real-work trial.
 
 **Status:** D-028 IMPLEMENTED / VERIFIED on canonical `main`.
+
+### E-077 — Live same-thread adaptive peer execution and Room evidence-boundary observation
+**Date:** 2026-09-15  
+**Scope:** [ROOM / P1 live evidence] representative I-010 work using the bounded C-selected execution mechanism.
+
+Fresh Room `room_56bbfe947f5d4d169de29a563c450253` ran the I-010 maintenance-design task as a real-work P1 trial. C selected Agent A for a bounded initial inventory on `luna-medium`, then deliberately redelegated the same persistent peer for a harder recovery-safety design pass on `terra-high`. B was not invoked because the absent implementation surface meant a second peer could not add independent implementation evidence.
+
+Room-export evidence records:
+
+- first Agent A execution request: `batch_1f3f5b37a32d4b3d97355d49dd76d1ca`, resolved as `gpt-5.6-luna` / `medium`;
+- second Agent A execution request: `batch_b8fcf19c6fde4051af5c56695446af44`, resolved as `gpt-5.6-terra` / `high`;
+- the second assignment was substantively harder: recovery invariants, backup consistency, destructive restore safeguards, crash/interruption behavior, and verification design rather than duplicate comparison work;
+- A did not request escalation in the first pass; C proactively spent stronger cognition for the harder follow-up;
+- Astra was not available or selected.
+
+The principal then queried the durable local `agent_executions` rows for those exact batch IDs. The database returned:
+
+- `batch_1f3f5b37a32d4b3d97355d49dd76d1ca` → Agent A, `gpt-5.6-luna`, `medium`, SDK thread `01a0a478-09b1-7821-8a55-8db5e596abe9`, state `settled`;
+- `batch_b8fcf19c6fde4051af5c56695446af44` → the same Agent A, `gpt-5.6-terra`, `high`, the same SDK thread `01a0a478-09b1-7821-8a55-8db5e596abe9`, state `settled`.
+
+This directly verifies that one persistent Room peer can continue on the same SDK thread across different C-selected model/reasoning configurations. The trial therefore closes the live-mechanics question for same-thread adaptive peer execution. It does **not** establish precise automatic-routing thresholds or authorize an automatic router.
+
+The same Room also exposed an architectural evidence boundary relevant to I-012: Agent A's current shared workspace contained no CORE implementation, database, migrations, configuration, tests, or Project evidence, so it correctly refused to make implementation-specific I-010 claims and produced only a conditional SQLite design. This observation motivated D-029/I-012 bounded read access to authorized CORE source and other Room shared workspaces.
+
+**Status:** same-thread C-selected peer switching LIVE VERIFIED; automatic routing remains unauthorized; cross-boundary evidence access gap OBSERVED and routed to I-012.
+
+### E-078 — Bounded CORE and cross-Room read inspection
+**Date:** 2026-09-15  
+**Scope:** [CORE] D-029 / I-012 deterministic read-boundary implementation.
+
+PR #62 adds registered CORE capability `inspect_source` version `1` for targeted read-only inspection beyond the current Room workspace.
+
+Implemented surface:
+
+- source discovery identifies the current canonical Room, the maintained CORE read surface, and canonical Personal Room shared workspaces;
+- `source="core"` is confined to an explicit allowlist of maintained repository/source entries such as `codex_room/`, `tests/`, `docs/`, launcher/configuration files, and repository metadata files needed for implementation reasoning;
+- CORE runtime data and arbitrary host paths are outside that allowlist, including `data/`, `.env`, `.git/`, virtual environments, credentials/secrets, and provider/account state;
+- `source="room"` resolves only `data/rooms/<room_id>/shared`; private participant state, Room-private files outside `shared`, and host database internals are not exposed;
+- operations are bounded `sources`, `find`, literal `search`, and UTF-8 text `read`;
+- absolute/traversal paths, backslash path tricks, NUL paths, symlink/reparse traversal, and wholesale CORE-root scans are rejected;
+- reads are size/line bounded; find/search have explicit file, match, byte, and scan ceilings;
+- read content and search excerpts remain transient. Durable Room telemetry persists only the capability identity plus declared bounded `evidence`, reusing the generic durable-result filtering verified in the existing capability substrate;
+- the capability grants no workspace write, network, or external-process authority and adds no cross-boundary write mechanism;
+- shared protected agent instructions tell A/B/C to use authorized read-only inspection when relevant while preserving the CORE/Room mutation boundary.
+
+Verification history:
+
+- an initial PR run exposed only two stale registry-list test expectations after the fifth CORE capability was registered; all new capability tests themselves passed in that run;
+- those exact expectations were updated to include `inspect_source`;
+- repaired code-bearing PR head `b70d67f0d743b8a1228b29fd942f2aae666302cc` passed **341 tests, 2 warnings** in GitHub Actions run `34956587939`;
+- regression coverage includes CORE-source allowlisting, `data/` and `.env` rejection, cross-Room shared-only confinement, traversal rejection, symlink/reparse escape rejection, bounded reads, source discovery, and find/search behavior.
+
+Evidence boundary: this record establishes deterministic implementation and hosted test verification on the stated PR head. Canonical-`main` merge verification and a fresh local live Room smoke remain separate gates.
+
+**Status:** IMPLEMENTED / VERIFIED on the tested PR head; canonical-main and live-Room verification pending.
+
