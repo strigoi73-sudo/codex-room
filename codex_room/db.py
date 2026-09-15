@@ -1713,6 +1713,12 @@ class Database:
             if not configured_keys <= member_keys:
                 missing = sorted(configured_keys - member_keys)
                 raise ValueError(f"Round configuration targets non-participants: {missing}")
+            required_keys = set(request.required_contributors)
+            if not required_keys <= member_keys:
+                missing = sorted(required_keys - member_keys)
+                raise ValueError(
+                    f"Required contributors are not Room participants: {missing}"
+                )
             if room["active_round_id"]:
                 await db.execute(
                     """UPDATE rounds SET status=?, ended_at=COALESCE(ended_at, ?),
