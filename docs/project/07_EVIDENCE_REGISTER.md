@@ -3095,3 +3095,26 @@ Evidence boundary: this establishes deterministic hosted coverage for the suppor
 
 **Status:** I-011 COMPLETE / IMPLEMENTED / VERIFIED on canonical `main`; the ordered A3 remediation sequence is complete.
 
+### E-089 — Room identity/model visibility and Windows restart QOL
+**Date:** 2026-09-15  
+**Scope:** [ROOM / CORE / operator QOL] Three principal-requested usability improvements.
+
+PR #76 implements a bounded QOL batch:
+
+- the active Room header now displays the persistent `room.id` directly beneath the Room title;
+- each agent information card displays `Model <model> · <reasoning effort>`. The snapshot uses an open durable execution when one exists and otherwise the most recent durable `agent_executions` row with a recorded model, so an idle card retains the last model actually used;
+- new `Restart-Codex-Room.bat` requests closure of visible supported-browser windows whose title contains `Codex Room`, calls the existing `Kill-Codex-Room.bat`, aborts if shutdown fails, waits five seconds, then launches the existing `Start-Codex-Room.cmd`. The ordinary Kill script remains unchanged and does not close browsers.
+
+Implementation deliberately reuses durable execution records rather than adding a second model-state field or schema migration. The focused runtime regression blocks an Agent A turn and verifies `gpt-5.6-terra` / `high` is exposed as `current`; after release and settlement, the same values remain exposed as `last`.
+
+Verification:
+
+- exact PR #76 head `7312482cabfccdf9d7c65511479ae389aa5e626a` passed **372 tests, 2 warnings** on Ubuntu/Python 3.11 and Ubuntu/Python 3.12, and **372 tests, 2 warnings** plus **3 browser tests** on Windows/Python 3.12 in run `35015874588`;
+- PR #76 squash-merged as `fe446d0f8ae68761ca8394a33008f48cc2c4c91d`;
+- PR head and merge share exact Git tree `b1ad864d7061775df13862b2e84a155cb24e8f2c`;
+- canonical-main run `35016556197` passed **372 tests, 2 warnings** on all three Python lanes and **3 browser tests** on Windows.
+
+Evidence boundary: hosted verification covers the UI contract, current→last model-state transition, restart-script sequencing, and the browser UI suite. The restart wrapper's actual closure of the principal's local browser window is not simulated in CI; title-based browser closure is intentionally best-effort and avoids force-killing unrelated browser state.
+
+**Status:** requested QOL batch IMPLEMENTED / VERIFIED on canonical `main`.
+
