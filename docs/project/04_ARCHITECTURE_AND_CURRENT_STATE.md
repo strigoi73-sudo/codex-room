@@ -247,9 +247,11 @@ Durable `agent_executions`, exact turn identifiers, reconciliation, restart safe
 
 ### Observer stability
 
-**HISTORICALLY VERIFIED / practically tested**
+**IMPLEMENTED / VERIFIED**
 
 The observer blanking/rescrolling repair used keyed reconciliation, stable IDs, status-only chrome, reconnect merge behavior, and reader anchoring/follow behavior. Practical user testing succeeded at the time.
+
+PR #76 adds two bounded observer-information improvements without changing Room semantics: the Room header displays the persistent Room ID beside the title context, and each participant card displays the model/reasoning effort from the currently open durable execution or, when idle, the most recent durable execution that recorded a model. This reuses `agent_executions`; no second model-state store or schema migration was introduced. A focused regression verifies the card payload transitions from `model_recency="current"` during a blocked turn to `model_recency="last"` after settlement. See E-089.
 
 ### Rollover and institutional continuity
 
