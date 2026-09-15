@@ -363,7 +363,23 @@ Restore is deliberately destructive and therefore requires both `--offline-confi
 
 PR #73 / E-087 provide exact implementation and verification evidence. Final PR head `136eeec8755922023618c8a13c644155d01ae63b` and canonical merge `e22dd9a51c8f803bda1cce0ae658c30b2f383056` share the tested tree; both hosted suites passed **369 tests, 2 warnings**.
 
-## 16. Runtime-state and work-queue caution
+## 16. I-015 Stage A transaction coordination kernel
+
+**IMPLEMENTED / VERIFIED — 2026-09-15 — opt-in only**
+
+D-030's first coordination-state migration is implemented behind explicit Round `work_model_version=2`; legacy and ordinary operation continue to use version 1 unless version 2 is deliberately selected. Historical event streams are therefore not reinterpreted.
+
+Version-2 work uses durable `tasks`, `assignments`, and `assignment_joins` as the authoritative scheduling and settlement state. Agent decisions use `COMPLETE | DELEGATE | PASS`; delegation atomically creates bounded child assignments plus their dependency join, so conversational prose cannot claim delegation without creating runnable work. A parent assignment remains nonterminal while delegated children are outstanding and resumes exactly once after the join resolves. Nested direct peer collaboration is supported through the same mechanism.
+
+The implementation also covers explicit required-contributor settlement gates, exact assignment-to-`agent_executions` provenance, transaction-aware turn limits and pause/resume behavior, stop/new-Round cancellation, exact-turn restart recovery, same-assignment usage-wall continuation, transaction quiescence, profile-rebind protection while work is open, and Task/Assignment/Join visibility in snapshots and JSON/Markdown exports. Readable Room events remain audit/conversation history; unread passive history is not an implicit version-2 runnable queue.
+
+The migration deliberately retains the existing persistent SDK-thread/context model. Context-economy changes remain a separate later experiment so Stage A coordination reliability can be measured independently.
+
+PR #81 established the foundation and merged as `3043a3789d03013e4c3618eb3f6aff2861cb60df`. PR #82 completed the remaining Stage A invariants and merged as canonical `main` `a4f53a7c4f62a5d03a0907365f5024d266801e1c`. GitHub Actions run `35036898229` completed successfully on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 + browser. E-094 records the closeout evidence.
+
+**Activation status:** version 2 is ready for bounded naturalistic validation. Default activation has not been approved.
+
+## 17. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 
