@@ -3118,3 +3118,44 @@ Evidence boundary: hosted verification covers the UI contract, current→last mo
 
 **Status:** requested QOL batch IMPLEMENTED / VERIFIED on canonical `main`.
 
+
+### E-090 — Ordinary-use continuation-economy recurrence and I-014 follow-up
+**Date:** 2026-09-15  
+**Scope:** [ROOM / CORE / P1] Naturalistic feature testing exposed passive-context orientation, source-retrieval continuation amplification, and cumulative-vs-execution telemetry semantics.
+
+After the controlled E-086 regression, the principal deliberately remained in one ordinary Room and exercised C-only reasoning, single-peer delegation, differentiated dual-peer delegation, source inspection, and C-selected peer model configuration while observing the already-free mechanical `execution_economics` events.
+
+The conversational/coordination path was mostly healthy. A C-only product-design turn required no peer cognition, and a two-peer task used differentiated A/B responsibilities at Luna/medium and returned through the delegation-cohort integration path. Two ordinary-use defects nevertheless emerged.
+
+**Passive backlog orientation.** In the single-peer task, C invoked only A for a new agent-card question. A's coalesced unread batch also contained older passive public material. CORE already persisted which delivery was runnable through `triggering_event_ids` / `passive_event_ids`, but the generated prompt rendered every item identically inside one `<unread_room_events>` list. A answered the older title-editing topic instead of the triggering assignment; C detected the mismatch and re-delegated. The two recovery turns represented roughly 49.6k additional reported tokens in that Room. Source inspection confirmed this was a prompt-assembly information loss, not a routing failure.
+
+**Source-investigation continuation amplification.** Two useful source tasks reproduced the mechanism from E-081/E-085 outside the small E-086 fixture:
+
+- C's source-inspection task recorded **22 tool/activity calls**, **5 failures**, and about **1,046,402 incremental reported tokens**, including about **989,440 incremental cached-input tokens**;
+- the delegated source trace used A at Luna/medium and recorded **31 tool/activity calls**, **10 failures**, and about **790,515 incremental reported tokens** for A's investigation; the overall C/A/C task was about **926.5k incremental reported tokens**;
+- the activity traces show that `search_many` / `read_many` existed and were used, but the agents still performed repeated successful follow-ups plus avoidable contract/quoting failures. C on Terra/high and A on Luna/medium both showed the pattern, so the evidence does not support treating model tier as the primary cause;
+- late provider requests carried tens of thousands of mostly cached input tokens. Repeated model→tool→model continuations therefore replayed substantial persistent-thread context even when newly uncached evidence remained much smaller;
+- the active thread sizes were still below the normal proactive-compaction threshold. Compaction runs only after a Room turn settles and therefore cannot repair continuation amplification inside one SDK turn.
+
+The same Room also exposed a telemetry semantics defect. `execution_economics` counted tools from the current execution but displayed the SDK's cumulative persistent-thread token total as though it were that execution's cost. The first turn was unaffected because cumulative and per-execution totals coincide, but later status lines required manual subtraction.
+
+PR #77 implements the bounded follow-up:
+
+- coalesced delivery prompts preserve passive cross-reading but mark runnable events `role="triggering"` and older non-runnable material `role="passive_context"`, with an explicit instruction that triggering events define the current work;
+- normal source inspection is directed through the JSON-free `codex-room-cap source` surface rather than generic inline-JSON invocation when the direct surface can express the operation;
+- source `search` / `search-many` now accept an explicit regular file as well as a directory while preserving the existing CORE/cross-Room allowlist, traversal, symlink/reparse, output-bound, and no-write protections;
+- the always-loaded retrieval guidance states the relevant search limits and makes one `search-many` followed by one `read-many` the normal pattern when several related lookups are already known, with further retrieval reserved for a specific unresolved dependency;
+- the mechanical economics event keeps cumulative provider counters in metadata but derives `usage_delta` and tokens-per-tool-call from the immediately prior durable usage snapshot on the same SDK thread. A first execution uses its own cumulative value; missing prior usage or non-monotonic counters yield explicit unavailable/non-monotonic status rather than a fabricated delta;
+- no schema migration, hard tool quota, research planner, automatic model router, new metrics subsystem, or expansion of source-read authority was introduced.
+
+Verification history:
+
+- a superseded PR run exposed one stale regression that still expected the literal old phrase `search-many/read-many`; that lane otherwise reported **375 passed, 1 failed, 2 warnings**. The regression was updated to assert the stronger direct-source/file-or-directory/one-search-many→one-read-many contract;
+- final exact PR #77 head `2d898aacecd274962a57cf39b32c983538d403fb` passed **376 tests, 2 warnings** on Ubuntu/Python 3.11 (60.98s), Ubuntu/Python 3.12 (66.21s), and Windows/Python 3.12 (218.96s), plus **3 browser tests** (16.4s) in run `35023873652`;
+- PR #77 squash-merged as `7d930127212b94580c6309032b83d654d032570e`;
+- final PR head and squash merge share exact Git tree `e3a5e382712ac64e23f7abe9e5bc25cf2dfa3a10`;
+- canonical-main push run `35024443078` passed **376 tests, 2 warnings** on Ubuntu/Python 3.11 (63.63s), Ubuntu/Python 3.12 (158.29s), and Windows/Python 3.12 (240.39s), plus **3 browser tests** (17.6s).
+
+Evidence boundary: the ordinary-use Room demonstrates recurrence of the continuation mechanism and the stale-passive orientation error; hosted verification establishes the bounded CORE repair. It does **not** yet establish a universal post-fix token-savings percentage for arbitrary source investigations, and no paid synthetic rerun is warranted. Continue naturalistic monitoring through work the principal actually wants done.
+
+**Status:** I-014 follow-up IMPLEMENTED / VERIFIED on canonical `main`; continuation economy returns to ordinary-use MONITOR.
