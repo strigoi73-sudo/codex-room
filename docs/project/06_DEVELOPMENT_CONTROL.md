@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, **A3 — Whole-system housekeeping, efficiency, and operational assurance audit**, and **I-012 — authorized CORE/cross-Room read inspection** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** E-086 live-verified PR #70 on the same LAB-2 fixture. Post-fix C completed correctly with 3 tool calls, 4 provider responses, 0 failures, and 92,765 reported tokens versus pre-fix 38 / 39 / 6 failures / 1,805,314 tokens. That is a 94.9% total-token reduction and 89.7% fewer provider continuations. The post-fix Room also beat the frozen Desktop Stage 2A baseline on this bounded task. Do not generalize one fixture into universal Room superiority.
+- **What just changed?** I-010 is complete. PR #73 adds an offline local operator maintenance CLI for persistent-data integrity checking, SQLite-native backup, manifest/hash verification, and guarded restore with candidate/rollback staging. The final PR head and canonical merge both passed **369 tests, 2 warnings**; see E-087.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Return to **I-010** outside the protected Room using the grounded candidate specification from E-080. Continuation economy is now MONITOR through useful work; do not commission another synthetic Desktop-vs-Room or model benchmark merely to measure PR #70. The E-084 stated-vs-structured peer-invocation inconsistency remains an observed issue to revisit only if it recurs in useful work. No automatic router is authorized.
+- **What is next?** **I-011 — verification-platform and dependency assurance** is next: remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics. Continuation economy remains MONITOR through useful work. No automatic router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -31,8 +31,8 @@ Ordered remediation:
 5. **I-012 — Authorized CORE and cross-Room read inspection (COMPLETE):** the I-010 evidence boundary was repaired and live verified under D-029 / E-078 / E-079.
 6. **I-013 — SDK-internal subagent bypass (COMPLETE):** Codex's ambient multi-agent surface is disabled so production cognition routes through persistent Room A/B/C and its execution-accounting path; see E-080.
 7. **I-014 — Deterministic retrieval economy (COMPLETE):** request-file/repeated-retrieval amplification is repaired with direct/batched source retrieval, targeted verification of delegated evidence, and compact per-execution economics telemetry; see E-081.
-8. **I-010 — Persistent-data operational maintenance:** repository-grounded investigation is complete enough to begin bounded Project-level design/implementation review; keep the solution small.
-9. **I-011 — Verification-platform and dependency assurance:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
+8. **I-010 — Persistent-data operational maintenance (COMPLETE):** offline local check/backup/verify/restore implemented and verified; see E-087.
+9. **I-011 — Verification-platform and dependency assurance — NEXT:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
 
 Lower-value audit findings remain MONITOR/DEFERRED until evidence shows they are expensive: shareable/redacted exports, explicit non-loopback safeguards, WebSocket overflow resync, formal numbered schema migrations, large-module refactoring, storage optimization, and stronger per-capability isolation.
 
@@ -155,8 +155,8 @@ Current order:
 2. I-008 — merged-branch/repository hygiene;
 3. I-009 — runtime provenance, maintenance-health visibility, and usage instrumentation;
 4. P1 follow-up — COMPLETE / MONITOR through ordinary useful work;
-5. I-010 — deterministic persistent-data integrity/backup/restore maintenance — **NEXT**;
-6. I-011 — verification-platform and dependency assurance cleanup.
+5. I-010 — COMPLETE / IMPLEMENTED / VERIFIED; see E-087;
+6. I-011 — verification-platform and dependency assurance cleanup — **NEXT**.
 
 Do not collapse this into one large refactor. Each item should close on bounded evidence, and later items should reuse instrumentation established earlier.
 
