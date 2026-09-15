@@ -2714,14 +2714,22 @@ Pinned Codex 0.154 source confirms the mechanism:
 
 Codex Room's adapter previously supplied only model and reasoning-effort app-server overrides, so the internal multi-agent surface remained available. This creates an untracked/poorly attributed cognition path outside `invoke_targets`, Room peer execution rows, and P1's C-selected peer configuration mechanism.
 
-Bounded remediation PR #63 adds `agents.enabled=false` plus `features.multi_agent_v2.enabled=false` to the Codex Room app-server config overrides and updates the existing adapter-initialization regression assertion. Exact code-bearing head `571bc2effe75b7b63df3f4094ed1b56099a3264d` passed **341 tests, 2 warnings** in GitHub Actions run `34981186463`.
+Bounded remediation PR #63 adds `agents.enabled=false` plus `features.multi_agent_v2.enabled=false` to the Codex Room app-server config overrides and updates the existing adapter-initialization regression assertion.
+
+Verification:
+
+- exact code-bearing head `571bc2effe75b7b63df3f4094ed1b56099a3264d` passed **341 tests, 2 warnings** in GitHub Actions run `34981186463`;
+- final exact PR head `830bbfec06d3f90463a4e07c214e780bb7ca3c23` passed **341 tests, 2 warnings** in run `34981545707`;
+- PR #63 squash-merged as `8ed3df777ed24a8192b48e43f652f4736921fe2c`;
+- the merge commit and final PR head carry the exact same Git tree `b7436a3a3e12616b81f84e59c5650f599776ebf9`;
+- canonical-`main` run `34981774647` passed **341 tests, 2 warnings** on that exact merge commit.
 
 Interpretation:
 
 - the I-010 investigation produced useful repository-grounded design evidence, but its peer-allocation narrative is false and does not satisfy the P1 naturalistic-allocation gate;
 - internal SDK subagents are not needed for Personal production because deliberate production cognition already has the persistent A/B/C Room path;
-- I-013 should close this bypass before further P1 evidence is accepted from ordinary Rooms;
+- I-013 closes this deterministic bypass on canonical `main`; no dedicated paid model smoke is warranted, and the next useful Room should simply be inspected for absence of `sub_agent_activity`;
 - the I-010 design remains a candidate specification for Project-level review; recommendations such as installation identity, explicit SQLite `user_version`, and a particular restore-lock protocol are proposals, not existing implementation facts.
 
-**Status:** I-010 repository investigation useful; claimed A/B allocation INVALID; SDK-internal subagent bypass OBSERVED; bounded CORE remediation verified on PR #63 head, canonical-main verification pending.
+**Status:** I-010 repository investigation useful; claimed A/B allocation INVALID; I-013 IMPLEMENTED / VERIFIED on canonical `main`; next useful Room should monitor for recurrence.
 
