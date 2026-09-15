@@ -6,7 +6,7 @@ The application uses the official `openai-codex` Python SDK and its local app-se
 
 ## Install for development and testing
 
-Codex Room requires Python 3.10 or later. From this directory, create an environment and install the application with its test dependencies:
+Codex Room requires Python 3.11 or later. From this directory, create an environment and install the application with its test dependencies:
 
 ```powershell
 python -m venv .venv
@@ -23,9 +23,9 @@ From this directory, double-click `Start-Codex-Room.cmd`. It starts the local se
 
 The first start can take several seconds while the Codex app-server initializes. The application stores its SQLite database and per-room shared workspaces under `data/`.
 
-`Start-Codex-Room.cmd` sets `CODEX_ROOM_CODEX_BIN` to the current desktop Codex runtime. Set that environment variable explicitly when a different supported `codex.exe` is required. The adapter otherwise falls back to the runtime pinned by the installed `openai-codex` Python package.
+`Start-Codex-Room.cmd` uses the Codex runtime pinned by the installed `openai-codex` Python package by default. Set `CODEX_ROOM_CODEX_BIN` explicitly only when an operator deliberately needs a different supported `codex.exe`; the launcher validates an explicit override before starting.
 
-Model choice and reasoning effort are intentionally static Room policy. Codex Room does not route between models or provide automatic model fallback.
+The current implementation pins normal Room turns to `gpt-5.6-terra` with `high` reasoning and does not yet route dynamically between model/effort levels. That is current implementation state, not a claim that one fixed level is the final economic policy; Development Control owns the planned P1 measurement work.
 
 For development, the equivalent entry point is:
 
@@ -38,7 +38,7 @@ $env:CODEX_ROOM_CODEX_BIN = "C:\path\to\current\codex.exe"
 
 1. Select **New room**.
 2. Enter an opening topic.
-3. Optionally edit Agent A/B names, reciprocal developer instructions, and safety limits. Agent C is included in every new Personal Room.
+3. Optionally edit participant names/profile overrides and safety limits. Agent C is included in every new Personal Room.
 4. Create the room. Distinct persistent Codex threads are created for A, B, and C, and the opening Round remains in `preparing`.
 5. Review the staged Round and select **Start Round**. Only the designated starter is invoked.
 6. Watch the transcript. Observer messages can target all agents or be delivered privately to one.
@@ -49,7 +49,7 @@ Pause stops new queue claims after active turns finish. Stop interrupts active t
 
 ### Agent C and legacy two-agent Rooms
 
-Every new Personal Room is created as the permanent A/B/C triad. Agent C — the Integrator — is the ordinary default Round starter and human entry point. C may selectively invoke A, B, both, or neither; A and B may communicate directly without routing through C. Public peer messages remain readable to the whole triad while `invoke_targets` controls which peers become runnable.
+Every new Personal Room is created as the permanent A/B/C triad. C is the ordinary default Round starter and human entry point. C retains protected coordination responsibilities but has no superior judgment over A or B. C may selectively invoke A, B, both, or neither; A and B may communicate directly without routing through C. Public peer messages remain readable to the whole triad while `invoke_targets` controls which peers become runnable.
 
 C is not invoked after every A/B exchange. Passive readable deliveries let C stay durably informed without spending a model turn. If material A/B MESSAGE work remains unread by C when the Round would otherwise settle, the runtime creates one integration opportunity for C before final closure. C then consumes the pending peer material through the normal coalesced delivery path and may synthesize, report, redelegate, or finish.
 
@@ -94,7 +94,7 @@ The database retains room configuration, agent names and developer instructions,
 
 Private observer events are marked in both the UI and exports. The source message is delivered only to its target. The recipient remains intellectually autonomous and may decide whether to mention it in a later peer message. Hidden reasoning is never stored or rendered; only final messages, explicit outcomes, lifecycle states, and coarse tool/activity categories are observable.
 
-Reusable Agent A/B profiles live separately from Room overrides and Round overlays. A new Room snapshots the current persistent profiles into its independent threads. Later A/B profile edits affect future Rooms only; a Room override changes only that Room, and temporary overlays are injected only for their Round. Agent C uses a fixed, read-only Integrator template so joining cannot smuggle prior Room context into its identity prompt.
+Reusable A/B/C profile bodies live separately from protected institutional/Room-protocol instructions, Room overrides, and Round overlays. Standard startup profile bodies are currently neutral/empty. A new Room snapshots the selected profile content into its independent threads; later saved-profile edits affect future Rooms only, a Room override replaces the selected profile body for that Room, and temporary overlays apply only to their Round. C's organizer/coordination responsibility is protected structure outside the replaceable profile layer, so changing C's profile does not remove that responsibility or grant C superior judgment.
 
 ## API summary
 
@@ -121,11 +121,6 @@ The automated suite verifies distinct identities, N-participant routing and sett
 
 ## Roadmap
 
-- Multiple simultaneously selected room dashboards
-- Asymmetric evidence experiments and experiment presets
-- First-class private A/private B/shared filesystem layouts and controlled external tools
-- Editable personalities after creation with versioned instruction history
-- Conversation branching, replay, search, and transcript analytics
-- Git repository and worktree collaboration modes
-- Rich streamed tool progress and aggregate usage/cost views
-- Configurable retry/backoff policies and failed-delivery replay controls
+Current priorities, maintenance issues, blockers, and work ordering are maintained in `docs/project/06_DEVELOPMENT_CONTROL.md`. Longer-range product direction and deliberately deferred capability space are maintained in `docs/project/08_PRODUCT_VISION.md`.
+
+The README intentionally does not duplicate a feature roadmap, because that list had become stale as implemented behavior evolved.
