@@ -587,3 +587,64 @@ async def test_transaction_completion_while_paused_settles_task_then_resume_clos
 
     await runtime.resume(room_id)
     await wait_until(lambda: _room_finished(runtime, room_id))
+
+@pytest.mark.asyncio
+async def test_transaction_required_contributor_blocks_settlement_until_peer_contributes(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="I would otherwise finish without A.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Provide the explicitly required independent contribution.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated the required A contribution.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="A required contribution",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "required-contributor.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Require A before settlement",
+            work_model_version=2,
+            required_contributors=["agent_a"],
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 3
+    assert len(adapter.calls["agent_a"]) == 1
+    assert "explicitly requires contribution from: agent_a" in adapter.calls["agent_c"][1]["prompt"]
+    assert "A required contribution" in adapter.calls["agent_c"][2]["prompt"]
+
+    async with runtime.db.connect() as db:
+        task = await runtime.db._fetchone(
+            db,
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at LIMIT 1",
+            (room_id,),
+        )
+    assert task is not None
+    assert task["state"] == "settled"
+    assert task["required_contributors_json"] == '["agent_a"]'
+
