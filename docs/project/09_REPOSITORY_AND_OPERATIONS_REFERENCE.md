@@ -66,6 +66,26 @@ Current clean-development procedure:
 
 Minimal CI lives at `.github/workflows/python-tests.yml`. It runs on pushes to `main` and pull requests targeting `main`, uses Python 3.12 on Ubuntu, grants `contents: read`, installs through `constraints-test.txt`, and runs the canonical pytest command. Commits or pull requests whose changed paths are entirely under `docs/project/**` are ignored by this Python-test workflow; mixed code + Project-document changes still run CI. Dependency upgrades should be deliberate changes to the constraint set rather than incidental resolver drift.
 
+### Read-only Codex rollout usage reporting
+
+For P1 operating-economics comparisons, `codex-usage.cmd` reads local Codex rollout JSONL token counters without invoking Codex or modifying its state. The underlying module is `codex_room/codex_usage.py` and uses only the Python standard library.
+
+Normal commands from the repository root:
+
+```powershell
+.\codex-usage.cmd
+.\codex-usage.cmd --timeline
+.\codex-usage.cmd --json
+.\codex-usage.cmd --thread-id <thread-id> --json
+.\codex-usage.cmd --path "C:\path\to\rollout-....jsonl" --json
+```
+
+Default lookup uses `CODEX_HOME` when set, otherwise `~/.codex`, and selects the most recently modified active **top-level** rollout so a child/subagent rollout is not silently substituted for the requested Desktop task. `--include-subagents-latest` is an explicit opt-in; `--include-archived` extends discovery to archived rollouts.
+
+The report contains no prompt/response text. It retains session metadata, event-type counts, cumulative and last-response token counters, token-update progression, and per-user-turn usage deltas derived from cumulative counters. For a fresh one-task Desktop thread, final cumulative usage is the cleanest task total. For a reused thread, use the relevant `user_turns[].usage` delta and confirm that cumulative counters did not decrease. Never use `last_token_usage` as a substitute for cumulative task work when tool/model continuations occurred.
+
+See E-082 for verification and evidence limits.
+
 ### Windows local launch and shutdown
 
 Normal Personal local operation uses the root launch scripts:
