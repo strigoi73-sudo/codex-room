@@ -7,13 +7,77 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** Principal runtime testing showed the E-089 Restart browser-close step closed an entire Chrome window rather than only the Codex Room tab. PR #78 removes browser teardown from Restart and relaunches the server with `--no-browser`, allowing the existing tab's WebSocket reconnect loop to recover without opening a duplicate tab. Canonical verification passed **377 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12, plus **3 browser tests** on Windows; the principal then locally confirmed the corrected retained-tab restart behavior. See E-091. Immediately before that, PR #77 / E-090 closed the ordinary-use I-014 continuation-economy recurrence.
+- **What just changed?** Ordinary-use product evaluation exposed a broader coordination/economics recurrence after the I-014 repairs: one serious assessment spent 544,416 execution tokens before peer cognition and then announced it was waiting for A/B while emitting no runnable peer targets. A follow-up Room deliberately avoided rediscovery, correctly differentiated and invoked A/B, integrated both through the existing cohort barrier, and completed in 138,522 execution tokens total. The agents independently converged on the same architectural thesis: intellectual allocation should remain cognitive, but mechanical work state should be explicit and deterministic rather than inferred from conversational backlog. I-015 is now the active **design-only** stabilization investigation; no redesign implementation is yet authorized. See E-092 and E-093. The restart correction remains locally confirmed under E-091.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** The ordered A3 remediation sequence is complete. No new remediation item is automatically implied; continue ordinary-use monitoring and select further work from demonstrated product/operational need or explicit principal direction. I-003 remains a low-priority provider-side verification candidate, D-019 remains blocked, and continuation economy remains MONITOR through useful work. No automatic router is authorized.
+- **What is next?** **I-015 — Task-transaction stabilization redesign** is IN PROGRESS as a design investigation prompted by demonstrated ordinary-use failures. Feature development is frozen for this investigation. The immediate deliverable is a concrete migration design and viability gate, not another prompt patch. I-003 remains a low-priority provider-side verification candidate, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
+
+### I-015 — Task-transaction stabilization redesign
+**Work state:** IN PROGRESS  
+**Reality:** OBSERVED ISSUE / EXPLORATORY redesign  
+**Evidence:** E-092, E-093  
+**Scope:** [CORE], with later [CORE + ROOM migration] only if a redesign is approved.
+
+Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
+
+**Design objective:** preserve the permanent A/B/C organization and agent judgment while replacing implicit conversational work state with an explicit, inspectable transaction model.
+
+Proposed state model:
+
+1. **Task** — one bounded objective being advanced inside a Room/Round. A task owns its current work state, completion condition, and optional budget/context policy. A Round remains the user-visible conversational/lifecycle container; tasks become the work units inside it.
+2. **Assignment** — one explicit unit of cognition assigned to one agent. It carries a task ID, target agent, bounded instruction, causal parent, execution configuration when applicable, selected context references, and a durable state such as queued / claimed / running / completed / passed / failed / cancelled / waived.
+3. **Join** — an explicit dependency set over assignments. A join records which contributions are required before integration or settlement can proceed. CORE, not prose, determines whether the join is satisfied. Timeouts, failures, cancellation, and explicit visible waivers must be represented mechanically.
+4. **Result** — the immutable outcome of an assignment, linked to the exact assignment and execution. Existing decision events and `agent_executions` can remain the durable result/provenance layer; a new standalone result table is not required unless implementation evidence shows one is necessary.
+5. **Integration** — ordinarily another explicit assignment, usually to C, created deterministically when a required join becomes ready. Integration is therefore work, not a heuristic inferred from unread passive peer messages.
+6. **Settlement** — a task-level terminal transition. A task may settle only when its explicit dependencies are resolved and the current integrating/owning assignment chooses a valid terminal action. Agent `READY_TO_FINISH` state should no longer carry task-completion semantics by itself.
+
+**Important boundary:** C/A/B continue to decide intellectual questions: whether peers add value, whom to delegate to, how to frame work, what evidence matters, how to interpret disagreement, whether a waiver is justified, and what conclusion to reach. CORE owns only declared mechanics: assignment creation, causal delivery, joins, queue ordering, retries/budgets, context assembly, and whether a requested terminal transition is mechanically valid. CORE must not infer hidden intent from prose such as “I am waiting for A.”
+
+**Structured-output direction:** the present `invoke_targets` field is a routing primitive, not a sufficient work contract. A transaction design should evaluate replacing or superseding it with explicit delegation records that atomically contain target + assignment + dependency semantics. Public/readable messages may remain events, but readable history should not itself become runnable work. This is a proposal, not a settled replacement of D-015/D-027.
+
+**Current-to-proposed mapping:**
+
+- preserve `rooms`, `rounds`, persistent A/B/C identities, profiles/overlays, workspaces, custom capability bindings, exports, observer event history, model policy, durable `agent_executions`, recovery/usage-wall machinery, and WebSocket/UI transport;
+- preserve `events` primarily as audit/conversation history and exact provenance;
+- stop using coalesced unread `deliveries` as the authoritative work queue for redesigned tasks; existing deliveries may remain for readable notification/history and legacy Rooms;
+- replace `claim_next_batch()`'s “all pending conversational events through newest runnable trigger” semantics with assignment claiming for transaction-enabled work;
+- replace passive-backlog prompt construction with an assignment envelope plus explicitly selected prerequisite context;
+- replace event-derived multi-peer cohort detection with explicit joins;
+- replace settlement heuristics based on agent status, FINISH boundaries, passive participation, and causal-message reconstruction with task/assignment/join state;
+- retain existing execution durability: an assignment claim should still bind to one exact `agent_execution` and one exact SDK turn before side effects settle.
+
+**Migration judgment:** this is **not a whole-product rewrite**. The durable product shell and much of the execution/provenance machinery are reusable. It is, however, a deliberate replacement of the scheduling/work-state kernel centered in `db.py` and `orchestrator.py`. Treating it as “just another patch” would understate the change. Legacy Rooms should remain readable/replayable under existing semantics; new transaction semantics should be introduced behind an explicit Room/task version or deliberate migration path rather than silently reinterpret old event history.
+
+**Staged design path — do not collapse these into one implementation:**
+
+- **Stage A — coordination transaction kernel:** Task/Assignment/Join state, assignment envelopes, deterministic join release, terminal-state validity, and removal of passive backlog as actionable work. Keep current persistent SDK thread behavior initially so coordination reliability can be isolated from context-economy changes.
+- **Stage B — bounded evidence execution:** add a declarative evidence-plan path where a model states already-known searches/reads/bounds once, CORE executes the plan deterministically, and one normalized evidence bundle returns for cognition. Native exploratory tools remain available for genuinely adaptive investigation; planned retrieval should not require a model continuation per mechanical step.
+- **Stage C — durable memory vs active context experiment:** test whether application-level persistent agent identity can be preserved with a compact versioned Room/task ledger plus targeted history/evidence instead of resuming an ever-growing full SDK thread for every execution. This may require short-lived or task-bounded SDK threads and therefore requires an explicit later design decision if adopted. D-009 already supports targeted retrieval; D-020/D-023 require persistent organizational identity, not necessarily one forever-growing provider thread.
+- **Stage D — viability gate:** only after the bounded design is implemented and deterministically verified, run a preregistered set of ordinary useful tasks. Do not resume feature development until the gate passes.
+
+**Provisional viability gate to validate before implementation:**
+
+- coordination: zero unsatisfied explicit joins may settle; zero stale-history preemption; zero unauthorized fanout; every assignment/result causally attributable;
+- economics: target median total execution tokens <=100k/task, p90 <=200k, cached replay <=25%, median post-framing model/tool continuations <=4, and no >300k task without explicit justified escalation;
+- quality: >=90% of preregistered ordinary tasks meet a human rubric without material omission and expose provenance/partial-result state;
+- robustness: include tool failure, truncation, stale-history pressure, and interruption/resume cases;
+- stop condition: any deterministic coordination invariant failure after implementation, two independent ordinary tasks exceeding the economic ceiling without justified escalation, or quality below the agreed threshold while meeting budget ends incremental patching. At that point either the runtime is redesigned more fundamentally or the present architecture is declared non-viable.
+
+**Open design questions before any code authorization:**
+
+- exact minimal tables/columns for tasks, assignments, and joins;
+- whether redesigned `deliveries` remain only a readability/audit projection or are retired for transaction-enabled tasks;
+- how observer follow-ups amend, supersede, or create tasks;
+- the smallest structured decision schema that makes delegation and settlement atomic without moving intellectual judgment into CORE;
+- how explicit user-required peer work is represented without brittle natural-language parsing;
+- whether Stage C can use bounded provider threads while preserving D-013 recovery guarantees and D-023 identity/history semantics;
+- exact gate corpus and thresholds, including whether the agents' proposed numerical ceilings are realistic rather than merely aspirational.
+
+No implementation should begin until the principal accepts or revises this design boundary.
+
 
 ### A3 audit remediation program
 **Audit work state:** COMPLETE  
