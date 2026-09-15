@@ -3159,3 +3159,30 @@ Verification history:
 Evidence boundary: the ordinary-use Room demonstrates recurrence of the continuation mechanism and the stale-passive orientation error; hosted verification establishes the bounded CORE repair. It does **not** yet establish a universal post-fix token-savings percentage for arbitrary source investigations, and no paid synthetic rerun is warranted. Continue naturalistic monitoring through work the principal actually wants done.
 
 **Status:** I-014 follow-up IMPLEMENTED / VERIFIED on canonical `main`; continuation economy returns to ordinary-use MONITOR.
+
+### E-091 — Restart preserves the existing browser tab instead of closing the browser window
+**Date:** 2026-09-15  
+**Scope:** [CORE / operator QOL] Principal runtime observation and bounded Windows launcher correction.
+
+After E-089, principal runtime testing showed that the original `Restart-Codex-Room.bat` browser-close step did not close only the Codex Room tab in Chrome. The script selected a browser process by `MainWindowTitle` and called `CloseMainWindow()`; on Chrome that closes the entire top-level browser window and therefore can close unrelated tabs in the same window.
+
+PR #78 replaces that unsafe approximation rather than adding browser-specific tab automation:
+
+- Restart no longer enumerates or closes browser windows/processes;
+- the normal `Kill-Codex-Room.bat` server/process-tree shutdown remains unchanged;
+- `Start-Codex-Room.cmd` forwards optional server CLI arguments;
+- Restart waits the existing five seconds and launches `Start-Codex-Room.cmd --no-browser`, leaving the already-open Codex Room tab in place and avoiding a duplicate browser tab;
+- the existing UI WebSocket reconnect path retries every 1.5 seconds after disconnect, so the retained tab can reconnect after the server returns;
+- ordinary Start without arguments retains its existing browser-opening behavior.
+
+Verification:
+
+- exact PR #78 head `92620c9b27db2eec8657c890bf85b2ad8758e929` passed **377 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12, plus **3 browser tests** on Windows in run `35025843774`;
+- PR #78 squash-merged as `a1bedcc1bd0ca7037b4c79d5dc41e5aae7812559`;
+- final PR head and squash merge share exact Git tree `f1f803a54b0efe229e4690c005ec86cccf12e463`;
+- canonical-main run `35026399189` passed **377 tests, 2 warnings** on Ubuntu/Python 3.11 (67.92s), Ubuntu/Python 3.12 (69.54s), and Windows/Python 3.12 (360.67s), plus **3 browser tests** (18.1s).
+
+Evidence boundary: CI verifies launcher contents/sequencing and the existing browser UI suite; it does not physically exercise the principal's exact installed Chrome window/tab topology. The previous E-089 claim that Restart intentionally requests browser-window closure is **SUPERSEDED** by this correction. Local principal confirmation of the new retained-tab restart behavior remains useful naturalistic verification.
+
+**Status:** browser-preserving restart correction IMPLEMENTED / VERIFIED on canonical `main`; local principal confirmation pending.
+
