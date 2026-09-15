@@ -2826,7 +2826,7 @@ class Database:
         async with self.connect() as db:
             current = await self._fetchone(
                 db,
-                """SELECT agent_id, sdk_thread_id, created_at
+                """SELECT rowid AS execution_rowid, agent_id, sdk_thread_id
                    FROM agent_executions WHERE batch_id=?""",
                 (batch_id,),
             )
@@ -2835,14 +2835,12 @@ class Database:
             prior = await self._fetchone(
                 db,
                 """SELECT usage_json FROM agent_executions
-                   WHERE agent_id=? AND sdk_thread_id=? AND batch_id<>?
-                     AND created_at<?
-                   ORDER BY created_at DESC LIMIT 1""",
+                   WHERE agent_id=? AND sdk_thread_id=? AND rowid<?
+                   ORDER BY rowid DESC LIMIT 1""",
                 (
                     current["agent_id"],
                     current["sdk_thread_id"],
-                    batch_id,
-                    current["created_at"],
+                    current["execution_rowid"],
                 ),
             )
         if prior is None:
