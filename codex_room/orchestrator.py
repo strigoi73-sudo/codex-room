@@ -1598,6 +1598,476 @@ class RoomRuntime:
                 "usage_continuation": usage_continuation or None,
             }
 
+    async def _assignment_prompt(
+        self, batch: dict[str, Any], agent: dict[str, Any]
+    ) -> str:
+        round_item = await self.db.get_round(batch["round_id"])
+        if round_item is None:
+            raise RuntimeError(f"Round {batch['round_id']} is missing")
+        assignment = batch["assignment"]
+        dependencies = await self.db.get_assignment_dependency_results(
+            assignment["id"]
+        )
+        context_parts = [
+            "<transaction_assignment>",
+            f"Room ID: {batch['room_id']}",
+            f"Round ID: {batch['round_id']}",
+            f"Task ID: {batch['task_id']}",
+            f"Assignment ID: {assignment['id']}",
+            f"Round objective:\n{round_item['prompt']}",
+            f"Current assignment:\n{assignment['instruction']}",
+        ]
+        private = round_item.get("participant_private", {}).get(agent["agent_key"])
+        if private:
+            context_parts.append(f"Private initialization for you:\n{private}")
+        overlay = round_item.get("participant_overlays", {}).get(agent["agent_key"])
+        if overlay:
+            context_parts.append(f"Temporary overlay for you:\n{overlay}")
+        if round_item.get("task_overlay"):
+            context_parts.append(f"Round task overlay:\n{round_item['task_overlay']}")
+        if dependencies:
+            context_parts.append("<resolved_dependencies>")
+            for item in dependencies:
+                context_parts.extend(
+                    [
+                        (
+                            f"<dependency join_id=\"{item['join_id']}\" "
+                            f"assignment_id=\"{item['assignment_id']}\" "
+                            f"agent=\"{item['agent_key']}\" "
+                            f"state=\"{item['state']}\">"
+                        ),
+                        item.get("result_content")
+                        or item.get("resolution_reason")
+                        or "(no substantive result text)",
+                        "</dependency>",
+                    ]
+                )
+            context_parts.append("</resolved_dependencies>")
+        context_parts.extend(
+            [
+                "</transaction_assignment>",
+                (
+                    "The transaction assignment above is the only current actionable Room work. "
+                    "Earlier persistent-thread history is background only; do not treat an older "
+                    "request as the current assignment."
+                ),
+                self.DETERMINISTIC_CAPABILITY_INSTRUCTION,
+                (
+                    "Return the transaction structured decision only. action must be COMPLETE, "
+                    "DELEGATE, or PASS. COMPLETE ends this assignment with a substantive message. "
+                    "DELEGATE pauses this assignment and must include one or more distinct peer "
+                    "delegations, each with target, bounded instruction, and optional config. "
+                    "PASS ends this assignment without substantive output. Do not announce that "
+                    "you are waiting for a peer unless you actually use DELEGATE to create that work. "
+                    "For non-DELEGATE actions, delegations must be null."
+                ),
+                self._execution_config_prompt(agent["agent_key"]),
+            ]
+        )
+        return "\n\n".join(context_parts)
+
+    async def _handle_assignment_failure(
+        self,
+        batch: dict[str, Any],
+        agent: dict[str, Any],
+        exc: Exception,
+        generation: int,
+        *,
+        retryable: bool = True,
+    ) -> None:
+        diagnostic = " ".join(str(exc).split()) or type(exc).__name__
+        if len(diagnostic) > 500:
+            diagnostic = diagnostic[:497] + "..."
+        async with self._lifecycle_locks[batch["room_id"]]:
+            outcome = await self.db.fail_transaction_assignment(
+                batch["room_id"],
+                batch["round_id"],
+                batch["batch_id"],
+                diagnostic,
+                retryable=retryable,
+            )
+            event = await self.db.create_event(
+                batch["room_id"],
+                "agent_error",
+                agent["agent_key"],
+                "observer",
+                f"{agent['name']} transaction assignment failed: {diagnostic}",
+                related_event_id=batch["assignment"].get("origin_event_id"),
+                status="error",
+                metadata={
+                    "assignment_id": batch["assignment_id"],
+                    "task_id": batch["task_id"],
+                    "batch_id": batch["batch_id"],
+                    "will_retry": outcome["retried"],
+                    "work_model_version": 2,
+                },
+                discussion_id=batch["round_id"],
+                round_id=batch["round_id"],
+            )
+            self._publish_event(event)
+            await self.ensure_workers(batch["room_id"])
+            for target in outcome["wake_agent_keys"]:
+                self.wake(batch["room_id"], target)
+            if outcome["task_failed"]:
+                await self._close_discussion(
+                    batch["room_id"],
+                    batch["round_id"],
+                    "transaction_failed",
+                    "Transaction task closed after a terminal coordinator assignment failure.",
+                )
+        await self.publish_state(batch["room_id"])
+
+    async def _process_assignment(
+        self, batch: dict[str, Any], generation: int
+    ) -> None:
+        room_id = batch["room_id"]
+        agent_key = batch["agent_key"]
+        agent = await self.db.get_agent(room_id, agent_key)
+        if agent is None:
+            return
+        execution = batch.get("execution") or {}
+        await self.publish_state(room_id)
+        activity = await self.db.create_event(
+            room_id,
+            "agent_activity",
+            agent_key,
+            "observer",
+            f"{agent['name']} is running transaction assignment {batch['assignment_id']}.",
+            related_event_id=batch["assignment"].get("origin_event_id"),
+            metadata={
+                "state": "running",
+                "assignment_id": batch["assignment_id"],
+                "task_id": batch["task_id"],
+                "batch_id": batch["batch_id"],
+                "work_model_version": 2,
+            },
+            discussion_id=batch["round_id"],
+            round_id=batch["round_id"],
+        )
+        self._publish_event(activity)
+
+        try:
+            progress = lambda: self._record_verified_progress(  # noqa: E731
+                (room_id, agent_key), generation, batch["batch_id"]
+            )
+            if execution.get("state") == "result_ready":
+                result = AgentRunResult(
+                    decision=TransactionDecision.model_validate(execution["result"]),
+                    usage=execution.get("usage"),
+                    activity=execution.get("activity") or [],
+                    thread_id=execution.get("sdk_thread_id"),
+                    turn_id=execution.get("sdk_turn_id"),
+                    completion_source=execution.get("completion_source") or "recovery",
+                )
+            elif execution.get("sdk_turn_id"):
+                result = await self._await_with_inactivity_lease(
+                    self.adapter.resume_agent(
+                        agent,
+                        self.workspace(room_id),
+                        execution["sdk_thread_id"],
+                        execution["sdk_turn_id"],
+                        on_progress=progress,
+                        transactional=True,
+                    ),
+                    (room_id, agent_key),
+                    generation,
+                )
+            else:
+                prompt = await self._assignment_prompt(batch, agent)
+
+                async def bind_turn(thread_id: str, turn_id: str) -> None:
+                    bound = await self.db.bind_execution_turn(
+                        batch["batch_id"], thread_id, turn_id, generation
+                    )
+                    if not bound:
+                        raise RuntimeError(
+                            "Codex turn could not be bound to its transaction assignment"
+                        )
+
+                result = await self._await_with_inactivity_lease(
+                    self.adapter.run_agent(
+                        agent,
+                        self.workspace(room_id),
+                        prompt,
+                        on_started=bind_turn,
+                        on_progress=progress,
+                        model=execution.get("model") or ROOM_MODEL,
+                        reasoning_effort=(
+                            execution.get("reasoning_effort")
+                            or ROOM_REASONING_EFFORT
+                        ),
+                        transactional=True,
+                    ),
+                    (room_id, agent_key),
+                    generation,
+                )
+        except asyncio.CancelledError:
+            raise
+        except AgentTurnStateUnknownError as exc:
+            await self.db.set_execution_state(
+                batch["batch_id"], "quarantined", str(exc)
+            )
+            slot = self._worker_slots.get((room_id, agent_key))
+            if slot is not None and slot.generation == generation:
+                slot.quarantined = True
+                slot.phase = "quarantined"
+                slot.reason = str(exc)
+            await self.publish_state(room_id)
+            return
+        except AgentTurnTerminalError as exc:
+            await self._handle_assignment_failure(
+                batch, agent, exc, generation, retryable=False
+            )
+            return
+        except TimeoutError:
+            await self.adapter.interrupt(agent["id"])
+            await self._handle_assignment_failure(
+                batch,
+                agent,
+                AgentTurnTimeoutError(
+                    "Transaction assignment exceeded its inactivity execution lease"
+                ),
+                generation,
+                retryable=False,
+            )
+            return
+        except Exception as exc:
+            await self._handle_assignment_failure(batch, agent, exc, generation)
+            return
+
+        if not isinstance(result.decision, TransactionDecision):
+            await self._handle_assignment_failure(
+                batch,
+                agent,
+                RuntimeError("Transaction turn returned a legacy Room decision"),
+                generation,
+                retryable=False,
+            )
+            return
+        decision = result.decision
+        try:
+            participants = {
+                item["agent_key"]: item for item in await self.db.get_agents(room_id)
+            }
+            delegations = [
+                item.model_dump(mode="json") for item in (decision.delegations or [])
+            ]
+            for item in delegations:
+                if item["target"] == agent_key or item["target"] not in participants:
+                    raise ValueError("Transaction delegation must target an available peer")
+                if item.get("config") is not None and agent_key != "agent_c":
+                    raise ValueError(
+                        "Only Agent C may select a peer execution configuration"
+                    )
+            runnable_targets = [item["target"] for item in delegations]
+        except ValueError as exc:
+            await self._handle_assignment_failure(
+                batch, agent, exc, generation, retryable=False
+            )
+            return
+
+        recorded = await self.db.record_execution_result(
+            batch["batch_id"],
+            decision.model_dump(mode="json"),
+            result.usage,
+            result.activity,
+            result.completion_source,
+        )
+        if not recorded:
+            await self._handle_assignment_failure(
+                batch,
+                agent,
+                RuntimeError("Transaction execution result lost its durable claim"),
+                generation,
+                retryable=False,
+            )
+            return
+
+        self._set_worker_phase(
+            (room_id, agent_key),
+            generation,
+            "settling",
+            batch["batch_id"],
+            "The Room is atomically settling the transaction assignment decision.",
+        )
+
+        async with self._lifecycle_locks[room_id]:
+            current = await self._required_room(room_id)
+            if (
+                current["discussion_id"] != batch["round_id"]
+                or current["lifecycle_version"] != batch["lifecycle_version"]
+                or current["status"] in {
+                    RoomStatus.STOPPED,
+                    RoomStatus.FINISHED,
+                    RoomStatus.PREPARING,
+                    RoomStatus.ARCHIVED,
+                    RoomStatus.ERROR,
+                }
+            ):
+                await self.db.set_agent_status(agent["id"], AgentStatus.IDLE)
+                await self.db.set_execution_state(batch["batch_id"], "stale")
+                await self.publish_state(room_id)
+                return
+
+            registration_outcomes = self._settle_custom_capability_registration_requests(
+                room_id, result.activity
+            )
+            usage_baseline = await self.db.get_execution_usage_baseline(
+                batch["batch_id"]
+            )
+            economics = self._execution_economics(
+                result,
+                runnable_targets,
+                previous_usage=usage_baseline["usage"],
+                has_prior_execution=usage_baseline["has_prior_execution"],
+            )
+            execution_tokens = economics["usage_delta"].get("total_tokens")
+            economics_event = await self.db.create_event(
+                room_id,
+                "execution_economics",
+                agent_key,
+                "observer",
+                (
+                    f"{agent['name']}: execution economics — "
+                    f"{economics['tool_calls']} tool call(s), "
+                    + (
+                        f"{execution_tokens} execution token(s)"
+                        if execution_tokens is not None
+                        else "execution token delta unavailable"
+                    )
+                ),
+                related_event_id=batch["assignment"].get("origin_event_id"),
+                metadata={
+                    **economics,
+                    "assignment_id": batch["assignment_id"],
+                    "task_id": batch["task_id"],
+                    "batch_id": batch["batch_id"],
+                    "work_model_version": 2,
+                },
+                discussion_id=batch["round_id"],
+                round_id=batch["round_id"],
+            )
+            self._publish_event(economics_event)
+            for outcome in registration_outcomes:
+                host_event = await self.db.create_event(
+                    room_id,
+                    "tool_activity",
+                    agent_key,
+                    "observer",
+                    (
+                        f"{agent['name']}: custom capability registration "
+                        f"({outcome['status']}) — {outcome.get('capability') or 'unknown'}"
+                    ),
+                    related_event_id=batch["assignment"].get("origin_event_id"),
+                    status=(
+                        "recorded" if outcome["status"] == "completed" else "error"
+                    ),
+                    metadata={
+                        **outcome,
+                        "assignment_id": batch["assignment_id"],
+                        "task_id": batch["task_id"],
+                        "batch_id": batch["batch_id"],
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(host_event)
+            for item in result.activity:
+                tool_event = await self.db.create_event(
+                    room_id,
+                    "tool_activity",
+                    agent_key,
+                    "observer",
+                    f"{agent['name']}: {item['type'].replace('_', ' ')} ({item['status']})",
+                    related_event_id=batch["assignment"].get("origin_event_id"),
+                    metadata={
+                        **item,
+                        "assignment_id": batch["assignment_id"],
+                        "task_id": batch["task_id"],
+                        "batch_id": batch["batch_id"],
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(tool_event)
+
+            event_type = (
+                "agent_pass"
+                if decision.action == TransactionAction.PASS
+                else "agent_message"
+            )
+            content = decision.message
+            if decision.action == TransactionAction.DELEGATE and not content:
+                content = "Delegated explicit transaction assignments to: " + ", ".join(
+                    runnable_targets
+                )
+            result_event = await self.db.create_event(
+                room_id,
+                event_type,
+                agent_key,
+                "all" if decision.action != TransactionAction.PASS else "room",
+                content,
+                related_event_id=batch["assignment"].get("origin_event_id"),
+                metadata={
+                    "task_id": batch["task_id"],
+                    "assignment_id": batch["assignment_id"],
+                    "batch_id": batch["batch_id"],
+                    "transaction_action": decision.action,
+                    "delegations": delegations or None,
+                    "work_model_version": 2,
+                },
+                discussion_id=batch["round_id"],
+                round_id=batch["round_id"],
+                execution_id=batch["batch_id"],
+            )
+            if result_event.pop("_created", True):
+                self._publish_event(result_event)
+
+            settlement = await self.db.settle_transaction_decision(
+                room_id,
+                batch["round_id"],
+                batch["batch_id"],
+                batch["assignment_id"],
+                decision.action,
+                result_event["id"],
+                delegations,
+            )
+            await self.db.set_agent_status(agent["id"], AgentStatus.IDLE)
+            await self.db.set_execution_state(batch["batch_id"], "settled")
+
+            if settlement["released_join_id"]:
+                released = await self.db.create_event(
+                    room_id,
+                    "assignment_join_released",
+                    "room",
+                    "observer",
+                    "All assignments in the dependency join reached terminal state; "
+                    "the dependent assignment was released exactly once.",
+                    related_event_id=result_event["id"],
+                    metadata={
+                        "join_id": settlement["released_join_id"],
+                        "task_id": batch["task_id"],
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(released)
+
+            await self.ensure_workers(room_id)
+            for target in settlement["wake_agent_keys"]:
+                self.wake(room_id, target)
+            if settlement["task_settled"]:
+                await self._close_discussion(
+                    room_id,
+                    batch["round_id"],
+                    "transaction_settled",
+                    "Transaction task closed after all explicit assignments and joins settled.",
+                )
+
+        await self._maybe_compact_context(batch, agent, result)
+        await self.publish_state(room_id)
+
     async def _process_delivery(self, batch: dict[str, Any], generation: int) -> None:
         room_id = batch["room_id"]
         agent_key = batch["agent_key"]
