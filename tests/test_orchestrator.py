@@ -6,6 +6,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from codex_room.agent import (
+    ROOM_MODEL,
+    ROOM_REASONING_EFFORT,
     AgentRunResult,
     AgentTurnTerminalError,
     InterruptOutcome,
@@ -97,6 +99,64 @@ async def runtime_factory(tmp_path):
 
     yield make
     await asyncio.gather(*(runtime.close() for runtime in runtimes), return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_watchdog_health_surfaces_failure_and_recovery(runtime_factory, monkeypatch):
+    runtime = await runtime_factory(FakeAgentAdapter(), "watchdog-health.db")
+
+    async def fail_tick() -> None:
+        raise RuntimeError("simulated watchdog failure")
+
+    monkeypatch.setattr(runtime, "_watchdog_tick", fail_tick)
+    with pytest.raises(RuntimeError, match="simulated watchdog failure"):
+        await runtime._watchdog_cycle()
+
+    degraded = runtime.health_status()["maintenance"]["watchdog"]
+    assert degraded["status"] == "degraded"
+    assert degraded["failure_count"] == 1
+    assert degraded["consecutive_failures"] == 1
+    assert degraded["last_error"] == "RuntimeError: simulated watchdog failure"
+    assert degraded["last_error_at"] is not None
+
+    async def pass_tick() -> None:
+        return None
+
+    monkeypatch.setattr(runtime, "_watchdog_tick", pass_tick)
+    await runtime._watchdog_cycle()
+
+    recovered = runtime.health_status()["maintenance"]["watchdog"]
+    assert recovered["status"] == "healthy"
+    assert recovered["failure_count"] == 1
+    assert recovered["consecutive_failures"] == 0
+    assert recovered["last_success_at"] is not None
+    assert recovered["last_error"] == "RuntimeError: simulated watchdog failure"
+
+
+@pytest.mark.asyncio
+async def test_execution_persists_model_effort_and_usage(runtime_factory):
+    adapter = FakeAgentAdapter(usages={"agent_a": [{"input_tokens": 21, "total_tokens": 34}]})
+    runtime = await runtime_factory(adapter, "execution-policy.db")
+    room = await runtime.create_room(
+        CreateRoomRequest(topic="Record execution policy", starting_agent="agent_a")
+    )
+    await wait_until(lambda: len(adapter.completed_calls["agent_a"]) == 1)
+
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT model, reasoning_effort, usage_json
+               FROM agent_executions
+               WHERE room_id=?
+               ORDER BY created_at
+               LIMIT 1""",
+            (room["id"],),
+        )
+
+    assert len(rows) == 1
+    assert rows[0]["model"] == ROOM_MODEL
+    assert rows[0]["reasoning_effort"] == ROOM_REASONING_EFFORT
+    assert '"input_tokens": 21' in rows[0]["usage_json"]
+    assert '"total_tokens": 34' in rows[0]["usage_json"]
 
 
 @pytest.mark.parametrize(
