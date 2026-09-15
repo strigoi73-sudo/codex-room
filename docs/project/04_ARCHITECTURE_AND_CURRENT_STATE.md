@@ -321,7 +321,7 @@ V7 deterministic implementation is recorded in E-050, and its same-task AI-tutor
 
 ## 14. Runtime provenance and maintenance health
 
-**IMPLEMENTED / VERIFIED — 2026-09-14**
+**IMPLEMENTED / VERIFIED / LIVE VERIFIED — 2026-09-15**
 
 The runtime now exposes a bounded deterministic health/provenance surface rather than requiring repository/process inference for ordinary live-version questions. `/api/health` reports application/source provenance captured for the running process, including the package version, Git revision and source-dirty state when available, a SHA-256 fingerprint over the relevant source/package bytes, Python version, installed `openai-codex` version, and the configured Room model/reasoning-effort policy.
 
@@ -329,7 +329,7 @@ Maintenance watchdog cycles retain process-local health facts: last cycle start/
 
 Durable `agent_executions` rows now persist the model and reasoning effort at execution claim time beside the existing SDK usage JSON. Existing open pre-I-009 executions are filled when reclaimed. This provides execution-level policy/usage evidence for the subsequent P1 model-economy investigation without introducing a general metrics platform or automatic model routing.
 
-E-068 records PR #58 and canonical-main verification. The exact code-bearing canonical commit passed **327 tests, 2 warnings**. Git provenance fields may be unavailable outside a Git checkout; the source fingerprint remains the deterministic byte-level fallback. Watchdog error history is intentionally process-scoped rather than a cross-restart incident log.
+E-068 records PR #58 and canonical-main verification. The exact code-bearing canonical commit passed **327 tests, 2 warnings**. E-069 then verified the principal's local Windows runtime after pull/restart: it reported exact canonical revision `6168c80938c7e9172a86651d3a9953fb66c2e219`, clean source, Python 3.12.10, `openai-codex` 0.147.0, Terra/high policy, and a healthy watchdog with zero failures. Git provenance fields may be unavailable outside a Git checkout; the source fingerprint remains the deterministic byte-level fallback. Watchdog error history is intentionally process-scoped rather than a cross-restart incident log.
 
 ## 15. Runtime-state and work-queue caution
 
