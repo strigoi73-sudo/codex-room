@@ -60,13 +60,54 @@ This boundary was repaired after a live smoke attempt using the desktop-app bina
 
 ## 4. Core execution path
 
-**IMPLEMENTED**
+**IMPLEMENTED — dual work-model compatibility; transaction v2 is hosted-verified but not yet the default new-Room path**
 
-The working execution model remains approximately:
+Codex Room currently preserves two explicit Round work models.
 
-**event → delivery → per-agent worker → coalesced readable/runnable batch → persistent SDK thread → MESSAGE/PASS/FINISH decision → routing/settlement**
+### Work model v1 — legacy conversational-delivery scheduler
 
-Persistent SDK threads remain a major context-cost driver; invocation frequency and persistent-context size are distinct operating-economics concerns.
+Existing/historical Rounds and ordinary API requests that omit a work-model version continue to use:
+
+**event → readable/runnable delivery → per-agent worker → coalesced unread conversational batch → persistent SDK thread → MESSAGE/PASS/FINISH → delivery/event-derived routing and settlement**
+
+This path remains implemented for compatibility and is not retroactively reinterpreted.
+
+### Work model v2 — D-030 transaction scheduler
+
+D-030 / I-015 Stage A adds an explicit coordination-state kernel:
+
+**Task → Assignment → exact Agent Execution → COMPLETE / DELEGATE / PASS → Join → parent/integration Assignment → Task Settlement**
+
+The durable transaction objects are:
+
+- `tasks` — bounded objectives and task-level settlement state;
+- `assignments` — logical units of agent cognition, including causal parent, target agent, bounded instruction, optional execution configuration, explicit result/provenance, and lifecycle state;
+- `assignment_joins` — deterministic dependency barriers over child assignments;
+- `agent_executions.assignment_id` — exact SDK-turn provenance back to the logical assignment.
+
+Important behavior:
+
+- public/readable events remain conversation and audit history but do **not** make an agent runnable in work-model v2;
+- v2 workers claim explicit queued assignments rather than unread event ranges;
+- v2 prompts use one authoritative assignment envelope plus explicit dependency results; they do not use the v1 `<unread_room_events>` batch as actionable work;
+- the structured v2 decision contract is `COMPLETE | DELEGATE | PASS`;
+- `DELEGATE` contains the target, bounded instruction, and optional C-selected execution config in the same structured action that creates the child assignment(s); there is no independent `invoke_targets` routing field to contradict the declared delegation;
+- when an assignment delegates, the same logical assignment enters `waiting_join`; it resumes only after all children in its explicit join reach terminal state;
+- nested delegation is therefore representable without falsely satisfying an outer dependency;
+- failed/cancelled/waived children are terminal for mechanical join release and are surfaced as degraded evidence to the resumed parent rather than deadlocking the task;
+- observer-directed peer work becomes explicit assignments; direct A/B work receives deterministic C integration through an external join;
+- optional structured `required_contributors` prevents settlement until the named participants have causally linked terminal assignments;
+- task settlement depends on Task/Assignment/Join state rather than READY_TO_FINISH, passive-delivery counts, inferred cohorts, or prose promises;
+- Stop/new-Round lifecycle changes cancel unfinished v2 transaction state and late results remain stale/unroutable;
+- exact-turn binding, serialized per-agent execution, retry/recovery, profile-rebind protection, turn budgets, Pause/Resume, usage-limit continuation, and context-compaction infrastructure are reused rather than replaced;
+- provider usage-limit continuation remains bound to the same logical assignment and persistent SDK thread, with a fresh exact provider turn after the reset;
+- snapshots and Markdown/JSON exports expose v2 task/assignment/join state for inspection.
+
+PR #81 established the foundation. PR #82 completed the remaining Stage-A deterministic invariants. Exact PR #82 head `2ea327f1dafd02d5d3709d3aead179aef2cadc4a` and squash merge `a4f53a7c4f62a5d03a0907365f5024d266801e1c` share Git tree `ff3629a852381033373f2b5fdc00813fda0a154e`; the exact PR head passed **390 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 plus **3 browser tests** on Windows. See E-094.
+
+**Migration limit:** v2 is implemented and hosted-verified but remains opt-in through `work_model_version=2`. The persisted v1/v2 boundary deliberately prevents silent reinterpretation of historical Rounds. Making v2 the ordinary new-Room path is a separate [CORE + ROOM migration] step.
+
+Persistent SDK threads remain a major context-cost driver under both work models; Stage A intentionally does not claim to solve that economic problem. Stage B/C remain separate I-015 work.
 
 ## 5. Deterministic Room capability substrate
 
