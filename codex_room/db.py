@@ -2665,6 +2665,7 @@ class Database:
         wake_agent_keys: list[str] = []
         released_join_id: str | None = None
         task_settled = False
+        missing_required_contributors: list[str] = []
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             execution = await self._fetchone(
@@ -2903,26 +2904,77 @@ class Database:
                     and task["coordinator_agent_id"] == assignment["agent_id"]
                     and task["state"] == "active"
                 ):
-                    await db.execute(
-                        """UPDATE tasks
-                           SET state='settled', settled_at=?, updated_at=?,
-                               settlement_event_id=?, settlement_reason=?
-                           WHERE id=? AND state='active'""",
-                        (
-                            now,
-                            now,
-                            result_event_id,
-                            action.lower(),
-                            assignment["task_id"],
-                        ),
+                    required = json.loads(
+                        task["required_contributors_json"] or "[]"
                     )
-                    task_settled = True
+                    terminal_rows = await db.execute_fetchall(
+                        """SELECT DISTINCT a.agent_key
+                           FROM assignments x JOIN agents a ON a.id=x.agent_id
+                           WHERE x.task_id=? AND x.state IN
+                             ('completed','passed','failed','cancelled','waived')""",
+                        (assignment["task_id"],),
+                    )
+                    contributed = {row["agent_key"] for row in terminal_rows}
+                    missing_required_contributors = [
+                        key for key in required if key not in contributed
+                    ]
+                    if missing_required_contributors and not turn_limit_hit:
+                        coordinator = await self._fetchone(
+                            db,
+                            "SELECT agent_key FROM agents WHERE id=?",
+                            (task["coordinator_agent_id"],),
+                        )
+                        if coordinator is None:
+                            await db.rollback()
+                            raise RuntimeError(
+                                "Active transaction task has no coordinator agent"
+                            )
+                        followup_id = new_id("assignment")
+                        await db.execute(
+                            """INSERT INTO assignments
+                               (id, task_id, agent_id, origin_event_id, instruction,
+                                state, created_at, updated_at)
+                               VALUES (?, ?, ?, ?, ?, 'queued', ?, ?)""",
+                            (
+                                followup_id,
+                                assignment["task_id"],
+                                task["coordinator_agent_id"],
+                                result_event_id,
+                                (
+                                    "The human explicitly requires contribution from: "
+                                    + ", ".join(missing_required_contributors)
+                                    + ". The task cannot settle until each named participant "
+                                      "has a causally linked terminal assignment. Delegate "
+                                      "bounded work to the missing participant(s), then integrate "
+                                      "their results."
+                                ),
+                                now,
+                                now,
+                            ),
+                        )
+                        wake_agent_keys.append(coordinator["agent_key"])
+                    elif not missing_required_contributors:
+                        await db.execute(
+                            """UPDATE tasks
+                               SET state='settled', settled_at=?, updated_at=?,
+                                   settlement_event_id=?, settlement_reason=?
+                               WHERE id=? AND state='active'""",
+                            (
+                                now,
+                                now,
+                                result_event_id,
+                                action.lower(),
+                                assignment["task_id"],
+                            ),
+                        )
+                        task_settled = True
 
             await db.commit()
         return {
             "wake_agent_keys": list(dict.fromkeys(wake_agent_keys)),
             "released_join_id": released_join_id,
             "task_settled": task_settled,
+            "missing_required_contributors": missing_required_contributors,
             "turn_limit_hit": turn_limit_hit,
             "decision_applied": True,
         }
