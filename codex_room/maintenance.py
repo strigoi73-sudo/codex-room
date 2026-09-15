@@ -419,7 +419,7 @@ def _validated_manifest_path(value: Any, index: int) -> PurePosixPath:
     path = PurePosixPath(value)
     if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
         raise MaintenanceError(f"backup manifest files[{index}].path is unsafe")
-    if path.parts[0] == BACKUPS_NAME or path.name == MANIFEST_NAME:
+    if path.parts[0] == BACKUPS_NAME or path.parts == (MANIFEST_NAME,):
         raise MaintenanceError(f"backup manifest files[{index}].path is reserved")
     return path
 
