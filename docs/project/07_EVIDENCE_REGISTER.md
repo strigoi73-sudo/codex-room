@@ -2809,3 +2809,54 @@ Evidence boundary: deterministic extraction behavior is verified on canonical `m
 
 **Status:** IMPLEMENTED / VERIFIED on canonical `main`; useful-work comparison evidence pending.
 
+### E-083 — Controlled Desktop-vs-Room Stage 1 and pre-bind crash-window ground truth
+**Date:** 2026-09-15  
+**Scope:** [P1 / operating economics / correctness] First matched C-only Room versus standalone Codex Desktop repository investigation, followed by deterministic ground-truth verification.
+
+The principal ran the same shutdown/persistence investigation back-to-back against the same Codex Room source state with fresh contexts and intended Terra/high cognition on both sides. Stage 1 deliberately disabled Room peer invocation so the comparison was one standalone Desktop participant versus C alone. The Room export and native rollouts establish that no persistent A/B peer or SDK subagent participated.
+
+Observed execution economics:
+
+| Metric | Desktop Stage 1 | Room C-only Stage 1 |
+|---|---:|---:|
+| Tool calls | 11 | 32 |
+| Provider-response usage records / nonzero usage increments | 12 | 33 |
+| Failed tool calls | not surfaced as failures in the extractor output | 6 |
+| Total reported tokens | 809,750 | 1,558,227 |
+| Input tokens | 804,410 | 1,549,446 |
+| Cached input tokens | 708,608 | 1,445,888 |
+| Uncached input tokens | 95,802 | 103,558 |
+| Output tokens | 5,340 | 8,781 |
+| Reasoning-output tokens | 3,034 | 3,297 |
+| Context compactions | 0 | 0 |
+| Subagent activity | 0 | 0 |
+| Room peer invocations | n/a | 0 |
+
+The Room therefore used about 2.91x as many tool calls and 1.92x as many reported total tokens, while uncached input was only about 8.1% higher and reasoning-output tokens only about 8.7% higher. The excess raw-token volume was dominated by repeated cached-context replay across additional model/tool continuations rather than by materially more new input or explicit reasoning. This strengthens E-081's conclusion that continuation count and tool-loop shape are first-order operating-economics variables even after I-014 batching is available.
+
+The two participants also disagreed on correctness. Desktop concluded that a pre-bind claim is deliberately quarantined on restart and not replayed. C instead inferred a duplicate-execution failure because `recover_interrupted_work()` changes `claimed` to `quarantined` while `claim_next_batch()` does not include `quarantined` in its existing-execution lookup.
+
+Direct source inspection identified an outer control-flow guard C had missed: startup calls `ensure_workers()`, whose durable-execution view *does* include `quarantined`; it marks that worker slot quarantined and does not create a worker. Thus the startup path does not reach `claim_next_batch()` for that quarantined execution.
+
+PR #67 converted that dispute into a deterministic regression test. The test forces a delivery to remain durably `claimed` before SDK turn binding, simulates process loss without Room settlement, restarts the runtime, and verifies all of the following:
+
+- the same batch becomes `quarantined`;
+- its processing delivery remains durably quarantined rather than replayed;
+- no replacement Agent A worker task is created;
+- the replacement adapter receives no Agent A call;
+- exactly one execution row remains for the batch, so no duplicate insert occurs;
+- no `worker_error` event is emitted.
+
+Exact PR #67 head `297bada6fd89ba095e0fe64076e9cf9fde66e3d8` passed **358 tests, 2 warnings** in GitHub Actions run `34997699874`. PR #67 squash-merged as `66ac4355551609bcca34b78166687bd252c8539e`; canonical-`main` run `34997919791` then passed **358 tests, 2 warnings** on that exact merge commit.
+
+Ground-truth conclusion: Desktop was correct on the disputed pre-bind restart mechanism; C's proposed duplicate-insert corruption path was a false positive caused by local reasoning that did not prove reachability through the complete startup control flow. No production persistence repair was justified by that claim.
+
+Important limitations:
+
+- this is one matched investigation, not evidence that Desktop is globally better than Codex Room;
+- the task used the real repository rather than a frozen synthetic fixture;
+- Desktop reported CLI `0.154.0-alpha.6.2` while Room used SDK/runtime `0.154.0`, so exact client-build equivalence was not achieved;
+- intended same-model/same-effort selection was operator-controlled; the rollout extractor does not independently expose the selected model/effort for the Desktop run;
+- Desktop failed-tool count is not reconstructed by the current extractor, so only the Room's six explicit failures are directly measured.
+
+**Status:** P1 evidence established. Stage 1 favors Desktop on both continuation economy and this specific correctness question; broader system-level conclusions remain exploratory.
