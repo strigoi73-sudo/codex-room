@@ -41,6 +41,12 @@ class Outcome(StrEnum):
     FINISH = "FINISH"
 
 
+class TransactionAction(StrEnum):
+    COMPLETE = "COMPLETE"
+    DELEGATE = "DELEGATE"
+    PASS = "PASS"
+
+
 class RoundStatus(StrEnum):
     PREPARING = "preparing"
     ACTIVE = "active"
@@ -66,6 +72,33 @@ EXECUTION_CONFIGS: dict[str, tuple[str, str]] = {
 class ExecutionSelection(BaseModel):
     target: Literal["agent_a", "agent_b", "agent_c"]
     config: ExecutionConfigId
+
+
+class DelegationRequest(BaseModel):
+    target: Literal["agent_a", "agent_b", "agent_c"]
+    instruction: str = Field(min_length=1, max_length=50_000)
+    config: ExecutionConfigId | None = None
+
+
+class TransactionDecision(BaseModel):
+    action: TransactionAction
+    message: str = ""
+    delegations: list[DelegationRequest] | None = None
+
+    @model_validator(mode="after")
+    def validate_transaction_decision(self) -> "TransactionDecision":
+        self.message = self.message.strip()
+        if self.action == TransactionAction.COMPLETE and not self.message:
+            raise ValueError("COMPLETE requires non-empty message text")
+        if self.action == TransactionAction.DELEGATE:
+            if not self.delegations:
+                raise ValueError("DELEGATE requires at least one delegation")
+            targets = [item.target for item in self.delegations]
+            if len(targets) != len(set(targets)):
+                raise ValueError("delegations cannot contain duplicate targets")
+        elif self.delegations is not None:
+            raise ValueError("delegations is valid only for DELEGATE")
+        return self
 
 
 class AgentDecision(BaseModel):
@@ -148,6 +181,56 @@ DECISION_SCHEMA: dict[str, Any] = {
 }
 
 
+
+TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "action": {
+            "type": "string",
+            "enum": ["COMPLETE", "DELEGATE", "PASS"],
+        },
+        "message": {"type": "string"},
+        "delegations": {
+            "anyOf": [
+                {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "target": {
+                                "type": "string",
+                                "enum": ["agent_a", "agent_b", "agent_c"],
+                            },
+                            "instruction": {"type": "string"},
+                            "config": {
+                                "anyOf": [
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "luna-medium",
+                                            "terra-medium",
+                                            "terra-high",
+                                            "sol-medium",
+                                        ],
+                                    },
+                                    {"type": "null"},
+                                ]
+                            },
+                        },
+                        "required": ["target", "instruction", "config"],
+                        "additionalProperties": False,
+                    },
+                },
+                {"type": "null"},
+            ]
+        },
+    },
+    "required": ["action", "message", "delegations"],
+    "additionalProperties": False,
+}
+
+
 class CreateRoomRequest(BaseModel):
     title: str = Field(default="Untitled Room", min_length=1, max_length=120)
     topic: str = Field(min_length=1, max_length=50_000)
@@ -161,6 +244,10 @@ class CreateRoomRequest(BaseModel):
     inactivity_seconds: int = Field(default=900, ge=30, le=86_400)
     starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] = "agent_c"
     auto_start: bool = True
+    work_model_version: Literal[1, 2] = 1
+    required_contributors: list[Literal["agent_a", "agent_b", "agent_c"]] = Field(
+        default_factory=list
+    )
 
 
 class AddAgentRequest(BaseModel):
@@ -199,6 +286,10 @@ class PrepareRoundRequest(BaseModel):
     task_overlay: str | None = Field(default=None, max_length=50_000)
     agent_a_overlay: str | None = Field(default=None, max_length=50_000)
     agent_b_overlay: str | None = Field(default=None, max_length=50_000)
+    work_model_version: Literal[1, 2] = 1
+    required_contributors: list[Literal["agent_a", "agent_b", "agent_c"]] = Field(
+        default_factory=list
+    )
 
     @model_validator(mode="after")
     def validate_participant_maps(self) -> "PrepareRoundRequest":
