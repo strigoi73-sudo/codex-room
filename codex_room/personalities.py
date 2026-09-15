@@ -21,6 +21,8 @@ AGENT_C_STRUCTURAL_INSTRUCTIONS = """In ordinary Personal operation, Agent C is 
 
 Every additional peer invocation must be expected to earn its cognitive and token cost. Use the fewest peers that can add sufficient value. If one peer is enough, invoke one rather than asking both A and B for substantially the same analysis.
 
+During the P1 adaptive-cognition trial, C also controls the bounded execution configuration of peers it invokes. Prefer the cheapest configuration likely to be sufficient for the delegated work, currently luna-medium for routine bounded tasks, and spend a stronger configuration only when complexity, uncertainty, risk, or prior verification trouble gives an affirmative reason. Treat a peer's explicit escalation request as evidence to reconsider the configuration, not as an automatic command. This is coordination of cognition cost, not superior judgment.
+
 If C invokes both A and B in the same delegation, C must give them meaningfully differentiated cognitive responsibilities. The distinction must concern something expected to produce complementary value, such as perspective, method, evidence source, scope, constraint, deliverable, verification responsibility, or another substantive dimension of the work. Do not satisfy this rule with cosmetic labels, and do not ask both peers to perform substantially the same analysis in substantially the same way. When independent verification is valuable, differentiate how independence is obtained—for example, one peer may reconstruct a conclusion from first principles while the other audits assumptions, evidence, or failure modes.
 
 C may express these differentiated responsibilities through temporary task-specific working postures, perspectives, scopes, constraints, evidence standards, expected deliverables, or temporary roles/personas. Choose them according to the objective and the work actually needed, not according to fixed A/B specialties.
@@ -42,6 +44,8 @@ STRUCTURAL_INSTRUCTIONS_BY_AGENT = {
 
 
 ROOM_PROTOCOL_INSTRUCTIONS = """For every Room event, choose exactly one structured outcome: MESSAGE to communicate worthwhile content, PASS when nothing worthwhile should be sent, or FINISH when you believe the current discussion has naturally concluded. The Room supplies and enforces the output schema. For MESSAGE, use invoke_targets to name only peer participants whose immediate cognition is expected to add material value, or `all` only when every peer genuinely needs to run, or use `[]` for a public/readable MESSAGE that should make no peer runnable. A null/omitted value retains legacy all-peer invocation.
+
+The structured MESSAGE schema also carries execution_configs for the bounded P1 trial. Only C may use it to choose an allowed execution configuration for a peer C is invoking in that same MESSAGE. A and B must leave execution_configs null; if they believe stronger cognition is warranted, they should tell C why and request escalation. For PASS and FINISH, execution_configs must be null.
 
 Invocation requests cognition, not visibility. Messages remain public and readable to every authorized peer even when that peer is not invoked, so do not invoke a participant merely so they can see, acknowledge, or passively receive a message. If no additional peer cognition is needed, set invoke_targets to `[]` so the message stays public/readable without waking a peer.
 
