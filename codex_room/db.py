@@ -2534,6 +2534,21 @@ class Database:
                 )
                 return result
 
+            active_executions = await self._fetchone(
+                db,
+                """SELECT COUNT(*) AS count FROM agent_executions
+                   WHERE room_id=? AND round_id=? AND state IN
+                     ('claimed','active','recovering','result_ready','usage_suspended')""",
+                (room_id, agent["active_round_id"]),
+            )
+            if (
+                agent["round_turn_count"]
+                + int(active_executions["count"] if active_executions else 0)
+                >= agent["max_turns"]
+            ):
+                await db.commit()
+                return None
+
             assignment = await self._fetchone(
                 db,
                 """SELECT x.*
@@ -2672,6 +2687,7 @@ class Database:
                     "wake_agent_keys": [],
                     "released_join_id": None,
                     "task_settled": False,
+                    "turn_limit_hit": False,
                     "decision_applied": False,
                 }
             if assignment["state"] != "running":
@@ -2686,6 +2702,18 @@ class Database:
                 """UPDATE rounds SET turn_count=turn_count+1
                    WHERE id=? AND room_id=? AND status=? AND work_model_version=2""",
                 (round_id, room_id, RoundStatus.ACTIVE),
+            )
+
+            round_budget = await self._fetchone(
+                db,
+                """SELECT ro.turn_count, r.max_turns
+                   FROM rounds ro JOIN rooms r ON r.id=ro.room_id
+                   WHERE ro.id=? AND ro.room_id=?""",
+                (round_id, room_id),
+            )
+            turn_limit_hit = bool(
+                round_budget
+                and int(round_budget["turn_count"]) >= int(round_budget["max_turns"])
             )
 
             if action == "DELEGATE":
@@ -2889,6 +2917,7 @@ class Database:
             "wake_agent_keys": list(dict.fromkeys(wake_agent_keys)),
             "released_join_id": released_join_id,
             "task_settled": task_settled,
+            "turn_limit_hit": turn_limit_hit,
             "decision_applied": True,
         }
 
