@@ -48,7 +48,7 @@ def _canonical_fixture(tmp_path: Path) -> tuple[Path, Path, Path]:
 def test_inspect_source_is_registered_read_only_core_capability() -> None:
     spec = CORE_CAPABILITIES["inspect_source"]
 
-    assert spec.version == "3"
+    assert spec.version == "2"
     assert spec.durable_result_fields == ("evidence",)
     assert spec.permissions["workspace_read"] is True
     assert spec.permissions["cross_room_read"] is True
@@ -188,7 +188,7 @@ def test_read_content_is_transient_under_capability_durable_contract(
 
     assert result["content"] == "CORE README\n"
     assert result["durable_result_fields"] == ["evidence"]
-    assert result["capability_version"] == "3"
+    assert result["capability_version"] == "2"
     assert len(result["implementation_sha256"]) == 64
 
 
