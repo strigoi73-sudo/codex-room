@@ -1451,6 +1451,83 @@ async def test_passive_and_runnable_state_survives_restart(tmp_path):
         await restarted.close()
 
 
+@pytest.mark.asyncio
+async def test_c_can_redelegate_same_peer_with_stronger_execution_config(runtime_factory):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_c": []}
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="A: handle this routine bounded pass.",
+                invoke_targets=["agent_a"],
+                execution_configs={"agent_a": "luna-medium"},
+            ),
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="A: retry with stronger cognition because you requested escalation.",
+                invoke_targets=["agent_a"],
+                execution_configs={"agent_a": "terra-high"},
+            ),
+            AgentDecision(outcome=Outcome.FINISH, message="Integrated escalated result"),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="I need stronger cognition for this dependency.",
+                invoke_targets=["agent_c"],
+            ),
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="Escalated work complete.",
+                invoke_targets=["agent_c"],
+            ),
+        ]
+    )
+
+    runtime = await runtime_factory(adapter, "adaptive-execution.db")
+    room = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Adaptive execution trial",
+            starting_agent="agent_c",
+            max_consecutive_passes=10,
+        )
+    )
+
+    await wait_until(lambda: len(adapter.calls["agent_a"]) == 2)
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 3)
+
+    assert adapter.calls["agent_a"][0]["model"] == "gpt-5.6-luna"
+    assert adapter.calls["agent_a"][0]["reasoning_effort"] == "medium"
+    assert adapter.calls["agent_a"][1]["model"] == "gpt-5.6-terra"
+    assert adapter.calls["agent_a"][1]["reasoning_effort"] == "high"
+    assert all(call["model"] == "gpt-5.6-terra" for call in adapter.calls["agent_c"])
+    assert all(call["reasoning_effort"] == "high" for call in adapter.calls["agent_c"])
+
+    messages = [
+        event
+        for event in await runtime.db.get_events(room["id"])
+        if event["event_type"] == "agent_message" and event["source"] == "agent_c"
+    ]
+    assert [event["metadata"]["execution_configs"] for event in messages] == [
+        {"agent_a": "luna-medium"},
+        {"agent_a": "terra-high"},
+    ]
+    assert messages[0]["metadata"]["resolved_execution_configs"]["agent_a"] == {
+        "config_id": "luna-medium",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+    }
+    assert messages[1]["metadata"]["resolved_execution_configs"]["agent_a"] == {
+        "config_id": "terra-high",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+    }
+
+
 def test_invoke_targets_validation_and_room_membership() -> None:
     no_wake = AgentDecision(
         outcome=Outcome.MESSAGE,
@@ -1473,6 +1550,12 @@ def test_invoke_targets_validation_and_room_membership() -> None:
         )
     with pytest.raises(ValidationError, match="valid only for MESSAGE"):
         AgentDecision(outcome=Outcome.PASS, invoke_targets=["agent_b"])
+    with pytest.raises(ValidationError, match="execution_configs is valid only for MESSAGE"):
+        AgentDecision(
+            outcome=Outcome.FINISH,
+            message="done",
+            execution_configs={"agent_b": "luna-medium"},
+        )
 
     decision = AgentDecision(
         outcome=Outcome.MESSAGE,
@@ -1484,6 +1567,31 @@ def test_invoke_targets_validation_and_room_membership() -> None:
             decision,
             "agent_a",
             [{"agent_key": "agent_a"}, {"agent_key": "agent_b"}],
+        )
+
+
+    selected = AgentDecision(
+        outcome=Outcome.MESSAGE,
+        message="delegate",
+        invoke_targets=["agent_a"],
+        execution_configs={"agent_a": "luna-medium"},
+    )
+    assert RoomRuntime._resolve_execution_configs(
+        selected, "agent_c", ("agent_a",)
+    )["agent_a"]["model"] == "gpt-5.6-luna"
+    assert RoomRuntime._resolve_execution_configs(
+        selected, "agent_b", ("agent_a",)
+    ) == {}
+
+    invalid_target = AgentDecision(
+        outcome=Outcome.MESSAGE,
+        message="bad selection",
+        invoke_targets=["agent_a"],
+        execution_configs={"agent_b": "terra-high"},
+    )
+    with pytest.raises(ValueError, match="only peers C is invoking"):
+        RoomRuntime._resolve_execution_configs(
+            invalid_target, "agent_c", ("agent_a",)
         )
 
 
