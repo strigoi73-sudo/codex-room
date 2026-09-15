@@ -56,6 +56,8 @@ async def test_initialize_uses_explicit_codex_runtime(monkeypatch, tmp_path: Pat
     assert created[0].config.config_overrides == (
         'model="gpt-5.6-terra"',
         'model_reasoning_effort="high"',
+        "agents.enabled=false",
+        "features.multi_agent_v2.enabled=false",
     )
     await adapter.close()
     assert created[0].closed is True
