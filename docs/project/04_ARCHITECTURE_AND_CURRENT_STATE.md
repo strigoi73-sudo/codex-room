@@ -36,15 +36,19 @@ The canonical routine full-test command is:
 
 `python -m pytest -q`
 
-Clean-environment verification collected **129 tests** and completed successfully. The browser transcript check `test-transcript-stability.ps1` remains a specialized check rather than part of the routine Python suite because it requires Node.js plus Chrome or Edge. `uv` was not adopted because the existing pip/venv path was sufficient.
+Clean-environment verification collected **129 tests** and completed successfully. The browser transcript check `test-transcript-stability.ps1` remains separate from the canonical Python command because it requires Node.js plus Chrome or Edge; I-011 now runs it automatically in the hosted Windows lane with pinned `@playwright/test@1.63.0`. `uv` was not adopted because the existing pip/venv path was sufficient.
 
-### Minimal GitHub CI
+### Hosted GitHub verification and dependency assurance
 
-**IMPLEMENTED / VERIFIED — 2026-09-10**
+**IMPLEMENTED / VERIFIED — 2026-09-15**
 
-`.github/workflows/python-tests.yml` runs on pushes to `main` and pull requests targeting `main`. It uses a single Ubuntu job with Python 3.12, read-only repository contents permission, installs through `constraints-test.txt`, and runs the canonical pytest command.
+`.github/workflows/python-tests.yml` runs on pushes to `main` and pull requests targeting `main`, with read-only repository contents permission and installation through `constraints-test.txt`. I-011 expands the hosted matrix to Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12. Every lane runs the canonical pytest command; the Windows lane also runs the browser transcript suite using pinned `@playwright/test@1.63.0`. Project-document-only changes remain excluded from this Python workflow.
 
-The dependency-constraint repair was hosted-verified on 2026-09-10: the merged `main` workflow installed the known-good `openai-codex==0.147.0` set and passed **129 tests, 2 warnings**. Exact run/commit evidence belongs in the Evidence Register or GitHub rather than this architecture summary.
+`.github/workflows/dependency-review.yml` provides deliberate dependency assurance without automatic upgrades. It runs pinned `pip-audit==2.10.1` against the fully pinned constraint set, reports available package updates informationally, and runs on dependency/workflow changes, monthly, or on manual dispatch.
+
+The new Windows lane exposed a real portability defect in `inspect_source`: UTF-8 read output reflected platform-native CRLF line endings. I-011 normalizes transient read content to LF while preserving raw-file SHA-256 and byte-size evidence; the version-2 capability interface/schema remains unchanged.
+
+Final exact verification is recorded in E-088: all three Python lanes passed **370 tests, 2 warnings**, Windows passed **3 browser tests**, and the dependency audit reported **no known vulnerabilities** on both the exact PR tree and canonical `main`.
 
 ### SDK-pinned Codex runtime selection
 
