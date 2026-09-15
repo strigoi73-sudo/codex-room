@@ -745,3 +745,75 @@ async def test_transaction_usage_wall_continuation_survives_restart_on_same_assi
     assert len(executions) == 2
     assert all(row["assignment_id"] == assignment_id for row in executions)
 
+@pytest.mark.asyncio
+async def test_transaction_exact_active_turn_recovers_same_assignment_after_restart(
+    transaction_runtime_factory,
+):
+    first_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {1}},
+    )
+    first = await transaction_runtime_factory(first_adapter, "transaction-active-restart.db")
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Recover the exact active transaction turn",
+            work_model_version=2,
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: len(first_adapter.calls["agent_c"]) == 1)
+
+    async def active_execution() -> bool:
+        async with first.db.connect() as db:
+            row = await first.db._fetchone(
+                db,
+                """SELECT state FROM agent_executions
+                   WHERE room_id=? AND assignment_id IS NOT NULL
+                   ORDER BY created_at DESC LIMIT 1""",
+                (room_id,),
+            )
+        return bool(row and row["state"] == "active")
+
+    await wait_until(active_execution)
+    async with first.db.connect() as db:
+        original = await first.db._fetchone(
+            db,
+            """SELECT * FROM agent_executions
+               WHERE room_id=? AND assignment_id IS NOT NULL
+               ORDER BY created_at DESC LIMIT 1""",
+            (room_id,),
+        )
+    assert original is not None
+    assignment_id = original["assignment_id"]
+    original_batch_id = original["batch_id"]
+    original_turn_id = original["sdk_turn_id"]
+    thread_id = original["sdk_thread_id"]
+    await first.close()
+
+    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Recovered exact transaction turn.",
+        )
+    )
+    second = await transaction_runtime_factory(second_adapter, "transaction-active-restart.db")
+    await wait_until(lambda: _room_finished(second, room_id))
+
+    assert len(second_adapter.calls["agent_c"]) == 1
+    recovered = second_adapter.calls["agent_c"][0]
+    assert recovered["recovered"] is True
+    assert recovered["thread_id"] == thread_id
+    assert recovered["turn_id"] == original_turn_id
+
+    async with second.db.connect() as db:
+        executions = await db.execute_fetchall(
+            """SELECT * FROM agent_executions
+               WHERE room_id=? AND assignment_id=?
+               ORDER BY created_at""",
+            (room_id, assignment_id),
+        )
+    assert len(executions) == 1
+    assert executions[0]["batch_id"] == original_batch_id
+    assert executions[0]["state"] == "settled"
+
