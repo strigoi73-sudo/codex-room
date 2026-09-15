@@ -110,8 +110,14 @@ def test_analyze_rollout_reports_cumulative_and_per_user_turn_usage(tmp_path: Pa
     assert report["counts"] == {
         "user_turns": 2,
         "token_count_updates": 2,
+        "provider_response_usage_records": 0,
+        "zero_delta_token_count_updates": 0,
+        "custom_tool_calls": 0,
+        "function_calls": 0,
+        "tool_calls": 0,
         "context_compactions": 1,
         "sub_agent_activity": 1,
+        "inter_agent_communication_metadata": 0,
     }
     assert report["final_total_usage"] == second_total
     assert report["final_last_usage"] == second_last
@@ -191,3 +197,48 @@ def test_main_json_output_uses_exact_path(tmp_path: Path, capsys) -> None:
 def test_missing_rollouts_fail_cleanly(tmp_path: Path) -> None:
     with pytest.raises(RolloutUsageError, match="no rollout JSONL"):
         select_rollout(codex_home=tmp_path)
+
+def test_rollout_summary_counts_provider_records_tool_calls_and_zero_delta(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "rollout.jsonl"
+    total = _usage(100, input_tokens=80, cached=60, output=20, reasoning=5)
+    _write_jsonl(
+        path,
+        [
+            _meta("thread-summary"),
+            _token_event(total, total, "2026-09-15T12:00:01Z"),
+            {
+                "timestamp": "2026-09-15T12:00:02Z",
+                "type": "token_usage_record",
+                "payload": {},
+            },
+            {
+                "timestamp": "2026-09-15T12:00:03Z",
+                "type": "response_item",
+                "payload": {"type": "custom_tool_call"},
+            },
+            {
+                "timestamp": "2026-09-15T12:00:04Z",
+                "type": "response_item",
+                "payload": {"type": "function_call"},
+            },
+            {
+                "timestamp": "2026-09-15T12:00:05Z",
+                "type": "inter_agent_communication_metadata",
+                "payload": {},
+            },
+            _token_event(total, total, "2026-09-15T12:00:06Z"),
+        ],
+    )
+
+    report = analyze_rollout(path)
+    counts = report["counts"]
+
+    assert counts["provider_response_usage_records"] == 1
+    assert counts["zero_delta_token_count_updates"] == 1
+    assert counts["custom_tool_calls"] == 1
+    assert counts["function_calls"] == 1
+    assert counts["tool_calls"] == 2
+    assert counts["inter_agent_communication_metadata"] == 1
+
