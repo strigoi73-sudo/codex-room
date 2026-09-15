@@ -2655,3 +2655,32 @@ Evidence boundary: deterministic implementation and hosted verification are comp
 
 **Status:** IMPLEMENTED / VERIFIED on canonical `main`; fresh local live-Room verification pending.
 
+### E-079 — Live bounded CORE and cross-Room read verification
+**Date:** 2026-09-15  
+**Scope:** [ROOM / CORE live verification] D-029 / I-012 deployed read-boundary smoke.
+
+Fresh Room `room_38590e397cf94542b92fe76278924a65` ran the dedicated I-012 live smoke after the canonical implementation was pulled and the runtime restarted.
+
+Observed Room-export evidence:
+
+- only Agent C ran; A and B never consumed the round context and were not invoked;
+- registry discovery exposed `inspect_source` version `1` with implementation SHA-256 `49338a3be7e57dad643bf2924fb9a017c4bfaa421ad8e0a235a87a2a55799f9b`;
+- manifest inspection reported `core_source_read: true`, `cross_room_read: true`, `workspace_write: false`, no network/external-process permission, `side_effects: none`, and verification evidence `E-078`;
+- source discovery succeeded;
+- a bounded CORE read succeeded against `core:codex_room/db.py`, returning lines 1–12 / 271 bytes;
+- a literal CORE search succeeded under `core:codex_room` for `CREATE TABLE IF NOT EXISTS agent_executions`, locating one match at `codex_room/db.py:238`;
+- a bounded cross-Room find succeeded against `room:room_066696deaefd414bab84c00fa3f536dc`, path `.`, returning 10 shared-workspace file matches;
+- C reported no protected-surface access and no file creation, modification, or deletion;
+- C FINISHed exactly `I-012-LIVE-OK` and the one-turn round closed normally.
+
+The live turn also exposed invocation ergonomics/telemetry behavior worth preserving without overclaiming. Two malformed inline-JSON attempts were correctly surfaced and durably classified as failed `deterministic_capability` invocations. After C changed invocation form to work around the Windows command-line JSON quoting problem, the successful source-discovery/read/search/find operations appeared in the export only as generic `command_execution` activity rather than promoted `deterministic_capability` evidence. The export does not preserve the raw generic command text, so the exact wrapper form cannot be established from this artifact alone. C's final response reports the exact successful results, and the capability's functional live path is therefore demonstrated, but this export does not independently prove durable structured promotion of those successful wrapper-form invocations.
+
+Interpretation:
+
+- D-029's functional objective is live verified: a running Personal Room can inspect authorized CORE source and another Room's shared workspace without peer invocation or cross-boundary write authority;
+- the no-write smoke intentionally prevented use of the already-supported `--input-file` fallback for fragile command-line JSON, making the test stricter than ordinary workspace operation;
+- the generic activity classification did not expose raw read/search payloads, so no data-leak regression is shown;
+- do not expand I-012 solely to redesign capability invocation or telemetry from this one constrained smoke. Monitor ordinary Room use; reopen only if wrapper-form invocation or missing structured telemetry recurs as a practical product problem.
+
+**Status:** I-012 functional read boundary LIVE VERIFIED; bounded telemetry/quoting observation retained as MONITOR, not a completion blocker.
+
