@@ -6,18 +6,18 @@
 
 ## Operator summary
 
-- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, **A3 — Whole-system housekeeping, efficiency, and operational assurance audit**, and **I-012 — authorized CORE/cross-Room read inspection** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-010 is complete. PR #73 adds an offline local operator maintenance CLI for persistent-data integrity checking, SQLite-native backup, manifest/hash verification, and guarded restore with candidate/rollback staging. The final PR head and canonical merge both passed **369 tests, 2 warnings**; see E-087.
-- **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
+- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
+- **What just changed?** I-011 is complete. PR #75 adds hosted Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 verification, runs the pinned browser transcript suite on Windows, adds deliberate dependency/advisory review, removes two timing-based test races, and repairs a Windows newline portability defect exposed by the new lane. The final PR head and canonical merge each passed **370 tests, 2 warnings** on all three Python lanes; Windows also passed **3 browser tests**, and dependency audit reported **no known vulnerabilities**. See E-088.
+- **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-011 — verification-platform and dependency assurance** is next: remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics. Continuation economy remains MONITOR through useful work. No automatic router is authorized.
+- **What is next?** The ordered A3 remediation sequence is complete. No new remediation item is automatically implied; continue ordinary-use monitoring and select further work from demonstrated product/operational need or explicit principal direction. I-003 remains a low-priority provider-side verification candidate, D-019 remains blocked, and continuation economy remains MONITOR through useful work. No automatic router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### A3 audit remediation program
 **Audit work state:** COMPLETE  
-**Remediation work state:** IN PROGRESS / ordered  
+**Remediation work state:** COMPLETE  
 **Evidence:** E-065
 
 A3 found the core execution/coordination architecture structurally healthy enough to preserve while identifying maintenance debt that ordinary production work can miss.
@@ -32,7 +32,7 @@ Ordered remediation:
 6. **I-013 — SDK-internal subagent bypass (COMPLETE):** Codex's ambient multi-agent surface is disabled so production cognition routes through persistent Room A/B/C and its execution-accounting path; see E-080.
 7. **I-014 — Deterministic retrieval economy (COMPLETE):** request-file/repeated-retrieval amplification is repaired with direct/batched source retrieval, targeted verification of delegated evidence, and compact per-execution economics telemetry; see E-081.
 8. **I-010 — Persistent-data operational maintenance (COMPLETE):** offline local check/backup/verify/restore implemented and verified; see E-087.
-9. **I-011 — Verification-platform and dependency assurance — NEXT:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
+9. **I-011 — Verification-platform and dependency assurance (COMPLETE):** cross-platform hosted verification, pinned browser tooling, deterministic test synchronization, dependency/advisory review, and the Windows newline portability repair are implemented and canonically verified; see E-088.
 
 Lower-value audit findings remain MONITOR/DEFERRED until evidence shows they are expensive: shareable/redacted exports, explicit non-loopback safeguards, WebSocket overflow resync, formal numbered schema migrations, large-module refactoring, storage optimization, and stronger per-capability isolation.
 
@@ -146,7 +146,7 @@ Personality experiments V3/V4/V5/V6.2/V7 and CG1 remain historical evidence, not
 ## Ordered next work
 
 ### A3 audit-remediation sequence
-**Work state:** PLANNED  
+**Work state:** COMPLETE  
 **Evidence:** E-065
 
 Current order:
@@ -156,7 +156,7 @@ Current order:
 3. I-009 — runtime provenance, maintenance-health visibility, and usage instrumentation;
 4. P1 follow-up — COMPLETE / MONITOR through ordinary useful work;
 5. I-010 — COMPLETE / IMPLEMENTED / VERIFIED; see E-087;
-6. I-011 — verification-platform and dependency assurance cleanup — **NEXT**.
+6. I-011 — verification-platform and dependency assurance cleanup — **COMPLETE / IMPLEMENTED / VERIFIED**; see E-088.
 
 Do not collapse this into one large refactor. Each item should close on bounded evidence, and later items should reuse instrumentation established earlier.
 
@@ -176,7 +176,7 @@ Canonical routine command: `python -m pytest -q`. Clean-environment verification
 **Work state:** COMPLETE  
 **Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-10
 
-GitHub Actions runs the canonical Python suite on pushes to `main` and pull requests targeting `main`, installing through `constraints-test.txt`. The latest hosted verification on canonical `main` (`34abd391ecbb861d7661541e4a716a5152a2049d`) completed successfully with **130 passed, 2 warnings**.
+GitHub Actions runs the canonical Python suite on pushes to `main` and pull requests targeting `main`, installing through `constraints-test.txt`. I-011 expands hosted coverage to Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12; the Windows lane also runs the pinned browser transcript suite. A separate dependency-review workflow performs pinned advisory scanning and informational dependency-freshness reporting without automatic upgrades. Canonical merge `ed2e5f1ea636eacc585bf89168d222f017a4b75d` passed **370 tests, 2 warnings** on each Python lane, **3 browser tests** on Windows, and the dependency audit reported **no known vulnerabilities**; see E-088.
 
 ### P4 — Deterministic Room and agent capabilities
 **Work state:** COMPLETE  
@@ -352,19 +352,20 @@ Before coding, Project-level review should simplify any proposal that is not req
 
 
 ### I-011 — Verification-platform and dependency assurance
-**Work state:** PLANNED  
-**Reality:** OBSERVED ISSUE / assurance gap  
-**Priority:** MEDIUM  
-**Evidence:** E-065
+**Work state:** COMPLETE  
+**Reality:** IMPLEMENTED / VERIFIED  
+**Priority:** CLOSED  
+**Evidence:** E-065, E-088
 
-A3 found broad automated coverage but several assurance edges:
+PR #75 closes the A3 assurance edges with bounded mechanics:
 
-- routine hosted CI runs only Ubuntu/Python 3.12 despite Windows-centric normal operation;
-- one timing-sensitive test has a documented hosted flake;
-- specialized Playwright coverage resolves an unpinned package at run time;
-- the known-good Python dependency set is intentionally pinned, but routine advisory/freshness review is not automated.
+- hosted Python CI covers Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12;
+- the Windows lane also runs the browser transcript suite using pinned `@playwright/test@1.63.0`;
+- the two recorded timing-sensitive orchestration tests now synchronize on explicit state rather than short sleep/delay windows;
+- `.github/workflows/dependency-review.yml` runs pinned `pip-audit==2.10.1` plus an informational outdated-package report on dependency changes, monthly, and on demand; upgrades remain deliberate;
+- the first Windows run exposed `inspect_source` CRLF/LF variance. Returned transient UTF-8 text is now LF-normalized across platforms while raw-file SHA-256 and byte-size evidence continues to describe the original bytes; the version-2 interface/schema remains unchanged.
 
-Bounded remediation should remove avoidable test nondeterminism, add the cheapest useful Windows-hosted verification, pin specialized browser-test tooling, and add a deliberate dependency/advisory review path. Dependency upgrades remain controlled changes requiring exact-version verification; this item does not authorize automatic upgrading.
+Final exact PR-head and canonical-main verification passed **370 tests, 2 warnings** on all three Python lanes, **3 browser tests** on Windows, and reported **no known dependency vulnerabilities**. See E-088.
 
 ### I-003 — B SDK-thread/profile continuity residue
 **Reality:** OBSERVED ISSUE — historical provider-side residue; current recurrence not demonstrated  
@@ -392,4 +393,4 @@ Keep these behind the active A3 remediation sequence unless the human principal 
 
 ## Open questions
 
-No high-priority conceptual question blocks the active sequence. I-014 is closed and I-010 resumes with repository-grounded candidate design evidence. P1 should gather only naturalistic useful-work evidence and now includes retrieval/tool-loop economics as well as persistent-Room-peer allocation. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
+No high-priority conceptual question blocks current work. The A3 audit-remediation sequence is closed. P1 should gather only naturalistic useful-work evidence and now includes retrieval/tool-loop economics as well as persistent-Room-peer allocation. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
