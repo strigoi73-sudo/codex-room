@@ -2347,3 +2347,26 @@ This closes the deployment-evidence boundary left open by E-068: the new I-009 p
 
 **Status:** I-009 IMPLEMENTED / VERIFIED / LIVE VERIFIED.
 
+### E-070 — P1 authenticated local model-catalog probe
+**Date:** 2026-09-15  
+**Scope:** [P1 exploratory / zero-turn] Principal's authenticated local `openai-codex==0.147.0` runtime on ChatGPT Plus.
+
+A direct SDK `codex.models()` probe was run without invoking a model turn. The local runtime exposed all three intended comparison tiers:
+
+- `gpt-5.6-luna` — default reasoning effort `medium`; supports `low`, `medium`, `high`, `xhigh`, `max`;
+- `gpt-5.6-terra` — default reasoning effort `medium`; supports `low`, `medium`, `high`, `xhigh`, `max`, `ultra`;
+- `gpt-5.6-sol` — local catalog marks this model as default with default reasoning effort `low`; supports `low`, `medium`, `high`, `xhigh`, `max`, `ultra`.
+
+All three are visible (not hidden) and accept text/image input. The probe also exposed an optional `fast`/priority speed tier, but P1 admission testing will not vary service tier because that would confound model/effort economy with a separate increased-usage speed choice.
+
+Admission matrix selected from this exact local catalog:
+
+1. Luna / medium — low-cost tier reference;
+2. Terra / medium — same-model lower-effort comparison;
+3. Terra / high — current production baseline;
+4. Sol / medium — higher-capability tier at moderate effort.
+
+This matrix isolates model-tier effects at constant `medium` effort while separately measuring the marginal effect of Terra `medium → high`. Higher reasoning levels (`xhigh`, `max`, `ultra`) are not admitted to the first comparison because no evidence yet justifies their additional spend.
+
+**Status:** P1 catalog gate PASSED. No production model-selection policy changed.
+
