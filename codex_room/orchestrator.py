@@ -788,6 +788,8 @@ class RoomRuntime:
                 "starting_agent": round_item["starting_agent"],
                 "private_participants": sorted(round_item.get("participant_private", {})),
                 "has_task_overlay": bool(round_item.get("task_overlay")),
+                "required_contributors": round_item.get("required_contributors", []),
+                "work_model_version": round_item.get("work_model_version", 1),
             },
             round_id=round_item["id"],
             discussion_id=round_item["id"],
@@ -869,6 +871,7 @@ class RoomRuntime:
                 round_id,
                 activation["id"],
                 round_item["starting_agent"],
+                round_item.get("required_contributors", []),
             )
             targets = tuple(transaction["agent_keys"])
         await self.ensure_workers(room_id)
