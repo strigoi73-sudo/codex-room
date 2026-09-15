@@ -2,7 +2,7 @@
 name = "codex-room"
 version = "0.1.0"
 description = "A local room where independent persistent Codex threads collaborate while a human observes."
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
   "aiosqlite>=0.22,<1",
   "fastapi>=0.141,<1",
