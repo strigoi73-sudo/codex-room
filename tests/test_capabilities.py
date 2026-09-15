@@ -931,3 +931,58 @@ def test_registry_cli_rejects_non_object_or_escaping_input_file(
     assert non_object["error"]["code"] == "invalid_request"
     assert "JSON object" in non_object["error"]["message"]
 
+def test_source_cli_avoids_json_request_files_and_batches_workspace_reads(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    (tmp_path / "a.txt").write_text("ALPHA\nBETA\n", encoding="utf-8")
+    (tmp_path / "b.txt").write_text("BETA\nGAMMA\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    assert main(
+        [
+            "source",
+            "search-many",
+            "workspace",
+            ".",
+            "--query",
+            "ALPHA",
+            "--query",
+            "BETA",
+        ]
+    ) == 0
+    searched = json.loads(capsys.readouterr().out.strip())
+    assert searched["capability"] == "inspect_source"
+    assert searched["capability_version"] == "2"
+    assert searched["evidence"]["operation"] == "search_many"
+    assert searched["evidence"]["query_count"] == 2
+    assert [item["query"] for item in searched["results"]] == ["ALPHA", "BETA"]
+
+    assert main(
+        [
+            "source",
+            "read-many",
+            "workspace",
+            "--read",
+            "a.txt",
+            "1",
+            "1",
+            "--read",
+            "b.txt",
+            "2",
+            "1",
+        ]
+    ) == 0
+    read = json.loads(capsys.readouterr().out.strip())
+    assert read["capability"] == "inspect_source"
+    assert read["evidence"]["operation"] == "read_many"
+    assert [item["content"] for item in read["reads"]] == ["ALPHA\n", "GAMMA\n"]
+    assert not list(tmp_path.glob("*invoke*.json"))
+
+
+def test_inspect_source_manifest_advertises_direct_source_cli() -> None:
+    inspected = inspect_capability("inspect_source")["capability"]
+
+    assert inspected["version"] == "2"
+    assert inspected["invocation"]["source_cli"] == "codex-room-cap source --help"
+    assert inspected["verification"]["status"] == "verification_pending"
+
