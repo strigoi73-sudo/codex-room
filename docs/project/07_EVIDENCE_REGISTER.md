@@ -2112,3 +2112,24 @@ Verification:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically. Live behavioral compliance remains to be observed.
 
+### E-064 — D-027 live invocation-economy compliance
+**Date:** 2026-09-14  
+**Scope:** [ROOM] clean fresh-Room live verification of D-027.
+
+Fresh Room `room_b49a10be02e340a6bb8fa6f8e76eba0f` used a two-day community science-fair planning objective with C as starter, neutral empty A/B/C profiles, and no Room/task/participant overlays.
+
+Observed routing:
+
+- C invoked both peers once and gave them substantively differentiated responsibilities: A owned minimum viable format, workstreams, owners, and the six-week critical path; B owned early decisions, budget allocation, risks/contingencies, and anti-overengineering guardrails.
+- A returned its bounded result with `invoke_targets: []`. The MESSAGE remained readable to B and C, requested no runnable recipients, made neither peer runnable, and recorded **2 legacy fanout invocations avoided**.
+- B returned its bounded result with `invoke_targets: ["agent_c"]`. The MESSAGE remained readable to A and C; A was not runnable, while C's requested invocation was deferred by the existing delegation-cohort rule until the cohort settled. This recorded **1 legacy fanout invocation avoided**.
+- No A↔B peer-review wake occurred, no extra peer cognition was purchased merely for visibility, and no post-integration reopen cascade occurred.
+- Once both peer returns had settled, CORE emitted one `delegation_cohort_settled` trigger. C consumed both peer returns as passive inputs plus that trigger in one integration batch and issued the final recommendation.
+- The Room used exactly four model turns: C delegation, A return, B return, and C integration/FINISH.
+
+This is the live behavior D-027 was intended to produce. Compared with E-062, the unnecessary A review and C reopen were absent.
+
+**Settlement note:** A's explicit no-wake `invoke_targets: []` return reached C passively through the cohort path rather than as a runnable/deferred causal edge. After C FINISH, the observer therefore briefly emitted `finish_waiting` for A before quiescent reconciliation closed the Room with no runnable work. No extra model invocation resulted and C had already consumed and integrated A's return. This trace is retained as a settlement/observer limitation of the exact run; it does not undermine the D-027 invocation-economy result.
+
+**Status:** D-027 LIVE VERIFIED. No further dedicated D-027 live test is currently warranted; monitor ordinary Rooms for regression.
+
