@@ -6,14 +6,34 @@
 
 ## Operator summary
 
-- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** A fresh science-fair Room live-verified D-027. C differentiated A/B work; A used `invoke_targets: []`; B targeted only C; neither peer woke the other; the delegation cohort integrated once; and no reopen cascade occurred. See E-064.
-- **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
+- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and **A3 — Whole-system housekeeping, efficiency, and operational assurance audit** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
+- **What just changed?** A3 audited the canonical system after D-027 and found no new material core-runtime failure. It identified bounded housekeeping, observability, assurance, and model/effort-economy work. See E-065.
+- **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** No new implementation slice is currently selected. D-027 is live verified. D-019 daily usage pacing is deferred until mixed subscription-allowance / purchased-credit semantics are understood well enough to define correct pacing behavior.
+- **What is next?** Execute the A3 remediation sequence without turning the audit into a broad refactor: first I-007 environment/document truth cleanup and I-008 merged-branch hygiene; then I-009 runtime provenance/maintenance observability; then the P1 model/reasoning-effort economy investigation; then I-010 persistent-data maintenance and I-011 verification-platform/dependency assurance.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
+
+### A3 audit remediation program
+**Audit work state:** COMPLETE  
+**Remediation work state:** PLANNED / ordered  
+**Evidence:** E-065
+
+A3 found the core execution/coordination architecture structurally healthy enough to preserve while identifying maintenance debt that ordinary production work can miss.
+
+Ordered remediation:
+
+1. **I-007 — Environment and documentation truth drift:** repair the Python support-floor claim, README/current-architecture contradictions, stale maintained summaries/headers, and routine-context bloat in Development Control.
+2. **I-008 — Repository branch hygiene:** remove merged-branch residue and adopt cheap automatic cleanup / minimal protection against destructive ref movement.
+3. **I-009 — Runtime provenance and maintenance health:** expose deterministic live build/runtime/model/effort provenance, surface unexpected maintenance/watchdog degradation, and provide the usage instrumentation needed for the next P1 investigation.
+4. **P1 follow-up — Model/reasoning-effort economy:** measure representative work before deciding whether universal Terra/high, participant-specific defaults, delegation-selected effort, or another policy is economically justified.
+5. **I-010 — Persistent-data operational maintenance:** add the smallest deterministic integrity/backup/restore path warranted for durable Personal state.
+6. **I-011 — Verification-platform and dependency assurance:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
+
+Lower-value audit findings remain MONITOR/DEFERRED until evidence shows they are expensive: shareable/redacted exports, explicit non-loopback safeguards, WebSocket overflow resync, formal numbered schema migrations, large-module refactoring, storage optimization, and stronger per-capability isolation.
+
+The remediation program does **not** authorize automatic model routing, large refactors, or broader productization by implication.
 
 ### Room-wide invocation economy
 **Work state:** COMPLETE  
@@ -96,6 +116,15 @@ PR #49 and E-058 verify the implementation: fresh standard composition has no de
 D-025 now authorizes an initial semantic form of dynamic cognitive framing through C's protected coordination instructions. A heavier posture registry/data model/UI remains **NOT IMPLEMENTED** and should not be added unless ordinary use demonstrates a need.
 
 ## Recently completed work
+
+### A3 — Whole-system housekeeping, efficiency, and operational assurance audit
+**Work state:** COMPLETE  
+**Assessment:** Core runtime/coordination GOOD; housekeeping, operational observability, and model/effort economy PARTIAL  
+**Evidence:** E-065
+
+A3 inspected the canonical repository/system after D-027 with emphasis on maintenance debt, avoidable provider cost, assurance gaps, persistent-data operations, repository hygiene, documentation freshness, and observability. It demonstrated no new material core-runtime defect and produced the bounded I-007 through I-011 remediation sequence plus a P1 empirical model/effort follow-up.
+
+The audit did not inspect the current local working tree/process/database state, so machine-local housekeeping remains outside A3's evidence boundary.
 
 ### D-027 room-wide invocation economy
 **Work state:** COMPLETE  
@@ -761,6 +790,21 @@ A2 re-reviewed the current exact source and mapped the focused continuation/rest
 
 ## Ordered next work
 
+### A3 audit-remediation sequence
+**Work state:** PLANNED  
+**Evidence:** E-065
+
+Current order:
+
+1. I-007 — environment/document truth and context hygiene;
+2. I-008 — merged-branch/repository hygiene;
+3. I-009 — runtime provenance, maintenance-health visibility, and usage instrumentation;
+4. P1 follow-up — empirical model/reasoning-effort economy investigation;
+5. I-010 — deterministic persistent-data integrity/backup/restore maintenance;
+6. I-011 — verification-platform and dependency assurance cleanup.
+
+Do not collapse this into one large refactor. Each item should close on bounded evidence, and later items should reuse instrumentation established earlier.
+
 ### EF-1 — Reproducible dependency/environment setup
 **Work state:** COMPLETE  
 **Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-10
@@ -784,6 +828,23 @@ GitHub Actions runs the canonical Python suite on pushes to `main` and pull requ
 **Reality / evidence:** IMPLEMENTED / VERIFIED end to end — 2026-09-13
 
 P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, the minimal CORE library, agent-created custom capability registration/verification, and lineage rollover inheritance have all been verified end to end. P4 is closed. Personal/CORE promotion remains later work under D-022 and requires separate explicit prioritization.
+
+### P1 follow-up — Model/reasoning-effort economy
+**Work state:** PLANNED  
+**Reality:** EXPLORATORY  
+**Evidence:** E-065  
+**Sequencing:** after I-009 establishes reliable provenance and usage instrumentation.
+
+Current source pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. A3 found no settled evidence that this universal policy is the best quality/cost tradeoff for every task.
+
+The next P1 work is measurement, not automatic routing:
+
+- persist/verify actual model and reasoning effort per execution;
+- measure usage by Room/Round/participant/turn on representative work;
+- compare appropriate lower/higher effort configurations against work quality, failures, and provider usage;
+- determine whether universal, participant-specific, delegation-selected, or self-adjusted effort merits a later decision.
+
+No model-selection policy change is authorized until this evidence exists.
 
 ## Approved planned development
 
@@ -810,6 +871,82 @@ Before implementation, resolve at least: whether purchased credits form a distin
 
 ## Maintenance issues
 
+### I-007 — Environment and documentation truth drift
+**Work state:** PLANNED  
+**Reality:** OBSERVED ISSUE  
+**Priority:** HIGH / first A3 remediation item  
+**Evidence:** E-065
+
+A3 found multiple low-risk truth/maintenance defects:
+
+- package/README claim Python 3.10+ while current source relies on a newer runtime surface;
+- README incorrectly says the normal launcher sets the desktop Codex runtime and still describes C as a fixed read-only Integrator template;
+- Architecture still contains stale P4.5-in-progress text;
+- maintained register/synthesis freshness headers lag later content;
+- Development Control retains substantial completed experimental narration already owned by durable decision/evidence sources, increasing routine retrieval/context cost;
+- Repository & Operations has not yet been refreshed for major later architecture such as P4 and current routing/profile behavior.
+
+Repair the owning sources rather than adding a new documentation layer. Preserve historical evidence in its existing owners; make Development Control compact enough to serve its volatile-control role.
+
+### I-008 — Repository branch hygiene
+**Work state:** PLANNED  
+**Reality:** OBSERVED ISSUE  
+**Priority:** HIGH / second A3 remediation item  
+**Evidence:** E-065
+
+At the audited baseline GitHub exposed 55 non-`main` branches; all 55 were heads of already-merged PRs, with zero open PRs. Automatic deletion after merge was disabled and no branch was protected.
+
+Bounded remediation:
+
+- delete only branches proven to belong to merged PRs and not otherwise needed;
+- enable automatic deletion of future merged PR branches;
+- consider only minimal protection against accidental force/deletion of canonical `main`, avoiding heavyweight workflow ceremony not justified by Personal development.
+
+### I-009 — Runtime provenance and maintenance health
+**Work state:** PLANNED  
+**Reality:** OBSERVED ISSUE  
+**Priority:** HIGH / prerequisite for P1 empirical follow-up  
+**Evidence:** E-065
+
+Current health/status does not expose exact running Codex Room source/build identity, SDK/runtime version, or configured Room model/effort. Unexpected watchdog exceptions can also be retried without an operator-visible degraded-health signal.
+
+Bounded remediation should provide deterministic provenance/health sufficient to answer what exact code/runtime/model policy is live and whether maintenance loops are healthy. It should also expose or persist the execution-level model/effort/usage facts needed for the P1 model-economy investigation.
+
+Do not turn this item into a general observability platform.
+
+### I-010 — Persistent-data operational maintenance
+**Work state:** PLANNED  
+**Reality:** OBSERVED ISSUE / maintenance gap  
+**Priority:** MEDIUM  
+**Evidence:** E-065
+
+SQLite transactional/recovery design is strong, but routine Personal operation lacks a small deterministic integrity/backup/restore maintenance path.
+
+Target the minimum useful operations:
+
+- database integrity/quick check;
+- consistent backup creation;
+- deterministic verification that the backup is readable/internally sound;
+- concise tested restore instructions or equivalent bounded recovery proof;
+- storage-size/accounting diagnostics only if they materially aid maintenance.
+
+Do not add a large backup subsystem without evidence.
+
+### I-011 — Verification-platform and dependency assurance
+**Work state:** PLANNED  
+**Reality:** OBSERVED ISSUE / assurance gap  
+**Priority:** MEDIUM  
+**Evidence:** E-065
+
+A3 found broad automated coverage but several assurance edges:
+
+- routine hosted CI runs only Ubuntu/Python 3.12 despite Windows-centric normal operation;
+- one timing-sensitive test has a documented hosted flake;
+- specialized Playwright coverage resolves an unpinned package at run time;
+- the known-good Python dependency set is intentionally pinned, but routine advisory/freshness review is not automated.
+
+Bounded remediation should remove avoidable test nondeterminism, add the cheapest useful Windows-hosted verification, pin specialized browser-test tooling, and add a deliberate dependency/advisory review path. Dependency upgrades remain controlled changes requiring exact-version verification; this item does not authorize automatic upgrading.
+
 ### I-003 — B SDK-thread/profile continuity residue
 **Reality:** OBSERVED ISSUE — historical provider-side residue; current recurrence not demonstrated  
 **Evidence qualifier:** NEEDS VERIFICATION  
@@ -822,7 +959,7 @@ The remaining uncertainty is narrower than the original observation: current det
 
 ## Deferred work
 
-Keep these behind Assurance Pass 2 unless the human principal changes priorities:
+Keep these behind the active A3 remediation sequence unless the human principal changes priorities:
 
 - archive retrieval/indexing;
 - broader deterministic-tooling expansion;
@@ -836,4 +973,4 @@ Keep these behind Assurance Pass 2 unless the human principal changes priorities
 
 ## Open questions
 
-No high-priority open question blocks the repository generally. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-027 is complete and live verified; the next implementation slice has not yet been selected. D-019 is specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
+No high-priority conceptual question blocks I-007/I-008. I-009 should establish the provenance/usage evidence needed before the P1 model/reasoning-effort follow-up makes any policy recommendation. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
