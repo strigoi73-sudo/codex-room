@@ -140,18 +140,21 @@ async def test_execution_persists_model_effort_and_usage(runtime_factory):
     room = await runtime.create_room(
         CreateRoomRequest(topic="Record execution policy", starting_agent="agent_a")
     )
-    await wait_until(lambda: len(adapter.completed_calls["agent_a"]) == 1)
+    async def persisted_execution():
+        async with runtime.db.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT model, reasoning_effort, usage_json
+                   FROM agent_executions
+                   WHERE room_id=?
+                   ORDER BY created_at
+                   LIMIT 1""",
+                (room["id"],),
+            )
+        return rows if rows and rows[0]["usage_json"] is not None else None
 
-    async with runtime.db.connect() as db:
-        rows = await db.execute_fetchall(
-            """SELECT model, reasoning_effort, usage_json
-               FROM agent_executions
-               WHERE room_id=?
-               ORDER BY created_at
-               LIMIT 1""",
-            (room["id"],),
-        )
-
+    await wait_until(persisted_execution)
+    rows = await persisted_execution()
+    assert rows is not None
     assert len(rows) == 1
     assert rows[0]["model"] == ROOM_MODEL
     assert rows[0]["reasoning_effort"] == ROOM_REASONING_EFFORT
