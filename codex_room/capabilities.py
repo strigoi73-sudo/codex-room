@@ -135,6 +135,11 @@ class CapabilitySpec:
                     f"codex-room-cap invoke {self.capability_id} "
                     "--input-file WORKSPACE_RELATIVE_JSON"
                 ),
+                **(
+                    {"source_cli": "codex-room-cap source --help"}
+                    if self.capability_id == "inspect_source"
+                    else {}
+                ),
             },
         }
 
@@ -1443,7 +1448,7 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
         ),
         origin="core",
         scope="core",
-        version="1",
+        version="2",
         input_schema=INSPECT_SOURCE_INPUT_SCHEMA,
         output_schema=INSPECT_SOURCE_OUTPUT_SCHEMA,
         durable_result_fields=("evidence",),
@@ -1456,7 +1461,7 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
             "external_process": False,
         },
         side_effects="none",
-        verification={"status": "verified", "evidence": ["E-078"]},
+        verification={"status": "verification_pending", "evidence": ["E-078"]},
         handler=_invoke_inspect_source,
         implementation_components=(
             *INSPECT_SOURCE_IMPLEMENTATION_COMPONENTS,
@@ -1783,6 +1788,71 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+
+    source_parser = subparsers.add_parser(
+        "source",
+        help="Invoke inspect_source without command-line JSON plumbing.",
+    )
+    source_ops = source_parser.add_subparsers(dest="source_operation", required=True)
+    source_ops.add_parser("sources", help="Discover authorized inspection sources.")
+
+    find_source = source_ops.add_parser("find", help="Find files in one authorized source.")
+    find_source.add_argument("source", choices=("workspace", "core", "room"))
+    find_source.add_argument("path")
+    find_source.add_argument("--room-id")
+    find_source.add_argument("--include-glob", action="append", default=[])
+    find_source.add_argument("--exclude-glob", action="append", default=[])
+    find_source.add_argument("--include-hidden", action="store_true")
+    find_source.add_argument("--max-results", type=int, default=100)
+
+    search_source = source_ops.add_parser("search", help="Search one literal string.")
+    search_source.add_argument("source", choices=("workspace", "core", "room"))
+    search_source.add_argument("path")
+    search_source.add_argument("--room-id")
+    search_source.add_argument("--query", required=True)
+    search_source.add_argument("--include-glob", action="append", default=[])
+    search_source.add_argument("--exclude-glob", action="append", default=[])
+    search_source.add_argument("--include-hidden", action="store_true")
+    search_source.add_argument("--ignore-case", action="store_false", dest="case_sensitive")
+    search_source.add_argument("--max-files", type=int, default=100)
+    search_source.add_argument("--max-matches", type=int, default=50)
+
+    search_many = source_ops.add_parser(
+        "search-many", help="Search several literal strings in one bounded source scan."
+    )
+    search_many.add_argument("source", choices=("workspace", "core", "room"))
+    search_many.add_argument("path")
+    search_many.add_argument("--room-id")
+    search_many.add_argument("--query", action="append", required=True)
+    search_many.add_argument("--include-glob", action="append", default=[])
+    search_many.add_argument("--exclude-glob", action="append", default=[])
+    search_many.add_argument("--include-hidden", action="store_true")
+    search_many.add_argument("--ignore-case", action="store_false", dest="case_sensitive")
+    search_many.add_argument("--max-files", type=int, default=100)
+    search_many.add_argument("--max-matches", type=int, default=50)
+
+    read_source = source_ops.add_parser("read", help="Read one bounded text range.")
+    read_source.add_argument("source", choices=("workspace", "core", "room"))
+    read_source.add_argument("path")
+    read_source.add_argument("--room-id")
+    read_source.add_argument("--start-line", type=int, default=1)
+    read_source.add_argument("--max-lines", type=int, default=400)
+    read_source.add_argument("--max-bytes", type=int, default=128 * 1024)
+
+    read_many = source_ops.add_parser(
+        "read-many", help="Read several bounded text ranges in one invocation."
+    )
+    read_many.add_argument("source", choices=("workspace", "core", "room"))
+    read_many.add_argument("--room-id")
+    read_many.add_argument(
+        "--read",
+        action="append",
+        nargs=3,
+        metavar=("PATH", "START_LINE", "MAX_LINES"),
+        required=True,
+    )
+    read_many.add_argument("--max-bytes", type=int, default=128 * 1024)
+
     # Backward-compatible P4.1 command. New agent prompts use registry discovery/invoke.
     assert_file_parser = subparsers.add_parser(
         "assert-file",
@@ -1796,6 +1866,75 @@ def build_parser() -> argparse.ArgumentParser:
         "--required-key", action="append", default=[], dest="required_keys"
     )
     return parser
+
+
+
+def _source_cli_inputs(args: argparse.Namespace) -> dict[str, Any]:
+    operation = args.source_operation.replace("-", "_")
+    if operation == "sources":
+        return {"operation": "sources"}
+
+    inputs: dict[str, Any] = {
+        "operation": operation,
+        "source": args.source,
+    }
+    if getattr(args, "room_id", None) is not None:
+        inputs["room_id"] = args.room_id
+    if operation == "find":
+        inputs.update(
+            {
+                "path": args.path,
+                "include_globs": args.include_glob,
+                "exclude_globs": args.exclude_glob,
+                "include_hidden": args.include_hidden,
+                "max_results": args.max_results,
+            }
+        )
+    elif operation in {"search", "search_many"}:
+        inputs.update(
+            {
+                "path": args.path,
+                "include_globs": args.include_glob,
+                "exclude_globs": args.exclude_glob,
+                "include_hidden": args.include_hidden,
+                "case_sensitive": args.case_sensitive,
+                "max_files": args.max_files,
+                "max_matches": args.max_matches,
+            }
+        )
+        if operation == "search":
+            inputs["query"] = args.query
+        else:
+            inputs["queries"] = args.query
+    elif operation == "read":
+        inputs.update(
+            {
+                "path": args.path,
+                "start_line": args.start_line,
+                "max_lines": args.max_lines,
+                "max_bytes": args.max_bytes,
+            }
+        )
+    elif operation == "read_many":
+        reads: list[dict[str, Any]] = []
+        for path, raw_start, raw_lines in args.read:
+            try:
+                start_line = int(raw_start)
+                max_lines = int(raw_lines)
+            except ValueError as exc:
+                raise CapabilityUsageError(
+                    "--read START_LINE and MAX_LINES must be integers"
+                ) from exc
+            reads.append(
+                {
+                    "path": path,
+                    "start_line": start_line,
+                    "max_lines": max_lines,
+                }
+            )
+        inputs["reads"] = reads
+        inputs["max_bytes"] = args.max_bytes
+    return inputs
 
 
 def _print_result(result: dict[str, Any]) -> None:
@@ -1829,6 +1968,12 @@ def main(argv: list[str] | None = None) -> int:
             if not isinstance(inputs, dict):
                 raise CapabilityUsageError("capability input must be a JSON object")
             result = invoke_capability(Path.cwd(), args.capability_id, inputs)
+        elif args.command == "source":
+            result = invoke_capability(
+                Path.cwd(),
+                "inspect_source",
+                _source_cli_inputs(args),
+            )
         elif args.command == "assert-file":
             result = invoke_capability(
                 Path.cwd(),
