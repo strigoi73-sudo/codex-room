@@ -1,7 +1,7 @@
 # Codex Room — Decision Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-14  
+**Last updated:** 2026-09-15  
 **Scope:** Settled architectural, governance, product-direction, and development-order decisions.  
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
@@ -381,3 +381,20 @@ D-027 generalizes the token-economy principle beyond C's initial allocation deci
 
 **Principle:** **Messages are public; invocations buy cognition. Wake a peer only when the work needs that peer to think now.**
 
+
+
+### D-028 — Astra is prohibited for Codex Room execution
+**Date:** 2026-09-15  
+**Status:** ACTIVE
+
+Codex Room must not execute Room cognition on an Astra model.
+
+Settled rule:
+
+- Astra is excluded from every C-selectable execution configuration;
+- the runtime must fail closed if an execution path attempts to start a Room turn with the currently identified Astra model `gpt-6-astra`;
+- prompts, coordination policy, or later routing logic may not override this prohibition;
+- P1 may continue evaluating and using admitted Luna, Terra, and Sol configurations under the existing bounded adaptive-cognition trial;
+- changing or removing this prohibition requires an explicit later human-principal decision.
+
+This is a hard execution constraint, not an economic preference or default-selection heuristic.
