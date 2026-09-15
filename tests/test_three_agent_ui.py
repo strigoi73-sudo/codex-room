@@ -95,7 +95,7 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert '$("#room-id").textContent = `Room ID ${room.id}`' in javascript
     assert 'modelEl.className = "model-state"' in javascript
     assert '"Model not run yet"' in javascript
-    assert "`Model ${model}${effort ? ` · ${effort}` : ""}`" in javascript
+    assert '`Model ${model}${effort ? ` · ${effort}` : ""}`' in javascript
     assert "Execution: ${phase} · ${health}" in javascript
     assert "execution.reason" in javascript
     assert 'setAttribute("aria-label", `${execution.text}. ${execution.title}`)' in javascript
