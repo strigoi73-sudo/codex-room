@@ -2582,6 +2582,13 @@ class Database:
                 if assignment is None:
                     await db.rollback()
                     raise RuntimeError("Transaction execution references a missing assignment")
+                continuation_row = await self._fetchone(
+                    db,
+                    """SELECT * FROM usage_continuations
+                       WHERE continuation_batch_id=? AND assignment_id=?
+                         AND state='running'""",
+                    (execution["batch_id"], assignment["id"]),
+                )
                 await db.commit()
                 result = dict(agent)
                 result.update(
@@ -2594,6 +2601,10 @@ class Database:
                         "task_id": assignment["task_id"],
                         "recovered": True,
                         "execution": self._decode_execution(execution),
+                        "usage_continuation": (
+                            self._decode_usage_continuation(continuation_row)
+                            if continuation_row else None
+                        ),
                         "work_model_version": 2,
                     }
                 )
