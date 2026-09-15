@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and **A3 — Whole-system housekeeping, efficiency, and operational assurance audit** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** P1 advanced the canonical Codex SDK/runtime standard from 0.147.0 to the matched 0.154.0 pair under PR #59 / E-071. Production Room policy remains Terra/high; local reinstall/restart and an unfiltered zero-turn catalog check are next.
+- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, **A3 — Whole-system housekeeping, efficiency, and operational assurance audit**, and **I-012 — authorized CORE/cross-Room read inspection** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
+- **What just changed?** E-077 live-verified same-thread C-selected Luna→Terra peer execution. D-029/I-012 then added bounded read-only access to authorized CORE source and other Room shared workspaces; E-079 live-verified that deployed path end to end. The constrained no-write smoke also exposed a non-blocking Windows inline-JSON/telemetry ergonomics observation that remains MONITOR rather than triggering another subsystem.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** P1 remains in progress. E-075 implements verified C-selected peer cognition for representative real work; the next evidence should come from ordinary Rooms, with C allocating cheaper or stronger peer cognition as warranted and A/B requesting escalation when needed. No automatic router is authorized. I-010 and I-011 remain after P1.
+- **What is next?** P1 remains in progress, but its switching mechanics are already live verified. Resume **I-010** as ordinary representative work now that Rooms can inspect CORE. Do not force a two-configuration comparison; let C decide whether to invoke A/B and which admitted peer configuration is warranted. That useful I-010 work should provide the next naturalistic P1 evidence. No automatic router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -27,9 +27,10 @@ Ordered remediation:
 1. **I-007 — Environment and documentation truth drift (COMPLETE):** Python support-floor, README/Architecture/Operations truth, and Development Control context hygiene repaired; see E-066.
 2. **I-008 — Repository branch hygiene (COMPLETE):** merged-branch residue removed and automatic deletion of future merged PR heads enabled; see E-067.
 3. **I-009 — Runtime provenance and maintenance health (COMPLETE):** deterministic runtime/source/model-policy provenance, watchdog degradation/recovery health, and durable execution-level model/effort/usage facts implemented and canonically verified; see E-068.
-4. **P1 follow-up — Model/reasoning-effort economy:** measure representative work before deciding whether universal Terra/high, participant-specific defaults, delegation-selected effort, or another policy is economically justified.
-5. **I-010 — Persistent-data operational maintenance:** add the smallest deterministic integrity/backup/restore path warranted for durable Personal state.
-6. **I-011 — Verification-platform and dependency assurance:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
+4. **P1 follow-up — Model/reasoning-effort economy:** same-thread C-selected peer switching is live verified; gather naturalistic evidence from ordinary useful work before deciding whether the capability should become routine policy.
+5. **I-012 — Authorized CORE and cross-Room read inspection (COMPLETE):** the I-010 evidence boundary was repaired and live verified under D-029 / E-078 / E-079.
+6. **I-010 — Persistent-data operational maintenance:** resume as ordinary representative work using authorized CORE inspection; add the smallest deterministic integrity/backup/restore path warranted for durable Personal state.
+7. **I-011 — Verification-platform and dependency assurance:** remove known test nondeterminism where practical, improve Windows assurance, pin specialized browser tooling, and add deliberate dependency/advisory review mechanics.
 
 Lower-value audit findings remain MONITOR/DEFERRED until evidence shows they are expensive: shareable/redacted exports, explicit non-loopback safeguards, WebSocket overflow resync, formal numbered schema migrations, large-module refactoring, storage optimization, and stronger per-capability isolation.
 
@@ -185,7 +186,7 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 **Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
 **Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076, E-077  
-**Current gate:** deploy/use the verified C-selected peer-execution capability in representative real work; no further dedicated paid synthetic benchmarks.
+**Current gate:** same-thread C-selected peer execution is live verified under E-077; gather naturalistic allocation evidence from ordinary useful work without forcing model comparisons or multiple configurations.
 
 The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of four admitted model/effort configurations for that peer execution. D-028 hard-prohibits Astra execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
 
@@ -195,7 +196,8 @@ The two paid synthetic matrices are complete under E-073/E-074. Routine structur
 
 P1 now proceeds by representative real work only:
 
-- deploy/use the E-075 capability in normal Rooms rather than creating more paid benchmark Rooms;
+- E-077 already verifies the live same-thread switching mechanics; do not repeat the forced two-configuration commissioning test;
+- use the E-075 capability naturally in ordinary Rooms rather than creating more paid benchmark Rooms;
 - C should prefer `luna-medium` for routine bounded delegated work and deliberately choose a stronger admitted Terra or Sol configuration only when complexity, uncertainty, risk, or prior verification trouble provides an affirmative reason;
 - Astra is prohibited by D-028 and is not an admissible execution configuration; the runtime must fail closed if an Astra turn is attempted;
 - A/B should request escalation from C when the assigned work appears underpowered rather than silently self-routing;
@@ -278,23 +280,24 @@ The bounded remediation is complete on canonical CORE:
 PR #58 and the exact canonical merge commit are verified under E-068. Canonical-main CI passed **327 tests, 2 warnings**. E-069 then live-verified the local Personal runtime on exact canonical revision `6168c80938c7e9172a86651d3a9953fb66c2e219`: clean source, Python 3.12.10, `openai-codex` 0.147.0, Terra/high policy, and a healthy zero-failure watchdog.
 
 ### I-012 — Authorized CORE and cross-Room read inspection
-**Work state:** IN PROGRESS  
-**Reality:** IMPLEMENTED / VERIFIED on canonical `main`; live-Room verification pending  
+**Work state:** COMPLETE  
+**Reality:** IMPLEMENTED / VERIFIED / LIVE VERIFIED  
 **Decision:** D-029  
-**Evidence:** E-077, E-078  
-**Priority:** ACTIVE / raised directly by the I-010/P1 live trial
+**Evidence:** E-077, E-078, E-079  
+**Priority:** CLOSED / dependency discovered by the I-010/P1 live trial
 
-The I-010 adaptive-cognition Room demonstrated a real evidence boundary: the agents could inspect only their current shared workspace and therefore could not ground implementation-specific maintenance conclusions in CORE source or prior Room artifacts. E-077 records that live observation while also verifying same-thread Luna→Terra peer execution.
+The first I-010 adaptive-cognition Room demonstrated a real evidence boundary: agents confined to their current shared workspace could not ground implementation-specific maintenance conclusions in CORE source or prior Room artifacts. D-029/I-012 repaired that boundary through registered CORE capability `inspect_source`.
 
-PR #62 implements the bounded remediation through registered CORE capability `inspect_source`:
+Verified behavior:
 
 - discover authorized sources, find files, search literal text, and read bounded UTF-8 source text;
 - expose an allowlisted maintained CORE repository/source surface while excluding `data/`, environment-private files, credentials/secrets, virtual environments, Git internals, and arbitrary host paths;
 - expose other Personal Rooms only through `data/rooms/<room_id>/shared`, not private participant state or host database internals;
-- reject traversal plus symlink/reparse escapes and keep read/search payload content transient while durable telemetry records only bounded provenance/evidence;
-- preserve all existing cross-boundary write restrictions.
+- reject traversal plus symlink/reparse escapes and preserve all existing cross-boundary write restrictions.
 
-Final PR head `a64acf828cd32202038529d180311934ac1c26f5` and squash merge `e60ad2b1d4a3339c30ef1837f3bca53366929acd` share exact Git tree `c24f31635065252fd4e9d2bd0d2460549f5243e0`; both hosted runs passed **341 tests, 2 warnings**. The remaining gate is one fresh local Room smoke proving the deployed Windows/Codex sandbox can use `inspect_source` against CORE and another Room shared workspace. Do not close I-012 until that live gate passes.
+PR #62 is canonically verified under E-078. E-079 then live-verified the deployed path in a fresh Room: C alone discovered/inspected `inspect_source`, read and searched CORE, inspected another Room's shared workspace, made no writes, and FINISHed `I-012-LIVE-OK`.
+
+The no-write smoke forced C away from the existing `--input-file` fallback after fragile Windows inline-JSON attempts. Successful workaround invocations were exported as generic `command_execution` rather than promoted structured capability telemetry. This is retained as MONITOR, not a completion blocker: functional access succeeded, no raw payload leaked into durable activity, and ordinary operation already has a file-input fallback. Reopen only if normal Rooms repeatedly need wrapper-form invocation or the missing structured telemetry becomes operationally costly.
 
 ### I-010 — Persistent-data operational maintenance
 **Work state:** PLANNED  
@@ -355,4 +358,4 @@ Keep these behind the active A3 remediation sequence unless the human principal 
 
 ## Open questions
 
-No high-priority conceptual question blocks I-007/I-008. I-009 should establish the provenance/usage evidence needed before the P1 model/reasoning-effort follow-up makes any policy recommendation. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
+No high-priority conceptual question blocks the active sequence. I-012 is closed and I-010 can resume with authorized CORE evidence access. P1 still needs naturalistic ordinary-work evidence before any recommendation to routinize C-selected model switching or compile routing rules. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
