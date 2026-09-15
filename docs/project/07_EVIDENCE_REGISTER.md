@@ -1,7 +1,7 @@
 # Codex Room — Evidence Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-12  
+**Last updated:** 2026-09-14  
 **Scope:** Compact empirical record supporting important project claims.  
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
@@ -2132,4 +2132,40 @@ This is the live behavior D-027 was intended to produce. Compared with E-062, th
 **Settlement note:** A's explicit no-wake `invoke_targets: []` return reached C passively through the cohort path rather than as a runnable/deferred causal edge. After C FINISH, the observer therefore briefly emitted `finish_waiting` for A before quiescent reconciliation closed the Room with no runnable work. No extra model invocation resulted and C had already consumed and integrated A's return. This trace is retained as a settlement/observer limitation of the exact run; it does not undermine the D-027 invocation-economy result.
 
 **Status:** D-027 LIVE VERIFIED. No further dedicated D-027 live test is currently warranted; monitor ordinary Rooms for regression.
+
+### E-065 — A3 whole-system housekeeping, efficiency, and operational assurance audit
+**Date:** 2026-09-14  
+**Scope:** Read-only whole-system audit of canonical repository baseline `9465863b7a86b7081af38c7d87bcabb5964dcc79`, maintained Project sources, current GitHub repository/CI state, current source/tests, and the latest D-027 live Room evidence.
+
+The audit looked specifically for housekeeping debt, avoidable operating cost, assurance gaps, observability weaknesses, persistence/recovery risks, stale documentation, and complexity that ordinary feature production can overlook.
+
+Material findings:
+
+- **Core execution and coordination remained structurally strong.** Source inspection did not demonstrate a new material defect in exact-turn recovery, per-agent serialization, stale-result protection, selective readable/runnable routing, delegation-cohort integration, rollover provenance, or deterministic custom-capability registration/inheritance. D-027's latest live evidence remained a clean four-turn invocation-economy pass under E-064.
+- **Model/effort economy is unresolved.** `codex_room/agent.py` pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. This is an implemented static policy, but the audit found no settled decision or empirical evidence establishing that universal Terra/high is the economically correct policy for all work. This creates an explicit P1 follow-up: measure before changing model/effort allocation.
+- **Supported-Python metadata is inconsistent with source.** `pyproject.toml` declares `requires-python = ">=3.10"` and README says Python 3.10+, while current source imports `enum.StrEnum` and otherwise relies on the current 3.11-era runtime surface. CI tests only Python 3.12. The support-floor claim therefore needs correction or deliberate compatibility work.
+- **Maintained/user-facing documentation has drift.** README still says the launcher sets `CODEX_ROOM_CODEX_BIN` to the desktop runtime even though the launcher defaults to the SDK-pinned runtime, and README still describes C as using a fixed read-only Integrator template despite current neutral replaceable profiles plus protected C coordination structure. `04_ARCHITECTURE_AND_CURRENT_STATE.md` is dated 2026-09-12 and still says P4.5 is IN PROGRESS while current Development Control/E-040 close P4.5/P4. Register freshness headers also lag later entries. Development Control itself contains substantial completed experimental history that duplicates durable evidence and increases routine context cost.
+- **Repository branch hygiene is stale but mechanically clear.** GitHub exposed 55 non-`main` branches; all 55 are heads of already-merged PRs, there are zero open PRs, `delete_branch_on_merge` is false, and no branch is currently protected. This is cleanup debt, not active work.
+- **Runtime provenance is weak.** `/api/health` exposes authentication health but not the exact Codex Room source/build identity, SDK/runtime version, or configured Room model/effort. The application package/API version remains `0.1.0`. Exact-live-version questions therefore require external repository/process reasoning rather than one deterministic status surface.
+- **Unexpected watchdog failures can be silent.** The watchdog loop catches arbitrary exceptions and retries after sleep without persisting/logging the unexpected exception through an operator-visible health signal.
+- **Persistent-data maintenance is mostly release/manual rather than routine.** The SQLite design uses WAL, foreign keys, busy timeout, atomic transaction patterns, durable execution records, and restart recovery. The active runtime does not expose a routine `quick_check`/integrity health path or an automatic verified backup/restore workflow.
+- **Assurance is broad but platform-asymmetric.** The last code-bearing canonical suite under E-063 passed 324 tests with 2 warnings; source inspection counted 269 test functions before parametrization. Hosted CI runs only Ubuntu/Python 3.12 even though ordinary operation relies heavily on Windows launcher/PowerShell/shell behavior. One previously recorded timing-sensitive test flake remains documented. The specialized Playwright browser script is manual and resolves an unpinned `@playwright/test` package at execution time.
+- **Dependency policy is reproducible but freshness/security review is not routine.** `constraints-test.txt` deliberately pins the known-good stack, including `openai-codex==0.147.0`; no routine dependency-advisory/freshness check is part of normal CI.
+- **Custom capability trust boundaries remain explicit.** Registered custom capabilities retain exact package/verification/registration provenance and bounded execution checks. Their permission declarations are intentionally not per-capability OS enforcement; they rely on the ambient Room sandbox. The audit found no evidence warranting immediate redesign of this settled boundary.
+- **Passive no-wake deliveries are Round-scoped.** Pending passive deliveries such as those visible in E-064 are filtered by active Round, sequence/watermark, runnable trigger, and FINISH boundary before any future claim. The audit did not find evidence that old passive deliveries silently bleed into later Round cognition.
+- **Some hardening ideas remain low-priority rather than demonstrated defects:** shareable/redacted exports, explicit non-loopback-host safeguards, WebSocket overflow-triggered resync, formal numbered schema migrations, large-module refactoring, and stronger per-capability isolation.
+
+Resulting work allocation:
+
+1. record and perform low-risk environment/document truth cleanup and context-hygiene work;
+2. clean merged-branch residue and adopt cheap repository hygiene;
+3. establish deterministic runtime provenance/maintenance health and usage instrumentation;
+4. reopen P1 only as an empirical model/reasoning-effort economy investigation, with no automatic routing policy assumed in advance;
+5. add bounded persistent-data integrity/backup operations;
+6. repair verification-platform debt and add deliberate dependency-review mechanics;
+7. leave lower-value hardening and large refactors deferred/monitor unless later evidence demonstrates a costly problem.
+
+**Evidence boundary:** This audit did not inspect the principal's current local `C:\\Codex Room` working tree, running process tree, local database size/integrity, or untracked/generated files. It therefore establishes the canonical repository/system findings above, not a clean bill of health for the current local machine state.
+
+**Assessment:** A3 COMPLETE. Core runtime/coordination: GOOD. Housekeeping, operational observability, and model/effort economy: PARTIAL with bounded remediation work identified.
 
