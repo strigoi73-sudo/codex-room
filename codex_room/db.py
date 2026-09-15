@@ -26,6 +26,7 @@ from .models import (
     RolloverRoomRequest,
     RoomStatus,
     RoundStatus,
+    EXECUTION_CONFIGS,
 )
 
 
@@ -222,7 +223,8 @@ class Database:
                     agent_a_overlay TEXT,
                     agent_b_overlay TEXT,
                     close_reason TEXT,
-                    last_activity_at TEXT
+                    last_activity_at TEXT,
+                    work_model_version INTEGER NOT NULL DEFAULT 1
                 );
 
                 CREATE TABLE IF NOT EXISTS round_agent_state (
@@ -235,11 +237,72 @@ class Database:
                     PRIMARY KEY(round_id, agent_id)
                 );
 
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id TEXT PRIMARY KEY,
+                    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                    round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+                    parent_task_id TEXT REFERENCES tasks(id),
+                    origin_event_id TEXT REFERENCES events(id),
+                    coordinator_agent_id TEXT NOT NULL REFERENCES agents(id),
+                    state TEXT NOT NULL,
+                    required_contributors_json TEXT NOT NULL DEFAULT '[]',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    settled_at TEXT,
+                    settlement_event_id TEXT REFERENCES events(id),
+                    settlement_reason TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS assignment_joins (
+                    id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+                    parent_assignment_id TEXT REFERENCES assignments(id),
+                    continuation_agent_id TEXT REFERENCES agents(id),
+                    state TEXT NOT NULL,
+                    released_assignment_id TEXT REFERENCES assignments(id),
+                    created_at TEXT NOT NULL,
+                    ready_at TEXT,
+                    released_at TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS assignments (
+                    id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+                    agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+                    parent_assignment_id TEXT REFERENCES assignments(id),
+                    contribution_join_id TEXT REFERENCES assignment_joins(id),
+                    origin_event_id TEXT REFERENCES events(id),
+                    instruction TEXT NOT NULL,
+                    context_event_ids_json TEXT NOT NULL DEFAULT '[]',
+                    execution_config_id TEXT,
+                    state TEXT NOT NULL,
+                    result_event_id TEXT REFERENCES events(id),
+                    resolution_reason TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    started_at TEXT,
+                    completed_at TEXT
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_tasks_round_state
+                    ON tasks(round_id, state);
+                CREATE INDEX IF NOT EXISTS idx_tasks_room_time
+                    ON tasks(room_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_assignments_agent_state
+                    ON assignments(agent_id, state, created_at);
+                CREATE INDEX IF NOT EXISTS idx_assignments_task_state
+                    ON assignments(task_id, state);
+                CREATE INDEX IF NOT EXISTS idx_assignments_join_state
+                    ON assignments(contribution_join_id, state);
+                CREATE INDEX IF NOT EXISTS idx_assignment_joins_task_state
+                    ON assignment_joins(task_id, state);
+
                 CREATE TABLE IF NOT EXISTS agent_executions (
                     batch_id TEXT PRIMARY KEY,
                     room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
                     agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
                     round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+                    assignment_id TEXT REFERENCES assignments(id),
                     lifecycle_version INTEGER NOT NULL,
                     worker_generation INTEGER NOT NULL,
                     model TEXT,
@@ -325,7 +388,14 @@ class Database:
             await self._ensure_column(db, "rounds", "last_activity_at", "TEXT")
             await self._ensure_column(db, "rounds", "participant_private_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "participant_overlays_json", "TEXT NOT NULL DEFAULT '{}'")
+            await self._ensure_column(db, "rounds", "work_model_version", "INTEGER NOT NULL DEFAULT 1")
             await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
+            await self._ensure_column(
+                db,
+                "agent_executions",
+                "assignment_id",
+                "TEXT REFERENCES assignments(id)",
+            )
 
             now = utc_now()
             await db.executemany(
@@ -788,8 +858,9 @@ class Database:
             )
             await db.execute(
                 """INSERT INTO rounds
-                   (id, room_id, title, prompt, created_at, status, starting_agent)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                   (id, room_id, title, prompt, created_at, status, starting_agent,
+                    work_model_version)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -798,6 +869,7 @@ class Database:
                     now,
                     RoundStatus.PREPARING,
                     request.starting_agent,
+                    request.work_model_version,
                 ),
             )
             await db.executemany(
@@ -1649,8 +1721,9 @@ class Database:
                    (id, room_id, title, prompt, created_at, status, starting_agent,
                     agent_a_private, agent_b_private, task_overlay,
                     agent_a_overlay, agent_b_overlay,
-                    participant_private_json, participant_overlays_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    participant_private_json, participant_overlays_json,
+                    work_model_version)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -1666,6 +1739,7 @@ class Database:
                     request.agent_b_overlay,
                     json.dumps(request.participant_private, ensure_ascii=False),
                     json.dumps(request.participant_overlays, ensure_ascii=False),
+                    request.work_model_version,
                 ),
             )
             await db.executemany(
@@ -2183,6 +2257,922 @@ class Database:
             (item for item in rounds if item["id"] == room.get("active_round_id")), None
         )
         return room
+
+    async def create_transaction_task(
+        self,
+        room_id: str,
+        round_id: str,
+        origin_event_id: str,
+        starting_agent: str,
+    ) -> dict[str, Any]:
+        """Create the first explicit task/assignment graph for a version-2 Round."""
+        now = utc_now()
+        task_id = new_id("task")
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            round_row = await self._fetchone(
+                db,
+                """SELECT * FROM rounds
+                   WHERE id=? AND room_id=? AND status=? AND work_model_version=2""",
+                (round_id, room_id, RoundStatus.ACTIVE),
+            )
+            if round_row is None:
+                await db.rollback()
+                raise ValueError("Transaction task requires an active work-model-v2 Round")
+            existing = await self._fetchone(
+                db, "SELECT * FROM tasks WHERE round_id=? ORDER BY created_at LIMIT 1",
+                (round_id,),
+            )
+            if existing is not None:
+                await db.commit()
+                return {
+                    "task_id": existing["id"],
+                    "assignment_ids": [],
+                    "agent_keys": [],
+                    "created": False,
+                }
+            agents = await db.execute_fetchall(
+                "SELECT id, agent_key FROM agents WHERE room_id=? ORDER BY agent_key",
+                (room_id,),
+            )
+            by_key = {row["agent_key"]: row for row in agents}
+            coordinator = by_key.get("agent_c")
+            if coordinator is None:
+                if starting_agent == "either":
+                    coordinator = agents[0] if agents else None
+                else:
+                    coordinator = by_key.get(starting_agent)
+            if coordinator is None:
+                await db.rollback()
+                raise ValueError("Transaction task has no valid coordinator")
+            await db.execute(
+                """INSERT INTO tasks
+                   (id, room_id, round_id, origin_event_id, coordinator_agent_id,
+                    state, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, 'active', ?, ?)""",
+                (
+                    task_id,
+                    room_id,
+                    round_id,
+                    origin_event_id,
+                    coordinator["id"],
+                    now,
+                    now,
+                ),
+            )
+
+            if starting_agent == "either":
+                target_keys = tuple(by_key)
+            else:
+                if starting_agent not in by_key:
+                    await db.rollback()
+                    raise ValueError("Round starting agent is not a Room participant")
+                target_keys = (starting_agent,)
+
+            assignment_ids: list[str] = []
+            join_id: str | None = None
+            use_external_join = target_keys != (coordinator["agent_key"],)
+            if use_external_join:
+                join_id = new_id("join")
+                await db.execute(
+                    """INSERT INTO assignment_joins
+                       (id, task_id, continuation_agent_id, state, created_at)
+                       VALUES (?, ?, ?, 'pending', ?)""",
+                    (join_id, task_id, coordinator["id"], now),
+                )
+            for target_key in target_keys:
+                assignment_id = new_id("assignment")
+                assignment_ids.append(assignment_id)
+                await db.execute(
+                    """INSERT INTO assignments
+                       (id, task_id, agent_id, contribution_join_id, origin_event_id,
+                        instruction, state, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?)""",
+                    (
+                        assignment_id,
+                        task_id,
+                        by_key[target_key]["id"],
+                        join_id,
+                        origin_event_id,
+                        (
+                            "Independently advance the prepared Round objective."
+                            if starting_agent == "either"
+                            else "Advance the prepared Round objective."
+                        ),
+                        now,
+                        now,
+                    ),
+                )
+            await db.commit()
+        return {
+            "task_id": task_id,
+            "assignment_ids": assignment_ids,
+            "agent_keys": list(target_keys),
+            "created": True,
+        }
+
+    async def create_observer_transaction_work(
+        self,
+        room_id: str,
+        round_id: str,
+        origin_event_id: str,
+        target_keys: tuple[str, ...],
+        instruction: str,
+    ) -> dict[str, Any]:
+        """Turn observer input into explicit assignments instead of runnable history."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            round_row = await self._fetchone(
+                db,
+                """SELECT * FROM rounds
+                   WHERE id=? AND room_id=? AND status=? AND work_model_version=2""",
+                (round_id, room_id, RoundStatus.ACTIVE),
+            )
+            if round_row is None:
+                await db.rollback()
+                raise ValueError("Observer transaction work requires an active version-2 Round")
+            agents = await db.execute_fetchall(
+                "SELECT id, agent_key FROM agents WHERE room_id=? ORDER BY agent_key",
+                (room_id,),
+            )
+            by_key = {row["agent_key"]: row for row in agents}
+            if not target_keys or any(key not in by_key for key in target_keys):
+                await db.rollback()
+                raise ValueError("Observer transaction target is not a Room participant")
+            coordinator = by_key.get("agent_c") or by_key[target_keys[0]]
+            task = await self._fetchone(
+                db,
+                """SELECT * FROM tasks
+                   WHERE room_id=? AND round_id=? AND state='active'
+                   ORDER BY created_at DESC LIMIT 1""",
+                (room_id, round_id),
+            )
+            if task is None:
+                previous = await self._fetchone(
+                    db,
+                    """SELECT * FROM tasks
+                       WHERE room_id=? AND round_id=?
+                       ORDER BY created_at DESC LIMIT 1""",
+                    (room_id, round_id),
+                )
+                task_id = new_id("task")
+                await db.execute(
+                    """INSERT INTO tasks
+                       (id, room_id, round_id, parent_task_id, origin_event_id,
+                        coordinator_agent_id, state, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)""",
+                    (
+                        task_id,
+                        room_id,
+                        round_id,
+                        previous["id"] if previous else None,
+                        origin_event_id,
+                        coordinator["id"],
+                        now,
+                        now,
+                    ),
+                )
+            else:
+                task_id = task["id"]
+
+            join_id: str | None = None
+            if target_keys != (coordinator["agent_key"],):
+                join_id = new_id("join")
+                await db.execute(
+                    """INSERT INTO assignment_joins
+                       (id, task_id, continuation_agent_id, state, created_at)
+                       VALUES (?, ?, ?, 'pending', ?)""",
+                    (join_id, task_id, coordinator["id"], now),
+                )
+            assignment_ids: list[str] = []
+            for target_key in target_keys:
+                assignment_id = new_id("assignment")
+                assignment_ids.append(assignment_id)
+                await db.execute(
+                    """INSERT INTO assignments
+                       (id, task_id, agent_id, contribution_join_id, origin_event_id,
+                        instruction, state, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?)""",
+                    (
+                        assignment_id,
+                        task_id,
+                        by_key[target_key]["id"],
+                        join_id,
+                        origin_event_id,
+                        instruction,
+                        now,
+                        now,
+                    ),
+                )
+            await db.commit()
+        return {
+            "task_id": task_id,
+            "assignment_ids": assignment_ids,
+            "agent_keys": list(target_keys),
+        }
+
+    async def claim_next_assignment(
+        self,
+        room_id: str,
+        agent_key: str,
+        worker_generation: int = 0,
+        model: str | None = None,
+        reasoning_effort: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Claim one explicit version-2 logical assignment for one serialized agent."""
+        now = utc_now()
+        batch_id = new_id("batch")
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            agent = await self._fetchone(
+                db,
+                """SELECT a.*, r.status AS room_status, r.active_round_id,
+                          r.max_turns, r.lifecycle_version,
+                          ro.turn_count AS round_turn_count, ro.work_model_version
+                   FROM agents a JOIN rooms r ON r.id=a.room_id
+                   JOIN rounds ro ON ro.id=r.active_round_id
+                   WHERE a.room_id=? AND a.agent_key=? AND r.status='running'
+                     AND ro.status='active' AND ro.work_model_version=2""",
+                (room_id, agent_key),
+            )
+            if agent is None:
+                await db.rollback()
+                return None
+            execution = await self._fetchone(
+                db,
+                """SELECT * FROM agent_executions
+                   WHERE room_id=? AND agent_id=? AND round_id=? AND assignment_id IS NOT NULL
+                     AND state IN ('claimed','active','recovering','result_ready','usage_suspended','quarantined')
+                   ORDER BY created_at LIMIT 1""",
+                (room_id, agent["id"], agent["active_round_id"]),
+            )
+            if execution is not None:
+                if execution["state"] == "usage_suspended":
+                    await db.commit()
+                    return None
+                assignment = await self._fetchone(
+                    db, "SELECT * FROM assignments WHERE id=?", (execution["assignment_id"],)
+                )
+                if assignment is None:
+                    await db.rollback()
+                    raise RuntimeError("Transaction execution references a missing assignment")
+                await db.commit()
+                result = dict(agent)
+                result.update(
+                    {
+                        "batch_id": execution["batch_id"],
+                        "round_id": agent["active_round_id"],
+                        "discussion_id": agent["active_round_id"],
+                        "assignment": dict(assignment),
+                        "assignment_id": assignment["id"],
+                        "task_id": assignment["task_id"],
+                        "recovered": True,
+                        "execution": self._decode_execution(execution),
+                        "work_model_version": 2,
+                    }
+                )
+                return result
+
+            active_executions = await self._fetchone(
+                db,
+                """SELECT COUNT(*) AS count FROM agent_executions
+                   WHERE room_id=? AND round_id=? AND state IN
+                     ('claimed','active','recovering','result_ready','usage_suspended')""",
+                (room_id, agent["active_round_id"]),
+            )
+            if (
+                agent["round_turn_count"]
+                + int(active_executions["count"] if active_executions else 0)
+                >= agent["max_turns"]
+            ):
+                await db.commit()
+                return None
+
+            assignment = await self._fetchone(
+                db,
+                """SELECT x.*
+                   FROM assignments x JOIN tasks t ON t.id=x.task_id
+                   WHERE x.agent_id=? AND x.state='queued' AND t.state='active'
+                     AND t.room_id=? AND t.round_id=?
+                   ORDER BY x.created_at, x.id LIMIT 1""",
+                (agent["id"], room_id, agent["active_round_id"]),
+            )
+            if assignment is None:
+                await db.commit()
+                return None
+
+            selected_model = model
+            selected_effort = reasoning_effort
+            config_id = assignment["execution_config_id"]
+            if config_id:
+                resolved = EXECUTION_CONFIGS.get(config_id)
+                if resolved is None:
+                    await db.rollback()
+                    raise RuntimeError("Assignment contains an unsupported execution config")
+                selected_model, selected_effort = resolved
+
+            cursor = await db.execute(
+                """UPDATE assignments
+                   SET state='running', started_at=COALESCE(started_at, ?), updated_at=?
+                   WHERE id=? AND state='queued'""",
+                (now, now, assignment["id"]),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                return None
+            await db.execute(
+                "UPDATE agents SET status=?, last_error=NULL, updated_at=? WHERE id=?",
+                (AgentStatus.RUNNING, now, agent["id"]),
+            )
+            await db.execute(
+                """INSERT INTO agent_executions
+                   (batch_id, room_id, agent_id, round_id, assignment_id,
+                    lifecycle_version, worker_generation, model, reasoning_effort,
+                    state, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'claimed', ?)""",
+                (
+                    batch_id,
+                    room_id,
+                    agent["id"],
+                    agent["active_round_id"],
+                    assignment["id"],
+                    agent["lifecycle_version"],
+                    worker_generation,
+                    selected_model,
+                    selected_effort,
+                    now,
+                ),
+            )
+            await db.commit()
+            execution = await self._fetchone(
+                db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
+            )
+        result = dict(agent)
+        result.update(
+            {
+                "batch_id": batch_id,
+                "round_id": agent["active_round_id"],
+                "discussion_id": agent["active_round_id"],
+                "assignment": dict(assignment),
+                "assignment_id": assignment["id"],
+                "task_id": assignment["task_id"],
+                "recovered": False,
+                "execution": self._decode_execution(execution),
+                "work_model_version": 2,
+            }
+        )
+        return result
+
+    async def get_assignment_dependency_results(
+        self, assignment_id: str
+    ) -> list[dict[str, Any]]:
+        """Return exact released child results that caused this assignment to resume."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT j.id AS join_id, x.id AS assignment_id, a.agent_key,
+                          x.state, x.result_event_id, x.resolution_reason,
+                          e.content AS result_content
+                   FROM assignment_joins j
+                   JOIN assignments x ON x.contribution_join_id=j.id
+                   JOIN agents a ON a.id=x.agent_id
+                   LEFT JOIN events e ON e.id=x.result_event_id
+                   WHERE j.released_assignment_id=? AND j.state='released'
+                   ORDER BY j.created_at, x.created_at, x.id""",
+                (assignment_id,),
+            )
+        return [dict(row) for row in rows]
+
+    async def settle_transaction_decision(
+        self,
+        room_id: str,
+        round_id: str,
+        batch_id: str,
+        assignment_id: str,
+        action: str,
+        result_event_id: str,
+        delegations: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Atomically settle one assignment decision and release any satisfied join."""
+        now = utc_now()
+        terminal_states = ("completed", "passed", "failed", "cancelled", "waived")
+        wake_agent_keys: list[str] = []
+        released_join_id: str | None = None
+        task_settled = False
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            execution = await self._fetchone(
+                db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
+            )
+            if (
+                execution is None
+                or execution["assignment_id"] != assignment_id
+                or execution["state"] not in {"result_ready", "settled"}
+            ):
+                await db.rollback()
+                raise RuntimeError("Transaction execution is not ready for settlement")
+            assignment = await self._fetchone(
+                db,
+                """SELECT x.*, a.agent_key, a.room_id
+                   FROM assignments x JOIN agents a ON a.id=x.agent_id
+                   WHERE x.id=?""",
+                (assignment_id,),
+            )
+            if assignment is None or assignment["room_id"] != room_id:
+                await db.rollback()
+                raise RuntimeError("Transaction assignment is missing or belongs elsewhere")
+            if execution["decision_recorded_at"] is not None:
+                await db.commit()
+                return {
+                    "wake_agent_keys": [],
+                    "released_join_id": None,
+                    "task_settled": False,
+                    "turn_limit_hit": False,
+                    "decision_applied": False,
+                }
+            if assignment["state"] != "running":
+                await db.rollback()
+                raise RuntimeError("Only a running assignment can settle a new decision")
+
+            await db.execute(
+                """UPDATE rooms SET turn_count=turn_count+1, updated_at=? WHERE id=?""",
+                (now, room_id),
+            )
+            await db.execute(
+                """UPDATE rounds SET turn_count=turn_count+1
+                   WHERE id=? AND room_id=? AND status=? AND work_model_version=2""",
+                (round_id, room_id, RoundStatus.ACTIVE),
+            )
+
+            round_budget = await self._fetchone(
+                db,
+                """SELECT ro.turn_count, r.max_turns
+                   FROM rounds ro JOIN rooms r ON r.id=ro.room_id
+                   WHERE ro.id=? AND ro.room_id=?""",
+                (round_id, room_id),
+            )
+            turn_limit_hit = bool(
+                round_budget
+                and int(round_budget["turn_count"]) >= int(round_budget["max_turns"])
+            )
+
+            if action == "DELEGATE":
+                if not delegations:
+                    await db.rollback()
+                    raise ValueError("DELEGATE requires child assignments")
+                join_id = new_id("join")
+                await db.execute(
+                    """INSERT INTO assignment_joins
+                       (id, task_id, parent_assignment_id, state, created_at)
+                       VALUES (?, ?, ?, 'pending', ?)""",
+                    (join_id, assignment["task_id"], assignment_id, now),
+                )
+                await db.execute(
+                    """UPDATE assignments
+                       SET state='waiting_join', result_event_id=?, updated_at=?
+                       WHERE id=? AND state='running'""",
+                    (result_event_id, now, assignment_id),
+                )
+                seen: set[str] = set()
+                for item in delegations:
+                    target_key = item["target"]
+                    if target_key == assignment["agent_key"] or target_key in seen:
+                        await db.rollback()
+                        raise ValueError("Delegation targets must be distinct peers")
+                    seen.add(target_key)
+                    target = await self._fetchone(
+                        db,
+                        "SELECT * FROM agents WHERE room_id=? AND agent_key=?",
+                        (room_id, target_key),
+                    )
+                    if target is None:
+                        await db.rollback()
+                        raise ValueError(f"Delegation target {target_key} is unavailable")
+                    config_id = item.get("config")
+                    if config_id is not None and config_id not in EXECUTION_CONFIGS:
+                        await db.rollback()
+                        raise ValueError("Delegation execution config is unsupported")
+                    child_id = new_id("assignment")
+                    await db.execute(
+                        """INSERT INTO assignments
+                           (id, task_id, agent_id, parent_assignment_id,
+                            contribution_join_id, origin_event_id, instruction,
+                            execution_config_id, state, created_at, updated_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?)""",
+                        (
+                            child_id,
+                            assignment["task_id"],
+                            target["id"],
+                            assignment_id,
+                            join_id,
+                            result_event_id,
+                            item["instruction"],
+                            config_id,
+                            now,
+                            now,
+                        ),
+                    )
+                    wake_agent_keys.append(target_key)
+            else:
+                state = "completed" if action == "COMPLETE" else "passed"
+                await db.execute(
+                    """UPDATE assignments
+                       SET state=?, result_event_id=?, completed_at=?, updated_at=?
+                       WHERE id=? AND state='running'""",
+                    (state, result_event_id, now, now, assignment_id),
+                )
+
+            cursor = await db.execute(
+                """UPDATE agent_executions SET decision_recorded_at=?
+                   WHERE batch_id=? AND decision_recorded_at IS NULL""",
+                (now, batch_id),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError("Transaction decision settlement lost its compare-and-set")
+
+            contribution_join_id = assignment["contribution_join_id"]
+            if action != "DELEGATE" and contribution_join_id:
+                open_member = await self._fetchone(
+                    db,
+                    """SELECT 1 FROM assignments
+                       WHERE contribution_join_id=? AND state NOT IN
+                         ('completed','passed','failed','cancelled','waived')
+                       LIMIT 1""",
+                    (contribution_join_id,),
+                )
+                if open_member is None:
+                    join = await self._fetchone(
+                        db,
+                        "SELECT * FROM assignment_joins WHERE id=?",
+                        (contribution_join_id,),
+                    )
+                    if join is not None and join["state"] == "pending":
+                        await db.execute(
+                            """UPDATE assignment_joins SET state='ready', ready_at=?
+                               WHERE id=? AND state='pending'""",
+                            (now, contribution_join_id),
+                        )
+                        released_assignment_id: str | None = None
+                        if join["parent_assignment_id"]:
+                            parent = await self._fetchone(
+                                db,
+                                """SELECT x.*, a.agent_key
+                                   FROM assignments x JOIN agents a ON a.id=x.agent_id
+                                   WHERE x.id=?""",
+                                (join["parent_assignment_id"],),
+                            )
+                            if parent is None or parent["state"] != "waiting_join":
+                                await db.rollback()
+                                raise RuntimeError("Ready join has no waiting parent assignment")
+                            await db.execute(
+                                """UPDATE assignments
+                                   SET state='queued', updated_at=?
+                                   WHERE id=? AND state='waiting_join'""",
+                                (now, parent["id"]),
+                            )
+                            released_assignment_id = parent["id"]
+                            wake_agent_keys.append(parent["agent_key"])
+                        else:
+                            continuation = await self._fetchone(
+                                db,
+                                """SELECT a.* FROM agents a
+                                   WHERE a.id=? AND a.room_id=?""",
+                                (join["continuation_agent_id"], room_id),
+                            )
+                            if continuation is None:
+                                await db.rollback()
+                                raise RuntimeError("Ready join has no continuation agent")
+                            released_assignment_id = new_id("assignment")
+                            await db.execute(
+                                """INSERT INTO assignments
+                                   (id, task_id, agent_id, origin_event_id, instruction,
+                                    state, created_at, updated_at)
+                                   VALUES (?, ?, ?, ?, ?, 'queued', ?, ?)""",
+                                (
+                                    released_assignment_id,
+                                    assignment["task_id"],
+                                    continuation["id"],
+                                    result_event_id,
+                                    "Integrate the completed dependent assignments and advance the task.",
+                                    now,
+                                    now,
+                                ),
+                            )
+                            wake_agent_keys.append(continuation["agent_key"])
+                        await db.execute(
+                            """UPDATE assignment_joins
+                               SET state='released', released_assignment_id=?, released_at=?
+                               WHERE id=? AND state='ready'""",
+                            (
+                                released_assignment_id,
+                                now,
+                                contribution_join_id,
+                            ),
+                        )
+                        released_join_id = contribution_join_id
+
+            if action != "DELEGATE":
+                open_assignment = await self._fetchone(
+                    db,
+                    """SELECT 1 FROM assignments
+                       WHERE task_id=? AND state IN ('queued','running','waiting_join')
+                       LIMIT 1""",
+                    (assignment["task_id"],),
+                )
+                open_join = await self._fetchone(
+                    db,
+                    """SELECT 1 FROM assignment_joins
+                       WHERE task_id=? AND state IN ('pending','ready')
+                       LIMIT 1""",
+                    (assignment["task_id"],),
+                )
+                task = await self._fetchone(
+                    db, "SELECT * FROM tasks WHERE id=?", (assignment["task_id"],)
+                )
+                if (
+                    open_assignment is None
+                    and open_join is None
+                    and task is not None
+                    and task["coordinator_agent_id"] == assignment["agent_id"]
+                    and task["state"] == "active"
+                ):
+                    await db.execute(
+                        """UPDATE tasks
+                           SET state='settled', settled_at=?, updated_at=?,
+                               settlement_event_id=?, settlement_reason=?
+                           WHERE id=? AND state='active'""",
+                        (
+                            now,
+                            now,
+                            result_event_id,
+                            action.lower(),
+                            assignment["task_id"],
+                        ),
+                    )
+                    task_settled = True
+
+            await db.commit()
+        return {
+            "wake_agent_keys": list(dict.fromkeys(wake_agent_keys)),
+            "released_join_id": released_join_id,
+            "task_settled": task_settled,
+            "turn_limit_hit": turn_limit_hit,
+            "decision_applied": True,
+        }
+
+    async def fail_transaction_assignment(
+        self,
+        room_id: str,
+        round_id: str,
+        batch_id: str,
+        error: str,
+        *,
+        retryable: bool = True,
+    ) -> dict[str, Any]:
+        """Fail or requeue one exact transaction execution without stranding joins."""
+        now = utc_now()
+        wake_agent_keys: list[str] = []
+        task_failed = False
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            execution = await self._fetchone(
+                db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
+            )
+            if execution is None or not execution["assignment_id"]:
+                await db.rollback()
+                raise RuntimeError("Transaction failure has no assignment execution")
+            assignment = await self._fetchone(
+                db,
+                """SELECT x.*, a.agent_key, a.room_id
+                   FROM assignments x JOIN agents a ON a.id=x.agent_id
+                   WHERE x.id=?""",
+                (execution["assignment_id"],),
+            )
+            if assignment is None or assignment["room_id"] != room_id:
+                await db.rollback()
+                raise RuntimeError("Transaction failure assignment is unavailable")
+            attempts = await self._fetchone(
+                db,
+                "SELECT COUNT(*) AS count FROM agent_executions WHERE assignment_id=?",
+                (assignment["id"],),
+            )
+            should_retry = (
+                retryable
+                and int(attempts["count"] if attempts else 0) < 2
+                and assignment["state"] == "running"
+            )
+            await db.execute(
+                """UPDATE agent_executions
+                   SET state='failed', settled_at=?, error=?
+                   WHERE batch_id=? AND state IN
+                     ('claimed','active','recovering','result_ready')""",
+                (now, error[:4000], batch_id),
+            )
+            await db.execute(
+                "UPDATE agents SET status=?, last_error=?, updated_at=? WHERE id=?",
+                (AgentStatus.IDLE, error[:4000], now, assignment["agent_id"]),
+            )
+            if should_retry:
+                await db.execute(
+                    """UPDATE assignments
+                       SET state='queued', updated_at=?, resolution_reason=?
+                       WHERE id=? AND state='running'""",
+                    (now, error[:4000], assignment["id"]),
+                )
+                wake_agent_keys.append(assignment["agent_key"])
+                await db.commit()
+                return {
+                    "retried": True,
+                    "wake_agent_keys": wake_agent_keys,
+                    "task_failed": False,
+                }
+
+            await db.execute(
+                """UPDATE assignments
+                   SET state='failed', completed_at=?, updated_at=?, resolution_reason=?
+                   WHERE id=? AND state IN ('running','queued')""",
+                (now, now, error[:4000], assignment["id"]),
+            )
+            contribution_join_id = assignment["contribution_join_id"]
+            if contribution_join_id:
+                open_member = await self._fetchone(
+                    db,
+                    """SELECT 1 FROM assignments
+                       WHERE contribution_join_id=? AND state NOT IN
+                         ('completed','passed','failed','cancelled','waived')
+                       LIMIT 1""",
+                    (contribution_join_id,),
+                )
+                join = await self._fetchone(
+                    db, "SELECT * FROM assignment_joins WHERE id=?",
+                    (contribution_join_id,),
+                )
+                if open_member is None and join is not None and join["state"] == "pending":
+                    await db.execute(
+                        """UPDATE assignment_joins
+                           SET state='ready', ready_at=?
+                           WHERE id=? AND state='pending'""",
+                        (now, contribution_join_id),
+                    )
+                    if join["parent_assignment_id"]:
+                        parent = await self._fetchone(
+                            db,
+                            """SELECT x.*, a.agent_key
+                               FROM assignments x JOIN agents a ON a.id=x.agent_id
+                               WHERE x.id=?""",
+                            (join["parent_assignment_id"],),
+                        )
+                        if parent is None or parent["state"] != "waiting_join":
+                            await db.rollback()
+                            raise RuntimeError("Failed child has no waiting parent assignment")
+                        released_assignment_id = parent["id"]
+                        await db.execute(
+                            """UPDATE assignments SET state='queued', updated_at=?
+                               WHERE id=? AND state='waiting_join'""",
+                            (now, parent["id"]),
+                        )
+                        wake_agent_keys.append(parent["agent_key"])
+                    else:
+                        continuation = await self._fetchone(
+                            db,
+                            "SELECT * FROM agents WHERE id=? AND room_id=?",
+                            (join["continuation_agent_id"], room_id),
+                        )
+                        if continuation is None:
+                            await db.rollback()
+                            raise RuntimeError("Failed child join has no continuation agent")
+                        released_assignment_id = new_id("assignment")
+                        await db.execute(
+                            """INSERT INTO assignments
+                               (id, task_id, agent_id, instruction, state, created_at, updated_at)
+                               VALUES (?, ?, ?, ?, 'queued', ?, ?)""",
+                            (
+                                released_assignment_id,
+                                assignment["task_id"],
+                                continuation["id"],
+                                "Integrate the completed dependent assignments, including failures, and advance the task.",
+                                now,
+                                now,
+                            ),
+                        )
+                        wake_agent_keys.append(continuation["agent_key"])
+                    await db.execute(
+                        """UPDATE assignment_joins
+                           SET state='released', released_assignment_id=?, released_at=?
+                           WHERE id=? AND state='ready'""",
+                        (released_assignment_id, now, contribution_join_id),
+                    )
+            else:
+                task = await self._fetchone(
+                    db, "SELECT * FROM tasks WHERE id=?", (assignment["task_id"],)
+                )
+                if (
+                    task is not None
+                    and task["coordinator_agent_id"] == assignment["agent_id"]
+                    and task["state"] == "active"
+                ):
+                    await db.execute(
+                        """UPDATE tasks
+                           SET state='failed', updated_at=?, settled_at=?,
+                               settlement_reason=?
+                           WHERE id=? AND state='active'""",
+                        (now, now, error[:4000], assignment["task_id"]),
+                    )
+                    task_failed = True
+            await db.commit()
+        return {
+            "retried": False,
+            "wake_agent_keys": list(dict.fromkeys(wake_agent_keys)),
+            "task_failed": task_failed,
+        }
+
+    async def has_open_transaction_assignment(
+        self,
+        room_id: str,
+        agent_key: str,
+        round_id: str | None = None,
+    ) -> bool:
+        async with self.connect() as db:
+            params: list[Any] = [room_id, agent_key]
+            round_clause = ""
+            if round_id is not None:
+                round_clause = " AND t.round_id=?"
+                params.append(round_id)
+            row = await self._fetchone(
+                db,
+                f"""SELECT 1
+                    FROM assignments x
+                    JOIN tasks t ON t.id=x.task_id
+                    JOIN agents a ON a.id=x.agent_id
+                    WHERE t.room_id=? AND a.agent_key=?
+                      AND t.state='active'
+                      AND x.state IN ('queued','running','waiting_join')
+                      {round_clause}
+                    LIMIT 1""",
+                tuple(params),
+            )
+        return row is not None
+
+    async def has_active_transaction_task(
+        self, room_id: str, round_id: str
+    ) -> bool:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                """SELECT 1 FROM tasks
+                   WHERE room_id=? AND round_id=? AND state='active' LIMIT 1""",
+                (room_id, round_id),
+            )
+        return row is not None
+
+    async def cancel_transaction_work(
+        self, room_id: str, round_id: str | None = None
+    ) -> None:
+        """Cancel unfinished transaction state under the same Room lifecycle boundary."""
+        now = utc_now()
+        async with self.connect() as db:
+            task_clause = " AND round_id=?" if round_id is not None else ""
+            task_params: list[Any] = [now, now, room_id]
+            if round_id is not None:
+                task_params.append(round_id)
+            await db.execute(
+                f"""UPDATE tasks
+                    SET state='cancelled', updated_at=?, settled_at=?,
+                        settlement_reason='room_lifecycle_change'
+                    WHERE room_id=? AND state='active'{task_clause}""",
+                task_params,
+            )
+            assignment_clause = (
+                " AND task_id IN (SELECT id FROM tasks WHERE room_id=? AND round_id=?)"
+                if round_id is not None
+                else " AND task_id IN (SELECT id FROM tasks WHERE room_id=?)"
+            )
+            assignment_params: list[Any] = [now, now, room_id]
+            if round_id is not None:
+                assignment_params.append(round_id)
+            await db.execute(
+                f"""UPDATE assignments
+                    SET state='cancelled', updated_at=?, completed_at=?,
+                        resolution_reason='room_lifecycle_change'
+                    WHERE state IN ('queued','running','waiting_join'){assignment_clause}""",
+                assignment_params,
+            )
+            join_clause = (
+                " AND task_id IN (SELECT id FROM tasks WHERE room_id=? AND round_id=?)"
+                if round_id is not None
+                else " AND task_id IN (SELECT id FROM tasks WHERE room_id=?)"
+            )
+            join_params: list[Any] = [now, room_id]
+            if round_id is not None:
+                join_params.append(round_id)
+            await db.execute(
+                f"""UPDATE assignment_joins
+                    SET state='cancelled', released_at=?
+                    WHERE state IN ('pending','ready'){join_clause}""",
+                join_params,
+            )
+            await db.commit()
 
     async def claim_next_batch(
         self,
@@ -2716,7 +3706,16 @@ class Database:
                 "SELECT COUNT(*) AS count FROM deliveries WHERE batch_id=? AND status='processing'",
                 (batch_id,),
             )
-            if processing is None or not processing["count"]:
+            assignment_live = False
+            if row["assignment_id"] is not None:
+                assignment = await self._fetchone(
+                    db,
+                    """SELECT 1 FROM assignments
+                       WHERE id=? AND agent_id=? AND state='running'""",
+                    (row["assignment_id"], row["agent_id"]),
+                )
+                assignment_live = assignment is not None
+            if (processing is None or not processing["count"]) and not assignment_live:
                 await db.rollback()
                 return False
             try:

@@ -10,16 +10,17 @@
 - **What just changed?** Ordinary-use product evaluation exposed a broader coordination/economics recurrence after the I-014 repairs: one serious assessment spent 544,416 execution tokens before peer cognition and then announced it was waiting for A/B while emitting no runnable peer targets. A follow-up Room deliberately avoided rediscovery, correctly differentiated and invoked A/B, integrated both through the existing cohort barrier, and completed in 138,522 execution tokens total. The agents independently converged on the same architectural thesis: intellectual allocation should remain cognitive, but mechanical work state should be explicit and deterministic rather than inferred from conversational backlog. I-015 is now the active **design-only** stabilization investigation; no redesign implementation is yet authorized. See E-092 and E-093. The restart correction remains locally confirmed under E-091.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 — Task-transaction stabilization redesign** is IN PROGRESS as a design investigation prompted by demonstrated ordinary-use failures. Feature development is frozen for this investigation. The immediate deliverable is a concrete migration design and viability gate, not another prompt patch. I-003 remains a low-priority provider-side verification candidate, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** **I-015 Stage A implementation is IN PROGRESS under D-030.** The first bounded slice implements the version-2 Task/Assignment/Join kernel behind explicit opt-in while preserving version-1 behavior. It must pass deterministic hosted tests before default activation or paid naturalistic validation. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### I-015 — Task-transaction stabilization redesign
 **Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE / EXPLORATORY redesign  
+**Reality:** OBSERVED ISSUE / DECIDED redesign / IMPLEMENTATION IN PROGRESS  
+**Decision:** D-030  
 **Evidence:** E-092, E-093  
-**Scope:** [CORE], with later [CORE + ROOM migration] only if a redesign is approved.
+**Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
 
@@ -358,7 +359,7 @@ This design deliberately makes one consequential product change: **transaction-e
 
 That is compatible with D-027's “invocation is cognition” principle and addresses the observed failure class, but adopting it would supersede the implementation mechanism—not the intent—of parts of D-015 and D-020. It therefore requires an explicit principal design decision before Stage A code work begins.
 
-No Stage A runtime implementation is authorized by this design record alone.
+**Principal adoption — 2026-09-15:** D-030 approves this Stage A design. Implementation is now authorized in bounded slices. The first slice is intentionally opt-in through `work_model_version=2` while legacy version-1 behavior remains the default until the transaction kernel passes deterministic hosted verification; default activation is a later migration step, not assumed by adoption.
 
 
 ### A3 audit remediation program

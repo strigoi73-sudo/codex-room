@@ -8,7 +8,7 @@ from typing import Any
 
 from codex_room.agent import AgentRunResult, InterruptOutcome
 from codex_room.db import Database
-from codex_room.models import AgentDecision, Outcome
+from codex_room.models import AgentDecision, Outcome, TransactionAction, TransactionDecision
 
 
 class LegacyPairDatabase(Database):
@@ -98,6 +98,7 @@ class FakeAgentAdapter:
         *,
         model: str = "gpt-5.6-terra",
         reasoning_effort: str = "high",
+        transactional: bool = False,
     ) -> AgentRunResult:
         self._inactive_agents.discard(agent["agent_key"])
         self.calls[agent["agent_key"]].append(
@@ -107,6 +108,7 @@ class FakeAgentAdapter:
                 "cwd": str(cwd),
                 "model": model,
                 "reasoning_effort": reasoning_effort,
+                "transactional": transactional,
             }
         )
         if self.synchronize_first_topic and "NEW TOPIC" in prompt and len(self.calls[agent["agent_key"]]) == 1:
@@ -132,7 +134,15 @@ class FakeAgentAdapter:
             )
             raise failures.popleft()
         queue = self.decisions.get(agent["agent_key"])
-        decision = queue.popleft() if queue else AgentDecision(outcome=Outcome.PASS, message="")
+        decision = (
+            queue.popleft()
+            if queue
+            else (
+                TransactionDecision(action=TransactionAction.PASS, message="")
+                if transactional
+                else AgentDecision(outcome=Outcome.PASS, message="")
+            )
+        )
         self.completed_calls[agent["agent_key"]].append(self.calls[agent["agent_key"]][-1])
         usages = self.usages.get(agent["agent_key"])
         usage = usages.popleft() if usages else {"total_tokens": 10}
@@ -153,6 +163,8 @@ class FakeAgentAdapter:
         thread_id: str,
         turn_id: str,
         on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        transactional: bool = False,
     ) -> AgentRunResult:
         """Tests may provide a durable turn result using the normal decision queue."""
         self.calls[agent["agent_key"]].append(
@@ -165,7 +177,15 @@ class FakeAgentAdapter:
             }
         )
         queue = self.decisions.get(agent["agent_key"])
-        decision = queue.popleft() if queue else AgentDecision(outcome=Outcome.PASS, message="")
+        decision = (
+            queue.popleft()
+            if queue
+            else (
+                TransactionDecision(action=TransactionAction.PASS, message="")
+                if transactional
+                else AgentDecision(outcome=Outcome.PASS, message="")
+            )
+        )
         self.completed_calls[agent["agent_key"]].append(self.calls[agent["agent_key"]][-1])
         if on_progress is not None:
             await on_progress()
