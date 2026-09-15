@@ -1448,7 +1448,7 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
         ),
         origin="core",
         scope="core",
-        version="3",
+        version="2",
         input_schema=INSPECT_SOURCE_INPUT_SCHEMA,
         output_schema=INSPECT_SOURCE_OUTPUT_SCHEMA,
         durable_result_fields=("evidence",),
