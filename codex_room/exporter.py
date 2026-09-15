@@ -41,6 +41,7 @@ def as_markdown(snapshot: dict[str, Any]) -> str:
                 f"- Starting agent: {round_item.get('starting_agent') or 'not recorded'}",
                 f"- Turns: {round_item.get('turn_count', 0)}",
                 f"- Consecutive conversational PASSes: {round_item.get('consecutive_passes', 0)}",
+                f"- Work model version: {round_item.get('work_model_version', 1)}",
                 "",
                 "### Public prompt",
                 "",
@@ -50,6 +51,43 @@ def as_markdown(snapshot: dict[str, Any]) -> str:
                 "",
             ]
         )
+        transaction = round_item.get("transaction_state")
+        if transaction is not None:
+            lines.extend(["### Transaction work state", ""])
+            tasks = transaction.get("tasks", [])
+            if not tasks:
+                lines.extend(["_(no transaction tasks recorded)_", ""])
+            for task in tasks:
+                required = task.get("required_contributors") or []
+                lines.extend(
+                    [
+                        f"#### Task `{task['id']}`",
+                        "",
+                        f"- State: {task['state']}",
+                        (
+                            "- Required contributors: "
+                            + (", ".join(required) if required else "none")
+                        ),
+                        f"- Settlement reason: {task.get('settlement_reason') or 'not settled'}",
+                        "",
+                        "Assignments:",
+                    ]
+                )
+                for assignment in task.get("assignments", []):
+                    lines.append(
+                        f"- `{assignment['id']}` · {assignment['agent_key']} · "
+                        f"{assignment['state']} · {assignment['instruction']}"
+                    )
+                lines.append("")
+                lines.append("Joins:")
+                for join in task.get("joins", []):
+                    lines.append(
+                        f"- `{join['id']}` · {join['state']} · "
+                        f"parent={join.get('parent_assignment_id') or 'external'} · "
+                        f"released={join.get('released_assignment_id') or 'none'}"
+                    )
+                lines.append("")
+            lines.extend(["### Events", ""])
         for event in round_item.get("events", []):
             speaker = names.get(event["source"], event["source"])
             destination = event["destination"]
