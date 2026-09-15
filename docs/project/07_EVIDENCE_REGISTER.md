@@ -2038,3 +2038,40 @@ Verification:
 
 **Status:** IMPLEMENTED / VERIFIED deterministically. Live behavioral verification remains next.
 
+### E-062 — D-026 live pass exposed unnecessary peer-to-peer runnable invocation
+**Date:** 2026-09-14  
+**Scope:** [ROOM] clean live test of D-026, followed by observation of invocation-economy leakage outside C's initial delegation.
+
+Fresh Room `room_19a4fcb993294de2a2becae5961307df` used the full household-move objective as the opening Round prompt, with C as starter, neutral empty A/B/C profiles, and no Room/task/participant overlays.
+
+Primary D-026 behavior:
+
+- C invoked both A and B from the opening objective;
+- C assigned meaningfully different cognitive responsibilities:
+  - A: propose the end-to-end operating workflow and smallest useful structured tracker/tooling layer;
+  - B: assess where multi-agent AI judgment adds value, especially research/decisions/risk, and identify failure modes/overengineering traps;
+- A returned an operating-plan / workflow / structured-tooling recommendation;
+- B returned an evidence-sensitive judgment / risk / failure-mode recommendation;
+- the delegation cohort settled only after both primary returns;
+- C integrated the complementary outputs into one practical recommendation.
+
+**D-026 result:** LIVE PASS. The dual-peer assignments were substantively differentiated and produced complementary value.
+
+A separate coordination-economy issue then appeared:
+
+- B's return requested runnable delivery to both A and C even though B's substantive answer was already publicly readable to A;
+- C's runnable delivery was correctly deferred by the delegation-cohort mechanism, but A was awakened immediately;
+- A then spent an additional turn reviewing B's answer and sent a refinement to C;
+- C had already integrated the primary cohort and issued FINISH, so A's refinement reopened C for another turn;
+- the extra A review turn reported **23,249** tokens and the resulting C reopen reported **25,459** tokens, about **48,708 reported call-tokens** beyond the primary cohort, without being required by C's original bounded delegation.
+
+Interpretation:
+
+- D-026 is live verified for C's peer-count/differentiation behavior;
+- public readability and runnable invocation are mechanically distinct, but the participant instructions did not yet make the economic meaning of that distinction explicit;
+- direct A/B collaboration remains valuable when additional cognition is actually needed, but invoking a peer merely to expose an already-public message creates avoidable model work and can cascade into unnecessary follow-up/reopen turns.
+
+This observation motivates D-027: invocation should request immediate cognition, not visibility; a peer completing bounded work for C should normally return to C without waking the other delegated peer unless that peer's additional cognition is materially needed.
+
+**Status:** D-026 LIVE VERIFIED. Peer-to-peer invocation economy OBSERVED ISSUE motivating D-027.
+

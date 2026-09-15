@@ -63,8 +63,6 @@ class AgentDecision(BaseModel):
         if self.outcome != Outcome.MESSAGE and self.invoke_targets is not None:
             raise ValueError("invoke_targets is valid only for MESSAGE")
         if self.invoke_targets is not None:
-            if not self.invoke_targets:
-                raise ValueError("invoke_targets cannot be empty")
             if len(self.invoke_targets) != len(set(self.invoke_targets)):
                 raise ValueError("invoke_targets cannot contain duplicates")
             if "all" in self.invoke_targets and len(self.invoke_targets) != 1:

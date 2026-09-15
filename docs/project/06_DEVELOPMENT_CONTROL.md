@@ -7,19 +7,36 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, and **P4 — Deterministic Room and agent capabilities** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The first live D-025 allocation test exposed redundant dual-peer cognition: C invoked A and B with substantially the same analysis and received strongly convergent answers. D-026 now makes peer-count economy explicit and requires meaningful differentiation whenever both peers are invoked. See E-060.
+- **What just changed?** A clean household-move Room live-verified D-026: C invoked both peers with meaningfully differentiated assignments and integrated complementary outputs. The same trace exposed a broader routing inefficiency when B made A runnable after posting an already-public return, causing an extra A review and C reopen. D-027 now defines invocation as a purchase of immediate cognition, not visibility. See E-062.
 - **What is blocked?** Nothing. The delegation-cohort timing repair is live verified.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Run a fresh live task to confirm C uses one peer when one is enough and meaningfully differentiated responsibilities when both are invoked.
+- **What is next?** Verify D-027 on the implementation PR, then run one fresh Room to confirm peers no longer wake each other merely for visibility while preserving direct collaboration when extra cognition is actually needed.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
+### Room-wide invocation economy
+**Work state:** IN PROGRESS  
+**Reality:** D-027 DECIDED; implementation pending hosted verification  
+**Decision:** D-027  
+**Evidence:** E-062
+
+D-027 generalizes the token-economy rule to every use of `invoke_targets`:
+
+- invocation requests immediate cognition, not visibility;
+- public messages remain readable without waking a peer;
+- use `all` only when every peer genuinely needs to run;
+- if no additional cognition is needed, use `invoke_targets: []` for a public/readable MESSAGE with no runnable peer;
+- a peer completing bounded work for C should normally return to C without waking the other delegated peer;
+- direct A/B collaboration remains allowed when that peer's additional cognition is materially necessary.
+
+The initial implementation belongs primarily in the protected shared Room protocol, because A, B, and C all control `invoke_targets`. One minimal schema/runtime compatibility change is also required: `invoke_targets: []` must be accepted as an explicit no-runnable-peer MESSAGE, while `null` remains the legacy all-peer fanout. No scheduler or UI redesign is warranted.
+
 ### C peer-allocation economy and temporary cognitive framing
-**Work state:** COMPLETE for implementation; MONITOR for live compliance  
-**Reality:** IMPLEMENTED / VERIFIED deterministically  
+**Work state:** COMPLETE  
+**Reality:** IMPLEMENTED / LIVE VERIFIED  
 **Decisions:** D-025, D-026  
-**Evidence:** E-059, E-060, E-061
+**Evidence:** E-059, E-060, E-061, E-062
 
 C retains D-025 authority to assign temporary task-specific working postures, perspectives, scopes, constraints, evidence standards, expected deliverables, or temporary roles/personas to A/B.
 
@@ -36,7 +53,7 @@ D-025's identity and judgment guardrails remain: frames are temporary delegation
 
 PR #53 / E-061 verify the protected D-026 rule. No posture registry, new database object, profile mutation, or UI is warranted without evidence that natural-language delegation is insufficient.
 
-Live compliance remains a MONITOR item until a fresh Room demonstrates economical peer count and meaningful dual-peer differentiation in practice.
+E-062 provides that live verification: on a clean household-move objective C invoked both peers with substantively different responsibilities and integrated complementary returns. D-026 is therefore complete.
 
 ### C delegation-cohort timing
 **Work state:** COMPLETE  
@@ -76,6 +93,15 @@ PR #49 and E-058 verify the implementation: fresh standard composition has no de
 D-025 now authorizes an initial semantic form of dynamic cognitive framing through C's protected coordination instructions. A heavier posture registry/data model/UI remains **NOT IMPLEMENTED** and should not be added unless ordinary use demonstrates a need.
 
 ## Recently completed work
+
+### D-026 live behavioral verification
+**Work state:** COMPLETE  
+**Reality / evidence:** LIVE VERIFIED — 2026-09-14  
+**Decision:** D-026  
+**Evidence:** E-062
+
+A clean fresh Room gave C only the household-move objective. C split the work into operating-workflow/tooling versus AI-judgment/risk responsibilities, both peers produced complementary work, and C integrated the cohort. The same trace exposed the separate D-027 invocation-economy issue.
+
 
 ### D-026 peer-allocation economy and mandatory differentiation
 **Work state:** COMPLETE  
