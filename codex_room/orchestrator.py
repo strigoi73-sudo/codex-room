@@ -54,6 +54,8 @@ from .models import (
     NewTopicRequest,
     ObserverMessageRequest,
     Outcome,
+    TransactionAction,
+    TransactionDecision,
     PrepareRoundRequest,
     RolloverRoomRequest,
     RoomStatus,
@@ -719,6 +721,7 @@ class RoomRuntime:
                 return_exceptions=True,
             )
             await self.db.cancel_pending_deliveries(room_id, room["discussion_id"])
+            await self.db.cancel_transaction_work(room_id, room["discussion_id"])
             round_item = await self.db.prepare_round(room_id, request)
             await self._record_round_preparation(room_id, round_item)
             await self.publish_state(room_id)
@@ -836,12 +839,32 @@ class RoomRuntime:
             "room",
             round_item["starting_agent"],
             "Begin the prepared round now.",
-            metadata={"starting_agent": round_item["starting_agent"]},
-            deliver_to=targets,
+            metadata={
+                "starting_agent": round_item["starting_agent"],
+                "work_model_version": round_item.get("work_model_version", 1),
+            },
+            deliver_to=(
+                ()
+                if round_item.get("work_model_version", 1) == 2
+                else targets
+            ),
+            runnable_to=(
+                ()
+                if round_item.get("work_model_version", 1) == 2
+                else None
+            ),
             round_id=round_id,
             discussion_id=round_id,
         )
         self._publish_event(activation)
+        if round_item.get("work_model_version", 1) == 2:
+            transaction = await self.db.create_transaction_task(
+                room_id,
+                round_id,
+                activation["id"],
+                round_item["starting_agent"],
+            )
+            targets = tuple(transaction["agent_keys"])
         await self.ensure_workers(room_id)
         for target in targets:
             self.wake(room_id, target)
@@ -867,27 +890,45 @@ class RoomRuntime:
             targets = tuple(members) if target == "all" else (target,)
             if any(item not in members for item in targets):
                 raise ValueError(f"Target {request.target} is not a Room participant")
+            round_item = await self.db.get_round(room["active_round_id"])
+            transactional = bool(
+                round_item and round_item.get("work_model_version", 1) == 2
+            )
             event = await self.db.create_event(
                 room_id,
                 "observer_message",
                 "observer",
                 target,
                 request.content,
-                metadata={"private": target != "all"},
-                deliver_to=targets,
+                metadata={
+                    "private": target != "all",
+                    "work_model_version": 2 if transactional else 1,
+                },
+                deliver_to=() if transactional else targets,
+                runnable_to=() if transactional else None,
             )
-            for target in targets:
-                if await self.db.reopen_ready_agent(room_id, target):
-                    reopened = await self.db.create_event(
-                        room_id,
-                        "agent_reopened",
-                        "room",
-                        "observer",
-                        f"{target.replace('_', ' ').title()} received new substantive observer input after FINISH and may respond.",
-                        related_event_id=event["id"],
-                        metadata={"reopened_agent": target, "message_source": "observer"},
-                    )
-                    reopen_events.append(reopened)
+            if transactional:
+                transaction = await self.db.create_observer_transaction_work(
+                    room_id,
+                    room["active_round_id"],
+                    event["id"],
+                    targets,
+                    request.content,
+                )
+                targets = tuple(transaction["agent_keys"])
+            else:
+                for target in targets:
+                    if await self.db.reopen_ready_agent(room_id, target):
+                        reopened = await self.db.create_event(
+                            room_id,
+                            "agent_reopened",
+                            "room",
+                            "observer",
+                            f"{target.replace('_', ' ').title()} received new substantive observer input after FINISH and may respond.",
+                            related_event_id=event["id"],
+                            metadata={"reopened_agent": target, "message_source": "observer"},
+                        )
+                        reopen_events.append(reopened)
         self._publish_event(event)
         for reopened in reopen_events:
             self._publish_event(reopened)
