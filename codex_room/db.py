@@ -2491,8 +2491,9 @@ class Database:
                 await db.execute(
                     """INSERT INTO tasks
                        (id, room_id, round_id, parent_task_id, origin_event_id,
-                        coordinator_agent_id, state, created_at, updated_at)
-                       VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)""",
+                        coordinator_agent_id, state, required_contributors_json,
+                        created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)""",
                     (
                         task_id,
                         room_id,
@@ -2500,6 +2501,7 @@ class Database:
                         previous["id"] if previous else None,
                         origin_event_id,
                         coordinator["id"],
+                        round_row["required_contributors_json"] or "[]",
                         now,
                         now,
                     ),
