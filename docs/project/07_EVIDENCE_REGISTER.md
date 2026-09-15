@@ -2778,3 +2778,27 @@ Evidence boundary: deterministic implementation and canonical verification are c
 
 **Status:** I-014 IMPLEMENTED / VERIFIED on canonical `main`; naturalistic ordinary-use monitoring remains.
 
+### E-082 — Read-only Codex rollout usage extraction for Desktop/Room comparison
+**Date:** 2026-09-15  
+**Scope:** [P1 / deterministic local tooling] Comparable Codex task-level usage evidence without model introspection.
+
+Current Codex 0.154 source records local session rollouts beneath `CODEX_HOME/sessions/YYYY/MM/DD/rollout-...jsonl`. `token_count` events carry both cumulative `total_token_usage` and `last_token_usage`, with input, cached-input, cache-write-input, output, reasoning-output, and total-token fields. This is materially closer to Codex Room's persisted SDK usage than the account/credit meter and permits deterministic local extraction without asking Codex to analyze itself.
+
+PR #65 adds a stdlib-only, read-only extractor:
+
+- `codex_room/codex_usage.py` reads rollout JSONL only; it does not invoke Codex, write Codex state, or read the Codex SQLite state database;
+- default selection uses the latest active **top-level** rollout rather than silently selecting a newer child/subagent rollout; exact rollout paths and thread IDs can also be selected;
+- the report includes thread/session metadata, final cumulative usage, final last-response usage, token-count update progression, and event-type counts relevant to context compaction/subagent activity;
+- task-level usage is reconstructed for each user turn as the element-wise delta in cumulative token counters between that user message and the next user message/end of rollout;
+- prompt/response content is not retained in the generated report;
+- `codex-usage.cmd` provides the normal Windows wrapper through the repository virtual environment;
+- machine-readable `--json` and human `--timeline` output are supported.
+
+The implementation deliberately treats cumulative usage as authoritative for a completed task/thread comparison; `last_token_usage` is reported separately and must not be substituted for total task work. A fresh Desktop thread remains the cleanest comparison case, but per-user-turn deltas permit bounded analysis of reused threads when cumulative counters remain monotonic.
+
+Exact implementation head `5a4473b6718ac2cec6e0396d8a7ad02ef22f6b40` passed **356 tests, 3 warnings** in GitHub Actions run `34991882483`. The extra warning did not fail the suite and belongs to the already-known test-platform warning/nondeterminism surface rather than an extractor assertion failure.
+
+Evidence boundary: deterministic extraction behavior is verified on the PR head. A real local Desktop rollout should be sampled only when useful comparison work is ready; no paid/model smoke is necessary merely to prove the parser.
+
+**Status:** IMPLEMENTED / VERIFIED on PR #65 implementation head; final PR/canonical-main verification pending.
+
