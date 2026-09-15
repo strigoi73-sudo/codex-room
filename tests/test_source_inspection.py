@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 
@@ -187,7 +188,7 @@ def test_read_content_is_transient_under_capability_durable_contract(
 
     assert result["content"] == "CORE README\n"
     assert result["durable_result_fields"] == ["evidence"]
-    assert result["capability_version"] == "2"
+    assert result["capability_version"] == "3"
     assert len(result["implementation_sha256"]) == 64
 
 
@@ -225,7 +226,7 @@ def test_read_normalizes_platform_newlines_without_changing_raw_file_evidence(
 
     assert result["content"] == "FIRST\nSECOND\nTHIRD\n"
     assert result["evidence"]["size_bytes"] == len(raw)
-    assert result["evidence"]["sha256"] == __import__("hashlib").sha256(raw).hexdigest()
+    assert result["evidence"]["sha256"] == hashlib.sha256(raw).hexdigest()
 
 
 def test_cross_boundary_sources_require_canonical_room_context(tmp_path: Path) -> None:
