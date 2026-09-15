@@ -2192,5 +2192,11 @@ Exact PR-head verification before closeout documentation:
 
 **Evidence boundary:** the Python support-floor repair declares 3.11+ based on the current source/runtime contract; CI continues to execute Python 3.12 only. Cross-version/cross-platform matrix expansion belongs to I-011, not I-007.
 
-**Status:** I-007 COMPLETE on the reviewed PR branch, pending merge/canonical-main confirmation.
+Merge/canonical-main confirmation:
+
+- PR #57 squash-merged as `d6882ff0d650242dfafdbdc707315df7d459b6ae`;
+- canonical-main GitHub Actions run `34916627006` completed successfully;
+- constrained installation and the full `python -m pytest -q` step both passed on the exact merged commit.
+
+**Status:** I-007 COMPLETE / IMPLEMENTED / VERIFIED on canonical `main`.
 
