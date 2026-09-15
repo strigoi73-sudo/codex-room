@@ -978,15 +978,33 @@ class RoomRuntime:
                 await self.db.set_room_status(room_id, RoomStatus.RUNNING)
                 await self.db.resume_active_round(room_id)
             await self._system_event(room_id, "room_resumed", "Room resumed.")
-            closed_without_work = await self._reconcile_quiescent_room(
-                room_id,
-                room["active_round_id"],
-                fallback_reason="resume_without_work",
-                fallback_content=(
-                    "Round closed immediately after Resume because Stop left no runnable "
-                    "deliveries. Send a new observer message to continue with fresh work."
-                ),
+            round_item = await self.db.get_round(room["active_round_id"])
+            transactional = bool(
+                round_item and round_item.get("work_model_version", 1) == 2
             )
+            if transactional:
+                if not await self.db.has_active_transaction_task(
+                    room_id, room["active_round_id"]
+                ):
+                    await self._close_discussion(
+                        room_id,
+                        room["active_round_id"],
+                        "resume_without_work",
+                        "Round closed immediately after Resume because no active "
+                        "transaction task remained. Send a new observer message to "
+                        "continue with fresh work.",
+                    )
+                    closed_without_work = True
+            else:
+                closed_without_work = await self._reconcile_quiescent_room(
+                    room_id,
+                    room["active_round_id"],
+                    fallback_reason="resume_without_work",
+                    fallback_content=(
+                        "Round closed immediately after Resume because Stop left no runnable "
+                        "deliveries. Send a new observer message to continue with fresh work."
+                    ),
+                )
         if closed_without_work:
             await self.publish_state(room_id)
             return
