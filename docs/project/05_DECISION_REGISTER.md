@@ -398,3 +398,22 @@ Settled rule:
 - changing or removing this prohibition requires an explicit later human-principal decision.
 
 This is a hard execution constraint, not an economic preference or default-selection heuristic.
+
+### D-029 — Personal Rooms have bounded read access to CORE and other Room shared workspaces
+**Date:** 2026-09-15  
+**Status:** ACTIVE
+
+Personal Room agents should be able to inspect relevant evidence outside their current Room workspace without receiving cross-boundary mutation authority.
+
+Settled design:
+
+- a running Personal Room may inspect authorized CORE source and authorized shared workspaces belonging to other Rooms under the same Personal installation;
+- CORE inspection is read-only and limited to the maintained source/repository surface needed to understand implementation, tests, documentation, launch/runtime configuration, and related evidence;
+- protected runtime data, credentials/secrets, environment-private files, provider/account material, and other non-source host state are not part of this read surface;
+- cross-Room inspection resolves only another Room's shared workspace. Explicitly private participant material, private overlays/initialization, protected Room metadata, and host database internals are not made generally readable by this decision;
+- read access does not authorize a running Room to modify CORE or another Room. Existing CORE/Room write-governance boundaries continue to apply;
+- retrieval should be on demand and bounded. CORE and other Rooms are not injected wholesale into agent context;
+- the preferred implementation is through deterministic, inspectable read-only capabilities with path confinement, symlink/reparse protection, bounded output, and durable provenance rather than unrestricted host filesystem access.
+
+This decision clarifies the CORE/Room boundary: **protection constrains mutation, not legitimate inspection.**
+
