@@ -5,6 +5,7 @@ import asyncio
 import pytest
 
 from codex_room.agent import InterruptOutcome
+from codex_room.agent import AgentTurnTerminalError
 from codex_room.db import Database
 from codex_room.exporter import as_markdown
 from codex_room.models import (
@@ -36,6 +37,13 @@ async def transaction_runtime_factory(tmp_path):
 async def _room_finished(runtime: RoomRuntime, room_id: str) -> bool:
     room = await runtime.db.get_room(room_id)
     return bool(room and room["status"] == RoomStatus.FINISHED)
+
+
+def _transaction_usage_wall(when: str) -> AgentTurnTerminalError:
+    return AgentTurnTerminalError(
+        f"You've hit your usage limit. Please try again at {when}.",
+        codex_error_info="usageLimitExceeded",
+    )
 
 
 @pytest.mark.asyncio
@@ -662,4 +670,78 @@ async def test_transaction_required_contributor_blocks_settlement_until_peer_con
     markdown = as_markdown(exported)
     assert "### Transaction work state" in markdown
     assert "Required contributors: agent_a" in markdown
+
+@pytest.mark.asyncio
+async def test_transaction_usage_wall_continuation_survives_restart_on_same_assignment(
+    transaction_runtime_factory,
+):
+    first_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        failures={"agent_c": [_transaction_usage_wall("Jan 1, 2020 1:00 AM")]},
+    )
+    first = await transaction_runtime_factory(first_adapter, "transaction-usage-restart.db")
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Resume explicit assignment after provider usage reset",
+            work_model_version=2,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def suspended() -> bool:
+        continuation = await first.db.get_usage_continuation(room_id, "agent_c")
+        return bool(continuation and continuation["state"] == "scheduled")
+
+    await wait_until(suspended)
+    continuation = await first.db.get_usage_continuation(room_id, "agent_c")
+    assert continuation is not None
+    assert continuation["assignment_id"] is not None
+    assignment_id = continuation["assignment_id"]
+    thread_id = first_adapter.calls["agent_c"][0]["thread_id"]
+    await first.close()
+
+    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Completed after the usage reset.",
+        )
+    )
+    second = await transaction_runtime_factory(second_adapter, "transaction-usage-restart.db")
+    await second._watchdog_tick()
+    await wait_until(lambda: _room_finished(second, room_id))
+
+    assert len(second_adapter.calls["agent_c"]) == 1
+    continued = second_adapter.calls["agent_c"][0]
+    assert continued["thread_id"] == thread_id
+    assert RoomRuntime.USAGE_CONTINUATION_INSTRUCTION in continued["prompt"]
+    assert second_adapter.usage_continuation_prepares == [
+        {
+            "agent_key": "agent_c",
+            "thread_id": thread_id,
+            "cwd": continued["cwd"],
+        }
+    ]
+    completed = await second.db.get_usage_continuation(room_id, "agent_c")
+    assert completed is not None
+    assert completed["state"] == "completed"
+    assert completed["assignment_id"] == assignment_id
+
+    async with second.db.connect() as db:
+        assignments = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+        executions = await db.execute_fetchall(
+            """SELECT * FROM agent_executions
+               WHERE room_id=? AND assignment_id=?
+               ORDER BY created_at""",
+            (room_id, assignment_id),
+        )
+    assert len(assignments) == 1
+    assert assignments[0]["state"] == "completed"
+    assert len(executions) == 2
+    assert all(row["assignment_id"] == assignment_id for row in executions)
 
