@@ -439,6 +439,28 @@ async def test_exact_history_completion_recovers_a_lost_completion_notification(
 
 
 @pytest.mark.asyncio
+async def test_run_agent_uses_explicit_per_turn_model_and_effort(tmp_path: Path):
+    adapter = CodexAgentAdapter()
+    adapter._client = object()
+    adapter.RECONCILIATION_INTERVAL_SECONDS = 0.01
+    handle = HistoryHandle()
+    thread = HistoryThread(handle)
+    adapter._threads["agent-one"] = thread
+    agent = {"id": "agent-one", "thread_id": thread.id}
+
+    await adapter.run_agent(
+        agent,
+        tmp_path,
+        "prompt",
+        model="gpt-5.6-luna",
+        reasoning_effort="medium",
+    )
+
+    assert thread.turn_kwargs["model"] == "gpt-5.6-luna"
+    assert thread.turn_kwargs["effort"] == "medium"
+
+
+@pytest.mark.asyncio
 async def test_completed_turn_with_different_id_cannot_satisfy_execution(tmp_path: Path):
     adapter = CodexAgentAdapter()
     adapter._client = object()
