@@ -245,9 +245,6 @@ class CreateRoomRequest(BaseModel):
     starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] = "agent_c"
     auto_start: bool = True
     work_model_version: Literal[1, 2] = 1
-    required_contributors: list[Literal["agent_a", "agent_b", "agent_c"]] = Field(
-        default_factory=list
-    )
 
 
 class AddAgentRequest(BaseModel):
@@ -287,9 +284,6 @@ class PrepareRoundRequest(BaseModel):
     agent_a_overlay: str | None = Field(default=None, max_length=50_000)
     agent_b_overlay: str | None = Field(default=None, max_length=50_000)
     work_model_version: Literal[1, 2] = 1
-    required_contributors: list[Literal["agent_a", "agent_b", "agent_c"]] = Field(
-        default_factory=list
-    )
 
     @model_validator(mode="after")
     def validate_participant_maps(self) -> "PrepareRoundRequest":
