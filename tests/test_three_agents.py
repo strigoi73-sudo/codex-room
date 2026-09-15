@@ -305,6 +305,9 @@ def test_c_structural_role_requires_economical_differentiated_dual_peer_delegati
     assert "they do not authorize C to dictate a conclusion" in c_instructions
     assert "may challenge the framing" in c_instructions
 
+    assert "should normally use that result rather than broadly repeating the same investigation" in c_instructions
+    assert "Prefer targeted spot checks over redoing delegated evidence gathering" in c_instructions
+
     assert "Every additional peer invocation must be expected to earn its cognitive and token cost" not in a_instructions
     assert "Every additional peer invocation must be expected to earn its cognitive and token cost" not in b_instructions
     assert "must give them meaningfully differentiated cognitive responsibilities" not in a_instructions
