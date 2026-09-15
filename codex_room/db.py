@@ -2603,6 +2603,20 @@ class Database:
                    ORDER BY x.created_at""",
                 (room_id,),
             )
+            latest_execution_rows = await db.execute_fetchall(
+                """SELECT x.*, a.agent_key
+                   FROM agents a
+                   JOIN agent_executions x ON x.batch_id=(
+                       SELECT x2.batch_id
+                       FROM agent_executions x2
+                       WHERE x2.room_id=? AND x2.agent_id=a.id AND x2.model IS NOT NULL
+                       ORDER BY x2.created_at DESC, x2.batch_id DESC
+                       LIMIT 1
+                   )
+                   WHERE a.room_id=?
+                   ORDER BY a.agent_key""",
+                (room_id, room_id),
+            )
             continuation_rows = await db.execute_fetchall(
                 """SELECT u.*, a.agent_key FROM usage_continuations u
                    JOIN agents a ON a.id=u.agent_id
@@ -2611,6 +2625,10 @@ class Database:
             )
         executions = {
             row["agent_key"]: self._decode_execution(row) for row in execution_rows
+        }
+        latest_executions = {
+            row["agent_key"]: self._decode_execution(row)
+            for row in latest_execution_rows
         }
         continuations = {
             row["agent_key"]: self._decode_usage_continuation(row)
@@ -2624,6 +2642,7 @@ class Database:
                 "batch_id": row["batch_id"],
                 "started_at": row["started_at"],
                 "execution": executions.get(row["agent_key"]),
+                "last_execution": latest_executions.get(row["agent_key"]),
                 "usage_continuation": continuations.get(row["agent_key"]),
             }
             for row in rows
