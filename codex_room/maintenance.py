@@ -488,7 +488,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
 
-    subcommands.add_parser("check", help="check current persistent-data integrity")
+    check = subcommands.add_parser("check", help="check current persistent-data integrity")
+    check.add_argument(
+        "--offline-confirmed",
+        action="store_true",
+        help="assert that the Codex Room service is stopped",
+    )
 
     backup = subcommands.add_parser("backup", help="create and verify a coherent backup")
     backup.add_argument("--backup-root", type=Path)
@@ -523,6 +528,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "check":
+            if not args.offline_confirmed:
+                raise MaintenanceError(
+                    "check requires --offline-confirmed after the Codex Room service has been stopped"
+                )
             result = check_data_root(args.data_root)
         elif args.command == "backup":
             result = create_backup(
