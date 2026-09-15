@@ -2924,3 +2924,42 @@ Experimental limitations:
 - this is one blind fixture and does not establish universal Desktop superiority.
 
 **Status:** P1 Stage 2 evidence established. No rerun is justified before deterministic diagnosis of the demonstrated scope-selection and stated-vs-structured peer-invocation failures.
+
+### E-085 — Provider-continuation trace and bounded continuation-economy repair
+**Date:** 2026-09-15  
+**Scope:** [P1 / CORE / operating economics] Source-level diagnosis of E-084's context-replay amplification.
+
+The E-084 LAB-2B C thread provides a clean continuation trace once its neutral setup turn is excluded:
+
+- one actual Room/C SDK turn contained **38 tool calls** and **39 provider-response usage records**;
+- the 38 recorded activities were 29 deterministic-capability calls, 2 capability-registry calls, and 7 other command executions; 6 failed;
+- the deterministic source activity included **15 single reads**, only **1 read_many**, 4 search_many calls, 2 single searches, 2 finds, and source discovery;
+- the task accumulated **1,719,552 cached input tokens** out of 1,797,842 total input tokens.
+
+Source inspection establishes the execution boundary precisely. `RoomRuntime._process_delivery()` submits one `adapter.run_agent(...)` call and waits for that SDK turn to finish. `CodexAgentAdapter._consume_handle()` receives the completed turn result and only then derives safe activity summaries from the returned SDK items. Back in `_process_delivery()`, execution-economics and `tool_activity` Room events are created **after** `record_execution_result()` and after the SDK turn has completed. Therefore those Room ledger/status events did not wake C between the 38 LAB tool calls and did not create the 39 provider responses.
+
+The expensive loop was inside the single Codex turn: model response → tool execution/result → another provider continuation with the active thread context. The observed arithmetic is consistent with 38 tool-producing continuations plus the final structured response. Codex Room cannot merge those provider continuations after the fact; its practical levers are to reduce tool-call count, batch known deterministic work, avoid failures/redundant retrieval, and keep active context smaller.
+
+The existing Room compaction mechanism is not a repair for this specific pathology. `_maybe_compact_context()` runs only after a Room agent turn has settled, so it cannot intervene between tool calls inside one SDK turn. Lowering the Room compaction threshold would therefore not have changed the 38-call LAB-2B loop.
+
+A concrete Room-owned contributor was also identified. Before PR #70, every delivery prompt instructed agents to check the capability registry before ordinary ad hoc mechanical work, inspect candidates, run registry/capability actions as separate commands, and compose independent mechanical subproblems through separate capability invocations. That policy preserved auditability but imposed a continuation tax and conflicted with the demonstrated operating-economics objective.
+
+PR #70 makes the bounded repair without changing D-022's capability architecture:
+
+- ordinary one-off workspace reads/searches/inspection/simple commands may use native workspace tools directly;
+- agents are explicitly told to minimize model/tool continuations, batch already-known related reads/searches, avoid speculative batching, and stop once evidence is sufficient;
+- registry `list` is needed only when a required capability identity is unknown, and `inspect` only when the current contract is needed;
+- direct source `search-many` / `read-many` remains preferred for known related source lookups;
+- explicit workspace-only instructions now explicitly forbid CORE/cross-Room source inspection;
+- redundant registry ceremony and one-lookup-per-continuation behavior are discouraged;
+- the repeated deterministic-capability guidance block was reduced from 2,793 to 1,869 characters (**33.1% smaller**).
+
+Verification:
+
+- exact PR #70 head `328bf127cc898babea45c410462ff8d83a43db3c` passed **358 tests, 2 warnings** in GitHub Actions run `35005923649`;
+- PR #70 squash-merged as `037aa23bdf2e53082d5f089415319de7daa2b356`;
+- canonical-main push run `35006163737` passed **358 tests, 2 warnings** in 67.55 seconds.
+
+Evidence boundary: the continuation mechanism and CORE instruction repair are deterministically established. **No token-savings claim is made yet.** The next evidence should come from ordinary useful Room work, not another paid synthetic comparison.
+
+**Status:** continuation mechanism DIAGNOSED; bounded CORE repair IMPLEMENTED / VERIFIED; dedicated paid P1 benchmarking CLOSED, ordinary-use monitoring remains.
