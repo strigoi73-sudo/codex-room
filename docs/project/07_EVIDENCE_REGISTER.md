@@ -2592,3 +2592,29 @@ Verification:
 The governing decision is D-028: Astra is prohibited for Codex Room execution and prompts or later allocation/routing logic may not override the rule. Luna, Terra, and Sol remain admitted to the bounded P1 real-work trial.
 
 **Status:** D-028 IMPLEMENTED / VERIFIED on canonical `main`.
+
+### E-077 — Live same-thread adaptive peer execution and Room evidence-boundary observation
+**Date:** 2026-09-15  
+**Scope:** [ROOM / P1 live evidence] representative I-010 work using the bounded C-selected execution mechanism.
+
+Fresh Room `room_56bbfe947f5d4d169de29a563c450253` ran the I-010 maintenance-design task as a real-work P1 trial. C selected Agent A for a bounded initial inventory on `luna-medium`, then deliberately redelegated the same persistent peer for a harder recovery-safety design pass on `terra-high`. B was not invoked because the absent implementation surface meant a second peer could not add independent implementation evidence.
+
+Room-export evidence records:
+
+- first Agent A execution request: `batch_1f3f5b37a32d4b3d97355d49dd76d1ca`, resolved as `gpt-5.6-luna` / `medium`;
+- second Agent A execution request: `batch_b8fcf19c6fde4051af5c56695446af44`, resolved as `gpt-5.6-terra` / `high`;
+- the second assignment was substantively harder: recovery invariants, backup consistency, destructive restore safeguards, crash/interruption behavior, and verification design rather than duplicate comparison work;
+- A did not request escalation in the first pass; C proactively spent stronger cognition for the harder follow-up;
+- Astra was not available or selected.
+
+The principal then queried the durable local `agent_executions` rows for those exact batch IDs. The database returned:
+
+- `batch_1f3f5b37a32d4b3d97355d49dd76d1ca` → Agent A, `gpt-5.6-luna`, `medium`, SDK thread `01a0a478-09b1-7821-8a55-8db5e596abe9`, state `settled`;
+- `batch_b8fcf19c6fde4051af5c56695446af44` → the same Agent A, `gpt-5.6-terra`, `high`, the same SDK thread `01a0a478-09b1-7821-8a55-8db5e596abe9`, state `settled`.
+
+This directly verifies that one persistent Room peer can continue on the same SDK thread across different C-selected model/reasoning configurations. The trial therefore closes the live-mechanics question for same-thread adaptive peer execution. It does **not** establish precise automatic-routing thresholds or authorize an automatic router.
+
+The same Room also exposed an architectural evidence boundary relevant to I-012: Agent A's current shared workspace contained no CORE implementation, database, migrations, configuration, tests, or Project evidence, so it correctly refused to make implementation-specific I-010 claims and produced only a conditional SQLite design. This observation motivated D-029/I-012 bounded read access to authorized CORE source and other Room shared workspaces.
+
+**Status:** same-thread C-selected peer switching LIVE VERIFIED; automatic routing remains unauthorized; cross-boundary evidence access gap OBSERVED and routed to I-012.
+
