@@ -162,6 +162,73 @@ async def test_execution_persists_model_effort_and_usage(runtime_factory):
     assert '"total_tokens": 34' in rows[0]["usage_json"]
 
 
+
+
+@pytest.mark.asyncio
+async def test_execution_economics_event_summarizes_usage_and_tool_activity(
+    runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [(Outcome.PASS, "")]},
+        usages={
+            "agent_a": [
+                {
+                    "total": {
+                        "input_tokens": 100,
+                        "cached_input_tokens": 80,
+                        "output_tokens": 20,
+                        "reasoning_output_tokens": 5,
+                        "total_tokens": 120,
+                    }
+                }
+            ]
+        },
+        activities={
+            "agent_a": [
+                [
+                    {
+                        "type": "deterministic_capability",
+                        "status": "completed",
+                        "capability": "inspect_source",
+                        "ok": True,
+                    },
+                    {
+                        "type": "deterministic_capability",
+                        "status": "failed",
+                        "capability": "inspect_source",
+                        "ok": False,
+                    },
+                    {"type": "file_change", "status": "completed"},
+                ]
+            ]
+        },
+    )
+    runtime = await runtime_factory(adapter, "execution-economics.db")
+    room = await runtime.create_room(
+        CreateRoomRequest(topic="Summarize execution economics", starting_agent="agent_a")
+    )
+
+    await wait_until(
+        lambda: _event_count(runtime, room["id"], "execution_economics")
+    )
+    event = next(
+        event
+        for event in await runtime.db.get_events(room["id"])
+        if event["event_type"] == "execution_economics"
+    )
+    metadata = event["metadata"]
+    assert metadata["tool_calls"] == 3
+    assert metadata["capability_invocations"] == 2
+    assert metadata["capability_failures"] == 1
+    assert metadata["file_changes"] == 1
+    assert metadata["failed_tool_calls"] == 1
+    assert metadata["failed_tool_fraction"] == pytest.approx(1 / 3, abs=0.0001)
+    assert metadata["peer_invocations"] == 0
+    assert metadata["usage"]["input_tokens"] == 100
+    assert metadata["usage"]["cached_input_tokens"] == 80
+    assert metadata["usage"]["total_tokens"] == 120
+    assert metadata["tokens_per_tool_call"] == 40.0
+
 @pytest.mark.parametrize(
     ("reported", "expected"),
     [
