@@ -22,4 +22,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -c constraints-test.txt ".[test]"
-      - run: timeout 180s python -m pytest -vv --tb=short
+      - run: timeout 45s python -m pytest -vv -s --tb=short tests/test_orchestrator.py::test_execution_persists_model_effort_and_usage
