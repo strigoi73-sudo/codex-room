@@ -385,3 +385,67 @@ async def test_transaction_stop_cancels_open_task_assignments_and_join(
     )
     assert joins and all(row["state"] == "cancelled" for row in joins)
     assert len(adapter.completed_calls["agent_a"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_transaction_turn_limit_stops_before_released_parent_can_run_again(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "Use the final available peer turn.",
+                    "config": None,
+                }
+            ],
+        )
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="A consumed turn two.",
+        )
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="This third turn must never execute.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "turn-limit.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Bound transaction turns",
+            work_model_version=2,
+            max_turns=2,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert len(adapter.calls["agent_c"]) == 1
+    assert len(adapter.calls["agent_a"]) == 1
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=?", (room_id,)
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+    assert tasks and tasks[0]["state"] == "cancelled"
+    c_assignment = next(row for row in assignments if row["agent_key"] == "agent_c")
+    assert c_assignment["state"] == "cancelled"
