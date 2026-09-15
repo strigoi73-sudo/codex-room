@@ -2490,6 +2490,14 @@ Interpretation:
 - raw token counts are useful execution facts but are not themselves a complete measure of Plus included-allowance consumption because model, reasoning, context, and provider metering all affect allowance usage;
 - therefore the first gate supports a strong hypothesis that universal Terra/high overspends cognition on routine bounded work, but it does **not** yet establish the boundary at which Terra/high, Sol, or Astra earn their higher usage.
 
+Provider economic context captured 2026-09-15 (volatile; recheck before relying on exact rates):
+
+- OpenAI's current Plus local-message estimates per five-hour period are approximately Luna 250–2,000, Terra 25–200, Sol 10–100, and Astra 5–45; actual consumption varies by task, context, reasoning, tools, and other factors.
+- Current token-based Work/Codex flexible-credit rates are listed as Luna 5 input / 30 output credits per 1M tokens; Terra 50 / 300; Sol 100 / 500; Astra 250 / 1,250. Applying those rates only as a **credit-equivalent comparison** to the raw E-073 benchmark records yields roughly Luna 0.29 credits, Terra/medium 3.09, Terra/high 3.04, Sol 6.16, and Astra 13.87 for the three-turn batch.
+- These credit-equivalent values do not claim exact debit behavior of the principal's included Plus allowance. Their significance is relative: a quality tie across these models is economically material, so higher-cost tiers need affirmative quality evidence to justify selection.
+
+Provider references at capture time: OpenAI Help Center, “Managing usage with GPT-6 Astra in Work and Codex”; “Using Credits for Flexible Usage in ChatGPT (Personal plans)”; and the current ChatGPT Work/Codex token rate card.
+
 **Next gate:** a deliberately harder, more Codex-Room-representative threshold benchmark should test the same five configurations on subtle evidence/state reasoning, multi-constraint coordination, and concurrent/runtime code reasoning. If that also ceilings, stop synthetic expansion and move to representative real-work evaluation rather than manufacturing ever harder puzzles.
 
 **Status:** first paid P1 admission gate COMPLETE; no production model-selection policy changed.
