@@ -10,7 +10,7 @@
 - **What just changed?** I-009 is complete and live-verified locally: `/api/health` reported exact canonical revision `6168c80938c7e9172a86651d3a9953fb66c2e219`, clean source, Python 3.12.10, `openai-codex` 0.147.0, Terra/high policy, and a healthy zero-failure watchdog; see E-068/E-069.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** The bounded P1 model/reasoning-effort economy investigation is next, using the execution-level model/effort/usage facts added by I-009. Then I-010 persistent-data maintenance and I-011 verification-platform/dependency assurance.
+- **What is next?** P1 is now in progress. First run a zero-turn local model-catalog probe; then execute the smallest useful model/effort comparison before considering any policy change. I-010 and I-011 remain after P1.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -182,21 +182,22 @@ GitHub Actions runs the canonical Python suite on pushes to `main` and pull requ
 P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, the minimal CORE library, agent-created custom capability registration/verification, and lineage rollover inheritance have all been verified end to end. P4 is closed. Personal/CORE promotion remains later work under D-022 and requires separate explicit prioritization.
 
 ### P1 follow-up — Model/reasoning-effort economy
-**Work state:** PLANNED  
+**Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
-**Evidence:** E-065  
-**Sequencing:** after I-009 establishes reliable provenance and usage instrumentation.
+**Evidence:** E-065, E-068, E-069  
+**Current gate:** zero-turn local model-catalog probe, then a bounded comparison matrix.
 
-Current source pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. A3 found no settled evidence that this universal policy is the best quality/cost tradeoff for every task.
+Current source pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. A3 found no settled evidence that this universal policy is the best quality/cost tradeoff for every task. I-009 now provides verified per-execution model, reasoning-effort, and usage facts plus live runtime provenance.
 
-The next P1 work is measurement, not automatic routing:
+P1 proceeds by measurement, not automatic routing:
 
-- persist/verify actual model and reasoning effort per execution;
-- measure usage by Room/Round/participant/turn on representative work;
-- compare appropriate lower/higher effort configurations against work quality, failures, and provider usage;
-- determine whether universal, participant-specific, delegation-selected, or self-adjusted effort merits a later decision.
+- first read the actual models/reasoning levels available to the principal's authenticated local Codex runtime without spending a model turn;
+- then compare a small admission matrix that separates model-tier effects from reasoning-effort effects while retaining Terra/high as the production baseline;
+- use fresh isolated threads and identical bounded tasks so persistent context does not confound the comparison;
+- record token usage, latency/duration where available, completion/failure behavior, and task-quality evidence;
+- only if the admission comparison shows material economic value should P1 expand into participant-specific, delegation-selected, self-adjusted, or dynamic model policy design.
 
-No model-selection policy change is authorized until this evidence exists.
+No production model-selection policy change is authorized until this evidence exists.
 
 ## Approved planned development
 
