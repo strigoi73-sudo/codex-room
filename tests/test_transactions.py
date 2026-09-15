@@ -11,6 +11,7 @@ from codex_room.exporter import as_markdown
 from codex_room.models import (
     CreateRoomRequest,
     ObserverMessageRequest,
+    PrepareRoundRequest,
     RoomStatus,
     TransactionAction,
     TransactionDecision,
@@ -816,4 +817,90 @@ async def test_transaction_exact_active_turn_recovers_same_assignment_after_rest
     assert len(executions) == 1
     assert executions[0]["batch_id"] == original_batch_id
     assert executions[0]["state"] == "settled"
+
+@pytest.mark.asyncio
+async def test_transaction_new_round_cancels_old_work_and_late_result_cannot_settle(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_a": {1}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Old-round work that will finish late.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="New round completed independently.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Late old-round result must not settle anything.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "transaction-new-round.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Old transaction round", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    old_round_id = snapshot["active_round_id"]
+    await wait_until(lambda: len(adapter.calls["agent_a"]) == 1)
+
+    prepared = await runtime.prepare_round(
+        room_id,
+        PrepareRoundRequest(
+            title="Replacement",
+            prompt="New transaction round",
+            work_model_version=2,
+        ),
+    )
+    new_round_id = prepared["active_round_id"]
+    assert new_round_id != old_round_id
+    await runtime.start_round(room_id, new_round_id)
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    adapter.release_call("agent_a", 1)
+    await wait_until(lambda: len(adapter.completed_calls["agent_a"]) == 1)
+    await asyncio.sleep(0.05)
+
+    async with runtime.db.connect() as db:
+        old_tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? AND round_id=?",
+            (room_id, old_round_id),
+        )
+        old_assignments = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=? AND t.round_id=?""",
+            (room_id, old_round_id),
+        )
+        new_tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? AND round_id=?",
+            (room_id, new_round_id),
+        )
+    assert old_tasks and all(row["state"] == "cancelled" for row in old_tasks)
+    assert old_assignments and all(
+        row["state"] in {"cancelled", "completed", "passed", "failed", "waived"}
+        for row in old_assignments
+    )
+    assert new_tasks and new_tasks[0]["state"] == "settled"
+    events = await runtime.db.get_events(room_id)
+    assert not any(
+        event["event_type"] == "agent_message"
+        and event["content"] == "Late old-round result must not settle anything."
+        for event in events
+    )
 
