@@ -10,7 +10,7 @@
 - **What just changed?** P1 advanced the canonical Codex SDK/runtime standard from 0.147.0 to the matched 0.154.0 pair under PR #59 / E-071. Production Room policy remains Terra/high; local reinstall/restart and an unfiltered zero-turn catalog check are next.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** P1 remains in progress, but dedicated synthetic testing is stopped under E-074 after 30 benchmark turns consumed nearly 20% of the principal's five-hour Plus allowance. Further evidence must come opportunistically from representative real work. I-010 and I-011 remain after P1.
+- **What is next?** P1 remains in progress. E-075 implements verified C-selected peer cognition for representative real work; the next evidence should come from ordinary Rooms, with C allocating cheaper or stronger peer cognition as warranted and A/B requesting escalation when needed. No automatic router is authorized. I-010 and I-011 remain after P1.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -184,10 +184,10 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 ### P1 follow-up — Model/reasoning-effort economy
 **Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
-**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074  
-**Current gate:** representative real-work evaluation only; no further dedicated paid synthetic benchmarks.
+**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075  
+**Current gate:** deploy/use the verified C-selected peer-execution capability in representative real work; no further dedicated paid synthetic benchmarks.
 
-Current production source still pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. A3 found no settled evidence that this universal policy is the best quality/cost tradeoff for every task. I-009 provides verified per-execution model, reasoning-effort, and usage facts plus live runtime provenance.
+The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of five admitted model/effort configurations for that peer execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
 
 E-070 established that the former 0.147 runtime exposed Sol, Terra, Luna, and GPT-5.5 through its SDK catalog while the principal's desktop Codex UI visibly exposed Astra. E-071 advanced the canonical SDK/runtime standard to the matched published 0.154.0 pair, verified with 327 tests on exact PR and canonical-main commits. E-072 then live-verified the local 0.154.0 runtime and confirmed the same SDK now exposes `gpt-6-astra`. This dependency upgrade does **not** change production model selection.
 
@@ -195,12 +195,15 @@ The two paid synthetic matrices are complete under E-073/E-074. Routine structur
 
 P1 now proceeds by representative real work only:
 
-- do not run more dedicated paid synthetic benchmarks or Astra effort sweeps;
-- collect model/effort/usage evidence opportunistically from work the principal actually wants completed;
+- deploy/use the E-075 capability in normal Rooms rather than creating more paid benchmark Rooms;
+- C should prefer `luna-medium` for routine bounded delegated work and deliberately choose a stronger admitted configuration only when complexity, uncertainty, risk, or prior verification trouble provides an affirmative reason;
+- A/B should request escalation from C when the assigned work appears underpowered rather than silently self-routing;
+- collect the already-persisted model/effort/usage facts and normal verification outcomes from work the principal actually wanted completed;
 - avoid duplicate model calls solely to compare models; use deterministic checks and already-required independent review where they naturally exist;
 - treat E-073/E-074 as evidence that routine bounded tasks do not presently justify universal Terra/high, while preserving uncertainty about the escalation boundary;
-- only propose a production model-selection change when representative work provides enough evidence to justify a simpler, cheaper policy.
-No production model-selection policy change is authorized until this evidence exists.
+- only decide whether to keep C-discretionary selection, compile stable rules, or build any automatic/dynamic router after representative evidence shows which simpler policy actually earns its cost.
+
+No automatic/dynamic model-routing policy is authorized yet.
 
 ## Approved planned development
 
