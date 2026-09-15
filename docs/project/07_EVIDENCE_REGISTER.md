@@ -2296,3 +2296,31 @@ Minimal `main` protection remains unavailable through the checked ruleset path o
 
 **Status:** I-008 COMPLETE / IMPLEMENTED / VERIFIED. Historical merged-branch residue is removed and future merged PR head branches are configured for automatic deletion.
 
+### E-068 — I-009 runtime provenance and maintenance-health implementation
+**Date:** 2026-09-14  
+**Scope:** [CORE] bounded A3 remediation for deterministic runtime identity, maintenance-loop health, and P1 execution facts.
+
+Implemented behavior:
+
+- `/api/health` now exposes process-start Codex Room provenance: application version, Git source revision when available, source-dirty state when available, and a SHA-256 fingerprint over the runtime package/source surface;
+- the same health response exposes Python version, installed `openai-codex` version, and the configured Room model/reasoning-effort policy;
+- the watchdog now records cycle start/success, cumulative and consecutive unexpected-failure counts, last unexpected error/time, and an explicit `starting` / `healthy` / `degraded` state. A later successful cycle clears the consecutive-failure degradation but deliberately retains the last error and cumulative failure count for the lifetime of the process;
+- `agent_executions` now persists `model` and `reasoning_effort` beside the already-durable `usage_json`. Existing open execution rows are backfilled with the current policy when reclaimed, so P1 can analyze completed execution usage together with the policy that launched the execution;
+- the change remains intentionally narrow: no dashboard, general metrics/logging platform, or automatic model-routing policy was introduced.
+
+Verification:
+
+- PR #58 tested head: `0d030fc938d2edb4fdcff4d6cb985de9f816ffd6`;
+- PR-head GitHub Actions run `34929088157`: constrained installation succeeded; full `python -m pytest -q` passed **327 tests, 2 warnings**;
+- PR #58 squash-merged as canonical code commit `05f2dc4eb9e998122685d28e9383f2f54e419238`;
+- canonical-`main` Actions run `34929208446` on that exact merge commit: constrained installation succeeded; full `python -m pytest -q` passed **327 tests, 2 warnings**;
+- automatic merged-branch cleanup removed the PR branch after merge, leaving canonical `main`.
+
+Evidence boundary:
+
+- this proves the canonical implementation and deterministic test behavior, not that the principal's currently running local process has already pulled/restarted onto the new commit;
+- watchdog error history is process-scoped rather than a cross-restart incident log. Within one process, a transient failure remains visible after recovery through the retained last-error and cumulative-failure fields;
+- the source fingerprint identifies the package/source bytes visible at process-start provenance capture; Git revision/dirty fields are supplemental and may be null outside a Git checkout.
+
+**Status:** I-009 IMPLEMENTED / VERIFIED on canonical `main`. Local live-runtime verification remains a deployment/operator step after pulling and restarting the Room.
+
