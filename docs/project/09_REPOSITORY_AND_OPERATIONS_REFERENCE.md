@@ -94,11 +94,12 @@ Normal Personal local operation uses the root launch scripts:
 
 - double-click `Start-Codex-Room.cmd` to start the foreground local server; the dedicated launcher console is titled `Codex Room Server`;
 - use `Kill-Codex-Room.bat` to stop Codex Room;
+- use `Restart-Codex-Room.bat` for the QOL restart path: request closure of a visible browser window whose title identifies Codex Room, run the normal Kill path, wait five seconds, then start Codex Room again;
 - `Kill-Codex-Room.bat --dry-run` previews the repository-specific process targets without stopping them.
 
 Current shutdown targeting identifies both the repository venv Python process running `-m codex_room` and a dedicated launcher `cmd.exe` identified by the canonical start-script path or the `Codex Room Server` window title. It then includes descendants of those seeds, stops the target set, and verifies the targeted process IDs are gone. Successful shutdown does not pause, so a temporary Kill console can exit immediately; the script pauses only on shutdown failure so diagnostics remain visible.
 
-The kill script deliberately does **not** terminate browser processes. Codex Room opens the UI through the system browser and that process may also own unrelated tabs/windows, so browser teardown is outside the safe repository-specific process boundary.
+The kill script deliberately does **not** terminate browser processes. Codex Room opens the UI through the system browser and that process may also own unrelated tabs/windows, so browser teardown remains outside the ordinary safe Kill boundary. The separate restart wrapper performs a narrower best-effort browser close before shutdown: it looks only at visible Edge/Chrome/Firefox/Brave/Opera/Vivaldi/Chromium windows whose `MainWindowTitle` contains `Codex Room` and calls `CloseMainWindow()`; it does not force-kill the browser application. If the Codex Room tab is not the visible/title-bearing tab for a window, that window may not be identifiable by this mechanism.
 
 PR #18 introduced this behavior. Exact PR-head and merged canonical-main Python CI both passed **238 tests, 2 warnings**. Local Windows runtime verification on 2026-09-12 then confirmed that the normal Kill path closed both the Codex Room server console and the Kill console with no manual cleanup required. The shutdown behavior is therefore IMPLEMENTED / VERIFIED for the intended Personal Windows path.
 
