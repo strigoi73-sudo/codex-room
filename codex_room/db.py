@@ -4229,7 +4229,7 @@ class Database:
     async def release_due_usage_continuations(
         self, room_id: str, now: str
     ) -> list[dict[str, Any]]:
-        """Make due, still-current suspensions claimable by their normal worker."""
+        """Make due legacy deliveries or version-2 assignments claimable again."""
         outcomes: list[dict[str, Any]] = []
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
@@ -4238,25 +4238,20 @@ class Database:
                           a.thread_id AS current_thread_id,
                           r.status AS room_status, r.active_round_id,
                           r.lifecycle_version AS current_lifecycle_version,
-                          ro.status AS round_status, x.state AS execution_state
+                          ro.status AS round_status, x.state AS execution_state,
+                          tx.state AS assignment_state
                    FROM usage_continuations u
                    JOIN agents a ON a.id=u.agent_id
                    JOIN rooms r ON r.id=u.room_id
                    LEFT JOIN rounds ro ON ro.id=u.round_id
                    LEFT JOIN agent_executions x ON x.batch_id=u.source_batch_id
+                   LEFT JOIN assignments tx ON tx.id=u.assignment_id
                    WHERE u.room_id=? AND u.state='scheduled' AND u.wake_at<=?
                    ORDER BY u.wake_at""",
                 (room_id, now),
             )
             for row in rows:
-                expected = json.loads(row["input_event_ids_json"] or "[]")
-                delivery = await self._fetchone(
-                    db,
-                    """SELECT COUNT(*) AS count FROM deliveries
-                       WHERE agent_id=? AND batch_id=? AND status='processing'""",
-                    (row["agent_id"], row["source_batch_id"]),
-                )
-                valid = (
+                base_valid = (
                     row["room_status"] == RoomStatus.RUNNING
                     and row["active_round_id"] == row["round_id"]
                     and row["current_lifecycle_version"] == row["lifecycle_version"]
@@ -4264,63 +4259,145 @@ class Database:
                     and row["current_thread_id"] == row["thread_id"]
                     and row["agent_status"] == AgentStatus.USAGE_SUSPENDED
                     and row["execution_state"] == "usage_suspended"
-                    and delivery is not None
-                    and delivery["count"] == len(expected)
-                    and bool(expected)
                 )
-                if valid:
-                    await db.execute(
-                        """UPDATE deliveries SET status='pending', attempts=CASE
-                             WHEN attempts>0 THEN attempts-1 ELSE 0 END,
-                           started_at=NULL, completed_at=NULL, error=NULL, batch_id=NULL
+                if row["assignment_id"] is not None:
+                    valid = base_valid and row["assignment_state"] == "running"
+                    if valid:
+                        cursor = await db.execute(
+                            """UPDATE assignments SET state='queued', updated_at=?
+                               WHERE id=? AND agent_id=? AND state='running'""",
+                            (now, row["assignment_id"], row["agent_id"]),
+                        )
+                        if cursor.rowcount != 1:
+                            valid = False
+                    if valid:
+                        await db.execute(
+                            """UPDATE agent_executions
+                               SET state='usage_released', settled_at=?,
+                                   last_reconciled_at=?
+                               WHERE batch_id=? AND state='usage_suspended'""",
+                            (now, now, row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE usage_continuations
+                               SET state='ready', fired_at=?, updated_at=?
+                               WHERE id=? AND state='scheduled'""",
+                            (now, now, row["id"]),
+                        )
+                        await db.execute(
+                            "UPDATE agents SET status=?, updated_at=? WHERE id=?",
+                            (AgentStatus.IDLE, now, row["agent_id"]),
+                        )
+                        state = "fired"
+                        reason = None
+                    else:
+                        reason = (
+                            "Scheduled transaction usage continuation is stale under "
+                            "current lifecycle or assignment state"
+                        )
+                        await db.execute(
+                            """UPDATE assignments
+                               SET state='cancelled', updated_at=?, completed_at=?,
+                                   resolution_reason=?
+                               WHERE id=? AND state='running'""",
+                            (now, now, reason, row["assignment_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agent_executions
+                               SET state='cancelled', settled_at=?, error=?
+                               WHERE batch_id=? AND state='usage_suspended'""",
+                            (now, reason, row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE usage_continuations SET state='cancelled',
+                               completed_at=?, updated_at=?, last_error=? WHERE id=?""",
+                            (now, now, reason, row["id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agents SET status=?, updated_at=?
+                               WHERE id=? AND status=?""",
+                            (
+                                AgentStatus.IDLE,
+                                now,
+                                row["agent_id"],
+                                AgentStatus.USAGE_SUSPENDED,
+                            ),
+                        )
+                        state = "cancelled"
+                else:
+                    expected = json.loads(row["input_event_ids_json"] or "[]")
+                    delivery = await self._fetchone(
+                        db,
+                        """SELECT COUNT(*) AS count FROM deliveries
                            WHERE agent_id=? AND batch_id=? AND status='processing'""",
                         (row["agent_id"], row["source_batch_id"]),
                     )
-                    await db.execute(
-                        """UPDATE agent_executions
-                           SET state='usage_released', settled_at=?, last_reconciled_at=?
-                           WHERE batch_id=? AND state='usage_suspended'""",
-                        (now, now, row["source_batch_id"]),
+                    valid = (
+                        base_valid
+                        and delivery is not None
+                        and delivery["count"] == len(expected)
+                        and bool(expected)
                     )
-                    await db.execute(
-                        """UPDATE usage_continuations SET state='ready', fired_at=?,
-                           updated_at=? WHERE id=? AND state='scheduled'""",
-                        (now, now, row["id"]),
-                    )
-                    await db.execute(
-                        "UPDATE agents SET status=?, updated_at=? WHERE id=?",
-                        (AgentStatus.IDLE, now, row["agent_id"]),
-                    )
-                    state = "fired"
-                    reason = None
-                else:
-                    reason = "Scheduled usage continuation is stale under current lifecycle state"
-                    await db.execute(
-                        """UPDATE deliveries SET status='cancelled', completed_at=?, error=?
-                           WHERE agent_id=? AND batch_id=? AND status='processing'""",
-                        (now, reason, row["agent_id"], row["source_batch_id"]),
-                    )
-                    await db.execute(
-                        """UPDATE agent_executions SET state='cancelled', settled_at=?, error=?
-                           WHERE batch_id=? AND state='usage_suspended'""",
-                        (now, reason, row["source_batch_id"]),
-                    )
-                    await db.execute(
-                        """UPDATE usage_continuations SET state='cancelled',
-                           completed_at=?, updated_at=?, last_error=? WHERE id=?""",
-                        (now, now, reason, row["id"]),
-                    )
-                    await db.execute(
-                        """UPDATE agents SET status=?, updated_at=?
-                           WHERE id=? AND status=?""",
-                        (
-                            AgentStatus.IDLE,
-                            now,
-                            row["agent_id"],
-                            AgentStatus.USAGE_SUSPENDED,
-                        ),
-                    )
-                    state = "cancelled"
+                    if valid:
+                        await db.execute(
+                            """UPDATE deliveries SET status='pending', attempts=CASE
+                                 WHEN attempts>0 THEN attempts-1 ELSE 0 END,
+                               started_at=NULL, completed_at=NULL, error=NULL, batch_id=NULL
+                               WHERE agent_id=? AND batch_id=? AND status='processing'""",
+                            (row["agent_id"], row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agent_executions
+                               SET state='usage_released', settled_at=?,
+                                   last_reconciled_at=?
+                               WHERE batch_id=? AND state='usage_suspended'""",
+                            (now, now, row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE usage_continuations SET state='ready', fired_at=?,
+                               updated_at=? WHERE id=? AND state='scheduled'""",
+                            (now, now, row["id"]),
+                        )
+                        await db.execute(
+                            "UPDATE agents SET status=?, updated_at=? WHERE id=?",
+                            (AgentStatus.IDLE, now, row["agent_id"]),
+                        )
+                        state = "fired"
+                        reason = None
+                    else:
+                        reason = (
+                            "Scheduled usage continuation is stale under current "
+                            "lifecycle state"
+                        )
+                        await db.execute(
+                            """UPDATE deliveries SET status='cancelled',
+                               completed_at=?, error=?
+                               WHERE agent_id=? AND batch_id=?
+                                 AND status='processing'""",
+                            (now, reason, row["agent_id"], row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agent_executions SET state='cancelled',
+                               settled_at=?, error=?
+                               WHERE batch_id=? AND state='usage_suspended'""",
+                            (now, reason, row["source_batch_id"]),
+                        )
+                        await db.execute(
+                            """UPDATE usage_continuations SET state='cancelled',
+                               completed_at=?, updated_at=?, last_error=? WHERE id=?""",
+                            (now, now, reason, row["id"]),
+                        )
+                        await db.execute(
+                            """UPDATE agents SET status=?, updated_at=?
+                               WHERE id=? AND status=?""",
+                            (
+                                AgentStatus.IDLE,
+                                now,
+                                row["agent_id"],
+                                AgentStatus.USAGE_SUSPENDED,
+                            ),
+                        )
+                        state = "cancelled"
                 item = self._decode_usage_continuation(row)
                 item.update({"agent_key": row["agent_key"], "outcome": state})
                 item["last_error"] = reason
