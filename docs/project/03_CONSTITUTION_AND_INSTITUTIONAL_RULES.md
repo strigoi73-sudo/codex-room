@@ -40,6 +40,8 @@ Actual CORE edits must be performed outside the protected running Room. Use the 
 
 Room adaptability applies to authorized Room-level state and tools. It does not imply authority to expand the product's own protected capabilities or permissions. Personal-tier agents should eventually have no write authority over protected CORE components; this is a governance/enforcement direction unless current implementation evidence shows it has been enforced.
 
+Authorized read access is broader than write authority. A Personal Room may inspect authorized CORE source and authorized shared workspaces from other Rooms through bounded read-only mechanisms when that evidence is relevant to its objective. Such inspection must not expose protected runtime data, credentials/secrets, or explicitly private participant material; it must not grant cross-boundary mutation authority; and retrieval should remain targeted rather than flooding agent context with unrelated material.
+
 ## D. Review and coordination rule
 
 **Handoffs protect the validity of review, not access to the file.**
