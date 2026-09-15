@@ -3088,7 +3088,7 @@ Unread event count: {len(events)}
 
 {self.DETERMINISTIC_CAPABILITY_INSTRUCTION}
 
-Respond to this event according to your own judgment. Your final response must satisfy the Room's structured schema: outcome MESSAGE, PASS, or FINISH; message text; and invoke_targets. For MESSAGE, invoke_targets may be {available_peer_targets}, or ["all"] for every peer. The message remains public/readable to every authorized peer, but only invoke_targets become runnable. Use null to retain legacy all-peer invocation. For PASS or FINISH, set invoke_targets to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
+Respond to this event according to your own judgment. Your final response must satisfy the Room's structured schema: outcome MESSAGE, PASS, or FINISH; message text; and invoke_targets. For MESSAGE, invoke_targets may be {available_peer_targets}, ["all"] for every peer, or [] for a public/readable message that should make no peer runnable. The message remains public/readable to every authorized peer, but only named invoke_targets become runnable. Use null to retain legacy all-peer invocation. For PASS or FINISH, set invoke_targets to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
 
     async def _system_event(
         self, room_id: str, event_type: str, content: str, status: str = "recorded"
