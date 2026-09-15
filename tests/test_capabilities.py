@@ -984,7 +984,7 @@ def test_inspect_source_manifest_advertises_direct_source_cli() -> None:
 
     assert inspected["version"] == "2"
     assert inspected["invocation"]["source_cli"] == "codex-room-cap source --help"
-    assert inspected["verification"]["status"] == "verification_pending"
+    assert inspected["verification"] == {"status": "verified", "evidence": ["E-078", "E-081"]}
 
 def test_source_cli_failure_is_attributed_to_inspect_source(
     tmp_path: Path, monkeypatch, capsys
