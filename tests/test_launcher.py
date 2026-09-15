@@ -25,6 +25,11 @@ def test_launcher_marks_dedicated_server_console() -> None:
     assert "title Codex Room Server" in launcher
 
 
+def test_launcher_forwards_optional_server_arguments() -> None:
+    launcher = (ROOT / "Start-Codex-Room.cmd").read_text(encoding="utf-8")
+    assert '".venv\\Scripts\\python.exe" -m codex_room %*' in launcher
+
+
 def test_kill_script_targets_server_tree_and_dedicated_launcher_console() -> None:
     killer = (ROOT / "Kill-Codex-Room.bat").read_text(encoding="utf-8")
 
@@ -50,15 +55,14 @@ def test_maintenance_wrapper_uses_repository_virtual_environment() -> None:
     assert "-m codex_room.maintenance %*" in wrapper
     assert "exit /b %ERRORLEVEL%" in wrapper
 
-def test_restart_script_closes_codex_room_browser_then_restarts() -> None:
+
+def test_restart_script_preserves_browser_and_restarts_without_new_tab() -> None:
     restart = (ROOT / "Restart-Codex-Room.bat").read_text(encoding="utf-8")
 
-    assert "Codex Room" in restart
-    assert "MainWindowTitle" in restart
-    assert "CloseMainWindow" in restart
+    assert "MainWindowTitle" not in restart
+    assert "CloseMainWindow" not in restart
     assert "Kill-Codex-Room.bat" in restart
     assert "timeout /t 5 /nobreak" in restart
-    assert "Start-Codex-Room.cmd" in restart
+    assert 'Start-Codex-Room.cmd" --no-browser' in restart
     assert restart.index("Kill-Codex-Room.bat") < restart.index("timeout /t 5 /nobreak")
     assert restart.index("timeout /t 5 /nobreak") < restart.index("Start-Codex-Room.cmd")
-
