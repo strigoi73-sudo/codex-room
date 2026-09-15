@@ -42,3 +42,10 @@ def test_kill_script_does_not_pause_after_successful_shutdown() -> None:
 
     assert 'if /I not "%~1"=="--dry-run" pause' not in killer
     assert "Failed to stop Codex Room cleanly." in killer
+
+
+def test_maintenance_wrapper_uses_repository_virtual_environment() -> None:
+    wrapper = (ROOT / "codex-room-maint.cmd").read_text(encoding="utf-8")
+    assert ".venv\\Scripts\\python.exe" in wrapper
+    assert "-m codex_room.maintenance %*" in wrapper
+    assert "exit /b %ERRORLEVEL%" in wrapper
