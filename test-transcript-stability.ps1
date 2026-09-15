@@ -3,6 +3,7 @@ param()
 
 $ErrorActionPreference = "Stop"
 $npx = (Get-Command npx.cmd -ErrorAction Stop).Source
+$playwrightPackage = '@playwright/test@1.63.0'
 $previousNodePath = $env:NODE_PATH
 $previousChannel = $env:ROOM_TEST_CHANNEL
 $previousLastRunFile = $env:PLAYWRIGHT_LAST_RUN_OUTPUT_FILE
@@ -27,15 +28,15 @@ try {
         }
     }
 
-    $packageBin = & $npx --yes --package '@playwright/test' node -p `
+    $packageBin = & $npx --yes --package $playwrightPackage node -p `
         "process.env.PATH.split(require('path').delimiter)[0]"
     if ($LASTEXITCODE -ne 0 -or -not $packageBin) {
-        throw 'Could not resolve the temporary Playwright package.'
+        throw "Could not resolve pinned Playwright package $playwrightPackage."
     }
 
     $env:NODE_PATH = Split-Path -Parent $packageBin.Trim()
     $env:PLAYWRIGHT_LAST_RUN_OUTPUT_FILE = Join-Path $outputPath '.last-run.json'
-    & $npx --yes --package '@playwright/test' playwright test `
+    & $npx --yes --package $playwrightPackage playwright test `
         'tests/transcript-stability.spec.js' `
         --workers=1 `
         --reporter=line `
