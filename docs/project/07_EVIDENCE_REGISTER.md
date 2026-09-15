@@ -3022,3 +3022,36 @@ Limitations:
 - the compact Room export records command-execution categories, not raw command bodies. The rollout cwd was the Room shared workspace and the final answer cited only fixture-local paths; there is no observed evidence of CORE or cross-Room inspection, but the current telemetry does not independently reconstruct every shell read path.
 
 **Status:** PR #70 continuation-economy repair LIVE VERIFIED on a controlled regression. Dedicated P1 benchmarking remains closed; ordinary-use monitoring is now sufficient.
+
+### E-087 — I-010 persistent-data operational maintenance implemented and verified
+**Date:** 2026-09-15  
+**Scope:** [CORE / operations] Offline local integrity, backup, verification, and guarded restore for Codex Room persistent data.
+
+E-080 established the maintenance gap and bounded solution shape: the default persistent root is `data/`, with SQLite at `data/codex-room.db`, Room shared workspaces under `data/rooms/`, and institutional/custom-capability material under the same root. Raw SQLite copying is not an adequate WAL-era backup strategy, and no bounded operator check/backup/verify/restore path previously existed.
+
+PR #73 implements that bounded local operator path without adding a service, scheduler, cloud sync, retention policy, dashboard, installation identity, SQLite `user_version` contract, or agent-callable restore.
+
+Implemented behavior:
+
+- `codex_room/maintenance.py` provides `check`, `backup`, `verify`, and `restore`;
+- `codex-room-maint.cmd` exposes the module through the repository virtual environment on Windows;
+- v1 is explicitly offline for current-data operations: `check`, `backup`, and `restore` require the operator to assert `--offline-confirmed`; backup-archive `verify` does not;
+- `check` validates a real/non-reparse data tree, runs SQLite `PRAGMA quick_check` and `foreign_key_check`, and reports bounded health facts;
+- `backup` uses SQLite's native backup API rather than copying `codex-room.db` directly, copies the remaining durable data tree while excluding recursive backup archives and SQLite WAL/SHM sidecars, and publishes only after staged verification succeeds;
+- every backup contains a schema-v1 root manifest with relative path, byte size, and SHA-256 for every payload file;
+- `verify` requires exact manifest/payload agreement, rejects unsafe paths/symlinks/reparse points, verifies every size/hash, and rechecks SQLite health;
+- `restore` verifies the selected backup before current-state mutation, builds and checks a complete candidate tree, preserves the existing backup collection, requires both `--offline-confirmed` and `--confirm-replace-data`, then performs a same-parent candidate/rollback directory swap;
+- if the final candidate-to-data swap fails after the old root was moved aside, the rollback path restores the prior data root; focused fault-injection coverage verifies that behavior.
+
+During PR verification, the first hosted run exposed a real boundary bug: the verifier initially treated every nested file named `manifest.json` as reserved, which rejected legitimate durable custom-capability manifests. The fix restricts the reserved name to the backup archive's root `manifest.json`, while retaining traversal and reserved-`backups/` rejection.
+
+Verification:
+
+- final exact PR #73 head `136eeec8755922023618c8a13c644155d01ae63b` passed **369 tests, 2 warnings** in GitHub Actions run `35009406047`;
+- PR #73 squash-merged as `e22dd9a51c8f803bda1cce0ae658c30b2f383056`;
+- the merge carries the same tested Git tree `a708a1dfa2a3a570425b435318144d8e9a7d4c35`;
+- canonical-`main` run `35009644053` passed **369 tests, 2 warnings** in 74.07 seconds.
+
+Evidence boundary: the implementation and deterministic hosted verification are complete. The offline flag is an explicit operator assertion, not automatic process-state detection. No destructive restore was run against the principal's live Personal data as part of verification.
+
+**Status:** I-010 COMPLETE / IMPLEMENTED / VERIFIED on canonical `main`.

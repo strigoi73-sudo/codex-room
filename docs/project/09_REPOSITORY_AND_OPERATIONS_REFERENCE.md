@@ -1,6 +1,6 @@
 # Codex Room — Repository & Operations Reference
 
-**Last synthesized:** 2026-09-14  
+**Last synthesized:** 2026-09-15  
 **Scope:** Compact technical reference for source/runtime layout, maintenance boundaries, source-control workflow, recovery, and verification practices.  
 **Freshness:** Repository details are time-bounded. Prefer current live source and Git state when available.
 
@@ -100,6 +100,27 @@ The kill script deliberately does **not** terminate browser processes. Codex Roo
 
 PR #18 introduced this behavior. Exact PR-head and merged canonical-main Python CI both passed **238 tests, 2 warnings**. Local Windows runtime verification on 2026-09-12 then confirmed that the normal Kill path closed both the Codex Room server console and the Kill console with no manual cleanup required. The shutdown behavior is therefore IMPLEMENTED / VERIFIED for the intended Personal Windows path.
 
+### Offline persistent-data maintenance
+
+I-010 adds a local operator maintenance wrapper:
+
+```powershell
+.\codex-room-maint.cmd check --offline-confirmed
+.\codex-room-maint.cmd backup --offline-confirmed
+.\codex-room-maint.cmd verify "C:\Codex Room\data\backups\<backup-id>"
+.\codex-room-maint.cmd restore "C:\Codex Room\data\backups\<backup-id>" --offline-confirmed --confirm-replace-data
+```
+
+For `check`, `backup`, or `restore`, first stop Codex Room with the normal Kill path. The `--offline-confirmed` switch is an explicit operator assertion; the maintenance command does not independently detect running server processes. `restore` is destructive and additionally requires `--confirm-replace-data`.
+
+By default the data root is `C:\Codex Room\data`. A different root may be supplied as a global option before the subcommand:
+
+```powershell
+.\codex-room-maint.cmd --data-root "D:\CodexRoomData" check --offline-confirmed
+```
+
+`backup` writes beneath `data\backups\` unless an external `--backup-root` is supplied. It uses SQLite's native backup API, then hashes/verifies the remaining durable payload before publishing the backup directory. `verify` checks the archive manifest, exact payload set, hashes/sizes, safe paths, and SQLite health. `restore` verifies and stages the selected archive before replacing current data and preserves the existing backup collection through the swap. See E-087 for exact verification and limitations.
+
 ## 4. Source/runtime/generated boundaries
 
 The canonical repository tracks application source, tests, root scripts/configuration, and static assets.
@@ -142,7 +163,8 @@ Current canonical source includes these useful areas/symbols:
 - `codex_room/capabilities.py` — CORE deterministic registry, list/inspect/invoke surface, and minimal built-in library;
 - `codex_room/custom_capabilities.py`, `custom_capability_registration.py`, `custom_registry.py` — custom package validation, deterministic verification/publication, protected Room binding, unified custom discovery/invocation;
 - `codex_room/rollover.py` / rollover paths in runtime/database code — lineage continuation and exact inherited custom-capability bindings;
-- `Start-Codex-Room.cmd`, `Kill-Codex-Room.bat`, `codex-room-cap.cmd` — normal Windows launch/shutdown and agent capability wrapper;
+- `Start-Codex-Room.cmd`, `Kill-Codex-Room.bat`, `codex-room-cap.cmd`, `codex-room-maint.cmd` — normal Windows launch/shutdown, agent capability, and offline maintenance wrappers;
+- `codex_room/maintenance.py` — I-010 persistent-data check/backup/verify/guarded-restore implementation;
 - `tests/` — regression coverage including routing/settlement, persistent execution recovery, profiles, capabilities, rollover, Windows launcher contracts, API, and UI behavior.
 
 Locate and inspect current definitions before consequential edits; this list is a navigation aid, not a substitute for source inspection.

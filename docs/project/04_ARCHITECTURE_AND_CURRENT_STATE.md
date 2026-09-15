@@ -341,7 +341,21 @@ E-080 exposed a separate provider-runtime cognition path that is not part of thi
 
 E-082 adds a separate read-only local operating-economics instrument for ordinary Codex Desktop/CLI sessions. `codex_room/codex_usage.py` reads the provider runtime's persisted rollout `token_count` events, reports cumulative/last usage and per-user-turn cumulative deltas, and intentionally excludes prompt/response text. The root `codex-usage.cmd` wrapper makes this available through the normal Windows repository environment. This creates a deterministic bridge for future useful Codex-vs-Room comparisons without adding model calls or changing Room execution policy.
 
-## 15. Runtime-state and work-queue caution
+## 15. Persistent-data operational maintenance
+
+**IMPLEMENTED / VERIFIED — 2026-09-15**
+
+Codex Room now has a bounded offline operator maintenance path for its persistent data root. `codex_room/maintenance.py` and the Windows wrapper `codex-room-maint.cmd` provide four operations: current-state integrity `check`, coherent `backup`, backup `verify`, and guarded `restore`.
+
+Current-data operations are deliberately offline in v1. The operator must stop Codex Room and explicitly supply `--offline-confirmed` for `check`, `backup`, and `restore`. This is an operator assertion rather than process detection or a runtime lock protocol. Backup-archive verification is read-only with respect to live Room state and does not require the offline flag.
+
+Backups use SQLite's native backup API for `data/codex-room.db` rather than raw file copying, then copy the remaining durable data-root payload while excluding recursive backup archives and SQLite WAL/SHM sidecars. A root `manifest.json` records every payload path, size, and SHA-256. Verification requires exact manifest/payload agreement, safe relative paths, regular non-reparse files/directories, valid hashes/sizes, and healthy SQLite `quick_check` / foreign-key checks.
+
+Restore is deliberately destructive and therefore requires both `--offline-confirmed` and `--confirm-replace-data`. It verifies the selected archive before touching current data, stages a complete candidate tree, preserves the existing backup collection, checks the candidate, moves the old data root to a sibling rollback path, and only then swaps the candidate into place. A failed final swap restores the prior root through the rollback path. No cloud backup, scheduler, retention service, dashboard, agent-callable restore, installation UUID, or formal SQLite schema-version contract is implied.
+
+PR #73 / E-087 provide exact implementation and verification evidence. Final PR head `136eeec8755922023618c8a13c644155d01ae63b` and canonical merge `e22dd9a51c8f803bda1cce0ae658c30b2f383056` share the tested tree; both hosted suites passed **369 tests, 2 warnings**.
+
+## 16. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 
