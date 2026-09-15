@@ -10,7 +10,7 @@
 - **What just changed?** P1 advanced the canonical Codex SDK/runtime standard from 0.147.0 to the matched 0.154.0 pair under PR #59 / E-071. Production Room policy remains Terra/high; local reinstall/restart and an unfiltered zero-turn catalog check are next.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence itself has no known blocker.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** P1 is in progress. E-073 completed the first paid gate and showed a ceiling on routine structured tasks; next is one harder threshold benchmark across the same five configurations. If that ceilings too, move to representative real-work evaluation. I-010 and I-011 remain after P1.
+- **What is next?** P1 remains in progress, but dedicated synthetic testing is stopped under E-074 after 30 benchmark turns consumed nearly 20% of the principal's five-hour Plus allowance. Further evidence must come opportunistically from representative real work. I-010 and I-011 remain after P1.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -184,24 +184,22 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 ### P1 follow-up — Model/reasoning-effort economy
 **Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
-**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073  
-**Current gate:** one harder threshold benchmark across the same five configurations; if it also ceilings, move to representative real-work evaluation rather than expanding synthetic puzzles.
+**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074  
+**Current gate:** representative real-work evaluation only; no further dedicated paid synthetic benchmarks.
 
 Current production source still pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. A3 found no settled evidence that this universal policy is the best quality/cost tradeoff for every task. I-009 provides verified per-execution model, reasoning-effort, and usage facts plus live runtime provenance.
 
 E-070 established that the former 0.147 runtime exposed Sol, Terra, Luna, and GPT-5.5 through its SDK catalog while the principal's desktop Codex UI visibly exposed Astra. E-071 advanced the canonical SDK/runtime standard to the matched published 0.154.0 pair, verified with 327 tests on exact PR and canonical-main commits. E-072 then live-verified the local 0.154.0 runtime and confirmed the same SDK now exposes `gpt-6-astra`. This dependency upgrade does **not** change production model selection.
 
-The first paid admission matrix is complete under E-073. Four of five configurations hit 30/30, producing a ceiling effect; Sol/medium scored 28/30. Routine structured work therefore shows no measured quality benefit from the current universal Terra/high policy, while Luna/medium matched its objective score and completed faster. This is evidence for an economy hypothesis, not yet a production routing decision.
+The two paid synthetic matrices are complete under E-073/E-074. Routine structured work showed no measured quality advantage for universal Terra/high, but the harder threshold run's only score differences came from an epistemically ambiguous state/evidence answer key and therefore do not support a trustworthy model ranking. More importantly, the principal reported that the 30 dedicated benchmark turns consumed nearly 20% of the five-hour Plus allowance. Continuing synthetic expansion would violate P1's own efficiency objective.
 
-P1 now proceeds:
+P1 now proceeds by representative real work only:
 
-- run one deliberately harder threshold matrix across the same five configurations, using subtler evidence/state reasoning, multi-constraint coordination, and concurrent/runtime code reasoning;
-- fix the benchmark reporter so nested SDK `usage.total` fields aggregate correctly without requiring a rerun of E-073;
-- keep fresh isolated threads, service tier unchanged, and external tools/network disabled;
-- use the result to locate the first task class where Luna/medium or Terra/medium materially degrades and a higher-cost configuration earns its spend;
-- if the harder synthetic matrix also ceilings, stop escalating synthetic difficulty and move to representative real Codex Room work instead;
-- defer Astra effort sweeps and any automatic/dynamic routing implementation until a quality boundary is evidenced.
-
+- do not run more dedicated paid synthetic benchmarks or Astra effort sweeps;
+- collect model/effort/usage evidence opportunistically from work the principal actually wants completed;
+- avoid duplicate model calls solely to compare models; use deterministic checks and already-required independent review where they naturally exist;
+- treat E-073/E-074 as evidence that routine bounded tasks do not presently justify universal Terra/high, while preserving uncertainty about the escalation boundary;
+- only propose a production model-selection change when representative work provides enough evidence to justify a simpler, cheaper policy.
 No production model-selection policy change is authorized until this evidence exists.
 
 ## Approved planned development
