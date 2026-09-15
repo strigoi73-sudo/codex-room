@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any, AsyncIterator
 
 from .agent import (
+    ROOM_MODEL,
+    ROOM_REASONING_EFFORT,
     AgentAdapter,
     AgentRunResult,
     AgentTurnTerminalError,
@@ -56,6 +58,7 @@ from .models import (
     RoomStatus,
     UpdateRoomRequest,
 )
+from .runtime_info import collect_runtime_provenance
 
 
 @dataclass(slots=True)
@@ -154,6 +157,16 @@ class RoomRuntime:
         self.data_root = data_root
         self.hub = LiveHub()
         self.auth_info: dict[str, Any] = {"authenticated": False}
+        self.provenance = collect_runtime_provenance(
+            model=ROOM_MODEL,
+            reasoning_effort=ROOM_REASONING_EFFORT,
+        )
+        self._watchdog_last_started_at: str | None = None
+        self._watchdog_last_success_at: str | None = None
+        self._watchdog_last_error_at: str | None = None
+        self._watchdog_last_error: str | None = None
+        self._watchdog_failure_count = 0
+        self._watchdog_consecutive_failures = 0
         self._workers: dict[tuple[str, str], asyncio.Task[None]] = {}
         self._wakeups: dict[tuple[str, str], asyncio.Event] = {}
         self._worker_slots: dict[tuple[str, str], WorkerSlot] = {}
@@ -162,6 +175,31 @@ class RoomRuntime:
         self._watchdog: asyncio.Task[None] | None = None
         self._lifecycle_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._background_tasks: set[asyncio.Task[Any]] = set()
+
+    def health_status(self) -> dict[str, Any]:
+        watchdog_status = (
+            "degraded"
+            if self._watchdog_consecutive_failures
+            else "healthy"
+            if self._watchdog_last_success_at is not None
+            else "starting"
+        )
+        return {
+            "ok": watchdog_status != "degraded",
+            "codex": self.auth_info,
+            "provenance": self.provenance,
+            "maintenance": {
+                "watchdog": {
+                    "status": watchdog_status,
+                    "last_started_at": self._watchdog_last_started_at,
+                    "last_success_at": self._watchdog_last_success_at,
+                    "last_error_at": self._watchdog_last_error_at,
+                    "last_error": self._watchdog_last_error,
+                    "failure_count": self._watchdog_failure_count,
+                    "consecutive_failures": self._watchdog_consecutive_failures,
+                }
+            },
+        }
 
     async def initialize(self) -> None:
         await self.db.initialize()
@@ -1180,7 +1218,13 @@ class RoomRuntime:
                 # query and the wait leaves the wake flag set. Clearing after an
                 # empty claim would lose that notification and delay a valid turn.
                 wakeup.clear()
-                delivery = await self.db.claim_next_delivery(room_id, agent_key, generation)
+                delivery = await self.db.claim_next_delivery(
+                    room_id,
+                    agent_key,
+                    generation,
+                    model=ROOM_MODEL,
+                    reasoning_effort=ROOM_REASONING_EFFORT,
+                )
                 if delivery is None:
                     self._set_worker_phase(key, generation, "idle", None, "Worker is waiting for work.")
                     if self._shutdown.is_set():
@@ -3106,11 +3150,28 @@ Respond to this event according to your own judgment. Your final response must s
         while True:
             try:
                 await asyncio.sleep(10)
-                await self._watchdog_tick()
+                await self._watchdog_cycle()
             except asyncio.CancelledError:
                 raise
             except Exception:
                 await asyncio.sleep(5)
+
+    async def _watchdog_cycle(self) -> None:
+        self._watchdog_last_started_at = utc_now()
+        try:
+            await self._watchdog_tick()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            self._watchdog_failure_count += 1
+            self._watchdog_consecutive_failures += 1
+            self._watchdog_last_error_at = utc_now()
+            message = f"{type(exc).__name__}: {exc}"
+            self._watchdog_last_error = message[:1000]
+            raise
+        else:
+            self._watchdog_last_success_at = utc_now()
+            self._watchdog_consecutive_failures = 0
 
     async def _watchdog_tick(self) -> None:
         now = datetime.now(UTC)
