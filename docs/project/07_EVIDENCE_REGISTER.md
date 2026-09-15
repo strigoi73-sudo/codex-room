@@ -2502,3 +2502,36 @@ Provider references at capture time: OpenAI Help Center, “Managing usage with 
 
 **Status:** first paid P1 admission gate COMPLETE; no production model-selection policy changed.
 
+### E-074 — P1 threshold benchmark and synthetic-test cost limit
+**Date:** 2026-09-15  
+**Scope:** [P1 exploratory] second 15-turn synthetic comparison plus principal-observed Plus allowance cost.
+
+The harder threshold benchmark ran the same five configurations across three 12-label task families: state/evidence reasoning, coordination constraints, and concurrent/runtime code review.
+
+Observed aggregate results:
+
+| Configuration | Score | SDK failures | Aggregate duration | Total tokens |
+|---|---:|---:|---:|---:|
+| Luna / medium | 35/36 | 0 | 27.719 s | 54,698 |
+| Terra / medium | 33/36 | 0 | 28.340 s | 58,068 |
+| Terra / high | 35/36 | 0 | 29.931 s | 59,577 |
+| Sol / medium | 34/36 | 0 | 22.528 s | 59,242 |
+| Astra / medium | 34/36 | 0 | 24.548 s | 54,622 |
+
+All five configurations scored 12/12 on both coordination constraints and concurrent/runtime review. All score differences came from the state/evidence task.
+
+Post-run inspection found that the state/evidence answer key was not sufficiently epistemically clean to rank models reliably. In particular, several claims mixed two different questions: whether an underlying fact is false versus whether supplied evidence establishes that fact. Models split between `C` and `U` on those cases while their rationales often expressed the same underlying uncertainty. The resulting 35/36 versus 34/36 versus 33/36 ordering should therefore **not** be interpreted as a reliable capability ranking.
+
+The economically important observation is independent of that scoring ambiguity: the principal reported that the two 15-turn benchmark runs together consumed nearly **20% of the five-hour Plus usage allowance**. Thirty dedicated synthetic turns for this amount of evidence is disproportionate to P1's goal. This is direct evidence that continuing to manufacture synthetic comparisons is itself an expensive failure mode.
+
+P1 consequence:
+
+- stop dedicated paid synthetic benchmark expansion now;
+- do not run Astra effort sweeps or additional puzzle matrices;
+- preserve the useful conclusion from E-073/E-074 that routine bounded work did not show a quality advantage for universal Terra/high;
+- gather further model-economy evidence opportunistically from representative work the principal actually wants completed, avoiding duplicate model calls solely for experimentation;
+- prefer deterministic verification and already-required review evidence over model-against-model duplication;
+- do not change production model-selection policy solely from these synthetic runs.
+
+**Status:** synthetic P1 benchmark phase COMPLETE / STOPPED FOR COST. Next evidence should come from representative real work, not additional dedicated benchmark turns.
+
