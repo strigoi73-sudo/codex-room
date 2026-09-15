@@ -2275,5 +2275,14 @@ Verified safe-delete branch set:
 
 The connected GitHub tool surface available to this Project exposes no branch-ref deletion action and no repository-settings write action. Therefore E-067 proves the safe deletion set and configuration gap but does not claim those mutations were performed.
 
-**Status:** I-008 IN PROGRESS. Mechanical operator action remains: delete the exact verified merged-branch set and enable automatic deletion of future merged PR branches. Minimal `main` protection is not currently available through the checked ruleset path on this private-repository plan and should not block branch cleanup.
+Post-delete verification:
+
+- the operator executed the bounded deletion script against the exact 56-branch set recorded above;
+- fresh GitHub inspection then returned exactly one branch: `main`;
+- non-`main` branch count is **0**;
+- open pull-request count remains **0**;
+- canonical `main` remains at `22a6f98e50805f47ad774b6f6c929f7719ba54c6`;
+- `delete_branch_on_merge` is still `false`.
+
+**Status:** I-008 IN PROGRESS. Historical merged-branch residue is fully removed and verified. The remaining closeout action is to enable automatic deletion of future merged PR branches. Minimal `main` protection remains unavailable through the checked ruleset path on this private-repository plan and does not block I-008.
 
