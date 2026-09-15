@@ -1764,6 +1764,7 @@ class RoomRuntime:
         wake_at: str,
     ) -> None:
         diagnostic = " ".join(str(exc).split())[:4000]
+        suspension_failed = False
         async with self._lifecycle_locks[batch["room_id"]]:
             current = await self._required_room(batch["room_id"])
             slot = self._worker_slots.get((batch["room_id"], agent["agent_key"]))
@@ -1796,42 +1797,51 @@ class RoomRuntime:
                 worker_generation=generation,
             )
             if continuation is None:
-                await self._handle_assignment_failure(
-                    batch, agent, RuntimeError(diagnostic), generation, retryable=False
+                suspension_failed = True
+            else:
+                self._set_worker_phase(
+                    (batch["room_id"], agent["agent_key"]),
+                    generation,
+                    "usage_suspended",
+                    batch["batch_id"],
+                    f"Usage limit reached; transaction continuation is scheduled for {wake_at}.",
                 )
-                return
-            self._set_worker_phase(
-                (batch["room_id"], agent["agent_key"]),
+                event = await self.db.create_event(
+                    batch["room_id"],
+                    "usage_limit_suspended",
+                    agent["agent_key"],
+                    "observer",
+                    f"{agent['name']} paused — usage limit reached. Transaction continuation scheduled for {wake_at}.",
+                    related_event_id=batch["assignment"].get("origin_event_id"),
+                    status="warning",
+                    metadata={
+                        "classification": exc.codex_error_info,
+                        "reported_retry_at": reported_retry_at,
+                        "wake_at": wake_at,
+                        "agent": agent["agent_key"],
+                        "thread_id": agent["thread_id"],
+                        "source_batch_id": batch["batch_id"],
+                        "assignment_id": batch["assignment_id"],
+                        "task_id": batch["task_id"],
+                        "usage_continuation_id": continuation["id"],
+                        "reschedule_count": continuation["reschedule_count"],
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(event)
+        if suspension_failed:
+            await self._handle_assignment_failure(
+                batch,
+                agent,
+                RuntimeError(
+                    "Transaction usage suspension lost its durable assignment claim"
+                ),
                 generation,
-                "usage_suspended",
-                batch["batch_id"],
-                f"Usage limit reached; transaction continuation is scheduled for {wake_at}.",
+                retryable=False,
             )
-            event = await self.db.create_event(
-                batch["room_id"],
-                "usage_limit_suspended",
-                agent["agent_key"],
-                "observer",
-                f"{agent['name']} paused — usage limit reached. Transaction continuation scheduled for {wake_at}.",
-                related_event_id=batch["assignment"].get("origin_event_id"),
-                status="warning",
-                metadata={
-                    "classification": exc.codex_error_info,
-                    "reported_retry_at": reported_retry_at,
-                    "wake_at": wake_at,
-                    "agent": agent["agent_key"],
-                    "thread_id": agent["thread_id"],
-                    "source_batch_id": batch["batch_id"],
-                    "assignment_id": batch["assignment_id"],
-                    "task_id": batch["task_id"],
-                    "usage_continuation_id": continuation["id"],
-                    "reschedule_count": continuation["reschedule_count"],
-                    "work_model_version": 2,
-                },
-                discussion_id=batch["round_id"],
-                round_id=batch["round_id"],
-            )
-            self._publish_event(event)
+            return
         await self.publish_state(batch["room_id"])
 
     async def _process_assignment(
