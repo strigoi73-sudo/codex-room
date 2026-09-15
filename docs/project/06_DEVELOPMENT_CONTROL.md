@@ -185,7 +185,7 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 **Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
 **Evidence:** E-065, E-068, E-069, E-070  
-**Current gate:** bounded 12-turn admission benchmark across Luna/medium, Terra/medium, Terra/high baseline, and Sol/medium.
+**Current gate:** bounded 12-turn admission benchmark across Luna/medium, Terra/medium, Terra/high baseline, and Sol/medium; GPT-5.5 is available but deferred as a legacy comparator, and Astra is absent from the currently deployed local catalog.
 
 Current source pins every Room thread/turn to `gpt-5.6-terra` with `high` reasoning. A3 found no settled evidence that this universal policy is the best quality/cost tradeoff for every task. I-009 now provides verified per-execution model, reasoning-effort, and usage facts plus live runtime provenance.
 
