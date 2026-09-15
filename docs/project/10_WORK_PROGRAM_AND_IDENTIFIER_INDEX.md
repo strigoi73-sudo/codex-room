@@ -35,6 +35,7 @@ This table preserves names and navigation only. Read Development Control for cur
 | `EF-3` | Minimal GitHub CI | Development Control |
 | `A1` | Assurance Pass 1 | Development Control / Evidence Register |
 | `A2` | Assurance Pass 2 | Development Control / Evidence Register |
+| `A3` | Whole-system housekeeping, efficiency, and operational assurance audit | Development Control / Evidence Register |
 | `P4` | Deterministic Room and agent capabilities | Development Control / Product Vision |
 
 ## 3. Established maintenance identifiers
@@ -48,6 +49,11 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-004` | README conflicts with settled architecture | Development Control / historical evidence after closure |
 | `I-005` | legacy `Agent Personalities.txt` dependency question | Development Control / historical evidence after closure |
 | `I-006` | Early-triad default profiles missed D-020 migration | Development Control |
+| `I-007` | Environment and documentation truth drift | Development Control |
+| `I-008` | Repository branch hygiene | Development Control |
+| `I-009` | Runtime provenance and maintenance health | Development Control |
+| `I-010` | Persistent-data operational maintenance | Development Control |
+| `I-011` | Verification-platform and dependency assurance | Development Control |
 
 ## 4. Decision and evidence identifiers
 
