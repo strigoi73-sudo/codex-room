@@ -1714,6 +1714,13 @@ class RoomRuntime:
                 diagnostic,
                 retryable=retryable,
             )
+            if batch.get("usage_continuation"):
+                await self.db.finish_usage_continuation(
+                    batch["usage_continuation"]["id"],
+                    batch["batch_id"],
+                    "ready" if outcome["retried"] else "failed",
+                    diagnostic,
+                )
             event = await self.db.create_event(
                 batch["room_id"],
                 "agent_error",
@@ -1745,6 +1752,86 @@ class RoomRuntime:
                         "transaction_failed",
                         "Transaction task closed after a terminal coordinator assignment failure.",
                     )
+        await self.publish_state(batch["room_id"])
+
+    async def _handle_transaction_usage_wall(
+        self,
+        batch: dict[str, Any],
+        agent: dict[str, Any],
+        exc: AgentTurnTerminalError,
+        generation: int,
+        reported_retry_at: str,
+        wake_at: str,
+    ) -> None:
+        diagnostic = " ".join(str(exc).split())[:4000]
+        async with self._lifecycle_locks[batch["room_id"]]:
+            current = await self._required_room(batch["room_id"])
+            slot = self._worker_slots.get((batch["room_id"], agent["agent_key"]))
+            claim_is_current = (
+                current["discussion_id"] == batch["round_id"]
+                and current["lifecycle_version"] == batch["lifecycle_version"]
+                and current["status"] == RoomStatus.RUNNING
+                and slot is not None
+                and slot.generation == generation
+                and not slot.quarantined
+            )
+            if not claim_is_current:
+                await self.db.set_execution_state(
+                    batch["batch_id"], "stale", diagnostic
+                )
+                if batch.get("usage_continuation"):
+                    await self.db.finish_usage_continuation(
+                        batch["usage_continuation"]["id"],
+                        batch["batch_id"],
+                        "cancelled",
+                        diagnostic,
+                    )
+                return
+            continuation = await self.db.suspend_transaction_usage_continuation(
+                batch,
+                agent,
+                reported_retry_at=reported_retry_at,
+                wake_at=wake_at,
+                diagnostic=diagnostic,
+                worker_generation=generation,
+            )
+            if continuation is None:
+                await self._handle_assignment_failure(
+                    batch, agent, RuntimeError(diagnostic), generation, retryable=False
+                )
+                return
+            self._set_worker_phase(
+                (batch["room_id"], agent["agent_key"]),
+                generation,
+                "usage_suspended",
+                batch["batch_id"],
+                f"Usage limit reached; transaction continuation is scheduled for {wake_at}.",
+            )
+            event = await self.db.create_event(
+                batch["room_id"],
+                "usage_limit_suspended",
+                agent["agent_key"],
+                "observer",
+                f"{agent['name']} paused — usage limit reached. Transaction continuation scheduled for {wake_at}.",
+                related_event_id=batch["assignment"].get("origin_event_id"),
+                status="warning",
+                metadata={
+                    "classification": exc.codex_error_info,
+                    "reported_retry_at": reported_retry_at,
+                    "wake_at": wake_at,
+                    "agent": agent["agent_key"],
+                    "thread_id": agent["thread_id"],
+                    "source_batch_id": batch["batch_id"],
+                    "assignment_id": batch["assignment_id"],
+                    "task_id": batch["task_id"],
+                    "usage_continuation_id": continuation["id"],
+                    "reschedule_count": continuation["reschedule_count"],
+                    "work_model_version": 2,
+                },
+                discussion_id=batch["round_id"],
+                round_id=batch["round_id"],
+            )
+            self._publish_event(event)
         await self.publish_state(batch["room_id"])
 
     async def _process_assignment(
@@ -1814,6 +1901,15 @@ class RoomRuntime:
                 )
             else:
                 prompt = await self._assignment_prompt(batch, agent)
+                if batch.get("usage_continuation"):
+                    await self.adapter.prepare_usage_continuation(
+                        agent, self.workspace(room_id)
+                    )
+                    prompt = (
+                        f"<usage_limit_continuation>\n"
+                        f"{self.USAGE_CONTINUATION_INSTRUCTION}\n"
+                        f"</usage_limit_continuation>\n\n{prompt}"
+                    )
 
                 async def bind_turn(thread_id: str, turn_id: str) -> None:
                     bound = await self.db.bind_execution_turn(
@@ -1855,6 +1951,24 @@ class RoomRuntime:
             await self.publish_state(room_id)
             return
         except AgentTurnTerminalError as exc:
+            if exc.codex_error_info in self.USAGE_WALL_ERROR_CODES:
+                schedule = self._usage_wall_schedule(exc)
+                if schedule is None:
+                    await self._handle_assignment_failure(
+                        batch,
+                        agent,
+                        RuntimeError(
+                            "Codex reported usage exhaustion without a valid try-again time: "
+                            + str(exc)
+                        ),
+                        generation,
+                        retryable=False,
+                    )
+                else:
+                    await self._handle_transaction_usage_wall(
+                        batch, agent, exc, generation, *schedule
+                    )
+                return
             await self._handle_assignment_failure(
                 batch, agent, exc, generation, retryable=False
             )
@@ -2074,6 +2188,30 @@ class RoomRuntime:
             )
             await self.db.set_agent_status(agent["id"], AgentStatus.IDLE)
             await self.db.set_execution_state(batch["batch_id"], "settled")
+            continuation = batch.get("usage_continuation")
+            if continuation:
+                await self.db.finish_usage_continuation(
+                    continuation["id"], batch["batch_id"], "completed"
+                )
+                continued = await self.db.create_event(
+                    room_id,
+                    "usage_continuation_completed",
+                    agent_key,
+                    "observer",
+                    f"{agent['name']} completed its scheduled transaction usage-limit continuation.",
+                    related_event_id=result_event["id"],
+                    metadata={
+                        "usage_continuation_id": continuation["id"],
+                        "source_batch_id": continuation["source_batch_id"],
+                        "continuation_batch_id": batch["batch_id"],
+                        "assignment_id": batch["assignment_id"],
+                        "thread_id": agent["thread_id"],
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(continued)
 
             if settlement["turn_limit_hit"]:
                 await self.db.cancel_transaction_work(room_id, batch["round_id"])
