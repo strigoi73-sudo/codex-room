@@ -4092,6 +4092,14 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
                 for agent in agents
             ):
                 continue
+            if (
+                round_item
+                and round_item.get("work_model_version", 1) == 2
+                and await self.db.has_active_transaction_task(
+                    room["id"], room["active_round_id"]
+                )
+            ):
+                continue
             if any(
                 await asyncio.gather(
                     *(
