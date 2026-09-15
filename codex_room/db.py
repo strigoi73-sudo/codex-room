@@ -237,6 +237,66 @@ class Database:
                     PRIMARY KEY(round_id, agent_id)
                 );
 
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id TEXT PRIMARY KEY,
+                    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                    round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+                    parent_task_id TEXT REFERENCES tasks(id),
+                    origin_event_id TEXT REFERENCES events(id),
+                    coordinator_agent_id TEXT NOT NULL REFERENCES agents(id),
+                    state TEXT NOT NULL,
+                    required_contributors_json TEXT NOT NULL DEFAULT '[]',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    settled_at TEXT,
+                    settlement_event_id TEXT REFERENCES events(id),
+                    settlement_reason TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS assignment_joins (
+                    id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+                    parent_assignment_id TEXT REFERENCES assignments(id),
+                    continuation_agent_id TEXT REFERENCES agents(id),
+                    state TEXT NOT NULL,
+                    released_assignment_id TEXT REFERENCES assignments(id),
+                    created_at TEXT NOT NULL,
+                    ready_at TEXT,
+                    released_at TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS assignments (
+                    id TEXT PRIMARY KEY,
+                    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+                    agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+                    parent_assignment_id TEXT REFERENCES assignments(id),
+                    contribution_join_id TEXT REFERENCES assignment_joins(id),
+                    origin_event_id TEXT REFERENCES events(id),
+                    instruction TEXT NOT NULL,
+                    context_event_ids_json TEXT NOT NULL DEFAULT '[]',
+                    execution_config_id TEXT,
+                    state TEXT NOT NULL,
+                    result_event_id TEXT REFERENCES events(id),
+                    resolution_reason TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    started_at TEXT,
+                    completed_at TEXT
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_tasks_round_state
+                    ON tasks(round_id, state);
+                CREATE INDEX IF NOT EXISTS idx_tasks_room_time
+                    ON tasks(room_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_assignments_agent_state
+                    ON assignments(agent_id, state, created_at);
+                CREATE INDEX IF NOT EXISTS idx_assignments_task_state
+                    ON assignments(task_id, state);
+                CREATE INDEX IF NOT EXISTS idx_assignments_join_state
+                    ON assignments(contribution_join_id, state);
+                CREATE INDEX IF NOT EXISTS idx_assignment_joins_task_state
+                    ON assignment_joins(task_id, state);
+
                 CREATE TABLE IF NOT EXISTS agent_executions (
                     batch_id TEXT PRIMARY KEY,
                     room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
