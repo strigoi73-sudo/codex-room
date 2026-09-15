@@ -184,7 +184,7 @@ P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, th
 ### P1 follow-up — Model/reasoning-effort economy
 **Work state:** IN PROGRESS  
 **Reality:** EXPLORATORY  
-**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075  
+**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076  
 **Current gate:** deploy/use the verified C-selected peer-execution capability in representative real work; no further dedicated paid synthetic benchmarks.
 
 The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of four admitted model/effort configurations for that peer execution. D-028 hard-prohibits Astra execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
