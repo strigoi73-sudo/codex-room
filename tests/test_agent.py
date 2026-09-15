@@ -460,7 +460,11 @@ async def test_completed_turn_with_different_id_cannot_satisfy_execution(tmp_pat
 @pytest.mark.asyncio
 async def test_restart_lookup_quarantines_when_exact_turn_is_absent(tmp_path: Path):
     adapter = CodexAgentAdapter()
-    adapter._client = object()
+    adapter._client = SimpleNamespace(
+        _client=SimpleNamespace(
+            _subscribe_turn_notifications=lambda _turn_id: SimpleNamespace()
+        )
+    )
     handle = HistoryHandle()
     thread = HistoryThread(handle, turn_ids=["turn-someone-else"])
     adapter._threads["agent-one"] = thread
