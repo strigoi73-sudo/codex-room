@@ -76,7 +76,7 @@ Hard-wire functions, not judgment. Goal interpretation, relevance, decomposition
 
 ## 6. Personal usage pacing direction
 
-**Status: DECIDED / NOT IMPLEMENTED — approved planned development (D-019).**
+**Status: DECIDED / NOT IMPLEMENTED — DEFERRED pending mixed usage-pool semantics (D-019).**
 
 Codex Room Personal should provide a user-configurable daily usage pacing limit expressed as a percentage of the user's weekly Codex usage allowance.
 
@@ -88,7 +88,7 @@ The approved baseline is:
 - allow work already in progress to finish, accepting possible overshoot;
 - treat provider enforcement as authoritative.
 
-This feature is approved for development but is not implemented. Development Control owns scheduling and priority. Warning thresholds, UI presentation, carry-forward behavior, daily-period/time-zone semantics, polling cadence, and exact SDK/app-server integration remain implementation-design questions.
+This feature remains approved in principle but is not ready for implementation. Mixed subscription allowance and purchased credits create an unresolved usage-pool model: the system must first establish which pool the pacing policy governs, how provider data distinguishes the pools, and what happens when one pool is exhausted while another remains available. Development Control owns scheduling and priority. Warning thresholds, UI presentation, carry-forward behavior, daily-period/time-zone semantics, polling cadence, and exact SDK/app-server integration remain implementation-design questions.
 
 ## 7. Setup and onboarding direction
 
