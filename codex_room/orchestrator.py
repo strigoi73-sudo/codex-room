@@ -3469,6 +3469,17 @@ class RoomRuntime:
             for agent in agents
         ):
             return False
+        round_item = await self.db.get_round(round_id)
+        if round_item and round_item.get("work_model_version", 1) == 2:
+            if await self.db.has_active_transaction_task(room_id, round_id):
+                return False
+            await self._close_discussion(
+                room_id,
+                round_id,
+                fallback_reason,
+                fallback_content,
+            )
+            return True
         open_deliveries = await asyncio.gather(
             *(
                 self.db.has_open_delivery(room_id, agent["agent_key"], round_id)
