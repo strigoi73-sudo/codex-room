@@ -1584,6 +1584,82 @@ async def test_restart_retains_thread_ids_and_resumes_queues(runtime_factory, tm
 
 
 @pytest.mark.asyncio
+async def test_restart_quarantines_unbound_claim_without_reclaim_or_duplicate_execution(
+    runtime_factory,
+):
+    class PreBindBlockingAdapter(FakeAgentAdapter):
+        def __init__(self) -> None:
+            super().__init__()
+            self.pre_bind_entered = asyncio.Event()
+
+        async def run_agent(self, *args, **kwargs):
+            self.pre_bind_entered.set()
+            await asyncio.Event().wait()
+            raise AssertionError("unreachable")
+
+    first_adapter = PreBindBlockingAdapter()
+    first = await runtime_factory(first_adapter, "prebind-restart.db")
+    created = await first.create_room(
+        CreateRoomRequest(topic="Crash before exact-turn binding", starting_agent="agent_a")
+    )
+    room_id = created["id"]
+
+    await asyncio.wait_for(first_adapter.pre_bind_entered.wait(), timeout=2)
+    before = await first.db.get_delivery_execution(room_id)
+    execution = before["agent_a"]["execution"]
+    assert before["agent_a"]["processing_count"] == 1
+    assert execution["state"] == "claimed"
+    assert execution["sdk_thread_id"] is None
+    assert execution["sdk_turn_id"] is None
+    batch_id = execution["batch_id"]
+
+    # Simulate process loss without running Room shutdown settlement. The durable
+    # claim is intentionally left exactly as it would be after a pre-bind crash.
+    first._shutdown.set()
+    if first._watchdog is not None:
+        first._watchdog.cancel()
+        await asyncio.gather(first._watchdog, return_exceptions=True)
+    first_tasks = [task for task in first._workers.values() if not task.done()]
+    for task in first_tasks:
+        task.cancel()
+    await asyncio.gather(*first_tasks, return_exceptions=True)
+
+    second_adapter = FakeAgentAdapter()
+    second = await runtime_factory(second_adapter, "prebind-restart.db")
+
+    after = await second.db.get_delivery_execution(room_id)
+    recovered = after["agent_a"]["execution"]
+    assert recovered["batch_id"] == batch_id
+    assert recovered["state"] == "quarantined"
+    assert after["agent_a"]["processing_count"] == 1
+
+    slot = second._worker_slots[(room_id, "agent_a")]
+    assert slot.quarantined is True
+    assert slot.phase == "quarantined"
+    assert slot.task is None
+    assert second_adapter.calls["agent_a"] == []
+
+    async with second.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT batch_id, state
+               FROM agent_executions
+               WHERE room_id=? AND agent_id=?
+               ORDER BY created_at""",
+            (room_id, f"{room_id}:agent_a"),
+        )
+    assert [(row["batch_id"], row["state"]) for row in rows] == [
+        (batch_id, "quarantined")
+    ]
+
+    await asyncio.sleep(0.05)
+    assert second_adapter.calls["agent_a"] == []
+    assert not any(
+        event["event_type"] == "worker_error"
+        for event in await second.db.get_events(room_id)
+    )
+
+
+@pytest.mark.asyncio
 async def test_restart_reconciles_bound_exact_turn_without_replaying_delivery(runtime_factory):
     first_adapter = FakeAgentAdapter(
         {"agent_a": [(Outcome.FINISH, "durable completion")]},
