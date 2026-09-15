@@ -1863,6 +1863,32 @@ class RoomRuntime:
                     ),
                 )
                 self._publish_event(host_event)
+            economics = self._execution_economics(result, runnable_targets)
+            total_tokens = economics["usage"].get("total_tokens")
+            economics_event = await self.db.create_event(
+                room_id,
+                "execution_economics",
+                agent_key,
+                "observer",
+                (
+                    f"{agent['name']}: execution economics — "
+                    f"{economics['tool_calls']} tool call(s), "
+                    + (
+                        f"{total_tokens} reported token(s)"
+                        if total_tokens is not None
+                        else "token total unavailable"
+                    )
+                ),
+                related_event_id=first_event["id"],
+                metadata={
+                    **economics,
+                    "input_event_ids": input_ids,
+                    "batch_id": batch["batch_id"],
+                },
+                discussion_id=batch["round_id"],
+                round_id=batch["round_id"],
+            )
+            self._publish_event(economics_event)
             for item in result.activity:
                 tool_event = await self.db.create_event(
                     room_id,
@@ -1902,6 +1928,72 @@ class RoomRuntime:
                 self._publish_event(continued)
 
         await self._maybe_compact_context(batch, agent, result)
+
+    @staticmethod
+    def _execution_economics(
+        result: AgentRunResult,
+        runnable_targets: list[str],
+    ) -> dict[str, Any]:
+        activity_counts: dict[str, int] = {}
+        failed_tool_calls = 0
+        for item in result.activity:
+            item_type = str(item.get("type", "unknown"))
+            activity_counts[item_type] = activity_counts.get(item_type, 0) + 1
+            if item.get("status") not in {None, "completed"} or item.get("ok") is False:
+                failed_tool_calls += 1
+
+        tool_calls = len(result.activity)
+        capability_invocations = activity_counts.get("deterministic_capability", 0)
+        capability_failures = sum(
+            1
+            for item in result.activity
+            if item.get("type") == "deterministic_capability"
+            and (
+                item.get("status") not in {None, "completed"}
+                or item.get("ok") is False
+            )
+        )
+        usage = result.usage if isinstance(result.usage, dict) else {}
+        usage_total = (
+            usage.get("total")
+            if isinstance(usage.get("total"), dict)
+            else usage
+        )
+        token_fields = {
+            key: usage_total.get(key)
+            for key in (
+                "input_tokens",
+                "cached_input_tokens",
+                "cache_write_input_tokens",
+                "output_tokens",
+                "reasoning_output_tokens",
+                "total_tokens",
+            )
+            if isinstance(usage_total.get(key), (int, float))
+            and not isinstance(usage_total.get(key), bool)
+        }
+        total_tokens = token_fields.get("total_tokens")
+        return {
+            "type": "execution_economics",
+            "tool_calls": tool_calls,
+            "activity_counts": dict(sorted(activity_counts.items())),
+            "failed_tool_calls": failed_tool_calls,
+            "failed_tool_fraction": (
+                round(failed_tool_calls / tool_calls, 4) if tool_calls else 0.0
+            ),
+            "capability_invocations": capability_invocations,
+            "capability_failures": capability_failures,
+            "file_changes": activity_counts.get("file_change", 0),
+            "context_compactions": activity_counts.get("context_compaction", 0),
+            "sub_agent_activity": activity_counts.get("sub_agent_activity", 0),
+            "peer_invocations": len(runnable_targets),
+            "usage": token_fields,
+            "tokens_per_tool_call": (
+                round(float(total_tokens) / tool_calls, 1)
+                if tool_calls and total_tokens is not None
+                else None
+            ),
+        }
 
     def _settle_custom_capability_registration_requests(
         self,
