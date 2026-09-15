@@ -1,5 +1,5 @@
 # Known-good application and test dependency set.
-# Captured from GitHub Actions run 34522039398 on 2026-09-10.
+# Verified by GitHub Actions run 34943392571 on 2026-09-15 after the Codex SDK/runtime 0.154.0 upgrade.
 # This constrains Python package resolution for routine development and CI.
 # Python, pip, build tooling, and OS-level components are not pinned here.
 
@@ -16,8 +16,8 @@ httptools==0.8.0
 httpx==0.28.1
 idna==3.19
 iniconfig==2.3.0
-openai-codex==0.147.0
-openai-codex-cli-bin==0.147.0
+openai-codex==0.154.0
+openai-codex-cli-bin==0.154.0
 packaging==26.3
 pluggy==1.6.0
 pydantic==2.13.5
