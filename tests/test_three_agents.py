@@ -281,7 +281,7 @@ def test_room_protocol_makes_invocation_cognition_not_visibility_for_all_agents(
     for text in instructions.values():
         assert "Invocation requests cognition, not visibility" in text
         assert "do not invoke a participant merely so they can see" in text
-        assert "If no additional peer cognition is needed, do not request a runnable peer" in text
+        assert "If no additional peer cognition is needed, set invoke_targets to `[]`" in text
         assert "normally return the result to C without invoking the other delegated peer" in text
         assert "ordinary cross-reading does not require invocation" in text
 
@@ -1289,6 +1289,55 @@ async def test_targeted_agent_message_is_public_but_wakes_only_selected_peer(
     )
     assert stored_private["visibility"] == "private"
     assert [item["agent_key"] for item in stored_private["deliveries"]] == ["agent_b"]
+
+
+@pytest.mark.asyncio
+async def test_empty_invoke_targets_publishes_message_without_waking_peers(runtime_factory):
+    adapter = FakeAgentAdapter(
+        {
+            "agent_a": [(Outcome.PASS, "")],
+            "agent_b": [(Outcome.PASS, "")],
+            "agent_c": [],
+        }
+    )
+    adapter.decisions["agent_c"].append(
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="C posts a public update that needs no peer cognition",
+            invoke_targets=[],
+        )
+    )
+    runtime = await runtime_factory(adapter)
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="No-wake public message",
+            starting_agent="agent_c",
+            max_consecutive_passes=10,
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(
+        lambda: _room_has_status(runtime, room_id, RoomStatus.FINISHED)
+    )
+    assert not adapter.calls["agent_a"]
+    assert not adapter.calls["agent_b"]
+    assert "or [] for a public/readable message that should make no peer runnable" in (
+        adapter.calls["agent_c"][0]["prompt"]
+    )
+
+    message = next(
+        event for event in await runtime.db.get_events(room_id)
+        if event["event_type"] == "agent_message"
+    )
+    deliveries = {item["agent_key"]: item for item in message["deliveries"]}
+    assert set(deliveries) == {"agent_a", "agent_b"}
+    assert all(item["runnable"] is False for item in deliveries.values())
+    assert message["metadata"]["invoke_targets"] == []
+    assert message["metadata"]["requested_runnable_recipients"] == []
+    assert message["metadata"]["runnable_recipients"] == []
+    assert message["metadata"]["readable_recipients"] == ["agent_a", "agent_b"]
+    assert message["metadata"]["legacy_fanout_invocations_avoided"] == 2
 
 
 @pytest.mark.asyncio
