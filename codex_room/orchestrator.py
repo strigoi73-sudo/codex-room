@@ -2135,7 +2135,14 @@ class RoomRuntime:
                     "passive_event_ids": batch["passive_event_ids"],
                     "batch_id": batch["batch_id"],
                     "invoke_targets": decision.invoke_targets,
-                    "execution_configs": decision.execution_configs,
+                    "execution_configs": (
+                        [
+                            selection.model_dump(mode="json")
+                            for selection in decision.execution_configs
+                        ]
+                        if decision.execution_configs is not None
+                        else None
+                    ),
                     "resolved_execution_configs": resolved_execution_configs,
                     "readable_recipients": list(peer_keys),
                     "requested_runnable_recipients": list(requested_runnable_targets),
