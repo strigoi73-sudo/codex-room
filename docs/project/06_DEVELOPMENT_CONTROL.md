@@ -66,17 +66,299 @@ Proposed state model:
 - robustness: include tool failure, truncation, stale-history pressure, and interruption/resume cases;
 - stop condition: any deterministic coordination invariant failure after implementation, two independent ordinary tasks exceeding the economic ceiling without justified escalation, or quality below the agreed threshold while meeting budget ends incremental patching. At that point either the runtime is redesigned more fundamentally or the present architecture is declared non-viable.
 
-**Open design questions before any code authorization:**
+### Stage A detailed design — proposed transaction kernel
 
-- exact minimal tables/columns for tasks, assignments, and joins;
-- whether redesigned `deliveries` remain only a readability/audit projection or are retired for transaction-enabled tasks;
-- how observer follow-ups amend, supersede, or create tasks;
-- the smallest structured decision schema that makes delegation and settlement atomic without moving intellectual judgment into CORE;
-- how explicit user-required peer work is represented without brittle natural-language parsing;
-- whether Stage C can use bounded provider threads while preserving D-013 recovery guarantees and D-023 identity/history semantics;
-- exact gate corpus and thresholds, including whether the agents' proposed numerical ceilings are realistic rather than merely aspirational.
+Stage A should change **coordination state only**. It should deliberately retain the current persistent SDK-thread model, existing Codex adapter, tool surfaces, execution recovery, and context-compaction behavior so any coordination improvement can be measured independently of the later Stage C memory/context experiment.
 
-No implementation should begin until the principal accepts or revises this design boundary.
+#### A.1 Minimal persistent schema
+
+Use one explicit work-model version on each Round so legacy history is never reinterpreted:
+
+- add `rounds.work_model_version INTEGER NOT NULL DEFAULT 1`;
+- existing and historical Rounds remain version `1`, using current event/delivery scheduling;
+- transaction-enabled Rounds use version `2`;
+- a single Room may therefore contain both legacy and transaction Rounds without migration ambiguity.
+
+Add three Stage-A tables:
+
+**`tasks`**
+
+- `id TEXT PRIMARY KEY`
+- `room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE`
+- `round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE`
+- `parent_task_id TEXT REFERENCES tasks(id)` — used for a new user follow-up after a previously settled task;
+- `origin_event_id TEXT REFERENCES events(id)` — immutable observer/Round event that created the task;
+- `coordinator_agent_id TEXT NOT NULL REFERENCES agents(id)` — C for ordinary Personal operation;
+- `state TEXT NOT NULL` — initially `active | settled | cancelled | failed`;
+- `required_contributors_json TEXT NOT NULL DEFAULT '[]'` — optional explicit human requirement, stored as agent keys;
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+- `settled_at TEXT`
+- `settlement_event_id TEXT REFERENCES events(id)`
+- `settlement_reason TEXT`
+
+Indexes: `tasks(round_id, state)` and `tasks(room_id, created_at)`.
+
+**`assignments`**
+
+An assignment is a **logical unit of agent work**, not necessarily one model turn. It may pause on a child join and later resume for integration.
+
+- `id TEXT PRIMARY KEY`
+- `task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE`
+- `agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE`
+- `parent_assignment_id TEXT REFERENCES assignments(id)` — causal delegator when one exists;
+- `contribution_join_id TEXT REFERENCES assignment_joins(id)` — join this assignment must eventually satisfy, if any;
+- `origin_event_id TEXT REFERENCES events(id)` — observer/system event that directly caused this assignment, when applicable;
+- `instruction TEXT NOT NULL` — exact bounded work instruction for this logical assignment;
+- `context_event_ids_json TEXT NOT NULL DEFAULT '[]'` — explicit additional Room-event references selected for the assignment; there is no implicit unread backlog;
+- `execution_config_id TEXT` — optional bounded C-selected peer configuration;
+- `state TEXT NOT NULL` — `queued | running | waiting_join | completed | passed | failed | cancelled | waived`;
+- `result_event_id TEXT REFERENCES events(id)` — terminal substantive result when available;
+- `resolution_reason TEXT` — failure/cancellation/waiver explanation;
+- `created_at TEXT NOT NULL`
+- `updated_at TEXT NOT NULL`
+- `started_at TEXT`
+- `completed_at TEXT`
+
+Indexes: `assignments(agent_id, state, created_at)`, `assignments(task_id, state)`, and `assignments(contribution_join_id, state)`.
+
+**`assignment_joins`**
+
+A join is a mechanical dependency barrier over the assignments whose `contribution_join_id` points to it.
+
+- `id TEXT PRIMARY KEY`
+- `task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE`
+- `parent_assignment_id TEXT REFERENCES assignments(id)` — logical assignment to resume after its delegated children settle; null for an externally created barrier such as independent starts or direct observer-to-peer work;
+- `continuation_agent_id TEXT REFERENCES agents(id)` — used only when no parent assignment exists and CORE must create a fresh integration assignment;
+- `state TEXT NOT NULL` — `pending | ready | released | cancelled`;
+- `released_assignment_id TEXT REFERENCES assignments(id)` — parent assignment when re-queued, or the fresh integration assignment created for an external barrier;
+- `created_at TEXT NOT NULL`
+- `ready_at TEXT`
+- `released_at TEXT`
+
+Indexes: `assignment_joins(task_id, state)`.
+
+No separate JoinMember or Result table is required in Stage A. Join membership is the set of assignments referencing `contribution_join_id`. Exact model results already live durably in `agent_executions.result_json` and the corresponding immutable decision/result events.
+
+Add one nullable provenance column to the existing execution table:
+
+- `agent_executions.assignment_id TEXT REFERENCES assignments(id)`.
+
+Legacy executions leave it null. One logical assignment may have multiple execution rows because a waiting assignment can resume after a join or a retry can create another exact SDK turn.
+
+#### A.2 Assignment state machine
+
+The authoritative assignment transitions are:
+
+- creation → `queued`;
+- deterministic claim → `running`;
+- successful `COMPLETE` decision → `completed`;
+- successful `PASS` decision → `passed`;
+- successful `DELEGATE` decision → `waiting_join`, with one new pending join and child assignments created atomically;
+- all child assignments reach terminal states → join `ready`;
+- join release → parent assignment `queued` again, with the resolved join made explicit in its next assignment envelope, then join `released`;
+- non-retryable execution failure → `failed`;
+- lifecycle stop/new Round → `cancelled`;
+- explicit supported waiver → `waived`.
+
+Terminal assignment states are `completed | passed | failed | cancelled | waived`. A failed/cancelled/waived child is terminal for **join release**, so a dead peer cannot deadlock the Room; the resumed parent receives the degraded status and decides cognitively what it means. Mechanical release is not intellectual acceptance.
+
+A parent assignment that delegates while itself contributing to an outer join remains nonterminal in `waiting_join`. Its outer join cannot become ready until the parent resumes and itself reaches a terminal state. This is the required nested-delegation invariant.
+
+#### A.3 Join state machine and invariants
+
+A join begins `pending`. It becomes `ready` only when **every assignment that references it** is terminal. CORE then performs exactly one release transaction:
+
+- if `parent_assignment_id` is present, change that assignment from `waiting_join` back to `queued` and expose the join/result set in its next envelope;
+- otherwise create one fresh integration assignment for `continuation_agent_id`.
+
+The join then becomes `released` and records `released_assignment_id`.
+
+Required invariants:
+
+- a join cannot release with a nonterminal member;
+- a join releases at most once;
+- a task cannot settle while any assignment or join is nonterminal;
+- an assignment cannot have two simultaneously pending child joins;
+- each model execution is bound to exactly one transaction assignment when `work_model_version=2`;
+- only one execution for a given agent may be active at a time, preserving the current serialized-thread invariant;
+- no readable event can make an agent runnable in version 2 unless an explicit assignment exists.
+
+#### A.4 Structured agent decision contract for transaction work
+
+For version-2 assignments, replace MESSAGE/PASS/FINISH plus `invoke_targets` with a smaller work-state contract:
+
+`action: COMPLETE | DELEGATE | PASS`
+
+Common field:
+
+- `message: string` — substantive public result/commentary. Required for COMPLETE; optional for DELEGATE/PASS.
+
+For `DELEGATE` only:
+
+- `delegations: 1..N` records, each containing:
+  - `target: agent_a | agent_b | agent_c`, excluding the current agent;
+  - `instruction: non-empty bounded assignment text`;
+  - optional `config: luna-medium | terra-medium | terra-high | sol-medium`, accepted only when the current agent is C and only for the target in that record.
+
+Validation:
+
+- COMPLETE and PASS require `delegations=null`;
+- DELEGATE requires at least one delegation and forbids duplicate targets;
+- C's D-026 differentiation rule remains cognitive/protected-instruction policy; CORE does not judge semantic quality of the two instructions;
+- DELEGATE atomically creates the join and every child assignment in the same database transaction that settles the current execution;
+- CORE, not the model, emits the mechanical observer narration that the assignment is waiting on those exact child assignments.
+
+There is deliberately **no separate `invoke_targets` field** in version 2. The delegation records are the invocation. This removes the current possibility that prose describes delegated work while an independent routing field names nobody.
+
+There is also no `FINISH` action at the agent-membership level. COMPLETE/PASS terminate the **current assignment**. Task settlement is a separate deterministic transition.
+
+#### A.5 Prompt / assignment envelope
+
+`_delivery_prompt()` and `<unread_room_events>` are not used for version-2 work.
+
+Each model call receives one authoritative assignment envelope containing:
+
+- Room/Round/Task/Assignment IDs;
+- the Round's stored public objective and applicable protected/private overlay material;
+- the assignment's exact `instruction`;
+- explicit `context_event_ids_json` material, if any;
+- when resuming from a join: the join ID plus each child assignment's terminal status, result event, and failure/cancellation/waiver reason;
+- any explicit human task requirements;
+- a protected statement that this assignment is the current actionable work and prior persistent-thread history is background only.
+
+Public Room history remains inspectable but is not automatically injected merely because it is unread. Stage A intentionally retains the persistent SDK thread, so this does **not** claim to eliminate provider-side historical context; that is the separate Stage C experiment.
+
+#### A.6 Round start and ordinary C→A/B→C flow
+
+For an ordinary new Personal Round:
+
+1. prepare/start Round as today, but set `work_model_version=2`;
+2. record the normal Round/audit events;
+3. create one active Task with C as coordinator;
+4. create one queued root Assignment for C whose instruction is to advance the Round objective;
+5. C claims that assignment and runs one exact SDK turn;
+6. if C chooses DELEGATE to A and B, CORE atomically:
+   - leaves C's logical assignment in `waiting_join`;
+   - creates one pending Join whose parent is C's assignment;
+   - creates A and B child assignments referencing that join;
+   - makes only those assignment rows runnable;
+7. A and B run independently. Their public results are events, but those events do not schedule C;
+8. when both child assignments are terminal, CORE marks the Join ready and re-queues C's same logical assignment exactly once;
+9. C's resume envelope contains the complete A/B result set and any degraded statuses;
+10. C integrates and chooses COMPLETE or PASS;
+11. if no assignment/join remains nonterminal and human-required contributors are satisfied, CORE settles the Task and then closes the Round under the appropriate lifecycle rule.
+
+The current `delegation_cohort_settled` synthetic event may remain temporarily as observer telemetry during migration, but it is no longer the source of truth and is not required to schedule C.
+
+#### A.7 Direct A/B delegation and nested work
+
+D-020's direct peer collaboration remains valid.
+
+Example: C delegates one assignment to A. While doing that work, A decides B's cognition is necessary.
+
+- A emits DELEGATE to B;
+- A's assignment becomes `waiting_join`;
+- B receives a child assignment;
+- C's outer join still sees A as **nonterminal**;
+- B completes/passes/fails;
+- A's child join releases and A's same assignment resumes;
+- only A's eventual COMPLETE/PASS/failed terminal state satisfies C's outer join.
+
+Thus CORE coordinates dependency shape but never decides whether A was right to ask B.
+
+#### A.8 Observer messages and follow-ups
+
+Observer input must be explicit work, never implicit unread backlog.
+
+- while a Task is active, a message targeted to C creates a queued C assignment linked to the observer event;
+- a message targeted to A or B creates that peer assignment plus an external Join whose continuation agent is C, preserving D-020 integration-before-closure mechanically;
+- an `all` observer message creates explicit target assignments rather than readable events that happen to become runnable;
+- if a target already has a running assignment, the new assignment queues behind it; Stage A does not mutate or silently cancel an in-flight model turn;
+- Task settlement is impossible while these explicit follow-up assignments/joins remain open;
+- if the previous Task is already settled and the observer sends new substantive input, create a new active Task with `parent_task_id` pointing to the prior Task rather than reopening and mutating the settled transaction;
+- preparing a genuinely new Round cancels any active Task, assignments, joins, executions, and usage continuations under the existing lifecycle boundary.
+
+Stage A should use deterministic FIFO assignment order per agent. If later evidence shows observer input needs priority over already queued integration work, add a demonstrated priority rule then rather than introducing speculative scheduling policy now.
+
+#### A.9 Explicit human-required contributors
+
+CORE must not parse prose to guess that the human said “use A and B.”
+
+Instead, version-2 Round/task creation should support an optional structured `required_contributors` list. UI/API can expose this as an explicit advanced control when the principal wants mechanical enforcement.
+
+If populated:
+
+- the requirement is stored in `tasks.required_contributors_json`;
+- CORE rejects Task settlement until each named participant has had a causally linked assignment reach a visible terminal state;
+- a failed/cancelled peer attempt counts as a visible attempted contribution for deadlock avoidance but is surfaced to the coordinator as degraded evidence;
+- ordinary free-text prompts without this structured field remain a matter of C's cognitive interpretation.
+
+This preserves the rule that CORE executes declared intent rather than semantically interpreting natural language.
+
+#### A.10 Task settlement
+
+For a version-2 Task, agent membership state is not the completion criterion.
+
+CORE may settle only when:
+
+- there are no `queued | running | waiting_join` assignments;
+- there are no `pending | ready` unreleased joins;
+- explicit human required-contributor constraints are satisfied;
+- the coordinator's latest applicable assignment has reached COMPLETE or PASS, or an explicit lifecycle cancellation/failure closes the task.
+
+`AgentStatus.RUNNING/IDLE/USAGE_SUSPENDED/ERROR` remains useful operational state. `READY_TO_FINISH` and `round_agent_state.finish_boundary_sequence` remain for version-1 compatibility but do not govern version-2 Task settlement.
+
+#### A.11 Exact execution / crash-recovery reuse
+
+Preserve the strongest part of the existing kernel:
+
+- claiming a queued assignment and creating its `agent_executions` attempt occur transactionally;
+- SDK thread/turn binding remains durable before Room-side result settlement;
+- `record_execution_result()` remains the write-ahead result boundary;
+- retries create additional exact executions for the same logical assignment;
+- usage-wall continuation remains same-agent/same-thread in Stage A and retains the assignment ID;
+- stale lifecycle generations cannot settle an assignment after its Task/Round is cancelled.
+
+This is why Stage A is a kernel replacement rather than a whole-runtime rewrite.
+
+#### A.12 Legacy boundary
+
+Do not backfill transaction objects from historical event streams.
+
+- `work_model_version=1`: current `deliveries`, `claim_next_batch()`, passive/readable semantics, FINISH boundaries, and current settlement logic remain unchanged for existing Rounds;
+- `work_model_version=2`: workers call a new assignment-claim path; deliveries, if still emitted for UI/readability compatibility, are non-authoritative and never schedule cognition;
+- exports expose the Round's work-model version plus Task/Assignment/Join objects for version 2;
+- a Room rollover or later new Round may adopt version 2 without mutating earlier version-1 Rounds;
+- legacy code is not deleted until version 2 has passed the viability gate and retained history/export tests.
+
+#### A.13 Deterministic Stage-A acceptance tests before natural-use testing
+
+At minimum, implementation must prove:
+
+1. DELEGATE atomically creates every named child assignment and its join; no independent routing field can contradict it.
+2. A Task cannot settle with an unresolved join.
+3. A join cannot release early and releases exactly once.
+4. C→A/B→C produces exactly one C resume after both peers terminal.
+5. nested C→A→B coordination does not satisfy C's outer join until A itself returns terminal.
+6. a failed/pass/cancelled child releases the join with degraded status instead of deadlocking it.
+7. observer input creates explicit assignments and is never coalesced as passive actionable backlog.
+8. version-2 assignment prompts contain only the task envelope, explicit context references, and resolved dependency results—not arbitrary unread events.
+9. user-required contributors prevent settlement if never assigned.
+10. version-2 settlement does not depend on `READY_TO_FINISH`, passive delivery counts, or causal-message reconstruction.
+11. assignment retry/restart recovery binds every exact SDK turn to the correct logical assignment without overlap.
+12. creating a new Round cancels version-2 transactional work without permitting late stale settlement.
+13. version-1 historical/legacy tests remain byte/behavior compatible except for additive export/schema fields.
+
+Only after these deterministic invariants pass should the exact ordinary-use failure prompts be rerun.
+
+#### A.14 Remaining principal decision
+
+This design deliberately makes one consequential product change: **transaction-enabled work no longer treats public readability as latent runnable work.** History remains public/readable, but cognition occurs only through explicit assignments.
+
+That is compatible with D-027's “invocation is cognition” principle and addresses the observed failure class, but adopting it would supersede the implementation mechanism—not the intent—of parts of D-015 and D-020. It therefore requires an explicit principal design decision before Stage A code work begins.
+
+No Stage A runtime implementation is authorized by this design record alone.
 
 
 ### A3 audit remediation program
