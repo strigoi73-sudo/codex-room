@@ -7,20 +7,22 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** Ordinary-use product evaluation exposed a broader coordination/economics recurrence after the I-014 repairs: one serious assessment spent 544,416 execution tokens before peer cognition and then announced it was waiting for A/B while emitting no runnable peer targets. A follow-up Room deliberately avoided rediscovery, correctly differentiated and invoked A/B, integrated both through the existing cohort barrier, and completed in 138,522 execution tokens total. The agents independently converged on the same architectural thesis: intellectual allocation should remain cognitive, but mechanical work state should be explicit and deterministic rather than inferred from conversational backlog. I-015 is now the active **design-only** stabilization investigation; no redesign implementation is yet authorized. See E-092 and E-093. The restart correction remains locally confirmed under E-091.
+- **What just changed?** The principal adopted the I-015 transaction-work-state redesign as D-030, and Stage A was implemented in two bounded [CORE] slices behind explicit `work_model_version=2` opt-in. The final merged state on canonical `main` (`a4f53a7c4f62a5d03a0907365f5024d266801e1c`) passed the complete hosted Python matrix, including the Windows browser job. Stage A now has deterministic Task/Assignment/Join scheduling, atomic structured delegation, explicit settlement dependencies, required-contributor enforcement, transaction-aware restart/usage-wall recovery, and snapshot/export visibility while legacy v1 remains the default. See E-094.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage A implementation is IN PROGRESS under D-030.** The first bounded slice implements the version-2 Task/Assignment/Join kernel behind explicit opt-in while preserving version-1 behavior. It must pass deterministic hosted tests before default activation or paid naturalistic validation. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** Run a **bounded paid naturalistic validation of I-015 Stage A** with `work_model_version=2` explicitly enabled. Default activation remains unapproved until that evidence is reviewed. Do not begin Stage B or the Stage C context experiment before this validation is assessed. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### I-015 — Task-transaction stabilization redesign
 **Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE / DECIDED redesign / IMPLEMENTATION IN PROGRESS  
+**Reality:** OBSERVED ISSUE / DECIDED redesign / STAGE A IMPLEMENTED / VERIFIED  
 **Decision:** D-030  
-**Evidence:** E-092, E-093  
+**Evidence:** E-092, E-093, E-094  
 **Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
+
+**Stage A status:** COMPLETE for the opt-in coordination kernel. Canonical `main` at `a4f53a7c4f62a5d03a0907365f5024d266801e1c` passed hosted verification across Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. Version 1 remains the ordinary default; version 2 is ready for bounded naturalistic validation, not default activation.
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
 
@@ -37,7 +39,7 @@ Proposed state model:
 
 **Important boundary:** C/A/B continue to decide intellectual questions: whether peers add value, whom to delegate to, how to frame work, what evidence matters, how to interpret disagreement, whether a waiver is justified, and what conclusion to reach. CORE owns only declared mechanics: assignment creation, causal delivery, joins, queue ordering, retries/budgets, context assembly, and whether a requested terminal transition is mechanically valid. CORE must not infer hidden intent from prose such as “I am waiting for A.”
 
-**Structured-output direction:** the present `invoke_targets` field is a routing primitive, not a sufficient work contract. A transaction design should evaluate replacing or superseding it with explicit delegation records that atomically contain target + assignment + dependency semantics. Public/readable messages may remain events, but readable history should not itself become runnable work. This is a proposal, not a settled replacement of D-015/D-027.
+**Structured-output implementation:** version-2 assignments use `COMPLETE | DELEGATE | PASS`. `DELEGATE` carries the target, bounded instruction, and optional C-selected execution configuration in one atomic transaction that creates the child assignment(s) and dependency join. Version 2 has no separate `invoke_targets` field, eliminating prose/routing divergence. Public/readable events remain audit history and do not become runnable work without an explicit assignment.
 
 **Current-to-proposed mapping:**
 
@@ -54,7 +56,7 @@ Proposed state model:
 
 **Staged design path — do not collapse these into one implementation:**
 
-- **Stage A — coordination transaction kernel:** Task/Assignment/Join state, assignment envelopes, deterministic join release, terminal-state validity, and removal of passive backlog as actionable work. Keep current persistent SDK thread behavior initially so coordination reliability can be isolated from context-economy changes.
+- **Stage A — coordination transaction kernel — COMPLETE / IMPLEMENTED / VERIFIED (opt-in):** Task/Assignment/Join state, assignment envelopes, deterministic join release, terminal-state validity, and removal of passive backlog as actionable work. The current persistent SDK thread behavior remains in place so coordination reliability can be evaluated independently of context-economy changes.
 - **Stage B — bounded evidence execution:** add a declarative evidence-plan path where a model states already-known searches/reads/bounds once, CORE executes the plan deterministically, and one normalized evidence bundle returns for cognition. Native exploratory tools remain available for genuinely adaptive investigation; planned retrieval should not require a model continuation per mechanical step.
 - **Stage C — durable memory vs active context experiment:** test whether application-level persistent agent identity can be preserved with a compact versioned Room/task ledger plus targeted history/evidence instead of resuming an ever-growing full SDK thread for every execution. This may require short-lived or task-bounded SDK threads and therefore requires an explicit later design decision if adopted. D-009 already supports targeted retrieval; D-020/D-023 require persistent organizational identity, not necessarily one forever-growing provider thread.
 - **Stage D — viability gate:** only after the bounded design is implemented and deterministically verified, run a preregistered set of ordinary useful tasks. Do not resume feature development until the gate passes.
@@ -67,9 +69,9 @@ Proposed state model:
 - robustness: include tool failure, truncation, stale-history pressure, and interruption/resume cases;
 - stop condition: any deterministic coordination invariant failure after implementation, two independent ordinary tasks exceeding the economic ceiling without justified escalation, or quality below the agreed threshold while meeting budget ends incremental patching. At that point either the runtime is redesigned more fundamentally or the present architecture is declared non-viable.
 
-### Stage A detailed design — proposed transaction kernel
+### Stage A detailed design — implemented transaction kernel (opt-in)
 
-Stage A should change **coordination state only**. It should deliberately retain the current persistent SDK-thread model, existing Codex adapter, tool surfaces, execution recovery, and context-compaction behavior so any coordination improvement can be measured independently of the later Stage C memory/context experiment.
+Stage A changes **coordination state only**. It deliberately retains the current persistent SDK-thread model, existing Codex adapter, tool surfaces, execution recovery, and context-compaction behavior so coordination improvement can be measured independently of the later Stage C memory/context experiment.
 
 #### A.1 Minimal persistent schema
 
