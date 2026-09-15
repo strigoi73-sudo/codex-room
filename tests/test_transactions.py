@@ -4,6 +4,7 @@ import asyncio
 
 import pytest
 
+from codex_room.agent import InterruptOutcome
 from codex_room.db import Database
 from codex_room.models import (
     CreateRoomRequest,
@@ -254,3 +255,133 @@ async def test_transaction_observer_peer_message_creates_explicit_work_then_c_in
     assert len(tasks) == 2
     assert tasks[1]["parent_task_id"] == tasks[0]["id"]
     assert all(row["state"] == "settled" for row in tasks)
+
+
+@pytest.mark.asyncio
+async def test_transaction_terminal_child_failure_releases_parent_with_degraded_status(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        failures={
+            "agent_a": [
+                RuntimeError("first child failure"),
+                RuntimeError("terminal child failure"),
+            ]
+        },
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Attempt the delegated check.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="C handled the degraded child result.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "child-failure.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Child failure release", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_a"]) == 2
+    assert len(adapter.calls["agent_c"]) == 2
+    assert "state=\"failed\"" in adapter.calls["agent_c"][1]["prompt"]
+    assert "terminal child failure" in adapter.calls["agent_c"][1]["prompt"]
+
+    async with runtime.db.connect() as db:
+        joins = await db.execute_fetchall(
+            """SELECT j.* FROM assignment_joins j
+               JOIN tasks t ON t.id=j.task_id WHERE t.room_id=?""",
+            (room_id,),
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+    assert len(joins) == 1
+    assert joins[0]["state"] == "released"
+    assert next(
+        row for row in assignments if row["agent_key"] == "agent_a"
+    )["state"] == "failed"
+    assert next(
+        row for row in assignments if row["agent_key"] == "agent_c"
+    )["state"] == "completed"
+
+
+@pytest.mark.asyncio
+async def test_transaction_stop_cancels_open_task_assignments_and_join(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_a": {1}},
+        interrupt_outcomes={"agent_a": InterruptOutcome.INTERRUPTED},
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "Remain in flight until the observer stops the Room.",
+                    "config": None,
+                }
+            ],
+        )
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="This result must not settle after Stop.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "stop-cancel.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Stop transaction work", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: len(adapter.calls["agent_a"]) == 1)
+
+    await runtime.stop(room_id, "transaction stop test")
+
+    room = await runtime.db.get_room(room_id)
+    assert room is not None
+    assert room["status"] == RoomStatus.STOPPED
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=?", (room_id,)
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id WHERE t.room_id=?""",
+            (room_id,),
+        )
+        joins = await db.execute_fetchall(
+            """SELECT j.* FROM assignment_joins j
+               JOIN tasks t ON t.id=j.task_id WHERE t.room_id=?""",
+            (room_id,),
+        )
+    assert tasks and all(row["state"] == "cancelled" for row in tasks)
+    assert assignments and all(
+        row["state"] in {"cancelled", "completed", "passed", "failed", "waived"}
+        for row in assignments
+    )
+    assert joins and all(row["state"] == "cancelled" for row in joins)
+    assert len(adapter.completed_calls["agent_a"]) == 0
