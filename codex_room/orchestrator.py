@@ -3195,7 +3195,7 @@ Respond to this event according to your own judgment. Your final response must s
 
 {self._execution_config_prompt(agent["agent_key"])}
 
-For MESSAGE, execution_configs is null or an array of records like [{"target":"agent_a","config":"luna-medium"}]. For PASS or FINISH, set invoke_targets and execution_configs to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
+For MESSAGE, execution_configs is null or an array of target/config records, for example a record selecting agent_a with luna-medium. For PASS or FINISH, set invoke_targets and execution_configs to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
 
     @staticmethod
     def _execution_config_prompt(agent_key: str) -> str:
