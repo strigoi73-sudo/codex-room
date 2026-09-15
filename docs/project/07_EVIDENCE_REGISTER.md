@@ -3055,3 +3055,43 @@ Verification:
 Evidence boundary: the implementation and deterministic hosted verification are complete. The offline flag is an explicit operator assertion, not automatic process-state detection. No destructive restore was run against the principal's live Personal data as part of verification.
 
 **Status:** I-010 COMPLETE / IMPLEMENTED / VERIFIED on canonical `main`.
+
+### E-088 — I-011 verification-platform and dependency assurance implemented and canonically verified
+**Date:** 2026-09-15  
+**Scope:** [CORE / engineering assurance] Cross-platform hosted verification, flaky-test repair, pinned browser tooling, dependency/advisory review, and a portability defect exposed by Windows CI.
+
+A3/E-065 identified four bounded assurance gaps: routine hosted CI covered only Ubuntu/Python 3.12 despite Windows-centric Personal operation; recorded orchestration tests contained timing-sensitive sleep/delay assumptions; the specialized browser transcript script resolved the latest Playwright package at execution time; and the intentionally pinned Python dependency set had no routine advisory/freshness review.
+
+PR #75 closes those gaps without adding automatic dependency upgrading, a broad QA framework, runtime model changes, or unrelated refactoring.
+
+Implemented assurance surface:
+
+- `.github/workflows/python-tests.yml` now runs the canonical `python -m pytest -q` suite on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 with `fail-fast: false`;
+- the Windows lane additionally runs `test-transcript-stability.ps1`;
+- that browser script now resolves pinned `@playwright/test@1.63.0` rather than an unversioned latest package;
+- `test_finish_preserves_peer_turn_that_is_already_running` uses an explicitly blocked/released peer call rather than a 150 ms delay;
+- `test_stop_before_lease_expiry_cancels_without_false_error_or_retry` waits for worker completion rather than manufacturing a 200 ms timeout race and then sleeping 250 ms;
+- `.github/workflows/dependency-review.yml` installs pinned `pip-audit==2.10.1`, audits `constraints-test.txt` with `--strict --no-deps`, and emits an informational `pip list --outdated` report. It runs on relevant dependency/workflow changes, monthly, and on manual dispatch. It does not update packages.
+
+The first substantive Windows run demonstrated the value of the new lane. Exact PR head `ad8b5eebd1d36ed4860b4f5579a19d92494d0de3` failed with **6 failed, 363 passed, 2 warnings** because `inspect_source` returned CRLF text on Windows while the same deterministic retrieval contract returned LF on Linux. All six failures were the same platform-newline defect across source-inspection/CLI assertions.
+
+The bounded repair normalizes transient UTF-8 read content from CRLF or CR to LF before line slicing/return, while the durable `size_bytes` and SHA-256 continue to describe the original raw file bytes. A mixed-newline regression verifies both properties. Because the input/output schema and registered interface did not change, `inspect_source` remains interface version 2; its implementation hash changes with the repaired bytes.
+
+Final PR verification:
+
+- exact PR #75 head `77cb237e9d86551f0f314d6d538963742d62e14e` passed **370 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 in GitHub Actions run `35012714775`;
+- the Windows lane also passed **3 browser tests** in that run;
+- dependency-review run `35012714808` reported **No known vulnerabilities found** and completed the informational outdated-package report successfully;
+- PR #75 squash-merged as `ed2e5f1ea636eacc585bf89168d222f017a4b75d`;
+- the final PR head and squash merge carry the exact same Git tree `4ac1f3069363639e1d1275bbff3f64bf2e16a770`.
+
+Canonical-main verification:
+
+- push run `35014379476` on merge `ed2e5f1ea636eacc585bf89168d222f017a4b75d` passed **370 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12;
+- its Windows lane passed **3 browser tests**;
+- dependency-review run `35014379312` again reported **No known vulnerabilities found** and completed the freshness report successfully.
+
+Evidence boundary: this establishes deterministic hosted coverage for the supported Python floor/current primary Python and the Windows operating platform, plus the specialized browser path and pinned-dependency advisory scan. The monthly outdated-package report creates review visibility; it does not establish that every newer package should be adopted. No claim is made that these lanes exhaust all platform/browser/runtime combinations.
+
+**Status:** I-011 COMPLETE / IMPLEMENTED / VERIFIED on canonical `main`; the ordered A3 remediation sequence is complete.
+
