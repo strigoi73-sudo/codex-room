@@ -2618,3 +2618,33 @@ The same Room also exposed an architectural evidence boundary relevant to I-012:
 
 **Status:** same-thread C-selected peer switching LIVE VERIFIED; automatic routing remains unauthorized; cross-boundary evidence access gap OBSERVED and routed to I-012.
 
+### E-078 — Bounded CORE and cross-Room read inspection
+**Date:** 2026-09-15  
+**Scope:** [CORE] D-029 / I-012 deterministic read-boundary implementation.
+
+PR #62 adds registered CORE capability `inspect_source` version `1` for targeted read-only inspection beyond the current Room workspace.
+
+Implemented surface:
+
+- source discovery identifies the current canonical Room, the maintained CORE read surface, and canonical Personal Room shared workspaces;
+- `source="core"` is confined to an explicit allowlist of maintained repository/source entries such as `codex_room/`, `tests/`, `docs/`, launcher/configuration files, and repository metadata files needed for implementation reasoning;
+- CORE runtime data and arbitrary host paths are outside that allowlist, including `data/`, `.env`, `.git/`, virtual environments, credentials/secrets, and provider/account state;
+- `source="room"` resolves only `data/rooms/<room_id>/shared`; private participant state, Room-private files outside `shared`, and host database internals are not exposed;
+- operations are bounded `sources`, `find`, literal `search`, and UTF-8 text `read`;
+- absolute/traversal paths, backslash path tricks, NUL paths, symlink/reparse traversal, and wholesale CORE-root scans are rejected;
+- reads are size/line bounded; find/search have explicit file, match, byte, and scan ceilings;
+- read content and search excerpts remain transient. Durable Room telemetry persists only the capability identity plus declared bounded `evidence`, reusing the generic durable-result filtering verified in the existing capability substrate;
+- the capability grants no workspace write, network, or external-process authority and adds no cross-boundary write mechanism;
+- shared protected agent instructions tell A/B/C to use authorized read-only inspection when relevant while preserving the CORE/Room mutation boundary.
+
+Verification history:
+
+- an initial PR run exposed only two stale registry-list test expectations after the fifth CORE capability was registered; all new capability tests themselves passed in that run;
+- those exact expectations were updated to include `inspect_source`;
+- repaired code-bearing PR head `b70d67f0d743b8a1228b29fd942f2aae666302cc` passed **341 tests, 2 warnings** in GitHub Actions run `34956587939`;
+- regression coverage includes CORE-source allowlisting, `data/` and `.env` rejection, cross-Room shared-only confinement, traversal rejection, symlink/reparse escape rejection, bounded reads, source discovery, and find/search behavior.
+
+Evidence boundary: this record establishes deterministic implementation and hosted test verification on the stated PR head. Canonical-`main` merge verification and a fresh local live Room smoke remain separate gates.
+
+**Status:** IMPLEMENTED / VERIFIED on the tested PR head; canonical-main and live-Room verification pending.
+
