@@ -7,20 +7,20 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** Ordinary-use product evaluation exposed a broader coordination/economics recurrence after the I-014 repairs: one serious assessment spent 544,416 execution tokens before peer cognition and then announced it was waiting for A/B while emitting no runnable peer targets. A follow-up Room deliberately avoided rediscovery, correctly differentiated and invoked A/B, integrated both through the existing cohort barrier, and completed in 138,522 execution tokens total. The agents independently converged on the same architectural thesis: intellectual allocation should remain cognitive, but mechanical work state should be explicit and deterministic rather than inferred from conversational backlog. I-015 is now the active **design-only** stabilization investigation; no redesign implementation is yet authorized. See E-092 and E-093. The restart correction remains locally confirmed under E-091.
+- **What just changed?** D-030 / I-015 **Stage A coordination transaction kernel is now IMPLEMENTED / HOSTED-VERIFIED on canonical `main` behind explicit work-model-v2 opt-in**. PR #81 established Task/Assignment/Join scheduling, atomic DELEGATE semantics, nested dependency joins, assignment envelopes, task settlement, lifecycle/turn-budget handling, and exact-turn provenance. PR #82 completed explicit required-contributor enforcement, transaction state export, usage-limit continuation on the same logical assignment/thread, exact active-turn restart recovery, and new-Round cancellation. Exact PR #82 head `2ea327f1dafd02d5d3709d3aead179aef2cadc4a` and squash merge `a4f53a7c4f62a5d03a0907365f5024d266801e1c` share tree `ff3629a852381033373f2b5fdc00813fda0a154e`; the PR head passed **390 tests, 2 warnings** on all three Python lanes plus **3 browser tests** on Windows. See E-094.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage A implementation is IN PROGRESS under D-030.** The first bounded slice implements the version-2 Task/Assignment/Join kernel behind explicit opt-in while preserving version-1 behavior. It must pass deterministic hosted tests before default activation or paid naturalistic validation. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** Stage A [CORE] implementation is complete, but **work-model v2 is not yet the default new-Room path**. The next I-015 step is an explicit **[CORE + ROOM migration] activation decision/path** before any paid naturalistic validation. Do not begin Stage B evidence-plan work or Stage C context redesign merely because the kernel is green. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### I-015 — Task-transaction stabilization redesign
 **Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE / DECIDED redesign / IMPLEMENTATION IN PROGRESS  
+**Reality:** OBSERVED ISSUE / DECIDED redesign / STAGE A IMPLEMENTED + HOSTED-VERIFIED / MIGRATION NOT YET ACTIVE  
 **Decision:** D-030  
-**Evidence:** E-092, E-093  
-**Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
+**Evidence:** E-092, E-093, E-094  
+**Scope:** Stage A [CORE] complete; [CORE + ROOM migration] activation remains pending.
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
 
@@ -360,6 +360,8 @@ This design deliberately makes one consequential product change: **transaction-e
 That is compatible with D-027's “invocation is cognition” principle and addresses the observed failure class, but adopting it would supersede the implementation mechanism—not the intent—of parts of D-015 and D-020. It therefore requires an explicit principal design decision before Stage A code work begins.
 
 **Principal adoption — 2026-09-15:** D-030 approves this Stage A design. Implementation is now authorized in bounded slices. The first slice is intentionally opt-in through `work_model_version=2` while legacy version-1 behavior remains the default until the transaction kernel passes deterministic hosted verification; default activation is a later migration step, not assumed by adoption.
+
+**Stage A implementation status — 2026-09-15:** COMPLETE / IMPLEMENTED / HOSTED-VERIFIED at the [CORE] layer. PR #81 and PR #82 implement the accepted transaction kernel behind `work_model_version=2`. Deterministic verification now covers dual and nested delegation, exact-once join release, failed-child release, observer-directed peer work plus C integration, Stop/Pause/Resume/turn-limit/quiescence behavior, required-contributor settlement gates, snapshot/Markdown transaction inspection, same-assignment usage-limit continuation across restart, exact active-turn recovery without replacement execution, and cancellation/stale-result protection when a new Round replaces old work. Legacy work-model-v1 behavior remains available and is still the default API/model value. Therefore Stage A implementation success does **not** yet mean ordinary new Rooms are using the kernel. Activation/migration is the next explicit boundary; paid naturalistic validation should target v2 only after that boundary is deliberately crossed. See E-094.
 
 
 ### A3 audit remediation program
