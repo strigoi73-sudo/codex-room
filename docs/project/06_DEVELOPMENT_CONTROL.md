@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 **Stage C.2 is COMPLETE**. C-N1 showed a **24.0% input-token reduction** from assignment-scoped context on self-contained work, and C-N2 then demonstrated the missing continuity boundary: fresh assignment context returned `UNKNOWN` for an immediately prior arbitrary fact while the untouched persistent-thread control recalled it exactly. E-103 and E-104 record the evidence.
+- **What just changed?** I-015 **Stage C.3 deterministic retrieval is IMPLEMENTED / VERIFIED**. D-033 now gives version-2 Assignments bounded `HISTORY` retrieval over prior completed same-Room Assignment results without restoring permanent-thread inheritance. PR #99 and canonical-main CI both passed **413 tests** on Ubuntu 3.11/3.12 and Windows 3.12, with Windows browser stability **3/3**. E-105 records the exact implementation evidence.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage C.3 — targeted cross-Assignment retrieval implementation and verification** under D-033. The first slice adds bounded `HISTORY` retrieval over prior durable completed Assignment results using existing Assignment context-event references; no broad summarization/index layer is included.
+- **What is next?** **I-015 Stage C.3 / C-N3 is preregistered and ready for paid execution**: in the existing warmed C-N2 Room, run one C-only assignment-scoped recall Round that must recover the prior continuity token through explicit bounded Room-history retrieval, then verify exact selected-event provenance and same-Assignment thread reuse. If C-N3 passes, Stage C can close without a broader memory/index layer.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -210,9 +210,9 @@ The task settled correctly after three C executions at **72,271 total execution 
 The run therefore satisfies the main Stage-B criterion: planned source retrieval no longer requires the model to learn or operate the CLI/batching transport. The extra model continuation was evidence-dependent cognition, not interface-learning overhead. Stage B is closed.
 
 #### Stage C — Persistent-context / memory economics
-**Work state:** IN PROGRESS — Stage C.3 targeted cross-Assignment retrieval implementation  
+**Work state:** IN PROGRESS — Stage C.3 implementation VERIFIED; C-N3 naturalistic acceptance next  
 **Decision:** D-032, D-033  
-**Evidence:** E-102, E-103, E-104
+**Evidence:** E-102, E-103, E-104, E-105
 
 B-N1's 82.4% cached-input share and B3's **33.9% aggregate cached-input share** remain relevant motivation. Stage-B consolidation does not itself decide the Stage-C memory/context architecture.
 
@@ -286,7 +286,7 @@ The assignment arm's 17,152 cached input does not imply inherited Room history: 
 C-N2 is a boundary test, not approval for a general memory system. It establishes the specific need for **targeted cross-Assignment retrieval** if assignment-scoped context is to replace indefinite provider-thread inheritance on continuity-dependent work.
 
 ##### Stage C.3 — Targeted cross-Assignment retrieval
-**Work state:** IN PROGRESS — D-033 settled; first implementation slice under review
+**Work state:** IN PROGRESS — deterministic implementation VERIFIED; C-N3 preregistered
 
 Implement and verify the smallest explicit retrieval path over durable Room history that can satisfy a later Assignment's specific continuity dependency without replaying the entire permanent provider thread. D-033 settles the first interface: transaction action `HISTORY` with bounded `RECENT` and lexical `SEARCH` requests over prior completed Assignment results in the same Room.
 
@@ -300,6 +300,53 @@ Design constraints:
 6. acceptance must include a C-N2 successor test demonstrating nonce recovery through the explicit retrieval path while preserving assignment-scoped provider isolation.
 
 Do not implement broad memory summarization, embedding search, provider-thread archival policy, or default activation as part of this first slice unless the bounded design proves they are necessary.
+
+**Implemented deterministic slice**
+
+PR #99 implemented D-033 without adding a new memory store:
+
+- transaction action `HISTORY` accepts bounded `RECENT` or lexical `SEARCH` requests, with optional agent restriction;
+- CORE selects only non-empty results from **completed Assignments in earlier Rounds of the same Room**;
+- selected exact event IDs are stored in the requesting Assignment's existing `context_event_ids` field, capped at 20 selections;
+- `HISTORY` is nonterminal: settlement atomically requeues the same Assignment, so joins/tasks cannot settle from the retrieval action;
+- the same Assignment provider thread resumes and receives only the selected historical result content under a 24,000-character prompt bound;
+- CORE records a deterministic Room-history audit event with the exact selected event IDs and request;
+- current Task/Join/Evidence state remains separate and authoritative.
+
+E-105 records exact PR/main trees and hosted verification.
+
+###### C-N3 — Retrieval-enabled continuity acceptance
+**Work state:** PLANNED / PREREGISTERED
+
+Use the existing C-N2 Room `room_5cbd74add7564749862f37696fa4abd4` and its already-established nonce. No new establishment execution is needed.
+
+**Exact prompt**
+
+> Recover the exact continuity token from the earlier Round titled `C-N2 Establish Continuity Token`. Do not use tools, source evidence, or peers, and do not infer or guess. Use bounded Room-history retrieval to obtain the relevant prior completed result. Return only the exact token after it has been retrieved; if bounded Room history returns no relevant result, return exactly: UNKNOWN.
+
+**Fixed execution conditions**
+
+- C only;
+- work-model version 2;
+- `provider_context_mode="assignment_thread"`;
+- no overlays or private initialization changes;
+- same existing C model/profile policy;
+- no source evidence, custom capabilities, shell/tool use, or peers.
+
+**Acceptance**
+
+C-N3 passes only if:
+
+1. one Task and one logical C Assignment are used;
+2. the Assignment's first relevant decision is `HISTORY` and CORE selects at least one prior result event from an earlier Round;
+3. the same Assignment-scoped provider thread is reused for the continuation rather than C's permanent provider thread;
+4. the continuation returns exactly `ORBIT-7429-CEDAR`;
+5. the Assignment's durable `context_event_ids` and deterministic Room-history audit event contain the exact selected prior event ID(s);
+6. there is no source-evidence request, peer invocation, custom capability/tool activity, retry, restart anomaly, or unexplained extra execution.
+
+Two model executions are expected: `HISTORY` then `COMPLETE`. A different count is not silently excluded; it must be explained before acceptance.
+
+If C-N3 passes, Stage C has demonstrated both material context-economy benefit and explicit continuity recovery with bounded provider isolation. Close Stage C and move to Stage D rather than expanding into embeddings, summarization, or a broad index absent new evidence.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
