@@ -462,3 +462,25 @@ Settled boundary:
 This decision extends D-030's transaction principle into deterministic evidence acquisition. It does not change A/B/C authority or judgment and does not decide Stage C persistent-context architecture.
 
 **Principle:** **Agents declare bounded deterministic intent; CORE owns deterministic execution mechanics.**
+
+### D-032 — Provider context is transport; Assignment is the first bounded context unit
+**Date:** 2026-09-16  
+**Status:** ACTIVE
+
+I-015 Stage C should test provider-context economy without redefining the persistent A/B/C organization or weakening the explicit transaction model.
+
+Settled experimental boundary:
+
+- persistent A/B/C identity remains application-level organizational state under D-020 and D-023; one forever-growing provider thread is not itself the definition of agent identity;
+- the first Stage-C slice is opt-in only for work-model version 2 through `provider_context_mode="assignment_thread"`; existing version-1 behavior and ordinary version-2 `persistent_agent_thread` behavior remain unchanged;
+- in assignment-thread mode, each logical transaction Assignment owns one durable provider thread;
+- every execution that continues the same logical Assignment — including evidence resume, dependency/join resume, retry, usage-wall continuation, and exact-turn restart recovery — must use that same Assignment thread;
+- different Assignments do not inherit one another's provider-thread history merely because they belong to the same persistent Room agent;
+- CORE remains responsible for rebuilding the authoritative assignment envelope from durable Room/Round/Task/Assignment/Join/Evidence state, while the Assignment thread may retain bounded same-assignment conversational/provider context;
+- D-009 remains the direction for continuity beyond one Assignment: archived or durable history should be indexed broadly and retrieved narrowly when the task actually needs it rather than injected wholesale;
+- Stage C.1 does not yet settle an automatic summarization policy, a general memory index, provider-thread retention/archival policy, or production default activation;
+- assignment-thread mode must retain exact thread/turn provenance and restart safety before any naturalistic economic comparison is valid.
+
+This decision extends D-030 by separating **persistent organizational identity** from **provider context transport**. It does not change A/B/C peer status, C's coordination responsibility, evidence authority, or transaction settlement semantics.
+
+**Principle:** **Preserve durable identity and explicit work state; bound provider context to the smallest unit that safely carries the work.**
