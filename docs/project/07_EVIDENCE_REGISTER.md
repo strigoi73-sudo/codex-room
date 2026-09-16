@@ -3518,3 +3518,61 @@ GitHub Actions run `35066558470` completed successfully on the supported matrix:
 Focused coverage includes mechanical plan selection, homogeneous-read budget fallback, same-assignment evidence resume, transient-vs-durable separation, restart recovery, v2 prompt/legacy-capability compatibility, and direct source-`bundle` telemetry promotion. Exact-diff review also corrected two issues before this final tested head: the restart simulation originally reused a fake SDK turn ID across process instances, and the first v2 prompt revision had removed useful non-source custom-capability guidance.
 
 **Status:** Stage-B2 **IMPLEMENTED / VERIFIED** on the exact tested PR head. Stage-B3 naturalistic consolidated-interface validation remains required before Stage B closes. This evidence does not establish the Stage-C context/memory answer or approve default work-model-v2 activation.
+
+### E-101 — I-015 Stage B3 structured-evidence naturalistic validation passed
+**Date:** 2026-09-16  
+**Kind:** [ROOM] naturalistic validation / operating-economics evidence
+
+A fresh version-2 Room ran the preregistered Stage-B3 C-only source-evidence task after the Stage-B2 broker reached canonical `main`.
+
+**Configuration**
+
+- Room: `room_5cbd74add7564749862f37696fa4abd4`;
+- `work_model_version=2`;
+- starting participant: C;
+- required contributors: `["agent_c"]`;
+- `max_turns=4`;
+- no A/B delegation, repository mutation, web use, or external source use requested.
+
+**Observed execution**
+
+1. C's first transaction decision was `EVIDENCE` and declared all three evidence needs together:
+   - FIND Python files under `codex_room/`;
+   - SEARCH `codex_room/orchestrator.py` for `TRANSACTION_EVIDENCE_INSTRUCTION`;
+   - READ `Start-Codex-Room.cmd`.
+2. CORE mechanically chose one heterogeneous `bundle` plan and executed all three requests outside model cognition.
+3. The SEARCH result established the declaration at lines 157 and 1828 but did not return its text. C therefore issued one additional bounded READ of `codex_room/orchestrator.py` starting at line 150. This was a specific evidence-dependent continuation, consistent with the design boundary that adaptive retrieval remains a later cognitive step.
+4. The same logical C assignment resumed after each evidence result and then returned `COMPLETE`.
+5. The task settled with one Task, one completed Assignment, no joins, and both evidence records in `consumed` state.
+
+**Economics and mechanical behavior**
+
+- model executions: **3**;
+- total execution tokens: **72,271**;
+- input tokens: **71,695**;
+- cached input tokens: **24,320** (**33.9%** of input);
+- agent tool calls: **0**;
+- command executions: **0**;
+- direct agent capability invocations: **0**;
+- failed tool/capability calls: **0**;
+- file changes: **0**;
+- peer invocations: **0**;
+- context compactions: **0**.
+
+This is below the preregistered Stage-B3 target of <=80k total execution tokens. The expected two-execution ideal was missed by one bounded continuation, but the continuation was justified by a concrete returned limitation: SEARCH supplied the location needed to choose the later read range and did not supply the declaration wording required by the prompt.
+
+**Quality / provenance**
+
+The final answer correctly reported:
+
+- `codex_room/transaction_evidence.py` as the Python filename containing “evidence”;
+- the version-2 instruction's requirement to declare bounded read-only source needs through `EVIDENCE`, with CORE owning retrieval mechanics and a further request reserved for a specific unresolved dependency;
+- the launcher invocation `".venv\\Scripts\\python.exe" -m codex_room %*`.
+
+Both evidence cycles remained bound to the same assignment. The export retained the semantic request, CORE-selected execution plan, normalized durable result, evidence identity, originating request batch, and consumed state.
+
+**Assessment:** **PASS.** The main Stage-B objective is demonstrated in ordinary paid execution: predictable source retrieval moved behind the structured transaction boundary, eliminating CLI discovery, shell transport, batching-choice cognition, retry churn, and direct capability syntax from the agent's work. The one extra retrieval cycle was adaptive evidence work, not interface relearning. Stage B is therefore **COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED**.
+
+A preceding accidental run of the same prompt under work-model v1 is excluded from Stage-B3 scoring because it used the wrong work model. It remains useful qualitative contrast only: that run recorded 16 tool calls, 4 failures, and 430,163 execution tokens while ultimately reaching the same factual answer.
+
+Stage C remains a separate decision/experiment. B3's 33.9% aggregate cached-input share does not decide the context architecture, but it supplies fresh motivation to measure durable memory versus active provider-thread replay.

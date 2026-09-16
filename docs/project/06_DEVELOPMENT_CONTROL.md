@@ -7,19 +7,19 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 Stage B.2 is implemented and hosted-verified under D-031. The structured v2 `EVIDENCE` path moves bounded source-retrieval mechanics into CORE while preserving the existing CLI/operator surface and non-source registered/custom capability access. E-100 records exact implementation and verification evidence.
+- **What just changed?** I-015 **Stage B is complete**. Stage B.2 implemented and hosted-verified the structured v2 `EVIDENCE` broker, and Stage B.3 then passed its naturalistic C-only validation at **72,271 execution tokens** with zero agent CLI/tool calls, zero failures, correct traceable evidence, preserved provenance, and one justified adaptive follow-up read. E-100 records implementation verification; E-101 records the naturalistic closeout.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Run **I-015 Stage B.3 — naturalistic consolidated-interface validation** on the verified structured `EVIDENCE` path. The test should measure one bounded evidence request/resume shape and operating economics, not whether C remembers CLI vocabulary. Stage C remains separate and deferred.
+- **What is next?** Begin **I-015 Stage C — durable memory vs active context experiment**. Stage B is closed; Stage C should now test whether persistent organizational identity can retain useful continuity with a compact application-level ledger plus targeted history/evidence instead of replaying an ever-growing provider thread.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### I-015 — Task-transaction stabilization redesign
 **Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE / DECIDED redesign / STAGE A IMPLEMENTED / VERIFIED  
-**Decision:** D-030  
-**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098  
+**Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-B IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED  
+**Decision:** D-030, D-031  
+**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101  
 **Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
@@ -199,16 +199,20 @@ The same consolidation should repair and test the current direct-`source bundle`
 **Deterministic acceptance:** schema validation; source confinement/bounds; automatic single/homogeneous/heterogeneous plan selection; equivalent evidence semantics; durable/transient separation; request/result provenance; interruption/restart recovery; v1 compatibility; existing direct CLI compatibility; focused tests; canonical full suite; applicable Windows/browser verification; hosted CI.
 
 #### Stage B.3 — Naturalistic consolidated-interface validation
-**Work state:** PLANNED — NEXT
+**Work state:** COMPLETE — PASS  
+**Reality / evidence:** NATURALISTIC CHECKPOINT PASSED — 2026-09-16  
+**Evidence:** E-101
 
-Use a fresh C-only v2 task with several source-evidence needs known at the start. Expected shape: C cognition → one structured `EVIDENCE` action → CORE deterministic retrieval → same C assignment resumes → answer/COMPLETE. Success requires zero CLI help/discovery, zero shell source retrieval, no agent decision between `bundle` and homogeneous batching, correct traceable evidence, and preserved provenance. For a comparable fresh task, target <=80k total execution tokens; >100k requires explanation. The main criterion is removal of repeated interface-learning/tool continuations.
+A fresh C-only v2 Room used `required_contributors=["agent_c"]` and `max_turns=4` on the preregistered three-fact source task. C's first decision requested all three known evidence needs together as semantic FIND + SEARCH + READ. CORE selected one heterogeneous `bundle` mechanically and returned the normalized evidence to the same assignment. C then made one targeted READ of `orchestrator.py` because the SEARCH result established the declaration's line location but did not return its wording. That follow-up was a specific newly resolved dependency, consistent with the Stage-B adaptive boundary.
 
-Stage B.2 is now mechanically ready for this paid validation. Do not alter the implementation merely to optimize the preregistered naturalistic result unless the run exposes a demonstrated defect or materially expensive behavior.
+The task settled correctly after three C executions at **72,271 total execution tokens**, below the <=80k target. There were **zero agent tool/command calls, zero capability failures, zero file changes, zero peer invocations, and zero context compactions**. CORE recorded both evidence requests as consumed under the same assignment with exact request, execution-plan, and durable-result provenance. The final answer correctly identified `codex_room/transaction_evidence.py`, accurately summarized `TRANSACTION_EVIDENCE_INSTRUCTION`, and reported the launcher invocation.
+
+The run therefore satisfies the main Stage-B criterion: planned source retrieval no longer requires the model to learn or operate the CLI/batching transport. The extra model continuation was evidence-dependent cognition, not interface-learning overhead. Stage B is closed.
 
 #### Stage C — Persistent-context / memory economics
-**Work state:** DEFERRED — depends on Stage B closeout
+**Work state:** PLANNED — NEXT
 
-B-N1's 82.4% cached-input share remains relevant motivation. Stage-B consolidation does not itself decide the Stage-C memory/context architecture.
+B-N1's 82.4% cached-input share and B3's **33.9% aggregate cached-input share** remain relevant motivation. Stage-B consolidation does not itself decide the Stage-C memory/context architecture.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
