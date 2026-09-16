@@ -168,6 +168,22 @@ class RoomRuntime:
         "registered-capability work remains available when the task genuinely requires it.\n"
         "</deterministic_evidence>"
     )
+    TRANSACTION_CAPABILITY_INSTRUCTION = (
+        "<deterministic_capabilities>\n"
+        "Registered deterministic capabilities remain available for non-source work when they "
+        "materially add exact semantics, reuse, provenance, or useful mechanical complexity. "
+        "If the capability identity is already known, invoke it directly; use 'codex-room-cap "
+        "list' only when identity is unknown and 'codex-room-cap inspect CAPABILITY_ID' only "
+        "when its current contract is needed. Invoke a known capability with 'codex-room-cap "
+        "invoke CAPABILITY_ID --input-json JSON_OBJECT', using a workspace-relative input file "
+        "only when structured shell transport requires it. Create/register custom deterministic "
+        "software only when reuse, reliability, provenance, or mechanical complexity earns the "
+        "cost; use the existing authoring/registration contract. Registration becomes active "
+        "only after the agent turn settles. Source retrieval belongs to EVIDENCE, not this CLI "
+        "surface. Deterministic software supports judgment; it does not replace it.\n"
+        "</deterministic_capabilities>"
+    )
+
 
     def __init__(self, db: Database, adapter: AgentAdapter, data_root: Path) -> None:
         self.db = db
@@ -1810,6 +1826,7 @@ class RoomRuntime:
                     "request as the current assignment."
                 ),
                 self.TRANSACTION_EVIDENCE_INSTRUCTION,
+                self.TRANSACTION_CAPABILITY_INSTRUCTION,
                 (
                     "Return the transaction structured decision only. action must be COMPLETE, "
                     "DELEGATE, EVIDENCE, or PASS. COMPLETE ends this assignment with a substantive "
