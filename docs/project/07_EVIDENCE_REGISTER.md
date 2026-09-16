@@ -4118,3 +4118,23 @@ Total D-N3 execution tokens: **90,947**. Post-framing model continuations: **3**
 
 **Assessment:** **D-N3 PASS** for quality, differentiated dual-peer coordination/provenance, and task-level economics. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N4 in the same Room.
 
+### E-114 — Stage-D attempt 2 D-N4 structured-evidence pass
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability evidence  
+**Decision:** D-031, D-032, D-033
+
+In the same dedicated Stage-D Room used for D-N1 through D-N3, the preregistered D-N4 task ran under work-model version 2 with assignment-scoped provider context, starting and requiring Agent C only, ordinary default profiles/model policy, no private initialization or overlays, and max_turns=8.
+
+The transaction exercised the repaired structured source-evidence path that had failed Stage-D attempt 1. C first issued a structured SEARCH bundle over maintained CORE using the valid non-empty path `codex_room` for `TransactionAction`, `CreateRoomRequest`, and `HISTORY`. After the search located the relevant model definitions, C issued a second structured EVIDENCE action containing targeted READs of `codex_room/models.py`. Both deterministic source-evidence operations completed successfully. No peer Assignments, joins, shell/custom-capability commands, or model-tool activity occurred. The same C Assignment and provider thread were reused across both evidence continuations and final completion.
+
+Quality passed. The final answer reported all five current transaction actions — `COMPLETE`, `DELEGATE`, `EVIDENCE`, `HISTORY`, and `PASS`; the `CreateRoomRequest` defaults `work_model_version=1` and `provider_context_mode="persistent_agent_thread"`; and the HISTORY limits of at most 4 requests per action and at most 20 requested results total. It cited `codex_room/models.py` with the relevant line ranges.
+
+Execution telemetry recorded three C executions, all `gpt-5.6-terra` at high reasoning effort:
+- initial framing / first EVIDENCE request: **21,439** execution tokens;
+- targeted-source-read continuation: **29,568** execution-token delta;
+- final completion continuation: **33,252** execution-token delta.
+
+Total D-N4 execution tokens: **84,259**. Post-framing model continuations: **2**.
+
+**Assessment:** **D-N4 PASS** for quality, structured-evidence provenance, repaired-path behavior, and task-level economics. The attempt-1 empty structured-EVIDENCE path defect did not recur. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N5 in the same Room.
+
