@@ -2879,14 +2879,25 @@ class Database:
                 (batch_id,),
             )
             if execution["decision_recorded_at"] is not None:
+                round_budget = await self._fetchone(
+                    db,
+                    """SELECT ro.turn_count, r.max_turns
+                       FROM rounds ro JOIN rooms r ON r.id=ro.room_id
+                       WHERE ro.id=? AND ro.room_id=?""",
+                    (round_id, room_id),
+                )
+                turn_limit_hit = bool(
+                    round_budget
+                    and int(round_budget["turn_count"]) >= int(round_budget["max_turns"])
+                )
                 await db.commit()
                 return {
                     "wake_agent_keys": (
                         [assignment["agent_key"]]
-                        if assignment["state"] == "queued"
+                        if assignment["state"] == "queued" and not turn_limit_hit
                         else []
                     ),
-                    "turn_limit_hit": False,
+                    "turn_limit_hit": turn_limit_hit,
                     "decision_applied": False,
                     "evidence_id": existing["id"] if existing else None,
                 }
