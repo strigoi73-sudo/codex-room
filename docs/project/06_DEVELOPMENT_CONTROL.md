@@ -24,6 +24,53 @@
 
 **Stage A status:** COMPLETE for the opt-in coordination kernel. Canonical `main` at `a4f53a7c4f62a5d03a0907365f5024d266801e1c` passed hosted verification across Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. Version 1 remains the ordinary default; version 2 is ready for bounded naturalistic validation, not default activation.
 
+#### V2-N1 — First bounded naturalistic validation
+**Work state:** PLANNED / READY TO RUN  
+**Purpose:** Test Stage A coordination mechanics in one useful, tool-light ordinary task before any default-activation decision.
+
+**Room configuration**
+
+- `work_model_version=2`;
+- starting agent: `agent_c`;
+- required contributors: `agent_a`, `agent_b`;
+- `max_turns=8`;
+- ordinary default profiles and model policy; C may choose bounded peer execution configurations through the version-2 delegation contract;
+- no repository/source inspection is requested.
+
+**Prompt**
+
+> I want to spend one Saturday using Codex Room as a practical personal assistant instead of developing Codex Room itself. Identify three concrete non-coding tasks that would meaningfully test whether the product is useful in ordinary personal life. Choose the strongest first trial and give me a step-by-step way to run it, including what I should provide, what a good result would look like, and what would count as a failure. Use both A and B, with distinct assignments that genuinely benefit the answer. Do not inspect the repository or use tools unless essential. Keep the work bounded: prefer one delegation wave, integrate the peer contributions, and finish when the recommendation is complete.
+
+**Expected coordination shape**
+
+1. C receives one root assignment.
+2. C performs one structured `DELEGATE` creating distinct A and B child assignments under one explicit join.
+3. A and B each resolve their child assignment without unrelated fanout.
+4. CORE releases the join only after both child assignments are terminal.
+5. The same C parent assignment resumes exactly once with the resolved peer results.
+6. C integrates the contributions and `COMPLETE` settles the task.
+7. No transaction assignment or join remains open after settlement.
+
+**Evidence to collect**
+
+- Room JSON export after completion;
+- transaction Task/Assignment/Join states and causal IDs;
+- agent execution count and per-execution usage;
+- total execution tokens and cached-input share where available;
+- tool/command continuation count;
+- any retries, usage-wall events, spurious wakes, settlement blocks, stale results, or unexplained extra model turns.
+
+**Run-level assessment**
+
+- deterministic coordination invariant failure: immediate Stage A defect; stop and diagnose before another paid run;
+- expected model executions: about 4; up to 6 may be explainable, while unexplained additional turns are an efficiency concern;
+- economic target for this run: <=100k total execution tokens; >200k requires explanation; >300k without justified escalation meets the existing stop condition;
+- zero repository/source-tool activity is expected for this prompt unless an agent can justify why it was essential;
+- quality is judged on whether the final answer is coherent, integrates meaningfully distinct A/B contributions, and provides a usable first trial rather than merely summarizing peer messages.
+
+Default activation remains unapproved until V2-N1 is reviewed. Stage B and Stage C remain on hold.
+
+
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
 
 **Design objective:** preserve the permanent A/B/C organization and agent judgment while replacing implicit conversational work state with an explicit, inspectable transaction model.
