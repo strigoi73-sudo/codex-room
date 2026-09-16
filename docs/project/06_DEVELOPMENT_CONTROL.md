@@ -1,16 +1,16 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-15  
+**Last updated:** 2026-09-16  
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.  
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** B-N1 completed, but it is **inconclusive for bundle adoption** because the preregistered prompt accidentally specified three homogeneous known-file reads. C correctly used `read_many`, consistent with Stage-B guidance, rather than `bundle`. The Room still exposed a serious efficiency signal: one settled C-only turn used 7 tool calls (5 command executions, 2 source-capability invocations), one failed command, and 184,143 execution tokens with 82.4% cached-input share. See E-098.
+- **What just changed?** The B-N1 raw rollout diagnosis is complete. The seven calls show that the expensive path was dominated by agent-side discovery of executable/CLI/source/batching mechanics before one useful `read_many` retrieval. The principal approved D-031: transaction agents declare bounded semantic source-evidence intent while CORE owns read-only execution mechanics. See E-098 and E-099.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Do **not** spend another paid Stage-B Room yet. First inspect B-N1's local Codex rollout timeline to identify the exact five command executions and the failed command behind the 7-call / 184,143-token path. Then preregister B-N2 with a genuinely heterogeneous predeclared evidence plan that requires `bundle` rather than a homogeneous `read_many` batch. Stage C remains separate; the high cached replay is relevant evidence but is not yet a Stage-C decision. Default work-model-v2 activation remains unapproved. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** Implement **I-015 Stage B2 — structured source-evidence execution** as one bounded [CORE] consolidation: extend the version-2 transaction contract with semantic read/search/find evidence requests, execute them through CORE using the existing `inspect_source` authority/bounds, persist restart-safe request/result state and provenance, resume the same Assignment with normalized evidence, preserve v1/CLI compatibility, and repair the direct-`bundle` telemetry recognizer gap. Then verify deterministically and run a replacement naturalistic Stage-B validation of the semantic interface. Do **not** spend another paid Room before that implementation is verified. Stage C remains separate; default work-model-v2 activation remains unapproved. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -18,8 +18,8 @@
 ### I-015 — Task-transaction stabilization redesign
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGE A IMPLEMENTED / VERIFIED  
-**Decision:** D-030  
-**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098  
+**Decision:** D-030, D-031  
+**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099  
 **Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
@@ -100,7 +100,7 @@ Collect the same JSON export/economics evidence as V2-N1. Compare V2-N2 directly
 Default activation remains unapproved. Stage B is now the next I-015 work item; Stage C remains separate and later.
 
 #### Stage B.1 — Declarative source evidence bundles
-**Work state:** IMPLEMENTED / VERIFIED — naturalistic validation pending  
+**Work state:** COMPLETE / IMPLEMENTED / VERIFIED — B-N1 adoption test inconclusive; primitive retained  
 **Scope:** [CORE]
 
 PR #88 adds `inspect_source` v3 `bundle`, which composes existing bounded `find`, `search`, `search_many`, `read`, and `read_many` operations into one declarative execution when all requested evidence and bounds are known in advance. It rejects nested/adaptive plans and caps aggregate transient output. The direct `codex-room-cap source bundle` CLI accepts `--plan-json` or `--plan-file`. Agent guidance now prefers this path for heterogeneous predeclared retrieval while leaving genuinely adaptive investigation unchanged. Hosted verification passed across the full matrix. See E-097.
@@ -168,9 +168,24 @@ The Room nevertheless produced useful negative efficiency evidence:
 
 This is not evidence that `bundle` failed; `bundle` was never exercised. It is evidence that even a simple known-file source task can incur unnecessary command/discovery activity and very high replay cost inside one SDK execution.
 
-**Immediate next step:** inspect the local raw rollout timeline for the B-N1 C thread to identify the exact five shell commands and failed command before changing runtime guidance or spending another paid validation. Do not harden prompts or redesign Stage B from aggregate telemetry alone. After that diagnosis, preregister **B-N2** with a genuinely heterogeneous plan (for example a mix of find/search/read operations whose need and bounds are all fixed in advance) so `bundle` is actually the appropriate target.
+**Diagnosis closeout:** the raw rollout inspection is complete. It showed executable/CLI/help/source-inventory/batching discovery before the one useful homogeneous read, with repeated provider continuations amplifying cost. The former B-N2 “bundle adoption” test is superseded; another command-specific prompt patch would preserve the wrong abstraction. See E-099.
 
 See E-098.
+
+#### Stage B.2 — Structured source-evidence execution
+**Work state:** IN PROGRESS  
+**Reality:** DECIDED / NOT IMPLEMENTED at roadmap revision  
+**Decision:** D-031  
+**Evidence:** E-098, E-099  
+**Scope:** [CORE]
+
+Stage B2 moves bounded read-only source retrieval behind the version-2 transaction boundary. The model should declare semantic evidence needs—READ, SEARCH, or FIND against workspace/CORE/authorized Room sources—without choosing CLI executables, registry discovery, shell quoting, or `read_many`/`search_many`/`bundle` mechanics. CORE validates and executes the request through existing `inspect_source` authority and bounds, records durable request/result provenance, retains only the bounded transient payload needed for restart-safe delivery, resumes the same Assignment, and prevents replay from duplicating state transitions.
+
+The initial slice must preserve version 1, the existing direct CLI, P4 custom-capability authoring/binding/inheritance, and the current sandbox boundary for arbitrary custom capability execution. It is not authorization to execute arbitrary custom packages host-side.
+
+Deterministic verification must cover schema validation, source confinement/bounds, mechanical execution-plan selection, normalized evidence delivery, durable/transient separation, exact request/result provenance, interruption/restart idempotence, v1 compatibility, existing CLI compatibility, and the missing direct-`bundle` telemetry-recognition case.
+
+After deterministic and hosted verification, preregister a replacement Stage-B naturalistic run whose expected shape is C → one structured EVIDENCE decision → CORE execution → the same C Assignment resumes → COMPLETE. Success requires no CLI/help/registry discovery for the source retrieval, no shell source reads, no peer cognition, correct traceable evidence, and materially lower continuation/replay cost than B-N1.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
@@ -206,7 +221,7 @@ Proposed state model:
 **Staged design path — do not collapse these into one implementation:**
 
 - **Stage A — coordination transaction kernel — COMPLETE / IMPLEMENTED / VERIFIED (opt-in):** Task/Assignment/Join state, assignment envelopes, deterministic join release, terminal-state validity, and removal of passive backlog as actionable work. The current persistent SDK thread behavior remains in place so coordination reliability can be evaluated independently of context-economy changes.
-- **Stage B — bounded evidence execution:** add a declarative evidence-plan path where a model states already-known searches/reads/bounds once, CORE executes the plan deterministically, and one normalized evidence bundle returns for cognition. Native exploratory tools remain available for genuinely adaptive investigation; planned retrieval should not require a model continuation per mechanical step.
+- **Stage B — bounded evidence execution — IN PROGRESS:** B.1 proved the existing declarative source primitives; B.2 now places bounded READ / SEARCH / FIND intent in the version-2 transaction contract so CORE, not the agent, owns source-capability transport, validation, batching/plan selection, execution, provenance, and restart-safe delivery. Native workspace/tool use remains available for coding and genuinely adaptive work; known read-only source retrieval should not require CLI-discovery continuations.
 - **Stage C — durable memory vs active context experiment:** test whether application-level persistent agent identity can be preserved with a compact versioned Room/task ledger plus targeted history/evidence instead of resuming an ever-growing full SDK thread for every execution. This may require short-lived or task-bounded SDK threads and therefore requires an explicit later design decision if adopted. D-009 already supports targeted retrieval; D-020/D-023 require persistent organizational identity, not necessarily one forever-growing provider thread.
 - **Stage D — viability gate:** only after the bounded design is implemented and deterministically verified, run a preregistered set of ordinary useful tasks. Do not resume feature development until the gate passes.
 
