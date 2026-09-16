@@ -401,7 +401,7 @@ def test_search_text_case_sensitive_by_default(tmp_path: Path) -> None:
 def test_search_text_skips_non_utf8_and_nul_files(tmp_path: Path) -> None:
     (tmp_path / "good.txt").write_text("needle", encoding="utf-8")
     (tmp_path / "bad.txt").write_bytes(b"\xffneedle")
-    (tmp_path / "nul.txt").write_bytes(b"needle\x00rest")
+    (tmp_path / "contains-nul.txt").write_bytes(b"needle\x00rest")
 
     result = search_text(tmp_path, "needle", include_globs=["*.txt"])
 

@@ -689,6 +689,16 @@ async def test_multi_round_export_separates_prompts_counters_events_and_profiles
     await runtime.start_round(room["id"], second["active_round_id"])
     await wait_until(lambda: len(adapter.calls["agent_b"]) == 1)
     await wait_until(lambda: _round_has_turns(runtime, second["active_round_id"], 1))
+    async with runtime.db.connect() as db:
+        await db.execute(
+            "UPDATE rounds SET created_at=? WHERE id IN (?, ?)",
+            (
+                "2026-09-16T00:00:00.000+00:00",
+                room["active_round_id"],
+                second["active_round_id"],
+            ),
+        )
+        await db.commit()
     snapshot = await runtime.db.snapshot(room["id"])
     exported = json.loads(as_json(snapshot))
 
