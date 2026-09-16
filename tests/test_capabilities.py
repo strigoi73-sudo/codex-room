@@ -999,3 +999,61 @@ def test_source_cli_failure_is_attributed_to_inspect_source(
     assert payload["capability"] == "inspect_source"
     assert payload["ok"] is False
 
+def test_source_bundle_cli_accepts_compact_plan_json(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    artifact = tmp_path / "notes.txt"
+    artifact.write_text("alpha\nbeta\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    plan = {
+        "requests": [
+            {
+                "label": "notes",
+                "request": {
+                    "operation": "read",
+                    "source": "workspace",
+                    "path": "notes.txt",
+                    "start_line": 1,
+                    "max_lines": 2,
+                },
+            }
+        ]
+    }
+
+    exit_code = main(
+        ["source", "bundle", "--plan-json", json.dumps(plan)]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["capability"] == "inspect_source"
+    assert payload["capability_version"] == "3"
+    assert payload["items"][0]["label"] == "notes"
+    assert payload["items"][0]["content"] == "alpha\nbeta\n"
+
+
+def test_source_bundle_cli_accepts_workspace_plan_file(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    (tmp_path / "notes.txt").write_text("canary\n", encoding="utf-8")
+    plan = {
+        "requests": [
+            {
+                "label": "notes",
+                "request": {
+                    "operation": "read",
+                    "source": "workspace",
+                    "path": "notes.txt",
+                },
+            }
+        ]
+    }
+    (tmp_path / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(["source", "bundle", "--plan-file", "plan.json"])
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["items"][0]["content"] == "canary\n"
+
