@@ -1769,25 +1769,50 @@ async def test_archive_and_deliberate_reset_are_auditable(runtime_factory):
 
 
 @pytest.mark.asyncio
-async def test_agent_prompt_exposes_semantic_evidence_boundary_not_source_cli(
+async def test_v2_agent_prompt_exposes_semantic_evidence_boundary_not_source_cli(
     runtime_factory,
 ):
     adapter = FakeAgentAdapter()
     runtime = await runtime_factory(adapter, triad=True)
     await runtime.create_room(
-        CreateRoomRequest(topic="Check an artifact", starting_agent="agent_c")
+        CreateRoomRequest(
+            topic="Check an artifact",
+            starting_agent="agent_c",
+            work_model_version=2,
+        )
     )
     await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
 
     prompt = adapter.calls["agent_c"][0]["prompt"]
     assert "Use deterministic execution when exact semantics" in prompt
-    assert "In version-2 transaction work" in prompt
-    assert "EVIDENCE action" in prompt
+    assert "use the EVIDENCE action" in prompt
     assert "READ, SEARCH, and FIND" in prompt
-    assert "CORE owns source authority, validation, batching" in prompt
+    assert "CORE owns source authority, validation, batching, execution, recovery" in prompt
     assert "Use native workspace tools for coding, mutation, tests" in prompt
-    assert "Custom capability creation/registration remains an explicit Room-side" in prompt
+    assert "codex-room-cap authoring" in prompt
     assert "codex-room-cap source" not in prompt
+    assert "read_many" not in prompt
+    assert "search_many" not in prompt
+    assert "source bundle" not in prompt
+    assert "--input-json" not in prompt
+    assert "--input-file" not in prompt
+
+
+@pytest.mark.asyncio
+async def test_v1_agent_prompt_preserves_compact_legacy_source_access(runtime_factory):
+    adapter = FakeAgentAdapter()
+    runtime = await runtime_factory(adapter, triad=True)
+    await runtime.create_room(
+        CreateRoomRequest(topic="Inspect legacy source", starting_agent="agent_c")
+    )
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+
+    prompt = adapter.calls["agent_c"][0]["prompt"]
+    assert "legacy work-model version" in prompt
+    assert "codex-room-cap source surface" in prompt
+    assert "codex-room-cap source --help" in prompt
+    assert "codex-room-cap authoring" in prompt
+    assert "structured EVIDENCE action" in prompt
     assert "read_many" not in prompt
     assert "search_many" not in prompt
     assert "source bundle" not in prompt
