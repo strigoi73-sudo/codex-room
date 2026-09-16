@@ -71,7 +71,11 @@ def plan_source_evidence(
 
     if all(item["operation"] == "read" for item in atomic):
         source_keys = {(item["source"], item.get("room_id")) for item in atomic}
-        if len(source_keys) == 1:
+        declared_bytes = sum(int(item["max_bytes"]) for item in atomic)
+        if (
+            len(source_keys) == 1
+            and declared_bytes <= MAX_BATCH_READ_OUTPUT_BYTES
+        ):
             source, room_id = next(iter(source_keys))
             plan: dict[str, Any] = {
                 "operation": "read_many",
@@ -91,39 +95,10 @@ def plan_source_evidence(
                 plan["room_id"] = room_id
             return plan
 
-    if all(item["operation"] == "search" for item in atomic):
-        shared_keys = (
-            "source",
-            "room_id",
-            "path",
-            "include_globs",
-            "exclude_globs",
-            "include_hidden",
-            "case_sensitive",
-            "max_files",
-            "max_matches",
-        )
-        first = atomic[0]
-        if all(
-            all(item.get(key) == first.get(key) for key in shared_keys)
-            for item in atomic[1:]
-        ):
-            plan = {
-                "operation": "search_many",
-                "source": first["source"],
-                "path": first["path"],
-                "queries": [item["query"] for item in atomic],
-                "include_globs": first["include_globs"],
-                "exclude_globs": first["exclude_globs"],
-                "include_hidden": first["include_hidden"],
-                "case_sensitive": first["case_sensitive"],
-                "max_files": first["max_files"],
-                "max_matches": first["max_matches"],
-            }
-            if first.get("room_id") is not None:
-                plan["room_id"] = first["room_id"]
-            return plan
-
+    # Atomic SEARCH requests carry per-request match bounds, while inspect_source
+    # search_many has one shared aggregate match cap. Bundling preserves the declared
+    # semantics; CORE can adopt search_many here later if its primitive gains equivalent
+    # per-query bounds.
     return {
         "operation": "bundle",
         "requests": [
