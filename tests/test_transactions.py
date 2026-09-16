@@ -51,7 +51,10 @@ def _transaction_usage_wall(when: str) -> AgentTurnTerminalError:
 async def test_transaction_dual_delegation_releases_c_once_after_both_peers(
     transaction_runtime_factory,
 ):
-    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {1}},
+    )
     adapter.decisions["agent_c"].extend(
         [
             TransactionDecision(
@@ -299,10 +302,22 @@ async def test_transaction_evidence_at_turn_limit_stops_without_resuming_and_rep
         CreateRoomRequest(
             topic="Stop after evidence",
             work_model_version=2,
-            max_turns=1,
+            max_turns=2,
         )
     )
     room_id = snapshot["id"]
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+    async with runtime.db.connect() as db:
+        await db.execute(
+            "UPDATE rooms SET turn_count=1 WHERE id=?",
+            (room_id,),
+        )
+        await db.execute(
+            "UPDATE rounds SET turn_count=1 WHERE id=?",
+            (snapshot["active_round_id"],),
+        )
+        await db.commit()
+    adapter.release_call("agent_c", 1)
 
     async def stopped() -> bool:
         room = await runtime.db.get_room(room_id)
