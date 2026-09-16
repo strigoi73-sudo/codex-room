@@ -176,7 +176,7 @@ class RoomRuntime:
         "transaction action HISTORY. Use RECENT for a temporal dependency or SEARCH with one "
         "specific lexical query when you know the relevant concept; optionally restrict the "
         "request to one agent and request only as many results as are likely necessary. CORE "
-        "selects only durable terminal Assignment results from earlier Rounds and returns the "
+        "selects only durable completed Assignment results from earlier Rounds and returns the "
         "exact bounded result events to this same assignment. Do not use HISTORY to recover "
         "current Task/Join/Evidence state already supplied in the assignment envelope, to read "
         "source files, or for broad catch-up. Ask again only when the returned history leaves a "
@@ -1868,7 +1868,7 @@ class RoomRuntime:
                         remaining_chars = 0
             else:
                 context_parts.append(
-                    "CORE found no matching prior terminal Assignment results for the "
+                    "CORE found no matching prior completed Assignment results for the "
                     "most recent HISTORY request."
                 )
             context_parts.append("</retrieved_room_history>")
@@ -1924,7 +1924,7 @@ class RoomRuntime:
                     "more distinct peer delegations, each with target, bounded instruction, and "
                     "optional config. EVIDENCE pauses this same assignment and must include 1-16 "
                     "bounded READ, SEARCH, or FIND source-evidence requests. HISTORY immediately "
-                    "selects bounded terminal results from earlier Rounds in this Room and resumes "
+                    "selects bounded completed results from earlier Rounds in this Room and resumes "
                     "this same assignment with those exact events supplied as historical context. "
                     "PASS ends this assignment without substantive output. Do not announce that you "
                     "are waiting for a peer unless you actually use DELEGATE to create that work. "
