@@ -100,7 +100,7 @@ Collect the same JSON export/economics evidence as V2-N1. Compare V2-N2 directly
 **Checkpoint-era note:** after V2-N2, default activation remained unapproved, Stage B was next, and Stage C was intentionally deferred. Stages B/C are now complete; default activation is still reserved for the Stage-D viability decision.
 
 #### Stage B.1 — Declarative source evidence bundles
-**Work state:** IMPLEMENTED / VERIFIED — naturalistic validation pending  
+**Work state:** COMPLETE — IMPLEMENTED / VERIFIED; direct-bundle naturalistic question superseded by B.2/B.3 consolidated interface  
 **Scope:** [CORE]
 
 PR #88 adds `inspect_source` v3 `bundle`, which composes existing bounded `find`, `search`, `search_many`, `read`, and `read_many` operations into one declarative execution when all requested evidence and bounds are known in advance. It rejects nested/adaptive plans and caps aggregate transient output. The direct `codex-room-cap source bundle` CLI accepts `--plan-json` or `--plan-file`. Agent guidance now prefers this path for heterogeneous predeclared retrieval while leaving genuinely adaptive investigation unchanged. Hosted verification passed across the full matrix. See E-097.
@@ -149,7 +149,7 @@ PR #88 adds `inspect_source` v3 `bundle`, which composes existing bounded `find`
 - quality requires all three facts to be correct and traceable to the requested source paths;
 - failure of the bundle itself, unnecessary separate predictable source calls, or unexplained extra model turns is Stage-B evidence to diagnose before a second paid validation.
 
-Stage B is not complete from deterministic tests alone. B-N1 must be assessed before expanding the Stage-B mechanism or beginning Stage C.
+**Preregistered gate at that checkpoint:** Stage B was not to be considered complete from deterministic tests alone; B-N1 had to be assessed before expanding the Stage-B mechanism or beginning Stage C.
 
 **Observed result**
 
@@ -367,10 +367,10 @@ Ordinary-use testing has now demonstrated that the remaining failure class is no
 
 **Design objective:** preserve the permanent A/B/C organization and agent judgment while replacing implicit conversational work state with an explicit, inspectable transaction model.
 
-Proposed state model:
+Implemented transaction model (originally proposed here):
 
 1. **Task** — one bounded objective being advanced inside a Room/Round. A task owns its current work state, completion condition, and optional budget/context policy. A Round remains the user-visible conversational/lifecycle container; tasks become the work units inside it.
-2. **Assignment** — one explicit unit of cognition assigned to one agent. It carries a task ID, target agent, bounded instruction, causal parent, execution configuration when applicable, selected context references, and a durable state such as queued / claimed / running / completed / passed / failed / cancelled / waived.
+2. **Assignment** — one explicit unit of cognition assigned to one agent. It carries a task ID, target agent, bounded instruction, causal parent, execution configuration when applicable, selected context references, and a durable state from `queued | running | waiting_join | waiting_evidence | completed | passed | failed | cancelled | waived`. `HISTORY` performs bounded selection/attachment atomically and requeues the same Assignment rather than adding another wait state.
 3. **Join** — an explicit dependency set over assignments. A join records which contributions are required before integration or settlement can proceed. CORE, not prose, determines whether the join is satisfied. Timeouts, failures, cancellation, and explicit visible waivers must be represented mechanically.
 4. **Result** — the immutable outcome of an assignment, linked to the exact assignment and execution. Existing decision events and `agent_executions` can remain the durable result/provenance layer; a new standalone result table is not required unless implementation evidence shows one is necessary.
 5. **Integration** — ordinarily another explicit assignment, usually to C, created deterministically when a required join becomes ready. Integration is therefore work, not a heuristic inferred from unread passive peer messages.
@@ -378,9 +378,9 @@ Proposed state model:
 
 **Important boundary:** C/A/B continue to decide intellectual questions: whether peers add value, whom to delegate to, how to frame work, what evidence matters, how to interpret disagreement, whether a waiver is justified, and what conclusion to reach. CORE owns only declared mechanics: assignment creation, causal delivery, joins, queue ordering, retries/budgets, context assembly, and whether a requested terminal transition is mechanically valid. CORE must not infer hidden intent from prose such as “I am waiting for A.”
 
-**Structured-output implementation:** version-2 assignments use `COMPLETE | DELEGATE | PASS`. `DELEGATE` carries the target, bounded instruction, and optional C-selected execution configuration in one atomic transaction that creates the child assignment(s) and dependency join. Version 2 has no separate `invoke_targets` field, eliminating prose/routing divergence. Public/readable events remain audit history and do not become runnable work without an explicit assignment.
+**Structured-output implementation:** current version-2 assignments use `COMPLETE | DELEGATE | EVIDENCE | HISTORY | PASS`. `DELEGATE` carries target/instruction/config and atomically creates child assignments plus their join; `EVIDENCE` declares bounded source needs for deterministic CORE retrieval; `HISTORY` declares bounded prior-Room result lookup and requeues the same Assignment with exact selected event provenance. Version 2 has no separate `invoke_targets` field, eliminating prose/routing divergence. Public/readable events remain audit history and do not become runnable work without an explicit assignment.
 
-**Current-to-proposed mapping:**
+**Legacy-to-transaction mapping (implemented for opt-in v2):**
 
 - preserve `rooms`, `rounds`, persistent A/B/C identities, profiles/overlays, workspaces, custom capability bindings, exports, observer event history, model policy, durable `agent_executions`, recovery/usage-wall machinery, and WebSocket/UI transport;
 - preserve `events` primarily as audit/conversation history and exact provenance;
