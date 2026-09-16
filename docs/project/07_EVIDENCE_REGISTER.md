@@ -3312,3 +3312,57 @@ Current `_assignment_prompt()` provides the Round objective, the current assignm
 
 **Status:** OBSERVED ISSUE with IMPLEMENTED / VERIFIED targeted remediation. V2-N2 is still required to establish whether the repair removes the naturalistic duplicate-cognition path and returns this task to the intended operating-economics range.
 
+### E-096 — V2-N2 controlled rerun passes Stage-A naturalistic checkpoint
+**Date:** 2026-09-15  
+**Kind:** [ROOM naturalistic validation]  
+**Room:** `room_51eedd657f49497a925aee0f200ae813` (“V2-N2 - Controlled Sibling-Context Rerun”)
+
+V2-N2 repeated the exact V2-N1 task/configuration after the PR #85 sibling-work visibility remediation. It used `work_model_version=2`, C as starting agent, A/B as required contributors, and the same eight-turn ceiling.
+
+**Coordination result**
+
+- one task settled with `close_reason=transaction_settled`;
+- exactly three assignments were created: C root, A child, B child;
+- exactly one dependency join was created and released once;
+- C delegated differentiated work to A and B in one wave;
+- neither child created nested peer work;
+- after both child assignments completed, the same C root assignment resumed once and completed;
+- no assignment or join remained open;
+- no tool calls, retries, failures, usage-wall events, stale results, file changes, context compactions, or sub-agent activity were recorded.
+
+This is the intended **C → A+B → C** Stage-A shape.
+
+**Execution economics**
+
+Four model executions consumed **85,228 execution tokens**:
+
+- C initial delegation: 20,675;
+- A child assignment: 20,389;
+- B child assignment: 20,988;
+- C final integration: 23,176.
+
+Input-token deltas totaled 82,866. Cached-input deltas totaled 20,224, for a **24.4% cached-input share**, inside the preregistered <=25% target.
+
+Compared with V2-N1 / E-095:
+
+- executions: **6 → 4**;
+- assignments: **4 → 3**;
+- joins: **2 → 1**;
+- total execution tokens: **131,976 → 85,228**, a reduction of **46,748 / 35.4%**;
+- cached-input share: **38.3% → 24.4%**, down about **13.9 percentage points**;
+- the redundant nested A→B path disappeared.
+
+The V2-N1 diagnostic counterfactual had estimated an 84,625-token four-turn remainder if the redundant nested path were removed. V2-N2's actual 85,228-token result is within 603 tokens of that estimate, strengthening the causal diagnosis that the missing sibling-work context drove the prior excess.
+
+**Quality result**
+
+The final C answer remained substantively complete: it identified three concrete non-coding trials, selected the household/errand project as the strongest first trial, integrated A's task-selection work with B's testing framework, provided an eight-step execution protocol, and specified observable success and failure criteria. No material omission attributable to the token reduction was observed.
+
+**Interpretation**
+
+The targeted PR #85 repair removed the exact naturalistic duplicate-cognition failure observed in V2-N1 while preserving answer quality and bringing the controlled task inside both Stage-A economic targets. This closes the bounded Stage-A naturalistic checkpoint as **PASS**.
+
+This evidence does **not** establish the later whole-system viability gate: one controlled task cannot establish the required multi-task median/p90 economics, >=90% quality rate, or robustness under tool failure, truncation, stale-history pressure, and interruption/resume.
+
+**Status:** Stage A naturalistic checkpoint PASSED. Default work-model-v2 activation remains unapproved pending the broader viability gate. Stage B bounded evidence execution is the next I-015 work item.
+

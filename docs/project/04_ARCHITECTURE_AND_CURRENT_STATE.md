@@ -379,7 +379,7 @@ The migration deliberately retains the existing persistent SDK-thread/context mo
 
 PR #81 established the foundation and merged as `3043a3789d03013e4c3618eb3f6aff2861cb60df`. PR #82 completed the remaining Stage A invariants and merged as canonical `main` `a4f53a7c4f62a5d03a0907365f5024d266801e1c`. GitHub Actions run `35036898229` completed successfully on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 + browser. E-094 records the closeout evidence. V2-N1 then exposed the sibling-work visibility gap; PR #85 repaired it and merged as `19e5100508e4401f45cd27c11684c438171aa5c5`. Its tested PR head and merge share Git tree `1763d24377718e32606239e13ccd3343242e869e`; hosted run `35038949753` passed the same three-job matrix. E-095 records the naturalistic finding and remediation evidence.
 
-**Activation status:** version 2 is ready for bounded naturalistic validation. Default activation has not been approved.
+**Activation status:** version 2 has passed the bounded V2-N1/V2-N2 Stage-A naturalistic checkpoint after the sibling-work remediation. This is evidence for the coordination kernel, not the full Stage-D viability gate. Version 1 remains the ordinary default; default version-2 activation has not been approved.
 
 ## 17. Runtime-state and work-queue caution
 

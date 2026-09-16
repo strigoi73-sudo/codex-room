@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** V2-N1 provided the first paid naturalistic Stage-A evidence: transaction settlement worked cleanly and answer quality was useful, but missing sibling-work visibility caused one redundant A→B delegation path and pushed the run to 131,976 execution tokens. The bounded repair is now merged and hosted-verified in PR #85: v2 children see declared sibling agent/state/instruction metadata without sibling results. See E-095.
+- **What just changed?** V2-N2 completed the controlled rerun of V2-N1 on the verified sibling-context repair. The duplicate A→B path disappeared; the Room used the intended C → A+B → C shape with three assignments, one join, four executions, 85,228 execution tokens, 24.4% cached-input share, zero tools/retries/failures/stale work, and a substantively complete final answer. This closes the targeted Stage-A naturalistic checkpoint. See E-096.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Run **V2-N2**, an exact controlled rerun of the V2-N1 prompt/configuration on the verified sibling-context repair. Compare assignment shape, execution count, total execution tokens, cached-input share, and answer quality. Default activation remains unapproved. Do not begin Stage B or the Stage C context experiment yet. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** Begin **Stage B — bounded evidence execution** as the next I-015 work item, starting with a bounded design/implementation slice that replaces already-known multi-step retrieval with one declarative evidence plan and one normalized evidence bundle. Keep Stage C separate for later evaluation. Default work-model-v2 activation remains unapproved until the broader viability gate. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -19,10 +19,10 @@
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGE A IMPLEMENTED / VERIFIED  
 **Decision:** D-030  
-**Evidence:** E-092, E-093, E-094, E-095  
+**Evidence:** E-092, E-093, E-094, E-095, E-096  
 **Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
 
-**Stage A status:** COMPLETE for the opt-in coordination kernel, including the V2-N1 sibling-work visibility repair. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. Version 1 remains the ordinary default; version 2 is ready for V2-N2, not default activation.
+**Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
 
 #### V2-N1 — First bounded naturalistic validation
 **Work state:** COMPLETE — exposed targeted remediation  
@@ -75,7 +75,7 @@
 Default activation remains unapproved. Stage B and Stage C remain on hold.
 
 #### V2-N2 — Controlled sibling-context rerun
-**Work state:** PLANNED / READY TO RUN  
+**Work state:** COMPLETE — PASS  
 **Purpose:** Test whether the verified PR #85 sibling-work context removes V2-N1's duplicate peer delegation and restores the same task to the intended economic/coordination shape.
 
 **Protocol:** use a fresh Room with the exact V2-N1 configuration and exact V2-N1 prompt. No task wording, required-contributor setting, turn ceiling, or model-policy change is permitted for this comparison.
@@ -93,7 +93,11 @@ Default activation remains unapproved. Stage B and Stage C remain on hold.
 
 Collect the same JSON export/economics evidence as V2-N1. Compare V2-N2 directly against V2-N1 / E-095 before any default-activation decision.
 
-Default activation remains unapproved. Stage B and Stage C remain on hold.
+**Observed result:** PASS. The Room settled cleanly with one task, three completed assignments, one released join, and exactly four model executions: C delegation 20,675 tokens; A 20,389; B 20,988; C integration 23,176. Total execution use was **85,228 tokens**, down **46,748 / 35.4%** from V2-N1. Cached-input deltas were 20,224 against 82,866 input-token deltas, **24.4%**, inside the <=25% target. There was no nested delegation, no tool activity, no retry/failure/usage-wall/stale-result activity, and the final answer retained the required three trials, selected first trial, step-by-step protocol, success criteria, and failure criteria. See E-096.
+
+**Interpretation:** the sibling-work visibility repair removed the exact duplicate-cognition path observed in V2-N1 without material answer-quality loss. This closes the bounded Stage-A naturalistic checkpoint. It does **not** establish the full multi-task median/p90/quality/robustness viability gate.
+
+Default activation remains unapproved. Stage B is now the next I-015 work item; Stage C remains separate and later.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
