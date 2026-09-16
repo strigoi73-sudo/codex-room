@@ -142,6 +142,9 @@ trap 'rm -rf "$tmp_dir"' EXIT
 TMPDIR="$tmp_dir" "$venv/bin/python" -m pytest -q
 '@
 
+    # Windows checkouts may convert this PowerShell file to CRLF. Bash requires LF.
+    $bash = $bash.Replace("`r`n", "`n").Replace("`r", "")
+
     Invoke-NativeStep $Label {
         $args = @(
             "-d", $Distro,
