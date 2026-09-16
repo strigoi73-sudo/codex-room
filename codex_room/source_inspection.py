@@ -1417,7 +1417,7 @@ INSPECT_SOURCE_INPUT_SCHEMA: dict[str, Any] = {
         "max_bytes": {
             "type": "integer",
             "minimum": 1,
-            "maximum": MAX_READ_OUTPUT_BYTES,
+            "maximum": MAX_EVIDENCE_BUNDLE_OUTPUT_BYTES,
             "default": MAX_READ_OUTPUT_BYTES,
         },
     },
