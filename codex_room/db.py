@@ -329,6 +329,24 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_agent_executions_open
                     ON agent_executions(room_id, agent_id, state, created_at);
 
+                CREATE TABLE IF NOT EXISTS assignment_evidence (
+                    id TEXT PRIMARY KEY,
+                    assignment_id TEXT NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+                    source_batch_id TEXT NOT NULL UNIQUE
+                        REFERENCES agent_executions(batch_id) ON DELETE CASCADE,
+                    request_json TEXT NOT NULL,
+                    durable_evidence_json TEXT NOT NULL,
+                    transient_payload_json TEXT,
+                    strategy TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    provenance_event_id TEXT REFERENCES events(id),
+                    created_at TEXT NOT NULL,
+                    consumed_at TEXT
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_assignment_evidence_pending
+                    ON assignment_evidence(assignment_id, state, created_at);
+
                 CREATE TABLE IF NOT EXISTS usage_continuations (
                     id TEXT PRIMARY KEY,
                     room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
@@ -2777,6 +2795,191 @@ class Database:
             )
         return [dict(row) for row in rows]
 
+    async def get_pending_assignment_evidence(
+        self, assignment_id: str
+    ) -> list[dict[str, Any]]:
+        """Return bounded evidence payloads awaiting one successful assignment continuation."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT * FROM assignment_evidence
+                   WHERE assignment_id=? AND state='pending'
+                   ORDER BY created_at, id""",
+                (assignment_id,),
+            )
+        result: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row)
+            item["request"] = json.loads(item.pop("request_json"))
+            item["durable_evidence"] = json.loads(item.pop("durable_evidence_json"))
+            payload = item.pop("transient_payload_json")
+            item["payload"] = json.loads(payload) if payload else None
+            result.append(item)
+        return result
+
+    async def get_assignment_evidence_by_batch(
+        self, batch_id: str
+    ) -> dict[str, Any] | None:
+        """Return the exact structured-evidence record created by one model execution."""
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                "SELECT * FROM assignment_evidence WHERE source_batch_id=?",
+                (batch_id,),
+            )
+        if row is None:
+            return None
+        item = dict(row)
+        item["request"] = json.loads(item.pop("request_json"))
+        item["durable_evidence"] = json.loads(item.pop("durable_evidence_json"))
+        payload = item.pop("transient_payload_json")
+        item["payload"] = json.loads(payload) if payload else None
+        return item
+
+    async def settle_transaction_evidence(
+        self,
+        room_id: str,
+        round_id: str,
+        batch_id: str,
+        assignment_id: str,
+        requests: list[dict[str, Any]],
+        *,
+        strategy: str,
+        durable_evidence: dict[str, Any],
+        transient_payload: dict[str, Any],
+        provenance_event_id: str,
+    ) -> dict[str, Any]:
+        """Atomically persist one read-only evidence result and requeue the same assignment."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            execution = await self._fetchone(
+                db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
+            )
+            if (
+                execution is None
+                or execution["assignment_id"] != assignment_id
+                or execution["state"] not in {"result_ready", "settled"}
+            ):
+                await db.rollback()
+                raise RuntimeError("Transaction execution is not ready for evidence settlement")
+            assignment = await self._fetchone(
+                db,
+                """SELECT x.*, a.agent_key, a.room_id
+                   FROM assignments x JOIN agents a ON a.id=x.agent_id
+                   WHERE x.id=?""",
+                (assignment_id,),
+            )
+            if assignment is None or assignment["room_id"] != room_id:
+                await db.rollback()
+                raise RuntimeError("Transaction assignment is missing or belongs elsewhere")
+
+            existing = await self._fetchone(
+                db,
+                "SELECT id FROM assignment_evidence WHERE source_batch_id=?",
+                (batch_id,),
+            )
+            if execution["decision_recorded_at"] is not None:
+                await db.commit()
+                return {
+                    "wake_agent_keys": (
+                        [assignment["agent_key"]]
+                        if assignment["state"] == "queued"
+                        else []
+                    ),
+                    "turn_limit_hit": False,
+                    "decision_applied": False,
+                    "evidence_id": existing["id"] if existing else None,
+                }
+            if assignment["state"] != "running":
+                await db.rollback()
+                raise RuntimeError("Only a running assignment can request evidence")
+
+            await db.execute(
+                "UPDATE rooms SET turn_count=turn_count+1, updated_at=? WHERE id=?",
+                (now, room_id),
+            )
+            await db.execute(
+                """UPDATE rounds SET turn_count=turn_count+1
+                   WHERE id=? AND room_id=? AND status=? AND work_model_version=2""",
+                (round_id, room_id, RoundStatus.ACTIVE),
+            )
+            round_budget = await self._fetchone(
+                db,
+                """SELECT ro.turn_count, r.max_turns
+                   FROM rounds ro JOIN rooms r ON r.id=ro.room_id
+                   WHERE ro.id=? AND ro.room_id=?""",
+                (round_id, room_id),
+            )
+            turn_limit_hit = bool(
+                round_budget
+                and int(round_budget["turn_count"]) >= int(round_budget["max_turns"])
+            )
+
+            await db.execute(
+                """UPDATE assignment_evidence
+                   SET state='consumed', consumed_at=?, transient_payload_json=NULL
+                   WHERE assignment_id=? AND state='pending'""",
+                (now, assignment_id),
+            )
+            evidence_id = new_id("evidence")
+            await db.execute(
+                """INSERT INTO assignment_evidence
+                   (id, assignment_id, source_batch_id, request_json,
+                    durable_evidence_json, transient_payload_json, strategy,
+                    state, provenance_event_id, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)""",
+                (
+                    evidence_id,
+                    assignment_id,
+                    batch_id,
+                    json.dumps(
+                        requests,
+                        ensure_ascii=True,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    json.dumps(
+                        durable_evidence,
+                        ensure_ascii=True,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    json.dumps(
+                        transient_payload,
+                        ensure_ascii=True,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    strategy,
+                    provenance_event_id,
+                    now,
+                ),
+            )
+            cursor = await db.execute(
+                """UPDATE assignments
+                   SET state='queued', updated_at=?, resolution_reason=NULL
+                   WHERE id=? AND state='running'""",
+                (now, assignment_id),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError("Evidence settlement lost the running assignment")
+            cursor = await db.execute(
+                """UPDATE agent_executions SET decision_recorded_at=?
+                   WHERE batch_id=? AND decision_recorded_at IS NULL""",
+                (now, batch_id),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError("Evidence settlement lost its compare-and-set")
+            await db.commit()
+        return {
+            "wake_agent_keys": [assignment["agent_key"]],
+            "turn_limit_hit": turn_limit_hit,
+            "decision_applied": True,
+            "evidence_id": evidence_id,
+        }
+
     async def settle_transaction_decision(
         self,
         room_id: str,
@@ -2849,6 +3052,13 @@ class Database:
             turn_limit_hit = bool(
                 round_budget
                 and int(round_budget["turn_count"]) >= int(round_budget["max_turns"])
+            )
+
+            await db.execute(
+                """UPDATE assignment_evidence
+                   SET state='consumed', consumed_at=?, transient_payload_json=NULL
+                   WHERE assignment_id=? AND state='pending'""",
+                (now, assignment_id),
             )
 
             if action == "DELEGATE":
@@ -3357,6 +3567,22 @@ class Database:
                     SET state='cancelled', released_at=?
                     WHERE state IN ('pending','ready'){join_clause}""",
                 join_params,
+            )
+            evidence_clause = (
+                " AND assignment_id IN (SELECT x.id FROM assignments x "
+                "JOIN tasks t ON t.id=x.task_id WHERE t.room_id=? AND t.round_id=?)"
+                if round_id is not None
+                else " AND assignment_id IN (SELECT x.id FROM assignments x "
+                "JOIN tasks t ON t.id=x.task_id WHERE t.room_id=?)"
+            )
+            evidence_params: list[Any] = [now, room_id]
+            if round_id is not None:
+                evidence_params.append(round_id)
+            await db.execute(
+                f"""UPDATE assignment_evidence
+                    SET state='discarded', consumed_at=?, transient_payload_json=NULL
+                    WHERE state='pending'{evidence_clause}""",
+                evidence_params,
             )
             await db.commit()
 
