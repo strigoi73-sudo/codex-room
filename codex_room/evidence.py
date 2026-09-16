@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -172,11 +174,56 @@ def _normalize_many(
     return items
 
 
+def durable_evidence_requests(
+    requests: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return provenance-safe descriptors without retaining raw search/pattern text."""
+    durable: list[dict[str, Any]] = []
+    for request in requests:
+        canonical = json.dumps(
+            request,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        item: dict[str, Any] = {
+            "operation": request["operation"],
+            "source": request["source"],
+            "path": request["path"],
+            "request_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        }
+        if request.get("room_id") is not None:
+            item["room_id"] = request["room_id"]
+        if request["operation"] == "READ":
+            item["start_line"] = request.get("start_line") or 1
+            item["max_lines"] = request.get("max_lines") or 400
+        elif request["operation"] == "SEARCH":
+            query = request["query"]
+            item["query_sha256"] = hashlib.sha256(query.encode("utf-8")).hexdigest()
+            item["query_length"] = len(query)
+            item["max_results"] = request.get("max_results") or 50
+        else:
+            patterns = request.get("patterns") or []
+            patterns_json = json.dumps(
+                patterns,
+                ensure_ascii=True,
+                separators=(",", ":"),
+            )
+            item["patterns_sha256"] = hashlib.sha256(
+                patterns_json.encode("utf-8")
+            ).hexdigest()
+            item["pattern_count"] = len(patterns)
+            item["max_results"] = request.get("max_results") or 100
+        durable.append(item)
+    return durable
+
+
 def execute_source_evidence(
     workspace: Path, requests: list[dict[str, Any]]
 ) -> dict[str, Any]:
     """Execute bounded semantic source evidence without exposing transport mechanics."""
     strategy, plan = _execution_plan(requests)
+    durable_requests = durable_evidence_requests(requests)
     try:
         result = inspect_source(workspace, plan)
     except (SourceInspectionError, ValueError) as exc:
@@ -184,6 +231,7 @@ def execute_source_evidence(
         return {
             "ok": False,
             "strategy": strategy,
+            "durable_requests": durable_requests,
             "durable": {"ok": False, "error": error},
             "payload": {"ok": False, "error": error, "items": []},
         }
@@ -196,6 +244,7 @@ def execute_source_evidence(
     return {
         "ok": bool(result.get("ok")),
         "strategy": strategy,
+        "durable_requests": durable_requests,
         "durable": durable,
         "payload": {
             "ok": bool(result.get("ok")),
