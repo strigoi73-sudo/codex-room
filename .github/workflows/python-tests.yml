@@ -49,5 +49,5 @@ jobs:
         run: python -m pytest -q
       - name: Browser transcript stability
         if: matrix.browser
-        shell: pwsh
+        shell: powershell
         run: ./test-transcript-stability.ps1
