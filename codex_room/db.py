@@ -334,7 +334,8 @@ class Database:
                     assignment_id TEXT NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
                     source_batch_id TEXT NOT NULL UNIQUE
                         REFERENCES agent_executions(batch_id) ON DELETE CASCADE,
-                    request_json TEXT NOT NULL,
+                    request_json TEXT,
+                    durable_request_json TEXT NOT NULL,
                     durable_evidence_json TEXT NOT NULL,
                     transient_payload_json TEXT,
                     strategy TEXT NOT NULL,
@@ -2809,7 +2810,9 @@ class Database:
         result: list[dict[str, Any]] = []
         for row in rows:
             item = dict(row)
-            item["request"] = json.loads(item.pop("request_json"))
+            raw_request = item.pop("request_json")
+            item["request"] = json.loads(raw_request) if raw_request else None
+            item["durable_request"] = json.loads(item.pop("durable_request_json"))
             item["durable_evidence"] = json.loads(item.pop("durable_evidence_json"))
             payload = item.pop("transient_payload_json")
             item["payload"] = json.loads(payload) if payload else None
@@ -2829,7 +2832,9 @@ class Database:
         if row is None:
             return None
         item = dict(row)
-        item["request"] = json.loads(item.pop("request_json"))
+        raw_request = item.pop("request_json")
+        item["request"] = json.loads(raw_request) if raw_request else None
+        item["durable_request"] = json.loads(item.pop("durable_request_json"))
         item["durable_evidence"] = json.loads(item.pop("durable_evidence_json"))
         payload = item.pop("transient_payload_json")
         item["payload"] = json.loads(payload) if payload else None
@@ -2843,6 +2848,7 @@ class Database:
         assignment_id: str,
         requests: list[dict[str, Any]],
         *,
+        durable_requests: list[dict[str, Any]],
         strategy: str,
         durable_evidence: dict[str, Any],
         transient_payload: dict[str, Any],
@@ -2928,7 +2934,8 @@ class Database:
 
             await db.execute(
                 """UPDATE assignment_evidence
-                   SET state='consumed', consumed_at=?, transient_payload_json=NULL
+                   SET state='consumed', consumed_at=?,
+                       request_json=NULL, transient_payload_json=NULL
                    WHERE assignment_id=? AND state='pending'""",
                 (now, assignment_id),
             )
@@ -2936,15 +2943,22 @@ class Database:
             await db.execute(
                 """INSERT INTO assignment_evidence
                    (id, assignment_id, source_batch_id, request_json,
-                    durable_evidence_json, transient_payload_json, strategy,
-                    state, provenance_event_id, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)""",
+                    durable_request_json, durable_evidence_json,
+                    transient_payload_json, strategy, state,
+                    provenance_event_id, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)""",
                 (
                     evidence_id,
                     assignment_id,
                     batch_id,
                     json.dumps(
                         requests,
+                        ensure_ascii=True,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    json.dumps(
+                        durable_requests,
                         ensure_ascii=True,
                         sort_keys=True,
                         separators=(",", ":"),
@@ -3067,7 +3081,8 @@ class Database:
 
             await db.execute(
                 """UPDATE assignment_evidence
-                   SET state='consumed', consumed_at=?, transient_payload_json=NULL
+                   SET state='consumed', consumed_at=?,
+                       request_json=NULL, transient_payload_json=NULL
                    WHERE assignment_id=? AND state='pending'""",
                 (now, assignment_id),
             )
@@ -3591,7 +3606,8 @@ class Database:
                 evidence_params.append(round_id)
             await db.execute(
                 f"""UPDATE assignment_evidence
-                    SET state='discarded', consumed_at=?, transient_payload_json=NULL
+                    SET state='discarded', consumed_at=?,
+                        request_json=NULL, transient_payload_json=NULL
                     WHERE state='pending'{evidence_clause}""",
                 evidence_params,
             )
