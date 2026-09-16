@@ -226,6 +226,7 @@ async def test_transaction_evidence_resumes_same_assignment_with_normalized_payl
     assert assignments[0]["state"] == "completed"
     assert len(evidence_rows) == 1
     assert evidence_rows[0]["state"] == "consumed"
+    assert evidence_rows[0]["request_json"] is None
     assert evidence_rows[0]["transient_payload_json"] is None
 
     evidence_events = [
@@ -249,6 +250,7 @@ async def test_transaction_evidence_resumes_same_assignment_with_normalized_payl
         evidence_rows[0]["source_batch_id"],
         assignments[0]["id"],
         evidence["request"],
+        durable_requests=evidence["durable_request"],
         strategy=evidence["strategy"],
         durable_evidence=evidence["durable_evidence"],
         transient_payload={},
@@ -342,6 +344,7 @@ async def test_transaction_evidence_at_turn_limit_stops_without_resuming_and_rep
         evidence_row = evidence_rows[0]
     assert assignment["state"] == "cancelled"
     assert evidence_row["state"] == "discarded"
+    assert evidence_row["request_json"] is None
     assert evidence_row["transient_payload_json"] is None
 
     evidence = await runtime.db.get_assignment_evidence_by_batch(
@@ -353,6 +356,7 @@ async def test_transaction_evidence_at_turn_limit_stops_without_resuming_and_rep
         evidence_row["source_batch_id"],
         assignment["id"],
         evidence["request"],
+        durable_requests=evidence["durable_request"],
         strategy=evidence["strategy"],
         durable_evidence=evidence["durable_evidence"],
         transient_payload={},
