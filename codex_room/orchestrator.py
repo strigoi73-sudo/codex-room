@@ -1707,8 +1707,9 @@ class RoomRuntime:
                 round_id=round_id,
             )
             self._publish_event(event)
-        await self.ensure_workers(room_id)
-        self.wake(room_id, completed["agent_key"])
+        if completed.get("wake_agent"):
+            await self.ensure_workers(room_id)
+            self.wake(room_id, completed["agent_key"])
 
     async def _assignment_prompt(
         self, batch: dict[str, Any], agent: dict[str, Any]
