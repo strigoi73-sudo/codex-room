@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 **Stage C.1 is COMPLETE / IMPLEMENTED / VERIFIED**. Under D-032, opt-in version-2 Rounds may now use assignment-scoped provider context: each logical Assignment owns one durable restart-resumable provider thread, while persistent A/B/C identity and the transaction ledger remain application-level state. Existing persistent-agent context remains the default. E-102 records exact implementation and hosted-verification evidence.
+- **What just changed?** I-015 **Stage C.2 / C-N1 passed**. In the warmed B3 Room, the assignment-scoped arm used **20,810 input tokens** versus **27,389** for the persistent-thread arm, a **24.0% reduction**, while both used one C execution, no tools/peers/evidence, and correctly solved the 65-minute task. E-103 records the paired naturalistic evidence.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage C.2 / C-N1 is preregistered and ready for paid execution**: run the warmed B3 Room under `assignment_thread` first, then the identical C-only prompt under `persistent_agent_thread`, and compare correctness plus exact input/cached-token and provider-thread provenance before deciding whether any cross-Assignment memory layer is warranted.
+- **What is next?** **I-015 Stage C.2 / C-N2 is preregistered and ready for paid execution**: establish one arbitrary continuity token on C's permanent provider thread, test recall from a fresh assignment-scoped thread, then test the same recall from the untouched permanent thread. This determines whether assignment-scoped context now needs one targeted cross-Assignment continuity mechanism.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -19,7 +19,7 @@
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-B IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED / STAGE C.1 IMPLEMENTED / VERIFIED  
 **Decision:** D-030, D-031, D-032  
-**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102  
+**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103  
 **Scope:** [CORE], with later [CORE + ROOM migration] only after the remaining naturalistic/viability gates justify activation.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
@@ -226,45 +226,59 @@ The deterministic acceptance gate is complete. Coverage verifies same-Assignment
 
 **Scope limit:** Stage C.1 does not implement broad cross-Assignment memory retrieval, provider-thread archival/retention, or default activation. D-009 remains the governing direction for later cross-Assignment continuity: index broadly, retrieve narrowly.
 
-##### Stage C.2 — Paired naturalistic context-economics validation
-**Work state:** IN PROGRESS — C-N1 preregistered; paid execution next
-**Protocol:** C-N1 — warmed persistent-history paired context comparison
+##### Stage C.2 — Naturalistic context economics and bounded continuity
+**Work state:** IN PROGRESS — C-N1 COMPLETE / PASS; C-N2 preregistered; paid execution next
+**Evidence:** E-103
 
-Before adding any memory/index/summarization mechanism, run one bounded paid comparison designed to expose inherited provider-history cost rather than hide it in fresh threads.
+###### C-N1 — Warmed persistent-history paired context comparison
+**Work state:** COMPLETE — PASS
 
-**C-N1 substrate and order**
+The preregistered paired diagnostic reused the completed Stage-B3 Room `room_5cbd74add7564749862f37696fa4abd4`. The valid assignment-scoped arm ran first so it could not mutate C's permanent provider thread; the otherwise identical persistent-thread arm ran second. Two earlier preparation-only attempts were stopped/replaced before start and contained no Task, Assignment, turn, or execution, so they are excluded from scoring.
 
-- reuse the completed Stage-B3 Room `room_5cbd74add7564749862f37696fa4abd4`, whose persistent C provider thread already contains the three-execution B3 history;
-- use C only: `starting_agent="agent_c"`, `required_contributors=["agent_c"]`, work-model version 2, unchanged model/profile policy, and no overlays;
-- run the `assignment_thread` arm first. Its separate Assignment provider thread must not mutate C's permanent provider thread;
-- only after that arm settles, run the identical prompt under `persistent_agent_thread`, so the persistent arm begins from the same pre-existing warmed C provider history rather than from history created by the comparison itself;
-- no repository/source evidence, deterministic capability, peer delegation, or web work is requested or needed.
+Both valid arms used one C-only version-2 Assignment, no tools, no source evidence, no peers, no retry/restart anomaly, and both correctly returned the 65-minute optimum with a valid schedule and lower-bound proof.
 
-**Exact target prompt**
+Economics:
 
-> Solve this self-contained scheduling problem without using tools, source evidence, or peers. Two identical workers can each perform at most one non-preemptive task at a time. Task A takes 30 minutes. Task B takes 20 minutes. Task C takes 25 minutes and may start only after A finishes. Task D takes 15 minutes and may start only after B finishes. Task E takes 10 minutes and may start only after both C and D finish. What is the minimum possible completion time for all five tasks? Give one valid worker-by-worker schedule and a brief proof that no faster schedule is possible. Keep the answer concise.
+- `assignment_thread`: **20,810 input / 21,049 total / 0 cached input**;
+- `persistent_agent_thread`: **27,389 input / 27,573 total / 17,152 cached input**;
+- assignment-scoped input reduction: **6,579 tokens / 24.0%**;
+- assignment-scoped total-token reduction: **6,524 / 23.7%**;
+- persistent-arm cached input: **62.6%** of that execution's input.
 
-The expected optimum is **65 minutes**: the dependency chain A → C → E alone requires 65 minutes, and a valid two-worker schedule achieves that bound (for example, worker 1: A 0–30, C 30–55, E 55–65; worker 2: B 0–20, D 20–35).
+The assignment-scoped Assignment bound a separate provider thread `01a0aae2-6899-7e43-ace4-3b7d986166fb`; C's permanent provider thread remained `01a0aaa5-ecba-7313-ac8a-ce0afafa610e`. This exceeds the preregistered >=20% material-improvement threshold without additional cognition or quality loss. C-N1 therefore establishes that inherited provider history can impose material replay cost on a self-contained Assignment.
 
-**Primary evidence**
+###### C-N2 — Cross-Assignment continuity control
+**Work state:** PLANNED / PREREGISTERED
 
-For each arm record:
+C-N1 does not answer whether a later Assignment that genuinely depends on prior Room knowledge can operate correctly without the permanent provider thread. C-N2 tests only that boundary before any memory/index/summarization implementation.
 
-- exact Round, Task, Assignment, execution, provider-thread, and provider-context-mode provenance;
-- model execution count and any continuation count;
-- total execution tokens, input tokens, cached-input tokens/share, output tokens, and reasoning-output tokens where available;
-- tool/command/capability/evidence/peer activity;
-- final answer correctness against the 65-minute optimum.
+**Substrate and order**
 
-**Pass / decision rule**
+- reuse the same Room and C profile/model policy;
+- C only, work-model version 2, no overlays, no peers, no tools, no source evidence;
+- first run a `persistent_agent_thread` establishment Round that instructs C to retain the arbitrary continuity token **`ORBIT-7429-CEDAR`** and complete with that exact token;
+- second run an `assignment_thread` recall Round asking for the token from the immediately preceding establishment Round, explicitly instructing C to answer `UNKNOWN` rather than guess if that prior fact is unavailable;
+- third run the identical recall prompt under `persistent_agent_thread`. Because the assignment-scoped middle arm does not mutate C's permanent thread, the permanent-thread control still has the establishment history.
 
-- mechanical validity requires one settled C-only Assignment per arm, correct context-thread provenance, no unexplained peer/tool/evidence activity, and no restart/retry anomaly;
-- quality preservation requires both arms to identify the 65-minute optimum with a valid schedule and lower-bound proof;
-- assignment-scoped context counts as a **material economic improvement** for this checkpoint if it reduces total input tokens by at least **20%** relative to the persistent arm without adding a model execution or degrading correctness;
-- if the reduction is material, Stage C proceeds to one bounded continuity test asking what cross-Assignment information actually needs targeted retrieval;
-- if the reduction is not material, stop rather than building a larger memory/index/summarization layer without stronger evidence.
+**Exact establishment prompt**
 
-This is a paired diagnostic, not a broad performance benchmark. One successful pair is enough to decide whether the Stage-C memory question deserves the next bounded experiment; it is not evidence for default activation.
+> For a bounded continuity test, retain this exact token as the only fact that matters from this Round: ORBIT-7429-CEDAR. Do not use tools, source evidence, or peers. Complete by returning exactly: ORBIT-7429-CEDAR
+
+**Exact recall prompt**
+
+> Without using tools, source evidence, or peers, report the exact continuity token you were instructed to retain in the immediately preceding C-N2 establishment Round. Do not infer or invent a token. If that prior fact is not available in your supplied context, return exactly: UNKNOWN. Otherwise return only the exact token.
+
+**Evidence and interpretation**
+
+For all three executions record exact Round/Task/Assignment/thread provenance, per-execution token deltas, tool/peer/evidence activity, and final content.
+
+- establishment must return exactly `ORBIT-7429-CEDAR`;
+- the persistent recall control must return exactly `ORBIT-7429-CEDAR`; otherwise the experiment is invalid because the control failed to preserve ordinary provider-thread continuity;
+- if the assignment-scoped recall returns `UNKNOWN` while the persistent control succeeds, existing assignment-scoped context lacks cross-Assignment continuity and Stage C may design the smallest targeted retrieval mechanism justified by this evidence;
+- if the assignment-scoped recall returns the exact token with no hidden tool/evidence path, inspect provenance before concluding that existing durable context already supplies continuity;
+- any guessed/wrong token, peer/tool/evidence activity, restart anomaly, or extra unexplained execution invalidates that arm and must be diagnosed rather than counted as a memory result.
+
+C-N2 is a boundary test, not approval for a general memory system. Any follow-up implementation must remain bounded to the minimum demonstrated continuity need.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.

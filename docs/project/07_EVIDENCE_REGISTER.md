@@ -3644,3 +3644,68 @@ Canonical-main GitHub Actions run `35113148852` then independently completed suc
 
 **Assessment:** Stage C.1 is **COMPLETE / IMPLEMENTED / VERIFIED** for the opt-in assignment-scoped provider-context mechanism. This evidence establishes deterministic correctness and restart/provenance behavior; it does **not** establish naturalistic token savings, cross-Assignment memory adequacy, provider-thread retention policy, or default activation. Stage C.2 should therefore measure paired context economics before any broader memory architecture is added.
 
+### E-103 — I-015 Stage C.2 C-N1 warmed-history paired context comparison passed
+**Date:** 2026-09-16  
+**Kind:** [ROOM] paid naturalistic paired diagnostic  
+**Decision:** D-032
+
+C-N1 tested whether assignment-scoped provider context materially reduces inherited replay cost on a self-contained Assignment without degrading quality.
+
+**Substrate**
+
+The test reused Stage-B3 Room `room_5cbd74add7564749862f37696fa4abd4`, whose permanent C provider thread `01a0aaa5-ecba-7313-ac8a-ce0afafa610e` already contained the three-execution B3 history. The assignment-scoped arm ran first so its separate context could not mutate the permanent C thread; the identical persistent-thread arm ran second.
+
+Two earlier operator-script attempts created preparation-only Rounds:
+
+- `round_c356baaf9f1a40cc9a2e8509360e1740` — assignment mode;
+- `round_b792142e7887427d90a8733a67b4951b` — persistent mode.
+
+Both were stopped as `replaced_by_new_round` before start, with zero Tasks, Assignments, turns, or executions. They are excluded from scoring and did not consume model cognition.
+
+**Valid assignment-scoped arm**
+
+- Round: `round_a6899dc877a04d969c9c3f278424d639`
+- Task: `task_3de4bf5015b64bb89057c3c6aea625e8`
+- Assignment: `assignment_19045df0c45a41f88b753f20c1a6cff8`
+- context mode: `assignment_thread`
+- Assignment provider thread: `01a0aae2-6899-7e43-ace4-3b7d986166fb`
+- executions: **1**
+- input tokens: **20,810**
+- cached input: **0**
+- output tokens: **239**
+- reasoning output tokens: **94**
+- total tokens: **21,049**
+- tools / capabilities / peers / evidence / file changes / compactions: **0**
+- final result: correct **65-minute** optimum, valid worker schedule, valid lower-bound proof.
+
+**Valid persistent-thread arm**
+
+- Round: `round_0096e69b4a1443d1861747aaa4ec78f9`
+- Task: `task_ef91b6c0460b4821a92e6be7aebaca9e`
+- Assignment: `assignment_2149b43f622b439cb9f838664c238c1e`
+- context mode: `persistent_agent_thread`
+- provider context: C's permanent thread `01a0aaa5-ecba-7313-ac8a-ce0afafa610e`
+- executions: **1**
+- per-execution input delta: **27,389**
+- per-execution cached-input delta: **17,152** (**62.6%** of input)
+- output delta: **184**
+- reasoning-output delta: **59**
+- total-token delta: **27,573**
+- tools / capabilities / peers / evidence / file changes / compactions: **0**
+- final result: correct **65-minute** optimum, valid worker schedule, valid lower-bound proof.
+
+The persistent event's top-level `usage` values were cumulative provider-thread usage and are not the paired execution denominator. C-N1 therefore compares the per-execution `usage_delta` values.
+
+**Paired result**
+
+Relative to persistent context, assignment-scoped context reduced:
+
+- input by **6,579 tokens / 24.0%**;
+- total execution tokens by **6,524 / 23.7%**.
+
+Both arms required exactly one model execution and preserved answer quality. The assignment arm did not inherit C's permanent provider history and had zero cached input; the persistent arm replayed 17,152 cached tokens.
+
+**Assessment:** **PASS.** C-N1 exceeds the preregistered >=20% input-reduction threshold without extra cognition or quality degradation. It provides naturalistic evidence that an endlessly growing provider thread is not economically neutral and that Assignment-bounded provider context can materially reduce replay on self-contained work.
+
+This result does not establish cross-Assignment memory adequacy. Stage C should proceed only to the preregistered C-N2 boundary test: establish one arbitrary prior fact, compare recall from a fresh assignment-scoped thread against the untouched persistent-thread control, and use that result to decide whether any targeted cross-Assignment retrieval mechanism is warranted.
+
