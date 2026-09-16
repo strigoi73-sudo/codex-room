@@ -2096,10 +2096,7 @@ class RoomRuntime:
             existing_evidence = await self.db.get_assignment_evidence_by_batch(
                 batch["batch_id"]
             )
-            if (
-                existing_evidence is not None
-                and execution.get("decision_recorded_at") is not None
-            ):
+            if existing_evidence is not None:
                 evidence_execution = {
                     "ok": bool(
                         (existing_evidence.get("payload") or {}).get("ok", True)
@@ -2225,6 +2222,26 @@ class RoomRuntime:
 
             if decision.action == TransactionAction.EVIDENCE:
                 assert evidence_execution is not None
+                prepared_evidence = await self.db.prepare_transaction_evidence(
+                    room_id,
+                    batch["batch_id"],
+                    batch["assignment_id"],
+                    evidence_requests,
+                    durable_requests=evidence_execution["durable_requests"],
+                    strategy=evidence_execution["strategy"],
+                    durable_evidence=evidence_execution["durable"],
+                    transient_payload=evidence_execution["payload"],
+                )
+                evidence_execution = {
+                    "ok": bool(
+                        (prepared_evidence.get("payload") or {}).get("ok", True)
+                    ),
+                    "strategy": prepared_evidence["strategy"],
+                    "durable_requests": prepared_evidence["durable_request"],
+                    "durable": prepared_evidence["durable_evidence"],
+                    "payload": prepared_evidence.get("payload")
+                    or {"ok": True, "items": []},
+                }
                 evidence_event = await self.db.create_event(
                     room_id,
                     "deterministic_evidence",
@@ -2258,11 +2275,6 @@ class RoomRuntime:
                     batch["round_id"],
                     batch["batch_id"],
                     batch["assignment_id"],
-                    evidence_requests,
-                    durable_requests=evidence_execution["durable_requests"],
-                    strategy=evidence_execution["strategy"],
-                    durable_evidence=evidence_execution["durable"],
-                    transient_payload=evidence_execution["payload"],
                     provenance_event_id=evidence_event["id"],
                 )
                 await self.db.set_agent_status(agent["id"], AgentStatus.IDLE)
