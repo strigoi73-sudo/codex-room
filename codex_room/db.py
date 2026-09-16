@@ -1683,7 +1683,7 @@ class Database:
     async def get_rounds(self, room_id: str) -> list[dict[str, Any]]:
         async with self.connect() as db:
             rows = await db.execute_fetchall(
-                "SELECT * FROM rounds WHERE room_id=? ORDER BY created_at, id", (room_id,)
+                "SELECT * FROM rounds WHERE room_id=? ORDER BY created_at, rowid", (room_id,)
             )
         return [self._decode_round(row) for row in rows]
 
