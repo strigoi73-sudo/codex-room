@@ -275,6 +275,7 @@ class CodexAgentAdapter:
         reasoning_effort: str = ROOM_REASONING_EFFORT,
         transactional: bool = False,
     ) -> AgentRunResult:
+        _assert_room_model_allowed(model)
         thread = await self._get_thread(agent, cwd)
         return await self._run_on_thread(
             agent,
@@ -300,6 +301,7 @@ class CodexAgentAdapter:
         reasoning_effort: str = ROOM_REASONING_EFFORT,
         transactional: bool = False,
     ) -> AgentRunResult:
+        _assert_room_model_allowed(model)
         thread = await self._get_thread_by_id(agent, cwd, thread_id)
         return await self._run_on_thread(
             agent,
