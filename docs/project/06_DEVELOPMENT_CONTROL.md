@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The first Stage-B bounded-evidence slice is IMPLEMENTED / VERIFIED. `inspect_source` v3 now supports one bounded declarative `bundle` of already-known heterogeneous find/search/read requests, with a direct CLI, durable per-item provenance, aggregate output bounds, and explicit rejection of adaptive/nested plans. PR #88 merged as `6158461bfee94eba375e99baec110e707c30499d`; hosted run `35041711940` passed all three supported jobs. See E-097.
+- **What just changed?** B-N1 completed, but it is **inconclusive for bundle adoption** because the preregistered prompt accidentally specified three homogeneous known-file reads. C correctly used `read_many`, consistent with Stage-B guidance, rather than `bundle`. The Room still exposed a serious efficiency signal: one settled C-only turn used 7 tool calls (5 command executions, 2 source-capability invocations), one failed command, and 184,143 execution tokens with 82.4% cached-input share. See E-098.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Run **B-N1**, the first bounded naturalistic validation of Stage B. It should test whether one agent recognizes three independently known source checks as a single declarative evidence bundle, completes them with one source-inspection invocation, and answers from the returned evidence without unnecessary peer cognition or retrieval continuations. Stage C remains separate. Default work-model-v2 activation remains unapproved. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** Do **not** spend another paid Stage-B Room yet. First inspect B-N1's local Codex rollout timeline to identify the exact five command executions and the failed command behind the 7-call / 184,143-token path. Then preregister B-N2 with a genuinely heterogeneous predeclared evidence plan that requires `bundle` rather than a homogeneous `read_many` batch. Stage C remains separate; the high cached replay is relevant evidence but is not yet a Stage-C decision. Default work-model-v2 activation remains unapproved. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -19,7 +19,7 @@
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGE A IMPLEMENTED / VERIFIED  
 **Decision:** D-030  
-**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097  
+**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098  
 **Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
@@ -106,7 +106,7 @@ Default activation remains unapproved. Stage B is now the next I-015 work item; 
 PR #88 adds `inspect_source` v3 `bundle`, which composes existing bounded `find`, `search`, `search_many`, `read`, and `read_many` operations into one declarative execution when all requested evidence and bounds are known in advance. It rejects nested/adaptive plans and caps aggregate transient output. The direct `codex-room-cap source bundle` CLI accepts `--plan-json` or `--plan-file`. Agent guidance now prefers this path for heterogeneous predeclared retrieval while leaving genuinely adaptive investigation unchanged. Hosted verification passed across the full matrix. See E-097.
 
 #### B-N1 — First Stage-B naturalistic validation
-**Work state:** PLANNED / READY TO RUN  
+**Work state:** COMPLETE — INCONCLUSIVE FOR BUNDLE ADOPTION / OBSERVED EFFICIENCY ISSUE  
 **Purpose:** Verify that an ordinary v2 agent actually uses the new deterministic bundle when the evidence plan is known in advance, without forcing the answer through peers or measuring Stage C context behavior.
 
 **Room configuration**
@@ -150,6 +150,27 @@ PR #88 adds `inspect_source` v3 `bundle`, which composes existing bounded `find`
 - failure of the bundle itself, unnecessary separate predictable source calls, or unexplained extra model turns is Stage-B evidence to diagnose before a second paid validation.
 
 Stage B is not complete from deterministic tests alone. B-N1 must be assessed before expanding the Stage-B mechanism or beginning Stage C.
+
+**Observed result**
+
+B-N1 cannot validly answer its intended bundle-adoption question because the preregistered prompt named three exact files and asked only for facts obtainable by direct reads. That is a homogeneous read batch, and current Stage-B guidance explicitly says to use `search-many` / `read-many` directly when one homogeneous batch is sufficient. C therefore did **not** violate the implemented policy by using `read_many` instead of `bundle`.
+
+The Room nevertheless produced useful negative efficiency evidence:
+
+- one v2 task, one C assignment, no joins, and one counted Room turn settled cleanly;
+- no A/B peer cognition, file changes, context compaction, or sub-agent activity;
+- final answer correctly reported all three requested facts and paths;
+- telemetry recorded **7 tool calls**: 5 command executions and 2 deterministic `inspect_source` invocations;
+- one command execution failed;
+- the two source-capability invocations were `sources` and then one successful `read_many` over all three requested files;
+- the `read_many` returned 14,867 bytes with no truncation;
+- execution use was **184,143 total tokens**, including 182,922 input tokens and 150,784 cached-input tokens, an **82.4% cached-input share**.
+
+This is not evidence that `bundle` failed; `bundle` was never exercised. It is evidence that even a simple known-file source task can incur unnecessary command/discovery activity and very high replay cost inside one SDK execution.
+
+**Immediate next step:** inspect the local raw rollout timeline for the B-N1 C thread to identify the exact five shell commands and failed command before changing runtime guidance or spending another paid validation. Do not harden prompts or redesign Stage B from aggregate telemetry alone. After that diagnosis, preregister **B-N2** with a genuinely heterogeneous plan (for example a mix of find/search/read operations whose need and bounds are all fixed in advance) so `bundle` is actually the appropriate target.
+
+See E-098.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.

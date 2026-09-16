@@ -3407,3 +3407,58 @@ The deterministic tests cover heterogeneous bundled requests, cross-source evide
 
 **Status:** IMPLEMENTED / VERIFIED for the first Stage-B source-evidence-bundle slice. Naturalistic adoption/economics remain unverified; B-N1 is preregistered before another paid run. Stage C remains unimplemented.
 
+### E-098 — B-N1 is inconclusive for bundle adoption and exposes retrieval-overhead signal
+**Date:** 2026-09-15  
+**Kind:** [ROOM naturalistic validation / test-design correction]  
+**Room:** `room_a83ecc1e0287498d8665eedfbc93c620` (“B-N1 - Stage B Evidence Bundle Validation”)
+
+B-N1 ran under `work_model_version=2` with C as the only required worker and a four-turn ceiling. The task asked C to establish three source facts from `codex_room/models.py`, `codex_room/__main__.py`, and `Start-Codex-Room.cmd`.
+
+**Mechanical and quality result**
+
+- one task settled with `close_reason=transaction_settled`;
+- exactly one assignment existed, owned by C; no joins were created;
+- the Room counted one turn;
+- no A/B peer invocation, file change, context compaction, or sub-agent activity occurred;
+- the final answer correctly reported:
+  - `work_model_version` defaults to `1`;
+  - server defaults are `127.0.0.1:8765`;
+  - the launcher changes to its own directory and runs `".venv\\Scripts\\python.exe" -m codex_room %*`;
+- the final answer cited the requested source paths.
+
+**Why the preregistered bundle criterion is invalid**
+
+The B-N1 preregistration expected one `source bundle` invocation and described the task as heterogeneous. The actual prompt, however, supplied three exact file paths and requested facts obtainable by direct reads. All required retrieval was therefore known homogeneous read work.
+
+Current Stage-B runtime guidance explicitly states that heterogeneous known find/search/read plans should use `bundle`, while `search-many` / `read-many` should be used directly when one homogeneous batch is sufficient. C's eventual use of one `read_many` over the three files was therefore policy-consistent. B-N1 did **not** exercise `bundle`, so it cannot pass or fail naturalistic bundle adoption.
+
+**Efficiency observation**
+
+The single C execution reported:
+
+- **7 tool calls** total;
+- 5 command executions;
+- 2 deterministic `inspect_source` capability invocations;
+- 1 failed command execution;
+- 0 capability failures;
+- first capability result: `operation=sources`;
+- second capability result: `operation=read_many`, with all three requested files returned in one batch;
+- `read_many` returned **14,867 bytes**, 3/3 reads, with no truncation;
+- **184,143 total execution tokens**;
+- 182,922 input tokens;
+- 150,784 cached-input tokens;
+- 1,221 output tokens;
+- 448 reasoning-output tokens.
+
+Cached input was **82.4% of input tokens**. This is far above the earlier provisional 25% whole-task cached-share target, although B-N1 is a different single-agent/tool-heavy shape and should not be mechanically scored as the Stage-A task. The result is nevertheless a strong signal that intra-execution command/tool continuations can repeatedly replay a large persistent context.
+
+The Room export records command success/failure counts but not the exact shell command text. Therefore the aggregate evidence does not establish whether the extra command activity was help discovery, CLI syntax recovery, path probing, or another cause.
+
+**Action**
+
+Before another paid Stage-B Room, inspect the local B-N1 Codex rollout timeline to recover the exact shell-command sequence. Use that evidence to decide whether a small deterministic/CLI discoverability fix is warranted. Do not infer a runtime fix from aggregate counts alone.
+
+After that diagnosis, replace the invalid adoption test with B-N2 using a genuinely heterogeneous, fully predeclared find/search/read evidence plan so `bundle` is the mechanically appropriate operation.
+
+**Status:** B-N1 mechanically successful and answer-correct; **INCONCLUSIVE** for `bundle` adoption due to test-design error; **OBSERVED ISSUE** for command/replay efficiency. Stage B remains IN PROGRESS. Stage C remains separate.
+
