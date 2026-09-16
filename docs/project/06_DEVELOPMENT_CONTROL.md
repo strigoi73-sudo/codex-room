@@ -7,19 +7,19 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 **Stage C.3 deterministic retrieval is IMPLEMENTED / VERIFIED**. D-033 now gives version-2 Assignments bounded `HISTORY` retrieval over prior completed same-Room Assignment results without restoring permanent-thread inheritance. PR #99 and canonical-main CI both passed **413 tests** on Ubuntu 3.11/3.12 and Windows 3.12, with Windows browser stability **3/3**. E-105 records the exact implementation evidence.
+- **What just changed?** I-015 **Stage C is COMPLETE**. C-N3 passed the preregistered naturalistic acceptance: one C-only assignment-scoped Assignment used `HISTORY → COMPLETE`, CORE selected the exact C-N2 establishment result by durable event ID, the same Assignment context thread continued, and C returned `ORBIT-7429-CEDAR`. E-106 records the exact run and economics.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage C.3 / C-N3 is preregistered and ready for paid execution**: in the existing warmed C-N2 Room, run one C-only assignment-scoped recall Round that must recover the prior continuity token through explicit bounded Room-history retrieval, then verify exact selected-event provenance and same-Assignment thread reuse. If C-N3 passes, Stage C can close without a broader memory/index layer.
+- **What is next?** **I-015 Stage D — viability gate.** Validate the provisional gate before executing it, then preregister a bounded set of ordinary useful tasks covering coordination, economics, quality, and robustness. Version 1 remains the default until that later gate justifies activation.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### I-015 — Task-transaction stabilization redesign
 **Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-B IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED / STAGE C.1 IMPLEMENTED / VERIFIED  
-**Decision:** D-030, D-031, D-032  
-**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103, E-104  
+**Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-C IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED  
+**Decision:** D-030, D-031, D-032, D-033  
+**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103, E-104, E-105, E-106  
 **Scope:** [CORE], with later [CORE + ROOM migration] only after the remaining naturalistic/viability gates justify activation.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
@@ -210,9 +210,9 @@ The task settled correctly after three C executions at **72,271 total execution 
 The run therefore satisfies the main Stage-B criterion: planned source retrieval no longer requires the model to learn or operate the CLI/batching transport. The extra model continuation was evidence-dependent cognition, not interface-learning overhead. Stage B is closed.
 
 #### Stage C — Persistent-context / memory economics
-**Work state:** IN PROGRESS — Stage C.3 implementation VERIFIED; C-N3 naturalistic acceptance next  
+**Work state:** COMPLETE — assignment-scoped context + bounded continuity retrieval validated  
 **Decision:** D-032, D-033  
-**Evidence:** E-102, E-103, E-104, E-105
+**Evidence:** E-102, E-103, E-104, E-105, E-106
 
 B-N1's 82.4% cached-input share and B3's **33.9% aggregate cached-input share** remain relevant motivation. Stage-B consolidation does not itself decide the Stage-C memory/context architecture.
 
@@ -286,7 +286,7 @@ The assignment arm's 17,152 cached input does not imply inherited Room history: 
 C-N2 is a boundary test, not approval for a general memory system. It establishes the specific need for **targeted cross-Assignment retrieval** if assignment-scoped context is to replace indefinite provider-thread inheritance on continuity-dependent work.
 
 ##### Stage C.3 — Targeted cross-Assignment retrieval
-**Work state:** IN PROGRESS — deterministic implementation VERIFIED; C-N3 preregistered
+**Work state:** COMPLETE — IMPLEMENTED / VERIFIED / NATURALISTIC ACCEPTANCE PASSED
 
 Implement and verify the smallest explicit retrieval path over durable Room history that can satisfy a later Assignment's specific continuity dependency without replaying the entire permanent provider thread. D-033 settles the first interface: transaction action `HISTORY` with bounded `RECENT` and lexical `SEARCH` requests over prior completed Assignment results in the same Room.
 
@@ -316,7 +316,7 @@ PR #99 implemented D-033 without adding a new memory store:
 E-105 records exact PR/main trees and hosted verification.
 
 ###### C-N3 — Retrieval-enabled continuity acceptance
-**Work state:** PLANNED / PREREGISTERED
+**Work state:** COMPLETE — PASS
 
 Use the existing C-N2 Room `room_5cbd74add7564749862f37696fa4abd4` and its already-established nonce. No new establishment execution is needed.
 
@@ -346,7 +346,21 @@ C-N3 passes only if:
 
 Two model executions are expected: `HISTORY` then `COMPLETE`. A different count is not silently excluded; it must be explained before acceptance.
 
-If C-N3 passes, Stage C has demonstrated both material context-economy benefit and explicit continuity recovery with bounded provider isolation. Close Stage C and move to Stage D rather than expanding into embeddings, summarization, or a broad index absent new evidence.
+**Observed result — PASS**
+
+- Round: `round_05c0fe8a0e3e4cdbae9c6f4909a86959`
+- one Task: `task_f049e9ecbc17413fbd8da4f6dc4da173`;
+- one logical C Assignment: `assignment_0ccf880bbb54410c83b4c647509d419d`;
+- assignment-scoped provider context: `01a0ab11-0dfc-7ef2-9f54-45b73197c808`, distinct from C's permanent provider thread;
+- first execution: `HISTORY`, lexical `SEARCH` for `C-N2 Establish Continuity Token`;
+- CORE selected exactly `event_45aff3ef6761486c9783685905c45c24`, the C-N2 establishment result containing `ORBIT-7429-CEDAR`;
+- the Assignment's durable `context_event_ids` contains that exact event ID;
+- second execution: `COMPLETE` with exactly `ORBIT-7429-CEDAR`;
+- exactly two model executions, zero model tool calls, zero capability invocations, zero peers/sub-agents, zero file changes, zero compactions, and no retry/restart anomaly.
+
+Economics for the two C-N3 executions were **43,398 input / 20,224 cached input / 43,547 total tokens**. The first HISTORY-declaration execution used 21,198 total tokens; the continuation used 22,349. This is intentionally not treated as evidence that explicit retrieval is cheaper on every continuity-dependent task: C-N2's persistent-thread recall control required only one 29,211-token execution. Stage C establishes the tradeoff boundary—bounded context saves material replay on self-contained work, while explicit continuity adds retrieval cognition when history is genuinely needed. Stage D must evaluate the net viability across ordinary tasks.
+
+C-N3 therefore satisfies the preregistered acceptance without expanding into embeddings, summarization, or a broad index. **Stage C is closed.**
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
