@@ -2840,10 +2840,9 @@ class Database:
         item["payload"] = json.loads(payload) if payload else None
         return item
 
-    async def settle_transaction_evidence(
+    async def prepare_transaction_evidence(
         self,
         room_id: str,
-        round_id: str,
         batch_id: str,
         assignment_id: str,
         requests: list[dict[str, Any]],
@@ -2852,9 +2851,116 @@ class Database:
         strategy: str,
         durable_evidence: dict[str, Any],
         transient_payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Durably stage exact bounded evidence before any provenance/queue side effects."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            execution = await self._fetchone(
+                db, "SELECT * FROM agent_executions WHERE batch_id=?", (batch_id,)
+            )
+            if (
+                execution is None
+                or execution["assignment_id"] != assignment_id
+                or execution["state"] not in {"result_ready", "settled"}
+            ):
+                await db.rollback()
+                raise RuntimeError("Transaction execution is not ready for evidence preparation")
+            assignment = await self._fetchone(
+                db,
+                """SELECT x.*, a.room_id
+                   FROM assignments x JOIN agents a ON a.id=x.agent_id
+                   WHERE x.id=?""",
+                (assignment_id,),
+            )
+            if assignment is None or assignment["room_id"] != room_id:
+                await db.rollback()
+                raise RuntimeError("Transaction assignment is missing or belongs elsewhere")
+
+            existing = await self._fetchone(
+                db,
+                "SELECT * FROM assignment_evidence WHERE source_batch_id=?",
+                (batch_id,),
+            )
+            if existing is None:
+                if execution["decision_recorded_at"] is not None:
+                    await db.rollback()
+                    raise RuntimeError(
+                        "Recorded evidence decision is missing its prepared result"
+                    )
+                if assignment["state"] != "running":
+                    await db.rollback()
+                    raise RuntimeError(
+                        "Only a running assignment can prepare transaction evidence"
+                    )
+                evidence_id = new_id("evidence")
+                await db.execute(
+                    """INSERT INTO assignment_evidence
+                       (id, assignment_id, source_batch_id, request_json,
+                        durable_request_json, durable_evidence_json,
+                        transient_payload_json, strategy, state,
+                        provenance_event_id, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'prepared', NULL, ?)""",
+                    (
+                        evidence_id,
+                        assignment_id,
+                        batch_id,
+                        json.dumps(
+                            requests,
+                            ensure_ascii=True,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        ),
+                        json.dumps(
+                            durable_requests,
+                            ensure_ascii=True,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        ),
+                        json.dumps(
+                            durable_evidence,
+                            ensure_ascii=True,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        ),
+                        json.dumps(
+                            transient_payload,
+                            ensure_ascii=True,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        ),
+                        strategy,
+                        now,
+                    ),
+                )
+                existing = await self._fetchone(
+                    db,
+                    "SELECT * FROM assignment_evidence WHERE id=?",
+                    (evidence_id,),
+                )
+            await db.commit()
+
+        if existing is None:
+            raise RuntimeError("Prepared evidence could not be reloaded")
+        item = dict(existing)
+        raw_request = item.pop("request_json")
+        item["request"] = json.loads(raw_request) if raw_request else None
+        item["durable_request"] = json.loads(item.pop("durable_request_json"))
+        item["durable_evidence"] = json.loads(item.pop("durable_evidence_json"))
+        payload = item.pop("transient_payload_json")
+        item["payload"] = json.loads(payload) if payload else None
+        return item
+
+    async def settle_transaction_evidence(
+        self,
+        room_id: str,
+        round_id: str,
+        batch_id: str,
+        assignment_id: str,
+        *,
         provenance_event_id: str,
     ) -> dict[str, Any]:
-        """Atomically persist one read-only evidence result and requeue the same assignment."""
+        """Atomically promote prepared evidence and requeue the same assignment."""
         now = utc_now()
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
@@ -2881,9 +2987,12 @@ class Database:
 
             existing = await self._fetchone(
                 db,
-                "SELECT id FROM assignment_evidence WHERE source_batch_id=?",
+                "SELECT * FROM assignment_evidence WHERE source_batch_id=?",
                 (batch_id,),
             )
+            if existing is None:
+                await db.rollback()
+                raise RuntimeError("Transaction evidence was not prepared before settlement")
             if execution["decision_recorded_at"] is not None:
                 round_budget = await self._fetchone(
                     db,
@@ -2905,11 +3014,14 @@ class Database:
                     ),
                     "turn_limit_hit": turn_limit_hit,
                     "decision_applied": False,
-                    "evidence_id": existing["id"] if existing else None,
+                    "evidence_id": existing["id"],
                 }
             if assignment["state"] != "running":
                 await db.rollback()
                 raise RuntimeError("Only a running assignment can request evidence")
+            if existing["state"] != "prepared":
+                await db.rollback()
+                raise RuntimeError("Transaction evidence is not in prepared state")
 
             await db.execute(
                 "UPDATE rooms SET turn_count=turn_count+1, updated_at=? WHERE id=?",
@@ -2939,47 +3051,15 @@ class Database:
                    WHERE assignment_id=? AND state='pending'""",
                 (now, assignment_id),
             )
-            evidence_id = new_id("evidence")
-            await db.execute(
-                """INSERT INTO assignment_evidence
-                   (id, assignment_id, source_batch_id, request_json,
-                    durable_request_json, durable_evidence_json,
-                    transient_payload_json, strategy, state,
-                    provenance_event_id, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)""",
-                (
-                    evidence_id,
-                    assignment_id,
-                    batch_id,
-                    json.dumps(
-                        requests,
-                        ensure_ascii=True,
-                        sort_keys=True,
-                        separators=(",", ":"),
-                    ),
-                    json.dumps(
-                        durable_requests,
-                        ensure_ascii=True,
-                        sort_keys=True,
-                        separators=(",", ":"),
-                    ),
-                    json.dumps(
-                        durable_evidence,
-                        ensure_ascii=True,
-                        sort_keys=True,
-                        separators=(",", ":"),
-                    ),
-                    json.dumps(
-                        transient_payload,
-                        ensure_ascii=True,
-                        sort_keys=True,
-                        separators=(",", ":"),
-                    ),
-                    strategy,
-                    provenance_event_id,
-                    now,
-                ),
+            cursor = await db.execute(
+                """UPDATE assignment_evidence
+                   SET state='pending', provenance_event_id=?
+                   WHERE id=? AND state='prepared'""",
+                (provenance_event_id, existing["id"]),
             )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError("Evidence settlement lost its prepared result")
             cursor = await db.execute(
                 """UPDATE assignments
                    SET state='queued', updated_at=?, resolution_reason=NULL
@@ -3002,7 +3082,7 @@ class Database:
             "wake_agent_keys": [assignment["agent_key"]],
             "turn_limit_hit": turn_limit_hit,
             "decision_applied": True,
-            "evidence_id": evidence_id,
+            "evidence_id": existing["id"],
         }
 
     async def settle_transaction_decision(
@@ -3608,7 +3688,7 @@ class Database:
                 f"""UPDATE assignment_evidence
                     SET state='discarded', consumed_at=?,
                         request_json=NULL, transient_payload_json=NULL
-                    WHERE state='pending'{evidence_clause}""",
+                    WHERE state IN ('prepared','pending'){evidence_clause}""",
                 evidence_params,
             )
             await db.commit()
