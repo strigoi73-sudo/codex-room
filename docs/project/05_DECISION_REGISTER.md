@@ -170,7 +170,7 @@ Repeated walls replace the schedule; stale work is cancelled by lifecycle/stop r
 
 ### D-018 — Allocate cognition once; execute at the cheapest capable layer; hand off exact evidence through Git/GitHub
 **Date:** 2026-09-10  
-**Amended:** 2026-09-10  
+**Amended:** 2026-09-16  
 **Status:** ACTIVE
 
 For external Codex Room development and maintenance, allocate cognition and execution to the cheapest authorized layer that can safely perform the work and produce adequate evidence. Do not delegate work to another model merely because that model has traditionally occupied an “execution” role.
@@ -184,7 +184,7 @@ Default operating policy:
 - when Codex is used for already-understood work, give it phase-titled, explicit, scope-bounded prompts with verification requirements and stop conditions;
 - use Git diffs, blob/commit identities, test outputs, and other exact artifacts as preferred handoff evidence instead of asking models to narrate mechanically available facts;
 - use GitHub as the shared canonical history and review bridge between the Project and local development environment;
-- use GitHub Actions and other deterministic software for routine mechanical verification when model judgment is unnecessary.
+- use deterministic local verification commands for routine mechanical verification when model judgment is unnecessary; GitHub-hosted automation may be reintroduced only when a demonstrated need justifies its operational cost and reliability tradeoffs.
 
 The execution hierarchy is a cost and capability preference, not an authority shortcut. Correctness, safety, continuity, adequate verification, and meaningful independent review take precedence over minimizing model calls. Independent review should remain genuinely independent when independence is the purpose.
 
