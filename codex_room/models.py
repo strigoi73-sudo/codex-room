@@ -45,6 +45,7 @@ class TransactionAction(StrEnum):
     COMPLETE = "COMPLETE"
     DELEGATE = "DELEGATE"
     EVIDENCE = "EVIDENCE"
+    HISTORY = "HISTORY"
     PASS = "PASS"
 
 
@@ -113,11 +114,28 @@ class SourceEvidenceRequest(BaseModel):
         return self
 
 
+class HistoryRequest(BaseModel):
+    operation: Literal["RECENT", "SEARCH"]
+    query: str | None = Field(default=None, max_length=4096)
+    agent: Literal["agent_a", "agent_b", "agent_c"] | None = None
+    max_results: int = Field(default=5, ge=1, le=10)
+
+    @model_validator(mode="after")
+    def validate_history_request(self) -> "HistoryRequest":
+        if self.operation == "SEARCH":
+            if not self.query or "\n" in self.query or "\r" in self.query:
+                raise ValueError("SEARCH history retrieval requires one non-empty query line")
+        elif self.query is not None:
+            raise ValueError("query is valid only for SEARCH history retrieval")
+        return self
+
+
 class TransactionDecision(BaseModel):
     action: TransactionAction
     message: str = ""
     delegations: list[DelegationRequest] | None = None
     evidence_requests: list[SourceEvidenceRequest] | None = None
+    history_requests: list[HistoryRequest] | None = None
 
     @model_validator(mode="after")
     def validate_transaction_decision(self) -> "TransactionDecision":
@@ -139,6 +157,15 @@ class TransactionDecision(BaseModel):
                 raise ValueError("EVIDENCE accepts at most 16 source evidence requests")
         elif self.evidence_requests is not None:
             raise ValueError("evidence_requests is valid only for EVIDENCE")
+        if self.action == TransactionAction.HISTORY:
+            if not self.history_requests:
+                raise ValueError("HISTORY requires at least one Room-history request")
+            if len(self.history_requests) > 4:
+                raise ValueError("HISTORY accepts at most 4 Room-history requests")
+            if sum(item.max_results for item in self.history_requests) > 20:
+                raise ValueError("HISTORY accepts at most 20 requested results per action")
+        elif self.history_requests is not None:
+            raise ValueError("history_requests is valid only for HISTORY")
         return self
 
 
@@ -228,7 +255,7 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
     "properties": {
         "action": {
             "type": "string",
-            "enum": ["COMPLETE", "DELEGATE", "EVIDENCE", "PASS"],
+            "enum": ["COMPLETE", "DELEGATE", "EVIDENCE", "HISTORY", "PASS"],
         },
         "message": {"type": "string"},
         "delegations": {
@@ -383,8 +410,76 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                 {"type": "null"},
             ]
         },
+        "history_requests": {
+            "anyOf": [
+                {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 4,
+                    "items": {
+                        "anyOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {"type": "string", "enum": ["RECENT"]},
+                                    "query": {"type": "null"},
+                                    "agent": {
+                                        "anyOf": [
+                                            {
+                                                "type": "string",
+                                                "enum": ["agent_a", "agent_b", "agent_c"],
+                                            },
+                                            {"type": "null"},
+                                        ]
+                                    },
+                                    "max_results": {"type": "integer"},
+                                },
+                                "required": [
+                                    "operation",
+                                    "query",
+                                    "agent",
+                                    "max_results",
+                                ],
+                                "additionalProperties": False,
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {"type": "string", "enum": ["SEARCH"]},
+                                    "query": {"type": "string"},
+                                    "agent": {
+                                        "anyOf": [
+                                            {
+                                                "type": "string",
+                                                "enum": ["agent_a", "agent_b", "agent_c"],
+                                            },
+                                            {"type": "null"},
+                                        ]
+                                    },
+                                    "max_results": {"type": "integer"},
+                                },
+                                "required": [
+                                    "operation",
+                                    "query",
+                                    "agent",
+                                    "max_results",
+                                ],
+                                "additionalProperties": False,
+                            },
+                        ]
+                    },
+                },
+                {"type": "null"},
+            ]
+        },
     },
-    "required": ["action", "message", "delegations", "evidence_requests"],
+    "required": [
+        "action",
+        "message",
+        "delegations",
+        "evidence_requests",
+        "history_requests",
+    ],
     "additionalProperties": False,
 }
 

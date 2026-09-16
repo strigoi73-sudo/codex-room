@@ -1999,6 +1999,24 @@ class Database:
             row = await self._fetchone(db, "SELECT * FROM events WHERE id=?", (event_id,))
         return self._decode_row(row) if row else None
 
+    async def get_events_by_ids(
+        self, room_id: str, event_ids: list[str]
+    ) -> list[dict[str, Any]]:
+        """Return exact same-Room events in caller-supplied order."""
+        if not event_ids:
+            return []
+        placeholders = ",".join("?" for _ in event_ids)
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                f"SELECT * FROM events WHERE room_id=? AND id IN ({placeholders})",
+                (room_id, *event_ids),
+            )
+        by_id = {
+            item["id"]: item
+            for item in (self._decode_row(row) for row in rows)
+        }
+        return [by_id[event_id] for event_id in event_ids if event_id in by_id]
+
     async def get_events(
         self, room_id: str, limit: int | None = 2000
     ) -> list[dict[str, Any]]:
@@ -2965,6 +2983,79 @@ class Database:
             )
         return [dict(row) for row in rows]
 
+    async def _select_room_history_event_ids(
+        self,
+        db: aiosqlite.Connection,
+        room_id: str,
+        round_id: str,
+        requests: list[dict[str, Any]],
+        existing_event_ids: list[str],
+    ) -> tuple[list[str], list[str]]:
+        """Select bounded prior-Round terminal result events for one Assignment."""
+        current_round = await self._fetchone(
+            db,
+            "SELECT created_at FROM rounds WHERE id=? AND room_id=?",
+            (round_id, room_id),
+        )
+        if current_round is None:
+            raise RuntimeError("Current Round is missing during Room-history retrieval")
+
+        combined = list(dict.fromkeys(existing_event_ids))[:20]
+        seen = set(combined)
+        newly_selected: list[str] = []
+
+        for request in requests:
+            if len(combined) >= 20:
+                break
+            operation = request["operation"]
+            params: list[Any] = [room_id, current_round["created_at"]]
+            filters = [
+                "t.room_id=?",
+                "ro.created_at < ?",
+                "x.state='completed'",
+                "e.content IS NOT NULL",
+                "TRIM(e.content)<>''",
+            ]
+            agent_key = request.get("agent")
+            if agent_key is not None:
+                filters.append("a.agent_key=?")
+                params.append(agent_key)
+            if operation == "SEARCH":
+                query = request["query"]
+                filters.append(
+                    "(INSTR(LOWER(ro.prompt), LOWER(?))>0 "
+                    "OR INSTR(LOWER(COALESCE(ro.title,'')), LOWER(?))>0 "
+                    "OR INSTR(LOWER(e.content), LOWER(?))>0)"
+                )
+                params.extend([query, query, query])
+            elif operation != "RECENT":
+                raise ValueError("Unsupported Room-history retrieval operation")
+
+            remaining = 20 - len(combined)
+            limit = min(int(request.get("max_results", 5)), remaining)
+            params.append(limit)
+            rows = await db.execute_fetchall(
+                f"""SELECT e.id AS event_id
+                    FROM assignments x
+                    JOIN tasks t ON t.id=x.task_id
+                    JOIN agents a ON a.id=x.agent_id
+                    JOIN rounds ro ON ro.id=t.round_id
+                    JOIN events e ON e.id=x.result_event_id
+                    WHERE {' AND '.join(filters)}
+                    ORDER BY COALESCE(x.completed_at, x.updated_at) DESC, x.id DESC
+                    LIMIT ?""",
+                tuple(params),
+            )
+            for row in rows:
+                event_id = row["event_id"]
+                if event_id in seen:
+                    continue
+                seen.add(event_id)
+                combined.append(event_id)
+                newly_selected.append(event_id)
+
+        return combined, newly_selected
+
     async def settle_transaction_decision(
         self,
         room_id: str,
@@ -2975,6 +3066,7 @@ class Database:
         result_event_id: str,
         delegations: list[dict[str, Any]],
         evidence_requests: list[dict[str, Any]] | None = None,
+        history_requests: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Atomically settle one assignment decision and release any satisfied join."""
         now = utc_now()
@@ -2984,6 +3076,7 @@ class Database:
         task_settled = False
         missing_required_contributors: list[str] = []
         evidence_request_id: str | None = None
+        history_event_ids: list[str] = []
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             execution = await self._fetchone(
@@ -3015,6 +3108,7 @@ class Database:
                     "turn_limit_hit": False,
                     "decision_applied": False,
                     "evidence_request_id": None,
+                    "history_event_ids": [],
                 }
             if assignment["state"] != "running":
                 await db.rollback()
@@ -3129,6 +3223,38 @@ class Database:
                        WHERE id=? AND state='running'""",
                     (result_event_id, now, assignment_id),
                 )
+            elif action == "HISTORY":
+                if not history_requests:
+                    await db.rollback()
+                    raise ValueError("HISTORY requires Room-history requests")
+                existing_context_ids = json.loads(
+                    assignment["context_event_ids_json"] or "[]"
+                )
+                updated_context_ids, history_event_ids = (
+                    await self._select_room_history_event_ids(
+                        db,
+                        room_id,
+                        round_id,
+                        history_requests,
+                        existing_context_ids,
+                    )
+                )
+                cursor = await db.execute(
+                    """UPDATE assignments
+                       SET state='queued', result_event_id=?, context_event_ids_json=?,
+                           updated_at=?
+                       WHERE id=? AND state='running'""",
+                    (
+                        result_event_id,
+                        json.dumps(updated_context_ids, ensure_ascii=False),
+                        now,
+                        assignment_id,
+                    ),
+                )
+                if cursor.rowcount != 1:
+                    await db.rollback()
+                    raise RuntimeError("Room-history retrieval lost its running assignment")
+                wake_agent_keys.append(assignment["agent_key"])
             else:
                 state = "completed" if action == "COMPLETE" else "passed"
                 await db.execute(
@@ -3148,7 +3274,7 @@ class Database:
                 raise RuntimeError("Transaction decision settlement lost its compare-and-set")
 
             contribution_join_id = assignment["contribution_join_id"]
-            if action not in {"DELEGATE", "EVIDENCE"} and contribution_join_id:
+            if action not in {"DELEGATE", "EVIDENCE", "HISTORY"} and contribution_join_id:
                 open_member = await self._fetchone(
                     db,
                     """SELECT 1 FROM assignments
@@ -3228,7 +3354,7 @@ class Database:
                         )
                         released_join_id = contribution_join_id
 
-            if action not in {"DELEGATE", "EVIDENCE"}:
+            if action not in {"DELEGATE", "EVIDENCE", "HISTORY"}:
                 open_assignment = await self._fetchone(
                     db,
                     """SELECT 1 FROM assignments
@@ -3327,6 +3453,7 @@ class Database:
             "turn_limit_hit": turn_limit_hit,
             "decision_applied": True,
             "evidence_request_id": evidence_request_id,
+            "history_event_ids": history_event_ids,
         }
 
     async def fail_transaction_assignment(
