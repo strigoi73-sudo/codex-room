@@ -403,6 +403,9 @@ class CreateRoomRequest(BaseModel):
     starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] = "agent_c"
     auto_start: bool = True
     work_model_version: Literal[1, 2] = 1
+    provider_context_mode: Literal["persistent_agent_thread", "assignment_thread"] = (
+        "persistent_agent_thread"
+    )
     required_contributors: list[
         Literal["agent_a", "agent_b", "agent_c"]
     ] = Field(default_factory=list)
@@ -411,6 +414,13 @@ class CreateRoomRequest(BaseModel):
     def validate_required_contributors(self) -> "CreateRoomRequest":
         if len(self.required_contributors) != len(set(self.required_contributors)):
             raise ValueError("required_contributors cannot contain duplicates")
+        if (
+            self.provider_context_mode == "assignment_thread"
+            and self.work_model_version != 2
+        ):
+            raise ValueError(
+                "assignment_thread provider context requires work_model_version=2"
+            )
         return self
 
 
@@ -451,6 +461,9 @@ class PrepareRoundRequest(BaseModel):
     agent_a_overlay: str | None = Field(default=None, max_length=50_000)
     agent_b_overlay: str | None = Field(default=None, max_length=50_000)
     work_model_version: Literal[1, 2] = 1
+    provider_context_mode: Literal["persistent_agent_thread", "assignment_thread"] = (
+        "persistent_agent_thread"
+    )
     required_contributors: list[
         Literal["agent_a", "agent_b", "agent_c"]
     ] = Field(default_factory=list)
@@ -460,6 +473,13 @@ class PrepareRoundRequest(BaseModel):
         allowed = {"agent_a", "agent_b", "agent_c"}
         if len(self.required_contributors) != len(set(self.required_contributors)):
             raise ValueError("required_contributors cannot contain duplicates")
+        if (
+            self.provider_context_mode == "assignment_thread"
+            and self.work_model_version != 2
+        ):
+            raise ValueError(
+                "assignment_thread provider context requires work_model_version=2"
+            )
         for label, values in (
             ("participant_private", self.participant_private),
             ("participant_overlays", self.participant_overlays),
