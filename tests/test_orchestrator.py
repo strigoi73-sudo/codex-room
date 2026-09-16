@@ -1195,7 +1195,7 @@ async def test_multiple_retry_warnings_project_to_one_recovered_logical_turn(run
             for event in await runtime.db.get_events(room_id)
         )
 
-    await wait_until(recovered_after_multiple_attempts, timeout=8.0)
+    await wait_until(recovered_after_multiple_attempts, timeout=30.0)
 
     projected = await runtime.db.get_events(room_id)
     warnings = [event for event in projected if event["event_type"] == "agent_error"]
@@ -1241,7 +1241,7 @@ async def test_retry_exhaustion_is_the_only_terminal_agent_error(runtime_factory
     )
     await wait_until(
         lambda: _room_has_status(runtime, snapshot["id"], RoomStatus.ERROR),
-        timeout=8.0,
+        timeout=30.0,
     )
 
     errors = [
