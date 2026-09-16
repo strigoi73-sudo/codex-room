@@ -64,9 +64,9 @@ This boundary was repaired after a live smoke attempt using the desktop-app bina
 
 The working execution model remains approximately:
 
-**event → delivery → per-agent worker → coalesced readable/runnable batch → persistent SDK thread → MESSAGE/PASS/FINISH decision → routing/settlement**
+**event → delivery → per-agent worker → coalesced readable/runnable batch or transaction Assignment → selected provider context → model decision → routing/settlement**
 
-Persistent SDK threads remain a major context-cost driver; invocation frequency and persistent-context size are distinct operating-economics concerns.
+Provider context is now policy-selected. `persistent_agent_thread` remains the ordinary/default transport, preserving the established per-agent SDK thread. Opt-in work-model-v2 Rounds may instead use `assignment_thread`, where one logical Assignment owns one durable provider thread across its continuations and different Assignments do not inherit provider history merely because they share the same persistent A/B/C identity. Invocation frequency and active-provider-context size therefore remain distinct operating-economics concerns.
 
 ## 5. Deterministic Room capability substrate
 
@@ -393,7 +393,7 @@ The direct CLI surface now exposes `codex-room-cap source bundle` through either
 
 PR #88 implemented this slice and merged as `6158461bfee94eba375e99baec110e707c30499d`. Its final tested PR head `b7e3ce3ddf9652e21ef4e66f4a5a988a0855b93d` and the squash merge share Git tree `e9b7b1d633ecee9b7fb050df794384795f377a6e`. GitHub Actions run `35041711940` passed Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 + browser. E-097 records implementation and verification evidence.
 
-**Validation status:** this direct CLI/bundle slice remains implemented and verified as a compatibility/operator primitive. The later D-031 structured broker removed batching selection from ordinary version-2 agent cognition, and Stage B3 / E-101 supplied the naturalistic closeout evidence for the consolidated Stage-B interface. Stage B is complete. Stage C remains separate and unimplemented.
+**Validation status:** this direct CLI/bundle slice remains implemented and verified as a compatibility/operator primitive. The later D-031 structured broker removed batching selection from ordinary version-2 agent cognition, and Stage B3 / E-101 supplied the naturalistic closeout evidence for the consolidated Stage-B interface. Stage B is complete. Stage C.1 is now separately implemented and verified under D-032 / E-102; its naturalistic economics remain unverified.
 
 ## 18. I-015 Stage B2 structured deterministic source evidence execution
 
@@ -411,9 +411,23 @@ PR #92 code-bearing head `9b4e352e490a4cdeda9a8242396cabd981f3b19d` (Git tree `2
 
 **Naturalistic closeout:** Stage B3 / E-101 passed on 2026-09-16 in a fresh C-only version-2 Room. C declared the three known source needs as one structured FIND + SEARCH + READ evidence request; CORE mechanically selected a heterogeneous bundle; the same assignment resumed and made one evidence-dependent follow-up READ after SEARCH supplied the declaration's line location; then C completed the task correctly. The run used **72,271 total execution tokens**, with zero agent CLI/tool calls, zero failures, zero file changes, and preserved request/plan/result provenance. This closes Stage B as **IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED**.
 
-**Scope limit:** the broker handles read-only source evidence. Arbitrary custom-capability brokerage remains outside this slice because preserving its Room/sandbox execution authority needs a separate design. Stage C is now the next I-015 experiment and remains unimplemented.
+**Scope limit:** the broker handles read-only source evidence. Arbitrary custom-capability brokerage remains outside this slice because preserving its Room/sandbox execution authority needs a separate design. Stage C.1 is now implemented and verified separately under D-032 / E-102.
 
-## 19. Runtime-state and work-queue caution
+## 19. I-015 Stage C.1 assignment-scoped provider context
+
+**IMPLEMENTED / VERIFIED — 2026-09-16 — opt-in work-model v2**
+
+D-032 treats provider context as execution transport rather than the definition of persistent agent identity. Persistent A/B/C identity, transaction state, evidence state, joins, and assignment provenance remain durable application-level state. The existing `persistent_agent_thread` mode remains the ordinary default.
+
+An opt-in version-2 Round may set `provider_context_mode="assignment_thread"`. Each logical Assignment then owns a durable `context_thread_id`. CORE creates and binds that provider thread for the Assignment's first model execution, reuses the same thread for evidence and dependency/join continuations, carries it through usage-wall continuation, and resumes an exact recorded non-agent thread/turn after process interruption. A later independent Assignment receives a different provider thread even when the same persistent agent owns both Assignments.
+
+The adapter can therefore start and resume provider threads that are not the agent's permanent cached thread without replacing that permanent cache. Public execution entry points still enforce the existing model-policy boundary before thread acquisition. Assignment-scoped mode also avoids permanent-thread compaction because its context is already bounded to the logical Assignment.
+
+Hosted deterministic coverage verifies same-Assignment reuse, same-agent distinct-Assignment isolation, evidence resume, usage-wall restart, exact active-turn recovery, permanent-mode compatibility, and preservation of the permanent agent thread. E-102 records the exact PR/main commits, shared tree, CI runs, and test counts.
+
+**Scope limit:** this slice does not yet establish that assignment-scoped context is economically superior in ordinary paid work, nor does it implement a general cross-Assignment memory index, summarizer, retention policy, provider-thread garbage collection, or default activation. A narrow crash window can create an unused orphan provider thread after provider-thread creation but before durable Assignment binding; no model turn has started in that window, so current evidence does not indicate duplicate cognition. Stage C.2 is the naturalistic context-economics comparison that determines whether further memory machinery is warranted.
+
+## 20. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 

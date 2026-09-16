@@ -3576,3 +3576,71 @@ Both evidence cycles remained bound to the same assignment. The export retained 
 A preceding accidental run of the same prompt under work-model v1 is excluded from Stage-B3 scoring because it used the wrong work model. It remains useful qualitative contrast only: that run recorded 16 tool calls, 4 failures, and 430,163 execution tokens while ultimately reaching the same factual answer.
 
 Stage C remains a separate decision/experiment. B3's 33.9% aggregate cached-input share does not decide the context architecture, but it supplies fresh motivation to measure durable memory versus active provider-thread replay.
+
+### E-102 — I-015 Stage C.1 assignment-scoped provider context implemented and canonical-main verified
+**Date:** 2026-09-16  
+**Kind:** [CORE] implementation + exact-diff review + deterministic hosted verification  
+**Decision:** D-032
+
+PR #94 implements the first bounded Stage-C provider-context experiment for opt-in work-model version 2.
+
+**Implemented behavior**
+
+- Round configuration adds `provider_context_mode` with values `persistent_agent_thread` and `assignment_thread`; persistent-agent mode remains the default, and assignment-scoped mode requires work-model version 2.
+- Each transaction Assignment may durably own a `context_thread_id`. In assignment-scoped mode, CORE starts one provider thread for the logical Assignment and reuses that exact thread for every continuation of that Assignment.
+- Evidence resume, dependency/join resume, usage-wall continuation, and exact active-turn restart recovery preserve the Assignment's provider thread rather than falling back to the agent's permanent provider thread.
+- Different Assignments receive different provider threads, including successive Assignments owned by the same persistent agent.
+- Starting or resuming an assignment-scoped provider thread does not replace the adapter's permanent per-agent thread cache. Existing `persistent_agent_thread` behavior and work-model v1 remain unchanged.
+- The adapter can resume an exact recorded non-agent provider thread using the same agent developer instructions, while the existing D-028 model-policy check remains enforced before provider-thread acquisition.
+- Assignment-scoped mode skips permanent-thread compaction because active provider history is already bounded by the logical Assignment.
+- Round/Assignment state and transaction export preserve the selected context mode and exact Assignment context-thread provenance.
+
+**Review findings corrected before the final tested head**
+
+Exact-diff review and superseded CI caught four material issues before merge:
+
+1. a broad edit accidentally referenced transaction-only `expected_thread_id` in the legacy-v1 usage-continuation insert; v1 was restored unchanged;
+2. transaction usage suspension validated the Assignment thread correctly but initially stored the permanent agent thread in the continuation row; storage was corrected to the exact Assignment thread;
+3. refactoring moved the D-028 Astra policy check after thread acquisition, causing an adapter initialization error to precede the intended policy error; both public execution entry points now enforce policy before thread access;
+4. the first isolation test covered different agents rather than two independent Assignments owned by the same agent; same-agent distinct-Assignment coverage was added.
+
+A small remaining crash window exists after creating an Assignment provider thread but before durably binding it to the Assignment. A process exit in that interval may orphan an unused provider thread. No model turn has started at that point, and existing interrupted-work recovery quarantines claimed work without exact turn identity, so this limitation does not create evidence of duplicate cognition. Provider-thread retention/garbage collection remains outside Stage C.1.
+
+**Exact PR verification**
+
+Final code-bearing PR head:
+
+`c7a8d0d7a4335493d3cb812d755e6df473151ef7`
+
+Git tree:
+
+`aae98a35f543cb1f010ff8deb0270837ed83c720`
+
+GitHub Actions run `35112351716` completed successfully:
+
+- Ubuntu / Python 3.11 — **410 passed, 2 warnings**;
+- Ubuntu / Python 3.12 — **410 passed, 2 warnings**;
+- Windows / Python 3.12 — **410 passed, 2 warnings**;
+- Windows browser transcript-stability check — **3 passed**.
+
+Focused coverage includes the v2-only configuration guard, same-Assignment thread reuse across delegation/join and evidence continuation, same-agent distinct-Assignment isolation, usage-wall restart on the exact Assignment thread, exact active-turn restart recovery, persistent-mode compatibility, and real-adapter non-agent-thread continuation without permanent-cache replacement.
+
+**Canonical-main verification**
+
+PR #94 squash-merged as:
+
+`821fcd9b46925cbbf4905a11846b4b5e1eb18c01`
+
+The merge commit has the exact same Git tree as the tested PR head:
+
+`aae98a35f543cb1f010ff8deb0270837ed83c720`
+
+Canonical-main GitHub Actions run `35113148852` then independently completed successfully:
+
+- Ubuntu / Python 3.11 — **410 passed, 2 warnings**;
+- Ubuntu / Python 3.12 — **410 passed, 2 warnings**;
+- Windows / Python 3.12 — **410 passed, 2 warnings**;
+- Windows browser transcript-stability check — **3 passed**.
+
+**Assessment:** Stage C.1 is **COMPLETE / IMPLEMENTED / VERIFIED** for the opt-in assignment-scoped provider-context mechanism. This evidence establishes deterministic correctness and restart/provenance behavior; it does **not** establish naturalistic token savings, cross-Assignment memory adequacy, provider-thread retention policy, or default activation. Stage C.2 should therefore measure paired context economics before any broader memory architecture is added.
+

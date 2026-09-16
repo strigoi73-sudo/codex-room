@@ -7,20 +7,20 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 **Stage B is complete**. Stage B.2 implemented and hosted-verified the structured v2 `EVIDENCE` broker, and Stage B.3 then passed its naturalistic C-only validation at **72,271 execution tokens** with zero agent CLI/tool calls, zero failures, correct traceable evidence, preserved provenance, and one justified adaptive follow-up read. E-100 records implementation verification; E-101 records the naturalistic closeout.
+- **What just changed?** I-015 **Stage C.1 is COMPLETE / IMPLEMENTED / VERIFIED**. Under D-032, opt-in version-2 Rounds may now use assignment-scoped provider context: each logical Assignment owns one durable restart-resumable provider thread, while persistent A/B/C identity and the transaction ledger remain application-level state. Existing persistent-agent context remains the default. E-102 records exact implementation and hosted-verification evidence.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage C.1 is IN PROGRESS** under D-032. The bounded experiment gives each version-2 logical Assignment its own restart-resumable provider thread while preserving durable A/B/C identity and the transaction ledger. Deterministic verification comes before any paid A/B economic comparison.
+- **What is next?** **I-015 Stage C.2 is PLANNED**: preregister and run one bounded paired naturalistic context-economics comparison before expanding the memory architecture. The comparison should hold task/model/version conditions constant and measure answer quality, total/input/cached tokens, continuation count, and exact provider-context provenance under `persistent_agent_thread` versus `assignment_thread`.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### I-015 — Task-transaction stabilization redesign
 **Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-B IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED  
-**Decision:** D-030, D-031  
-**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101  
-**Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
+**Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-B IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED / STAGE C.1 IMPLEMENTED / VERIFIED  
+**Decision:** D-030, D-031, D-032  
+**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102  
+**Scope:** [CORE], with later [CORE + ROOM migration] only after the remaining naturalistic/viability gates justify activation.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
 
@@ -210,29 +210,28 @@ The task settled correctly after three C executions at **72,271 total execution 
 The run therefore satisfies the main Stage-B criterion: planned source retrieval no longer requires the model to learn or operate the CLI/batching transport. The extra model continuation was evidence-dependent cognition, not interface-learning overhead. Stage B is closed.
 
 #### Stage C — Persistent-context / memory economics
-**Work state:** IN PROGRESS — Stage C.1 implementation / deterministic verification  
-**Decision:** D-032
+**Work state:** IN PROGRESS — Stage C.2 paired naturalistic economics next  
+**Decision:** D-032  
+**Evidence:** E-102
 
 B-N1's 82.4% cached-input share and B3's **33.9% aggregate cached-input share** remain relevant motivation. Stage-B consolidation does not itself decide the Stage-C memory/context architecture.
 
 ##### Stage C.1 — Assignment-scoped provider context
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-16
 
-The first bounded experiment isolates provider-context transport without changing the transaction scheduler or persistent A/B/C identities. An opt-in version-2 Round may set `provider_context_mode="assignment_thread"`. In that mode, CORE gives each logical Assignment one durable provider thread and reuses that exact thread for every continuation of the Assignment. Different Assignments receive different provider contexts. Existing `persistent_agent_thread` remains the default and version 1 remains unchanged.
+The first bounded experiment isolates provider-context transport without changing the transaction scheduler or persistent A/B/C identities. An opt-in version-2 Round may set `provider_context_mode="assignment_thread"`. In that mode, CORE gives each logical Assignment one durable provider thread and reuses that exact thread for every continuation of the Assignment. Different Assignments — including successive Assignments owned by the same persistent agent — receive different provider contexts. Existing `persistent_agent_thread` remains the default and version 1 remains unchanged.
 
-**Deterministic acceptance before paid validation**
+The deterministic acceptance gate is complete. Coverage verifies same-Assignment reuse across evidence/dependency continuation, distinct-Assignment isolation, preservation of the permanent agent thread, exact active-turn restart recovery, usage-wall restart continuation on the Assignment thread, export/provenance binding, and compatibility of existing transaction/evidence/model-selection/v1 behavior. The exact PR tree and canonical-main tree both passed the full hosted matrix; E-102 records commits, tree, run IDs, and counts.
 
-1. same logical Assignment → same provider thread across evidence/dependency resumes;
-2. distinct Assignments → distinct provider threads and no implicit provider-history inheritance;
-3. permanent agent identity/thread fields remain unchanged and ordinary persistent mode remains behaviorally compatible;
-4. exact active-turn restart recovery resumes the recorded Assignment thread/turn;
-5. usage-wall continuation reuses the Assignment thread across process restart;
-6. assignment/evidence provenance survives export with the selected context mode and exact context-thread identity;
-7. existing transaction settlement, evidence, model-selection, v1, and full hosted test suites remain green.
+**Scope limit:** Stage C.1 does not implement broad cross-Assignment memory retrieval, provider-thread archival/retention, or default activation. D-009 remains the governing direction for later cross-Assignment continuity: index broadly, retrieve narrowly.
 
-**Scope limit:** Stage C.1 does not yet implement broad cross-Assignment memory retrieval or decide provider-thread archival/retention. D-009 remains the governing direction for later cross-Assignment continuity: index broadly, retrieve narrowly.
+##### Stage C.2 — Paired naturalistic context-economics validation
+**Work state:** PLANNED
 
-After deterministic verification, preregister an exact paired naturalistic comparison on one commit: the same useful version-2 task under `persistent_agent_thread` and `assignment_thread`. Compare quality, total/input/cached token use, continuation count, and provenance before deciding whether to expand the memory architecture.
+Before adding any memory/index/summarization mechanism, run one bounded paid comparison designed to expose inherited provider-history cost rather than hide it in fresh threads. Hold the useful target task, work-model version, model policy, contributor set, and repository version constant; compare `persistent_agent_thread` with `assignment_thread` on answer quality, total/input/cached token use, continuation count, and exact thread provenance. Prefer a controlled warmed-history setup so the persistent arm actually contains prior context; run the assignment-scoped arm without mutating that persistent history before its comparison point.
+
+If assignment-scoped context materially reduces replay without degrading the answer, the next question is what minimal durable/targeted cross-Assignment continuity is actually needed. If it does not produce a meaningful economic benefit, stop rather than building a larger memory architecture without evidence.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
