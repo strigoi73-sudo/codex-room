@@ -145,16 +145,33 @@ TMPDIR="$tmp_dir" "$venv/bin/python" -m pytest -q
     # Windows checkouts may convert this PowerShell file to CRLF. Bash requires LF.
     $bash = $bash.Replace("`r`n", "`n").Replace("`r", "")
 
-    Invoke-NativeStep $Label {
-        $args = @(
-            "-d", $Distro,
-            "--",
-            "env",
-            "CODEX_ROOM_REPO=$wslRepo",
-            "CODEX_ROOM_PYTHON_SERIES=$Series",
-            "bash", "-lc", $bash
-        )
-        & $wsl @args
+    # Do not pass a multiline Bash program through the Windows -> WSL command line.
+    # That boundary can rewrite quoting. Write exact UTF-8/LF bytes to a temporary
+    # script and execute the file inside WSL instead.
+    $tempScript = Join-Path $env:TEMP ("codex-room-verify-" + [guid]::NewGuid().ToString("N") + ".sh")
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($tempScript, $bash, $utf8NoBom)
+
+    try {
+        $wslScript = (& $wsl -d $Distro -- wslpath -a $tempScript).Trim()
+        if ($LASTEXITCODE -ne 0 -or -not $wslScript) {
+            throw "Could not resolve the temporary verification script inside WSL."
+        }
+
+        Invoke-NativeStep $Label {
+            $args = @(
+                "-d", $Distro,
+                "--",
+                "env",
+                "CODEX_ROOM_REPO=$wslRepo",
+                "CODEX_ROOM_PYTHON_SERIES=$Series",
+                "bash", $wslScript
+            )
+            & $wsl @args
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $tempScript -Force -ErrorAction SilentlyContinue
     }
 }
 
