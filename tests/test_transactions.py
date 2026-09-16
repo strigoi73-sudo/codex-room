@@ -51,10 +51,7 @@ def _transaction_usage_wall(when: str) -> AgentTurnTerminalError:
 async def test_transaction_dual_delegation_releases_c_once_after_both_peers(
     transaction_runtime_factory,
 ):
-    adapter = FakeAgentAdapter(
-        {"agent_a": [], "agent_b": [], "agent_c": []},
-        blocked_calls={"agent_c": {1}},
-    )
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
     adapter.decisions["agent_c"].extend(
         [
             TransactionDecision(
@@ -271,7 +268,10 @@ async def test_transaction_evidence_resumes_same_assignment_with_normalized_payl
 async def test_transaction_evidence_at_turn_limit_stops_without_resuming_and_replays_limit(
     transaction_runtime_factory,
 ):
-    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {1}},
+    )
     adapter.decisions["agent_c"].extend(
         [
             TransactionDecision(
