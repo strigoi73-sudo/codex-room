@@ -499,6 +499,17 @@ This attempt is **stopped before D-N5** because D-N5 exercises the same structur
 
 **Verification-process follow-up — COMPLETE:** the earlier 1,197-second Windows-first run helped motivate the local-verifier redesign. E-109 records a **75.6-second Fast** reference run and a **316.3-second** broader reference run. No adjacent CI/runner or test-suite profiling work is currently planned; use the established local verifier and return to product development.
 
+### Stage-D attempt 2 observed checkpoint — IN PROGRESS
+
+**Date:** 2026-09-16  
+**Work state:** IN PROGRESS — D-N1 complete; D-N2 next  
+**Reality:** NATURALISTIC CHECKPOINT PASS SO FAR  
+**Evidence:** E-111
+
+A fresh dedicated Stage-D Room was created as `room_c47cba973de44f12bde8ef3aaf80bce1` under the exact preregistered v2 + assignment-thread configuration. The preparation-only opening Round had zero Task/model execution and is excluded under the protocol.
+
+- **D-N1 PASS:** title `D-N1 Solo Saturday Schedule`; one C Assignment; one model execution; no joins, peers, tools, EVIDENCE, or HISTORY; exact **9:20 AM** grocery start; all schedule constraints satisfied; **21,663 total execution tokens** (21,257 input, 406 output, 275 reasoning output, 0 cached input); task settled cleanly. The next scored task is D-N2 in the same Room.
+
 #### D-N1 — Solo Saturday schedule
 
 **Required contributors:** `["agent_c"]`  
