@@ -225,6 +225,7 @@ class Database:
                     close_reason TEXT,
                     last_activity_at TEXT,
                     work_model_version INTEGER NOT NULL DEFAULT 1,
+                    provider_context_mode TEXT NOT NULL DEFAULT 'persistent_agent_thread',
                     required_contributors_json TEXT NOT NULL DEFAULT '[]'
                 );
 
@@ -276,6 +277,7 @@ class Database:
                     instruction TEXT NOT NULL,
                     context_event_ids_json TEXT NOT NULL DEFAULT '[]',
                     execution_config_id TEXT,
+                    context_thread_id TEXT,
                     state TEXT NOT NULL,
                     result_event_id TEXT REFERENCES events(id),
                     resolution_reason TEXT,
@@ -409,7 +411,14 @@ class Database:
             await self._ensure_column(db, "rounds", "participant_private_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "participant_overlays_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "work_model_version", "INTEGER NOT NULL DEFAULT 1")
+            await self._ensure_column(
+                db,
+                "rounds",
+                "provider_context_mode",
+                "TEXT NOT NULL DEFAULT 'persistent_agent_thread'",
+            )
             await self._ensure_column(db, "rounds", "required_contributors_json", "TEXT NOT NULL DEFAULT '[]'")
+            await self._ensure_column(db, "assignments", "context_thread_id", "TEXT")
             await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
             await self._ensure_column(
                 db,
@@ -886,8 +895,8 @@ class Database:
             await db.execute(
                 """INSERT INTO rounds
                    (id, room_id, title, prompt, created_at, status, starting_agent,
-                    work_model_version, required_contributors_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, provider_context_mode, required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -897,6 +906,7 @@ class Database:
                     RoundStatus.PREPARING,
                     request.starting_agent,
                     request.work_model_version,
+                    request.provider_context_mode,
                     json.dumps(request.required_contributors),
                 ),
             )
@@ -1756,8 +1766,8 @@ class Database:
                     agent_a_private, agent_b_private, task_overlay,
                     agent_a_overlay, agent_b_overlay,
                     participant_private_json, participant_overlays_json,
-                    work_model_version, required_contributors_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, provider_context_mode, required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -1774,6 +1784,7 @@ class Database:
                     json.dumps(request.participant_private, ensure_ascii=False),
                     json.dumps(request.participant_overlays, ensure_ascii=False),
                     request.work_model_version,
+                    request.provider_context_mode,
                     json.dumps(request.required_contributors),
                 ),
             )
