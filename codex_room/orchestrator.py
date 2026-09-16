@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -37,6 +38,7 @@ from .custom_registry import (
     load_room_custom_capabilities,
 )
 from .db import Database, utc_now
+from .evidence import execute_source_evidence
 from .institutional import (
     InstitutionalRelease,
     institutional_release_root,
@@ -122,33 +124,18 @@ class RoomRuntime:
     )
     DETERMINISTIC_CAPABILITY_INSTRUCTION = (
         "<deterministic_capabilities>\n"
-        "Minimize model/tool continuations. For ordinary one-off workspace reads, searches, "
-        "inspection, and simple commands, use native workspace tools directly; do not inspect "
-        "the capability registry merely because a step is mechanical. Batch related independent "
-        "reads/searches when their need is already known, do not batch speculative dependent "
-        "follow-ups, and stop retrieving once evidence is sufficient. "
-        "Use registered capabilities when they materially add exact semantics, reuse, provenance, "
-        "or useful mechanical complexity. Use 'codex-room-cap list' only when a needed capability "
-        "identity is unknown, and 'codex-room-cap inspect CAPABILITY_ID' only when its current "
-        "contract is needed. For source inspection use the direct 'codex-room-cap source' "
-        "surface rather than generic inline-JSON 'invoke inspect_source' when the direct surface "
-        "can express the operation. Search and search-many paths may identify either a file or "
-        "directory; keep "
-        "max-matches within 1-100 and max-files within 1-200. When heterogeneous find/search/read "
-        "requests and their bounds are already known, prefer one declarative 'codex-room-cap source "
-        "bundle' plan so CORE executes them and returns one normalized evidence bundle. Use "
-        "search-many/read-many directly when one homogeneous batch is sufficient. Do not place "
-        "speculative dependent follow-ups in a bundle; retrieve again only for a specific unresolved "
-        "dependency. Do not inspect CORE or another Room "
-        "unless the current task requires it; an explicit workspace-only instruction forbids it. "
-        "Invoke known capabilities with 'codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT'; "
-        "if shell quoting is fragile, use '--input-file WORKSPACE_RELATIVE_JSON'. Avoid redundant "
-        "list/inspect calls and ceremony-only continuations. Create/register custom deterministic "
-        "software only when reuse, reliability, provenance, or mechanical complexity earns that "
-        "cost; use 'codex-room-cap authoring' and "
-        "'codex-room-cap register CAPABILITY_ID --cases-file WORKSPACE_RELATIVE_JSON'. Registration "
-        "is not active until the agent turn settles. Deterministic software supports judgment; it "
-        "does not replace it.\n"
+        "Use deterministic execution when exact semantics, bounded evidence, reuse, provenance, "
+        "or mechanical reliability adds value. In version-2 transaction work, request known "
+        "read-only workspace/CORE/Room source evidence with the EVIDENCE action rather than "
+        "discovering or operating the source-inspection CLI yourself. EVIDENCE accepts bounded "
+        "READ, SEARCH, and FIND requests; CORE owns source authority, validation, batching, "
+        "execution, and result delivery. Use native workspace tools for coding, mutation, tests, "
+        "and genuinely adaptive investigation that the structured evidence request cannot express. "
+        "Registered custom capabilities remain available when their exact reusable behavior earns "
+        "the cost; avoid redundant registry/help discovery when the capability identity and contract "
+        "are already known. Custom capability creation/registration remains an explicit Room-side "
+        "operation because its sandbox authority is not part of the source-evidence broker. "
+        "Deterministic software supports judgment; it does not replace it.\n"
         "</deterministic_capabilities>"
     )
 
@@ -1642,6 +1629,9 @@ class RoomRuntime:
         siblings = await self.db.get_assignment_sibling_context(
             assignment["id"]
         )
+        pending_evidence = await self.db.get_pending_assignment_evidence(
+            assignment["id"]
+        )
         context_parts = [
             "<transaction_assignment>",
             f"Room ID: {batch['room_id']}",
@@ -1680,6 +1670,27 @@ class RoomRuntime:
                 "makes another peer turn materially necessary; sibling results remain "
                 "independent until the join resolves."
             )
+        if pending_evidence:
+            context_parts.append("<deterministic_evidence>")
+            for item in pending_evidence:
+                context_parts.extend(
+                    [
+                        json.dumps(
+                            {
+                                "request": item["request"],
+                                "result": item["payload"],
+                            },
+                            ensure_ascii=False,
+                            separators=(",", ":"),
+                        )
+                    ]
+                )
+            context_parts.append("</deterministic_evidence>")
+            context_parts.append(
+                "CORE executed the bounded source request above for this same Assignment. "
+                "Interpret the returned evidence directly. Request additional evidence only "
+                "for a concrete unresolved dependency."
+            )
         if dependencies:
             context_parts.append("<resolved_dependencies>")
             for item in dependencies:
@@ -1709,12 +1720,14 @@ class RoomRuntime:
                 self.DETERMINISTIC_CAPABILITY_INSTRUCTION,
                 (
                     "Return the transaction structured decision only. action must be COMPLETE, "
-                    "DELEGATE, or PASS. COMPLETE ends this assignment with a substantive message. "
-                    "DELEGATE pauses this assignment and must include one or more distinct peer "
-                    "delegations, each with target, bounded instruction, and optional config. "
-                    "PASS ends this assignment without substantive output. Do not announce that "
-                    "you are waiting for a peer unless you actually use DELEGATE to create that work. "
-                    "For non-DELEGATE actions, delegations must be null."
+                    "DELEGATE, EVIDENCE, or PASS. COMPLETE ends this assignment with a substantive "
+                    "message. DELEGATE pauses this assignment and creates explicit peer work. "
+                    "EVIDENCE is nonterminal: use it for already-known bounded read-only source needs, "
+                    "with 1-16 semantic READ, SEARCH, or FIND requests; CORE executes them and resumes "
+                    "this same Assignment with normalized evidence. PASS ends this assignment without "
+                    "substantive output. Do not announce that you are waiting for work unless you "
+                    "actually use DELEGATE or EVIDENCE. delegations must be non-null only for DELEGATE; "
+                    "evidence_requests must be non-null only for EVIDENCE."
                 ),
                 self._transaction_execution_config_prompt(agent["agent_key"]),
             ]
@@ -2043,6 +2056,10 @@ class RoomRuntime:
             delegations = [
                 item.model_dump(mode="json") for item in (decision.delegations or [])
             ]
+            evidence_requests = [
+                item.model_dump(mode="json")
+                for item in (decision.evidence_requests or [])
+            ]
             for item in delegations:
                 if item["target"] == agent_key or item["target"] not in participants:
                     raise ValueError("Transaction delegation must target an available peer")
@@ -2073,6 +2090,29 @@ class RoomRuntime:
                 retryable=False,
             )
             return
+
+        evidence_execution: dict[str, Any] | None = None
+        if decision.action == TransactionAction.EVIDENCE:
+            existing_evidence = await self.db.get_assignment_evidence_by_batch(
+                batch["batch_id"]
+            )
+            if (
+                existing_evidence is not None
+                and execution.get("decision_recorded_at") is not None
+            ):
+                evidence_execution = {
+                    "ok": bool(
+                        (existing_evidence.get("payload") or {}).get("ok", True)
+                    ),
+                    "strategy": existing_evidence["strategy"],
+                    "durable": existing_evidence["durable_evidence"],
+                    "payload": existing_evidence.get("payload")
+                    or {"ok": True, "items": []},
+                }
+            else:
+                evidence_execution = execute_source_evidence(
+                    self.workspace(room_id), evidence_requests
+                )
 
         self._set_worker_phase(
             (room_id, agent_key),
@@ -2181,6 +2221,94 @@ class RoomRuntime:
                     round_id=batch["round_id"],
                 )
                 self._publish_event(tool_event)
+
+            if decision.action == TransactionAction.EVIDENCE:
+                assert evidence_execution is not None
+                evidence_event = await self.db.create_event(
+                    room_id,
+                    "deterministic_evidence",
+                    agent_key,
+                    "observer",
+                    (
+                        f"{agent['name']}: CORE executed "
+                        f"{len(evidence_requests)} bounded source evidence request(s)."
+                    ),
+                    related_event_id=batch["assignment"].get("origin_event_id"),
+                    metadata={
+                        "task_id": batch["task_id"],
+                        "assignment_id": batch["assignment_id"],
+                        "batch_id": batch["batch_id"],
+                        "transaction_action": decision.action,
+                        "evidence_requests": evidence_requests,
+                        "evidence_strategy": evidence_execution["strategy"],
+                        "evidence_ok": evidence_execution["ok"],
+                        "durable_evidence": evidence_execution["durable"],
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                    execution_id=batch["batch_id"],
+                )
+                if evidence_event.pop("_created", True):
+                    self._publish_event(evidence_event)
+
+                settlement = await self.db.settle_transaction_evidence(
+                    room_id,
+                    batch["round_id"],
+                    batch["batch_id"],
+                    batch["assignment_id"],
+                    evidence_requests,
+                    strategy=evidence_execution["strategy"],
+                    durable_evidence=evidence_execution["durable"],
+                    transient_payload=evidence_execution["payload"],
+                    provenance_event_id=evidence_event["id"],
+                )
+                await self.db.set_agent_status(agent["id"], AgentStatus.IDLE)
+                await self.db.set_execution_state(batch["batch_id"], "settled")
+                continuation = batch.get("usage_continuation")
+                if continuation:
+                    await self.db.finish_usage_continuation(
+                        continuation["id"], batch["batch_id"], "completed"
+                    )
+                    continued = await self.db.create_event(
+                        room_id,
+                        "usage_continuation_completed",
+                        agent_key,
+                        "observer",
+                        f"{agent['name']} completed its scheduled transaction usage-limit continuation.",
+                        related_event_id=evidence_event["id"],
+                        metadata={
+                            "usage_continuation_id": continuation["id"],
+                            "source_batch_id": continuation["source_batch_id"],
+                            "continuation_batch_id": batch["batch_id"],
+                            "assignment_id": batch["assignment_id"],
+                            "thread_id": agent["thread_id"],
+                            "work_model_version": 2,
+                        },
+                        discussion_id=batch["round_id"],
+                        round_id=batch["round_id"],
+                    )
+                    self._publish_event(continued)
+
+                if settlement["turn_limit_hit"]:
+                    await self.db.cancel_transaction_work(room_id, batch["round_id"])
+                    await self.db.set_room_status(room_id, RoomStatus.STOPPED)
+                    await self.db.stop_active_round(room_id, "turn_limit")
+                    await self.db.set_all_agent_statuses(room_id, AgentStatus.IDLE)
+                    await self._system_event(
+                        room_id,
+                        "turn_limit",
+                        "The configured Round turn limit was reached during transaction work.",
+                    )
+                    await self.publish_state(room_id)
+                    return
+
+                await self.ensure_workers(room_id)
+                for target in settlement["wake_agent_keys"]:
+                    self.wake(room_id, target)
+                await self._maybe_compact_context(batch, agent, result)
+                await self.publish_state(room_id)
+                return
 
             event_type = (
                 "agent_pass"
