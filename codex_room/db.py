@@ -2757,6 +2757,26 @@ class Database:
             )
         return [dict(row) for row in rows]
 
+    async def get_assignment_sibling_context(
+        self, assignment_id: str
+    ) -> list[dict[str, Any]]:
+        """Return bounded declared sibling work for one assignment's current join."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT sibling.id AS assignment_id, a.agent_key,
+                          sibling.state, sibling.instruction
+                   FROM assignments current
+                   JOIN assignments sibling
+                     ON sibling.contribution_join_id=current.contribution_join_id
+                    AND sibling.id<>current.id
+                   JOIN agents a ON a.id=sibling.agent_id
+                   WHERE current.id=?
+                     AND current.contribution_join_id IS NOT NULL
+                   ORDER BY sibling.created_at, sibling.id""",
+                (assignment_id,),
+            )
+        return [dict(row) for row in rows]
+
     async def settle_transaction_decision(
         self,
         room_id: str,

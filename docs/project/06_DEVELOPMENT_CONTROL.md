@@ -10,7 +10,7 @@
 - **What just changed?** The principal adopted the I-015 transaction-work-state redesign as D-030, and Stage A was implemented in two bounded [CORE] slices behind explicit `work_model_version=2` opt-in. The final merged state on canonical `main` (`a4f53a7c4f62a5d03a0907365f5024d266801e1c`) passed the complete hosted Python matrix, including the Windows browser job. Stage A now has deterministic Task/Assignment/Join scheduling, atomic structured delegation, explicit settlement dependencies, required-contributor enforcement, transaction-aware restart/usage-wall recovery, and snapshot/export visibility while legacy v1 remains the default. See E-094.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Run a **bounded paid naturalistic validation of I-015 Stage A** with `work_model_version=2` explicitly enabled. Default activation remains unapproved until that evidence is reviewed. Do not begin Stage B or the Stage C context experiment before this validation is assessed. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** **Remediate the V2-N1 sibling-work visibility gap before another paid run.** Add bounded declared-sibling assignment context to version-2 assignment envelopes, verify it deterministically without restricting legitimate nested delegation, then rerun the same V2-N1 task as V2-N2 for a controlled comparison. Default activation remains unapproved. Do not begin Stage B or the Stage C context experiment yet. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -25,7 +25,7 @@
 **Stage A status:** COMPLETE for the opt-in coordination kernel. Canonical `main` at `a4f53a7c4f62a5d03a0907365f5024d266801e1c` passed hosted verification across Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. Version 1 remains the ordinary default; version 2 is ready for bounded naturalistic validation, not default activation.
 
 #### V2-N1 — First bounded naturalistic validation
-**Work state:** PLANNED / READY TO RUN  
+**Work state:** COMPLETE — exposed targeted remediation  
 **Purpose:** Test Stage A coordination mechanics in one useful, tool-light ordinary task before any default-activation decision.
 
 **Room configuration**
@@ -68,7 +68,11 @@
 - zero repository/source-tool activity is expected for this prompt unless an agent can justify why it was essential;
 - quality is judged on whether the final answer is coherent, integrates meaningfully distinct A/B contributions, and provides a usable first trial rather than merely summarizing peer messages.
 
-Default activation remains unapproved until V2-N1 is reviewed. Stage B and Stage C remain on hold.
+**Observed result:** mechanically successful settlement, useful final answer, six executions / 131,976 execution tokens, and one redundant nested A→B delegation path caused by missing sibling-work visibility in the assignment envelope. See E-095.
+
+**Remediation state:** IN PROGRESS. Add bounded sibling assignment metadata to the v2 assignment envelope, preserve independent sibling results and legitimate nested delegation, pass deterministic/hosted verification, then repeat this same task as V2-N2.
+
+Default activation remains unapproved. Stage B and Stage C remain on hold.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.

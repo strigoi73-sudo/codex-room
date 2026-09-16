@@ -3268,3 +3268,45 @@ Post-merge GitHub Actions run `35036898229` for canonical `main` completed succe
 
 **Activation limit:** this evidence does not establish ordinary-use quality or economics. Work-model v1 remains the default; work-model v2 is ready for bounded paid naturalistic validation before any default-activation decision.
 
+### E-095 — V2-N1 validates transaction settlement but exposes sibling-work visibility waste
+**Date:** 2026-09-15  
+**Kind:** [ROOM naturalistic validation + current-source diagnosis]  
+**Room:** `room_7d645b883f7348f780decd555187473a` (“V2-N1 - First Naturalistic Validation”)
+
+The preregistered first paid naturalistic Stage-A validation ran under `work_model_version=2` with C as starter and A/B as required contributors.
+
+**Mechanical result**
+
+- the Room finished with `close_reason=transaction_settled`;
+- one task settled successfully;
+- all four created assignments reached `completed`;
+- both created joins reached `released`;
+- C's root assignment resumed only after its outer join resolved;
+- no tool calls, failed tool calls, retries, usage-wall events, stale results, or repository/source inspection occurred;
+- the final C answer was coherent, usable, and incorporated the peer work.
+
+This is positive naturalistic evidence for the Stage-A Task/Assignment/Join settlement kernel.
+
+**Economics and coordination result**
+
+The Room used six model executions and **131,976 execution tokens**:
+
+- C initial delegation: 20,649;
+- A initial child turn: 20,074;
+- B initial child turn: 20,646;
+- B nested child turn created by A: 25,508;
+- A resume after the nested join: 21,843;
+- C final integration: 23,256.
+
+Cached-input deltas totaled 49,408 against 129,003 input-token deltas, about **38.3%**, above the provisional <=25% cached-replay target. The run also used five post-framing model continuations rather than the target <=4.
+
+C's initial DELEGATE correctly differentiated A and B. A then created a second B assignment asking B to independently identify and compare the same class of candidate trials that A itself had been assigned to identify, even while C's original B assignment was already active. That nested path added **47,351 execution tokens** (the second B turn plus A's resulting resume). Subtracting only those two observed deltas gives an illustrative four-turn remainder of **84,625 tokens**, inside the <=100k run target; this is a diagnostic counterfactual, not a claim that an actual rerun will cost exactly that amount.
+
+**Source diagnosis**
+
+Current `_assignment_prompt()` provides the Round objective, the current assignment, overlays/private initialization, and resolved child dependencies. It does **not** provide a child assignment with bounded awareness of its already-declared sibling assignments under the same join. In V2-N1, A therefore had no transaction-envelope knowledge that B already had separate work in flight. This is a work-state visibility omission, not a join/settlement invariant failure.
+
+**Action:** before another paid run, expose sibling assignment agent/state/instruction metadata in the v2 assignment envelope without exposing sibling result content. Preserve nested delegation authority; the goal is to prevent avoidable duplicate cognition, not prohibit legitimate A↔B collaboration.
+
+**Status:** OBSERVED ISSUE. Stage-A settlement mechanics passed V2-N1; sibling-work context remediation is required before V2-N2.
+

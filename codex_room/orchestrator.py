@@ -1636,6 +1636,9 @@ class RoomRuntime:
         dependencies = await self.db.get_assignment_dependency_results(
             assignment["id"]
         )
+        siblings = await self.db.get_assignment_sibling_context(
+            assignment["id"]
+        )
         context_parts = [
             "<transaction_assignment>",
             f"Room ID: {batch['room_id']}",
@@ -1653,6 +1656,27 @@ class RoomRuntime:
             context_parts.append(f"Temporary overlay for you:\n{overlay}")
         if round_item.get("task_overlay"):
             context_parts.append(f"Round task overlay:\n{round_item['task_overlay']}")
+        if siblings:
+            context_parts.append("<declared_sibling_assignments>")
+            for item in siblings:
+                context_parts.extend(
+                    [
+                        (
+                            f"<sibling assignment_id=\"{item['assignment_id']}\" "
+                            f"agent=\"{item['agent_key']}\" state=\"{item['state']}\">"
+                        ),
+                        item["instruction"],
+                        "</sibling>",
+                    ]
+                )
+            context_parts.append("</declared_sibling_assignments>")
+            context_parts.append(
+                "These sibling assignments are already declared work under your current "
+                "dependency join. Use them as bounded coordination awareness. Avoid "
+                "delegating substantially duplicate work unless a specific dependency "
+                "makes another peer turn materially necessary; sibling results remain "
+                "independent until the join resolves."
+            )
         if dependencies:
             context_parts.append("<resolved_dependencies>")
             for item in dependencies:
