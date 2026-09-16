@@ -4507,7 +4507,7 @@ class Database:
                     continuation_id,
                     batch["room_id"],
                     agent["id"],
-                    agent["thread_id"],
+                    expected_thread_id,
                     batch["batch_id"],
                     batch["assignment_id"],
                     batch["round_id"],
