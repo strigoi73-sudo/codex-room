@@ -4062,3 +4062,18 @@ A final `git status --short` showed only the same class of untracked local runti
 
 **Assessment:** **PR #104 D-N4 remediation closeout VERIFIED on merged canonical code-bearing main.** The failed Stage-D attempt 1 remains historical evidence and must not be resumed at D-N5. The next paid viability attempt should start in a fresh dedicated Room at D-N1 under the preregistered Stage-D protocol. Version 1 remains the ordinary default during the gate.
 
+### E-111 — Stage-D attempt 2 D-N1 naturalistic pass
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability evidence  
+**Decision:** D-031, D-032, D-033
+
+A fresh dedicated Stage-D Room, `room_c47cba973de44f12bde8ef3aaf80bce1`, ran the preregistered D-N1 task under work-model version 2 with `provider_context_mode="assignment_thread"`, starting Agent C, ordinary default profiles/model policy, no private initialization or overlays, `max_turns=8`, and required contributors `["agent_c"]`. The initial opening Round was preparation-only with zero Task/model execution and is excluded under the preregistered rule.
+
+D-N1 settled successfully with one Task, one completed C Assignment, no joins, no peer invocations, no tool/capability calls, no source evidence, and no Room-history retrieval. The Assignment bound its own provider context thread and completed directly.
+
+The returned schedule satisfied every D-N1 quality criterion: pharmacy began at 9:00 AM; grocery shopping began at **9:20 AM** and immediately followed pharmacy; the fixed dentist appointment remained 11:00–11:30; meal prep occurred after grocery shopping; package drop finished by 1:00 PM; lunch and workout were both included without overlap; all scheduled work fit within the 9:00 AM–3:00 PM window.
+
+Execution economics recorded **21,663 total tokens**: 21,257 input, 0 cached input, 406 output, and 275 reasoning-output tokens. There were zero tool calls, zero capability invocations/failures, zero file changes, zero context compactions, zero sub-agent activity, and zero peer invocations.
+
+**Assessment:** **D-N1 PASS** for quality, coordination/provenance, and task-level economics. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N2 in the same Room.
+
