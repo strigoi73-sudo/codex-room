@@ -285,6 +285,24 @@ class Database:
                     completed_at TEXT
                 );
 
+                CREATE TABLE IF NOT EXISTS assignment_evidence (
+                    id TEXT PRIMARY KEY,
+                    assignment_id TEXT NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+                    request_batch_id TEXT NOT NULL UNIQUE,
+                    request_json TEXT NOT NULL,
+                    execution_plan_json TEXT,
+                    durable_result_json TEXT,
+                    transient_result_json TEXT,
+                    state TEXT NOT NULL,
+                    error TEXT,
+                    created_at TEXT NOT NULL,
+                    completed_at TEXT,
+                    consumed_at TEXT
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_assignment_evidence_assignment_state
+                    ON assignment_evidence(assignment_id, state, created_at);
+
                 CREATE INDEX IF NOT EXISTS idx_tasks_round_state
                     ON tasks(round_id, state);
                 CREATE INDEX IF NOT EXISTS idx_tasks_room_time
@@ -2237,14 +2255,38 @@ class Database:
                    ORDER BY j.created_at, j.id""",
                 (round_id,),
             )
+            evidence_rows = await db.execute_fetchall(
+                """SELECT e.*
+                   FROM assignment_evidence e
+                   JOIN assignments x ON x.id=e.assignment_id
+                   JOIN tasks t ON t.id=x.task_id
+                   WHERE t.round_id=?
+                   ORDER BY e.created_at, e.id""",
+                (round_id,),
+            )
         tasks: list[dict[str, Any]] = []
         assignments_by_task: dict[str, list[dict[str, Any]]] = {}
         joins_by_task: dict[str, list[dict[str, Any]]] = {}
+        evidence_by_assignment: dict[str, list[dict[str, Any]]] = {}
+        for row in evidence_rows:
+            item = dict(row)
+            item["request"] = json.loads(item.pop("request_json"))
+            item["execution_plan"] = (
+                json.loads(item.pop("execution_plan_json"))
+                if item.get("execution_plan_json") else None
+            )
+            item["durable_result"] = (
+                json.loads(item.pop("durable_result_json"))
+                if item.get("durable_result_json") else None
+            )
+            item.pop("transient_result_json", None)
+            evidence_by_assignment.setdefault(item["assignment_id"], []).append(item)
         for row in assignment_rows:
             item = dict(row)
             item["context_event_ids"] = json.loads(
                 item.pop("context_event_ids_json", "[]") or "[]"
             )
+            item["evidence"] = evidence_by_assignment.get(item["id"], [])
             assignments_by_task.setdefault(item["task_id"], []).append(item)
         for row in join_rows:
             item = dict(row)
@@ -2738,6 +2780,131 @@ class Database:
         )
         return result
 
+    async def get_assignment_evidence_results(
+        self, assignment_id: str
+    ) -> list[dict[str, Any]]:
+        """Return ready source evidence for the next execution of one assignment."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT * FROM assignment_evidence
+                   WHERE assignment_id=? AND state='ready'
+                   ORDER BY created_at, id""",
+                (assignment_id,),
+            )
+        results: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row)
+            item["request"] = json.loads(item.pop("request_json"))
+            item["execution_plan"] = (
+                json.loads(item.pop("execution_plan_json"))
+                if item.get("execution_plan_json") else None
+            )
+            item["durable_result"] = (
+                json.loads(item.pop("durable_result_json"))
+                if item.get("durable_result_json") else None
+            )
+            item["result"] = (
+                json.loads(item.pop("transient_result_json"))
+                if item.get("transient_result_json") else None
+            )
+            results.append(item)
+        return results
+
+    async def list_pending_transaction_evidence(self) -> list[dict[str, Any]]:
+        """Return restart-recoverable pending evidence requests for running v2 Rooms."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT e.*, t.room_id, t.round_id, a.agent_key
+                   FROM assignment_evidence e
+                   JOIN assignments x ON x.id=e.assignment_id
+                   JOIN tasks t ON t.id=x.task_id
+                   JOIN agents a ON a.id=x.agent_id
+                   JOIN rooms r ON r.id=t.room_id
+                   JOIN rounds ro ON ro.id=t.round_id
+                   WHERE e.state='pending'
+                     AND x.state='waiting_evidence'
+                     AND t.state='active'
+                     AND r.status='running'
+                     AND r.active_round_id=t.round_id
+                     AND ro.status='active'
+                     AND ro.work_model_version=2
+                   ORDER BY e.created_at, e.id"""
+            )
+        results: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row)
+            item["request"] = json.loads(item.pop("request_json"))
+            results.append(item)
+        return results
+
+    async def complete_transaction_evidence(
+        self,
+        evidence_id: str,
+        execution_plan: dict[str, Any],
+        durable_result: dict[str, Any],
+        transient_result: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Persist one deterministic evidence result and requeue its same assignment."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            row = await self._fetchone(
+                db,
+                """SELECT e.*, x.state AS assignment_state, a.agent_key
+                   FROM assignment_evidence e
+                   JOIN assignments x ON x.id=e.assignment_id
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE e.id=?""",
+                (evidence_id,),
+            )
+            if row is None:
+                await db.rollback()
+                raise RuntimeError("Transaction evidence request is missing")
+            if row["state"] == "ready":
+                await db.commit()
+                return {
+                    "completed": False,
+                    "wake_agent": True,
+                    "assignment_id": row["assignment_id"],
+                    "agent_key": row["agent_key"],
+                }
+            if row["state"] != "pending" or row["assignment_state"] != "waiting_evidence":
+                await db.commit()
+                return {
+                    "completed": False,
+                    "wake_agent": False,
+                    "assignment_id": row["assignment_id"],
+                    "agent_key": row["agent_key"],
+                }
+            await db.execute(
+                """UPDATE assignment_evidence
+                   SET state='ready', execution_plan_json=?, durable_result_json=?,
+                       transient_result_json=?, completed_at=?, error=NULL
+                   WHERE id=? AND state='pending'""",
+                (
+                    json.dumps(execution_plan, ensure_ascii=False, sort_keys=True),
+                    json.dumps(durable_result, ensure_ascii=False, sort_keys=True),
+                    json.dumps(transient_result, ensure_ascii=False, sort_keys=True),
+                    now,
+                    evidence_id,
+                ),
+            )
+            cursor = await db.execute(
+                """UPDATE assignments SET state='queued', updated_at=?
+                   WHERE id=? AND state='waiting_evidence'""",
+                (now, row["assignment_id"]),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError("Evidence completion lost its waiting assignment")
+            await db.commit()
+        return {
+            "completed": True,
+            "wake_agent": True,
+            "assignment_id": row["assignment_id"],
+            "agent_key": row["agent_key"],
+        }
+
     async def get_assignment_dependency_results(
         self, assignment_id: str
     ) -> list[dict[str, Any]]:
@@ -2786,6 +2953,7 @@ class Database:
         action: str,
         result_event_id: str,
         delegations: list[dict[str, Any]],
+        evidence_requests: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Atomically settle one assignment decision and release any satisfied join."""
         now = utc_now()
@@ -2794,6 +2962,7 @@ class Database:
         released_join_id: str | None = None
         task_settled = False
         missing_required_contributors: list[str] = []
+        evidence_request_id: str | None = None
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             execution = await self._fetchone(
@@ -2824,6 +2993,7 @@ class Database:
                     "task_settled": False,
                     "turn_limit_hit": False,
                     "decision_applied": False,
+                    "evidence_request_id": None,
                 }
             if assignment["state"] != "running":
                 await db.rollback()
@@ -2849,6 +3019,13 @@ class Database:
             turn_limit_hit = bool(
                 round_budget
                 and int(round_budget["turn_count"]) >= int(round_budget["max_turns"])
+            )
+
+            await db.execute(
+                """UPDATE assignment_evidence
+                   SET state='consumed', transient_result_json=NULL, consumed_at=?
+                   WHERE assignment_id=? AND state='ready'""",
+                (now, assignment_id),
             )
 
             if action == "DELEGATE":
@@ -2908,6 +3085,29 @@ class Database:
                         ),
                     )
                     wake_agent_keys.append(target_key)
+            elif action == "EVIDENCE":
+                if not evidence_requests:
+                    await db.rollback()
+                    raise ValueError("EVIDENCE requires source evidence requests")
+                evidence_request_id = new_id("evidence")
+                await db.execute(
+                    """INSERT INTO assignment_evidence
+                       (id, assignment_id, request_batch_id, request_json, state, created_at)
+                       VALUES (?, ?, ?, ?, 'pending', ?)""",
+                    (
+                        evidence_request_id,
+                        assignment_id,
+                        batch_id,
+                        json.dumps(evidence_requests, ensure_ascii=False, sort_keys=True),
+                        now,
+                    ),
+                )
+                await db.execute(
+                    """UPDATE assignments
+                       SET state='waiting_evidence', result_event_id=?, updated_at=?
+                       WHERE id=? AND state='running'""",
+                    (result_event_id, now, assignment_id),
+                )
             else:
                 state = "completed" if action == "COMPLETE" else "passed"
                 await db.execute(
@@ -2927,7 +3127,7 @@ class Database:
                 raise RuntimeError("Transaction decision settlement lost its compare-and-set")
 
             contribution_join_id = assignment["contribution_join_id"]
-            if action != "DELEGATE" and contribution_join_id:
+            if action not in {"DELEGATE", "EVIDENCE"} and contribution_join_id:
                 open_member = await self._fetchone(
                     db,
                     """SELECT 1 FROM assignments
@@ -3007,11 +3207,11 @@ class Database:
                         )
                         released_join_id = contribution_join_id
 
-            if action != "DELEGATE":
+            if action not in {"DELEGATE", "EVIDENCE"}:
                 open_assignment = await self._fetchone(
                     db,
                     """SELECT 1 FROM assignments
-                       WHERE task_id=? AND state IN ('queued','running','waiting_join')
+                       WHERE task_id=? AND state IN ('queued','running','waiting_join','waiting_evidence')
                        LIMIT 1""",
                     (assignment["task_id"],),
                 )
@@ -3105,6 +3305,7 @@ class Database:
             "missing_required_contributors": missing_required_contributors,
             "turn_limit_hit": turn_limit_hit,
             "decision_applied": True,
+            "evidence_request_id": evidence_request_id,
         }
 
     async def fail_transaction_assignment(
@@ -3293,7 +3494,7 @@ class Database:
                     JOIN agents a ON a.id=x.agent_id
                     WHERE t.room_id=? AND a.agent_key=?
                       AND t.state='active'
-                      AND x.state IN ('queued','running','waiting_join')
+                      AND x.state IN ('queued','running','waiting_join','waiting_evidence')
                       {round_clause}
                     LIMIT 1""",
                 tuple(params),
@@ -3341,7 +3542,7 @@ class Database:
                 f"""UPDATE assignments
                     SET state='cancelled', updated_at=?, completed_at=?,
                         resolution_reason='room_lifecycle_change'
-                    WHERE state IN ('queued','running','waiting_join'){assignment_clause}""",
+                    WHERE state IN ('queued','running','waiting_join','waiting_evidence'){assignment_clause}""",
                 assignment_params,
             )
             join_clause = (
@@ -3357,6 +3558,19 @@ class Database:
                     SET state='cancelled', released_at=?
                     WHERE state IN ('pending','ready'){join_clause}""",
                 join_params,
+            )
+            await db.execute(
+                """UPDATE assignment_evidence
+                   SET state='cancelled', transient_result_json=NULL,
+                       consumed_at=COALESCE(consumed_at, ?)
+                   WHERE state IN ('pending','ready')
+                     AND assignment_id IN (
+                       SELECT x.id FROM assignments x
+                       JOIN tasks t ON t.id=x.task_id
+                       WHERE t.room_id=?
+                         AND (? IS NULL OR t.round_id=?)
+                     )""",
+                (now, room_id, round_id, round_id),
             )
             await db.commit()
 

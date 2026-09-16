@@ -949,6 +949,7 @@ class CodexAgentAdapter:
                 "search-many",
                 "read",
                 "read-many",
+                "bundle",
             }:
                 return "invoke", "inspect_source"
             return None

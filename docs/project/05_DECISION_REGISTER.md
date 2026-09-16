@@ -1,7 +1,7 @@
 # Codex Room — Decision Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-15  
+**Last updated:** 2026-09-16  
 **Scope:** Settled architectural, governance, product-direction, and development-order decisions.  
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
@@ -443,3 +443,22 @@ D-030 supersedes the **implementation mechanism**, but not the governing intent,
 
 **Principle:** **Agents decide the work; CORE makes declared work state reliable.**
 
+### D-031 — Agents declare bounded deterministic intent; CORE owns source-evidence execution mechanics
+**Date:** 2026-09-16  
+**Status:** ACTIVE
+
+For transaction-enabled work, the ordinary agent interface for read-only source evidence should express the evidence needed, while CORE owns the mechanical invocation path.
+
+Settled boundary:
+
+- agents decide the intellectual need for deterministic evidence: what must be established, which logical source is relevant, which paths/search concepts/bounds matter, and how returned evidence affects judgment;
+- for the bounded Stage-B source-evidence domain, agents should not need to choose or operate CLI mechanics such as executable discovery, registry ceremony, shell quoting, `bundle`, `read-many`, `search-many`, JSON transport, or plan-file fallbacks;
+- CORE validates declared requests, enforces source authority and bounds, mechanically selects existing `inspect_source` primitives/batching, executes them, preserves provenance, and returns normalized evidence to the same open assignment;
+- the first implementation is limited to read-only `READ`, `SEARCH`, and `FIND` source evidence. Arbitrary custom-capability brokerage remains outside this slice because it may require preserving a different sandbox/authority boundary;
+- existing `inspect_source`, `bundle`, homogeneous batch operations, registry machinery, custom capabilities, source confinement, CLI commands, and shell access remain available as implementation primitives, compatibility/operator surfaces, or for work outside the structured evidence path;
+- evidence-request identity and recovery must be explicit transaction state so restart/replay does not depend on prose or rediscovery;
+- bulk retrieved content should remain operational/transient where possible, while durable records retain bounded request/result provenance and mechanical execution metadata.
+
+This decision extends D-030's transaction principle into deterministic evidence acquisition. It does not change A/B/C authority or judgment and does not decide Stage C persistent-context architecture.
+
+**Principle:** **Agents declare bounded deterministic intent; CORE owns deterministic execution mechanics.**

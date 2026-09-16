@@ -1,16 +1,16 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-15  
+**Last updated:** 2026-09-16  
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.  
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** B-N1 completed, but it is **inconclusive for bundle adoption** because the preregistered prompt accidentally specified three homogeneous known-file reads. C correctly used `read_many`, consistent with Stage-B guidance, rather than `bundle`. The Room still exposed a serious efficiency signal: one settled C-only turn used 7 tool calls (5 command executions, 2 source-capability invocations), one failed command, and 184,143 execution tokens with 82.4% cached-input share. See E-098.
+- **What just changed?** I-015 Stage B.2 is implemented and hosted-verified under D-031. The structured v2 `EVIDENCE` path moves bounded source-retrieval mechanics into CORE while preserving the existing CLI/operator surface and non-source registered/custom capability access. E-100 records exact implementation and verification evidence.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Do **not** spend another paid Stage-B Room yet. First inspect B-N1's local Codex rollout timeline to identify the exact five command executions and the failed command behind the 7-call / 184,143-token path. Then preregister B-N2 with a genuinely heterogeneous predeclared evidence plan that requires `bundle` rather than a homogeneous `read_many` batch. Stage C remains separate; the high cached replay is relevant evidence but is not yet a Stage-C decision. Default work-model-v2 activation remains unapproved. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** Run **I-015 Stage B.3 — naturalistic consolidated-interface validation** on the verified structured `EVIDENCE` path. The test should measure one bounded evidence request/resume shape and operating economics, not whether C remembers CLI vocabulary. Stage C remains separate and deferred.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -168,9 +168,47 @@ The Room nevertheless produced useful negative efficiency evidence:
 
 This is not evidence that `bundle` failed; `bundle` was never exercised. It is evidence that even a simple known-file source task can incur unnecessary command/discovery activity and very high replay cost inside one SDK execution.
 
-**Immediate next step:** inspect the local raw rollout timeline for the B-N1 C thread to identify the exact five shell commands and failed command before changing runtime guidance or spending another paid validation. Do not harden prompts or redesign Stage B from aggregate telemetry alone. After that diagnosis, preregister **B-N2** with a genuinely heterogeneous plan (for example a mix of find/search/read operations whose need and bounds are all fixed in advance) so `bundle` is actually the appropriate target.
+**Consolidation result:** the B-N1 follow-up diagnosis is complete. The recurring issue is the agent-facing execution boundary: deterministic capability machinery is exposed as a shell/CLI protocol whose discovery, syntax, batching choice, quoting, and telemetry recognition consume model cognition. D-031 moves bounded source-evidence execution planning into CORE. The earlier B-N2 plan is retired; no paid Room should be spent merely to force `bundle` adoption.
 
-See E-098.
+See E-098 and E-099.
+
+#### Stage B.2 — Structured deterministic source evidence execution
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-16  
+**Decision:** D-031  
+**Evidence:** E-098, E-099, E-100  
+**Scope:** [CORE]
+
+Implement one bounded version-2 transaction action, conceptually `EVIDENCE`, for read-only source evidence.
+
+The agent-facing contract expresses atomic semantic needs such as `READ`, `SEARCH`, and `FIND` with logical source, path/query, Room ID where applicable, and bounded result/line limits. It does not expose `bundle`, `read_many`, `search_many`, executable names, shell quoting, registry ceremony, inline-JSON transport, or plan-file mechanics.
+
+CORE must:
+
+1. validate the structured request and source authority;
+2. give the request an exact durable identity under the open assignment;
+3. mechanically choose the existing `inspect_source` primitive or batching plan;
+4. execute read-only retrieval outside model cognition;
+5. retain bounded durable provenance while keeping bulk evidence operational/transient where practical;
+6. requeue/resume the same assignment with normalized evidence;
+7. make restart/replay safe and idempotent;
+8. preserve v1 behavior and the existing CLI/operator compatibility surface.
+
+The same consolidation should repair and test the current direct-`source bundle` telemetry-recognition mismatch as a compatibility issue. Arbitrary custom-capability brokerage is explicitly outside this first slice.
+
+**Deterministic acceptance:** schema validation; source confinement/bounds; automatic single/homogeneous/heterogeneous plan selection; equivalent evidence semantics; durable/transient separation; request/result provenance; interruption/restart recovery; v1 compatibility; existing direct CLI compatibility; focused tests; canonical full suite; applicable Windows/browser verification; hosted CI.
+
+#### Stage B.3 — Naturalistic consolidated-interface validation
+**Work state:** PLANNED — NEXT
+
+Use a fresh C-only v2 task with several source-evidence needs known at the start. Expected shape: C cognition → one structured `EVIDENCE` action → CORE deterministic retrieval → same C assignment resumes → answer/COMPLETE. Success requires zero CLI help/discovery, zero shell source retrieval, no agent decision between `bundle` and homogeneous batching, correct traceable evidence, and preserved provenance. For a comparable fresh task, target <=80k total execution tokens; >100k requires explanation. The main criterion is removal of repeated interface-learning/tool continuations.
+
+Stage B.2 is now mechanically ready for this paid validation. Do not alter the implementation merely to optimize the preregistered naturalistic result unless the run exposes a demonstrated defect or materially expensive behavior.
+
+#### Stage C — Persistent-context / memory economics
+**Work state:** DEFERRED — depends on Stage B closeout
+
+B-N1's 82.4% cached-input share remains relevant motivation. Stage-B consolidation does not itself decide the Stage-C memory/context architecture.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.

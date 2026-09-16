@@ -395,7 +395,23 @@ PR #88 implemented this slice and merged as `6158461bfee94eba375e99baec110e707c3
 
 **Validation status:** deterministic implementation is verified. Naturalistic evidence that agents select the bundle appropriately and reduce predictable retrieval continuations is still required before calling Stage B complete. Stage C remains separate and unimplemented.
 
-## 18. Runtime-state and work-queue caution
+## 18. I-015 Stage B2 structured deterministic source evidence execution
+
+**IMPLEMENTED / VERIFIED — 2026-09-16 — opt-in work-model v2**
+
+D-031 moves bounded read-only source retrieval behind the version-2 transaction contract. A transaction assignment may now return `EVIDENCE` with 1–16 semantic `READ`, `SEARCH`, or `FIND` requests naming the logical source, path/query, Room ID when applicable, and useful bounds. The assignment remains nonterminal while CORE obtains the evidence and then resumes the same logical assignment with the normalized result.
+
+CORE owns the invocation mechanics for this path. It validates the structured request through the existing source-inspection contract and mechanically chooses an existing `inspect_source` execution form. One request executes directly; a bounded homogeneous read set may execute through `read_many`; other independent multi-request sets use the existing `bundle` primitive when that preserves the declared atomic semantics. In particular, independent SEARCH requests currently remain bundled because `search_many` has one aggregate match bound rather than independent per-request match bounds. Agents therefore do not need to choose `bundle`, `read_many`, `search_many`, executable paths, shell quoting, JSON transport, or plan files for source retrieval.
+
+A new durable `assignment_evidence` record binds each evidence request to the exact assignment and originating execution batch. Pending requests survive process restart; successful deterministic execution records the selected plan plus bounded durable evidence/provenance, requeues the same assignment, and makes bulk result content available to that resumed assignment. After the resumed assignment settles its next decision, the transient bulk result is cleared while durable request/plan/result provenance remains visible in transaction state and exports. Stop/new-Round cancellation covers waiting evidence and prevents stale evidence completion from reviving cancelled work.
+
+The existing CLI and deterministic capability substrate remain available as operator/debug/compatibility surfaces and for non-source registered/custom capabilities. Version-2 source retrieval guidance now points agents to `EVIDENCE` while retaining a compact non-source capability contract. Work-model v1 keeps its existing capability path. Direct `codex-room-cap source bundle` telemetry recognition was also repaired so the compatibility surface promotes the same bounded deterministic provenance as the other direct source verbs.
+
+PR #92 code-bearing head `9b4e352e490a4cdeda9a8242396cabd981f3b19d` (Git tree `2b27d2ea509f279416eb65a8c2a6161414096501`) passed GitHub Actions run `35066558470`: **401 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12; the Windows browser transcript-stability check additionally passed **3 tests**. E-100 records the exact implementation and verification evidence.
+
+**Scope limit:** this first broker handles only read-only source evidence. Arbitrary custom-capability brokerage remains outside this slice because preserving its Room/sandbox execution authority needs a separate design. Stage-B3 naturalistic validation still needs to establish model adoption and operating economics before Stage B closes. Stage C remains separate and deferred.
+
+## 19. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 
