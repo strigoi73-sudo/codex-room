@@ -250,7 +250,7 @@ The assignment-scoped Assignment bound a separate provider thread `01a0aae2-6899
 ###### C-N2 — Cross-Assignment continuity control
 **Work state:** COMPLETE — PASS / continuity gap demonstrated
 
-C-N1 does not answer whether a later Assignment that genuinely depends on prior Room knowledge can operate correctly without the permanent provider thread. C-N2 tests only that boundary before any memory/index/summarization implementation.
+C-N1 did not answer whether a later Assignment that genuinely depended on prior Room knowledge could operate correctly without the permanent provider thread. C-N2 was designed to test only that boundary before any memory/index/summarization implementation.
 
 **Substrate and order**
 
@@ -395,7 +395,7 @@ Implemented transaction model (originally proposed here):
 
 **Staged design path — do not collapse these into one implementation:**
 
-- **Stage A — coordination transaction kernel — COMPLETE / IMPLEMENTED / VERIFIED (opt-in):** Task/Assignment/Join state, assignment envelopes, deterministic join release, terminal-state validity, and removal of passive backlog as actionable work. The current persistent SDK thread behavior remains in place so coordination reliability can be evaluated independently of context-economy changes.
+- **Stage A — coordination transaction kernel — COMPLETE / IMPLEMENTED / VERIFIED (opt-in):** Task/Assignment/Join state, assignment envelopes, deterministic join release, terminal-state validity, and removal of passive backlog as actionable work. Stage A deliberately retained persistent SDK-thread behavior at that stage so coordination reliability could be evaluated independently; Stage C later added the opt-in assignment-scoped alternative.
 - **Stage B — bounded evidence execution — COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED:** agents declare bounded source-evidence intent through `EVIDENCE`; CORE chooses and executes the deterministic retrieval mechanics and returns normalized evidence to the same Assignment. Native exploratory/custom capability paths remain available where the structured source path does not apply.
 - **Stage C — durable memory vs active context experiment — COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED:** D-032 bounds opt-in provider context to the logical Assignment; D-033 restores deliberate cross-Assignment continuity through bounded `HISTORY` retrieval over prior completed Room results. C-N1 demonstrated lower replay cost on self-contained work, C-N2 demonstrated the continuity gap, and C-N3 demonstrated explicit recovery. No broad summarizer/index was justified.
 - **Stage D — viability gate — NEXT:** validate and preregister a bounded set of ordinary useful tasks, then judge coordination, economics, quality, and robustness before any default-activation decision. Do not resume adjacent feature development until the gate is resolved.
