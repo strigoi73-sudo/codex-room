@@ -413,9 +413,9 @@ PR #92 code-bearing head `9b4e352e490a4cdeda9a8242396cabd981f3b19d` (Git tree `2
 
 **Scope limit:** the broker handles read-only source evidence. Arbitrary custom-capability brokerage remains outside this slice because preserving its Room/sandbox execution authority needs a separate design. Stage C is now complete separately under D-032/D-033 and E-102 through E-106.
 
-## 19. I-015 Stage C.1 assignment-scoped provider context
+## 19. I-015 Stage C assignment-scoped provider context and bounded continuity
 
-**IMPLEMENTED / VERIFIED — 2026-09-16 — opt-in work-model v2**
+**IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED — 2026-09-16 — opt-in work-model v2**
 
 D-032 treats provider context as execution transport rather than the definition of persistent agent identity. Persistent A/B/C identity, transaction state, evidence state, joins, and assignment provenance remain durable application-level state. The existing `persistent_agent_thread` mode remains the ordinary default.
 
