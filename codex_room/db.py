@@ -2615,7 +2615,8 @@ class Database:
                 db,
                 """SELECT a.*, r.status AS room_status, r.active_round_id,
                           r.max_turns, r.lifecycle_version,
-                          ro.turn_count AS round_turn_count, ro.work_model_version
+                          ro.turn_count AS round_turn_count, ro.work_model_version,
+                          ro.provider_context_mode
                    FROM agents a JOIN rooms r ON r.id=a.room_id
                    JOIN rounds ro ON ro.id=r.active_round_id
                    WHERE a.room_id=? AND a.agent_key=? AND r.status='running'
@@ -2667,6 +2668,8 @@ class Database:
                             if continuation_row else None
                         ),
                         "work_model_version": 2,
+                "provider_context_mode": agent["provider_context_mode"],
+                        "provider_context_mode": agent["provider_context_mode"],
                     }
                 )
                 return result
@@ -2699,21 +2702,28 @@ class Database:
                 await db.commit()
                 return None
 
-            continuation_row = await self._fetchone(
-                db,
-                """SELECT * FROM usage_continuations
-                   WHERE agent_id=? AND room_id=? AND round_id=?
-                     AND lifecycle_version=? AND thread_id=?
-                     AND assignment_id=? AND state='ready'""",
-                (
-                    agent["id"],
-                    room_id,
-                    agent["active_round_id"],
-                    agent["lifecycle_version"],
-                    agent["thread_id"],
-                    assignment["id"],
-                ),
+            context_thread_id = (
+                assignment["context_thread_id"]
+                if agent["provider_context_mode"] == "assignment_thread"
+                else agent["thread_id"]
             )
+            continuation_row = None
+            if context_thread_id is not None:
+                continuation_row = await self._fetchone(
+                    db,
+                    """SELECT * FROM usage_continuations
+                       WHERE agent_id=? AND room_id=? AND round_id=?
+                         AND lifecycle_version=? AND thread_id=?
+                         AND assignment_id=? AND state='ready'""",
+                    (
+                        agent["id"],
+                        room_id,
+                        agent["active_round_id"],
+                        agent["lifecycle_version"],
+                        context_thread_id,
+                        assignment["id"],
+                    ),
+                )
 
             selected_model = model
             selected_effort = reasoning_effort
