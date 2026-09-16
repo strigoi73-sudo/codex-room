@@ -20,7 +20,7 @@
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-C IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED  
 **Decision:** D-030, D-031, D-032, D-033  
 **Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103, E-104, E-105, E-106  
-**Scope:** [CORE], with later [CORE + ROOM migration] only after the remaining naturalistic/viability gates justify activation.
+**Scope:** [CORE], with later [CORE + ROOM migration] only if the Stage-D viability gate justifies broader activation.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
 
@@ -72,7 +72,7 @@
 
 **Remediation state:** COMPLETE / VERIFIED. PR #85 adds bounded sibling assignment metadata to the v2 assignment envelope, preserves independent sibling results and legitimate nested delegation, and passed the hosted three-job matrix. See E-095.
 
-Default activation remains unapproved. Stage B and Stage C remain on hold.
+**Checkpoint-era note:** at the V2-N1 checkpoint, default activation remained unapproved and Stages B/C had not yet begun. Those later stages are now complete; this sentence records the sequencing decision at that time.
 
 #### V2-N2 — Controlled sibling-context rerun
 **Work state:** COMPLETE — PASS  
@@ -97,13 +97,13 @@ Collect the same JSON export/economics evidence as V2-N1. Compare V2-N2 directly
 
 **Interpretation:** the sibling-work visibility repair removed the exact duplicate-cognition path observed in V2-N1 without material answer-quality loss. This closes the bounded Stage-A naturalistic checkpoint. It does **not** establish the full multi-task median/p90/quality/robustness viability gate.
 
-Default activation remains unapproved. Stage B is now the next I-015 work item; Stage C remains separate and later.
+**Checkpoint-era note:** after V2-N2, default activation remained unapproved, Stage B was next, and Stage C was intentionally deferred. Stages B/C are now complete; default activation is still reserved for the Stage-D viability decision.
 
 #### Stage B.1 — Declarative source evidence bundles
-**Work state:** IMPLEMENTED / VERIFIED — naturalistic validation pending  
+**Work state:** COMPLETE — IMPLEMENTED / VERIFIED; direct-bundle naturalistic question superseded by B.2/B.3 consolidated interface  
 **Scope:** [CORE]
 
-PR #88 adds `inspect_source` v3 `bundle`, which composes existing bounded `find`, `search`, `search_many`, `read`, and `read_many` operations into one declarative execution when all requested evidence and bounds are known in advance. It rejects nested/adaptive plans and caps aggregate transient output. The direct `codex-room-cap source bundle` CLI accepts `--plan-json` or `--plan-file`. Agent guidance now prefers this path for heterogeneous predeclared retrieval while leaving genuinely adaptive investigation unchanged. Hosted verification passed across the full matrix. See E-097.
+PR #88 added `inspect_source` v3 `bundle`, which composes existing bounded `find`, `search`, `search_many`, `read`, and `read_many` operations into one declarative execution when all requested evidence and bounds are known in advance. It rejects nested/adaptive plans and caps aggregate transient output. The direct `codex-room-cap source bundle` CLI accepts `--plan-json` or `--plan-file`. At the Stage-B1 checkpoint, agent guidance preferred this path for heterogeneous predeclared retrieval while leaving genuinely adaptive investigation unchanged. D-031/B2 later moved ordinary version-2 source retrieval behind structured `EVIDENCE`; the direct bundle remains a compatibility/operator primitive. Hosted verification passed across the full matrix. See E-097.
 
 #### B-N1 — First Stage-B naturalistic validation
 **Work state:** COMPLETE — INCONCLUSIVE FOR BUNDLE ADOPTION / OBSERVED EFFICIENCY ISSUE  
@@ -149,7 +149,7 @@ PR #88 adds `inspect_source` v3 `bundle`, which composes existing bounded `find`
 - quality requires all three facts to be correct and traceable to the requested source paths;
 - failure of the bundle itself, unnecessary separate predictable source calls, or unexplained extra model turns is Stage-B evidence to diagnose before a second paid validation.
 
-Stage B is not complete from deterministic tests alone. B-N1 must be assessed before expanding the Stage-B mechanism or beginning Stage C.
+**Preregistered gate at that checkpoint:** Stage B was not to be considered complete from deterministic tests alone; B-N1 had to be assessed before expanding the Stage-B mechanism or beginning Stage C.
 
 **Observed result**
 
@@ -179,7 +179,7 @@ See E-098 and E-099.
 **Evidence:** E-098, E-099, E-100  
 **Scope:** [CORE]
 
-Implement one bounded version-2 transaction action, conceptually `EVIDENCE`, for read-only source evidence.
+Implemented one bounded version-2 transaction action, `EVIDENCE`, for read-only source evidence.
 
 The agent-facing contract expresses atomic semantic needs such as `READ`, `SEARCH`, and `FIND` with logical source, path/query, Room ID where applicable, and bounded result/line limits. It does not expose `bundle`, `read_many`, `search_many`, executable names, shell quoting, registry ceremony, inline-JSON transport, or plan-file mechanics.
 
@@ -228,7 +228,7 @@ The deterministic acceptance gate is complete. Coverage verifies same-Assignment
 
 ##### Stage C.2 — Naturalistic context economics and bounded continuity
 **Work state:** COMPLETE — C-N1 PASS; C-N2 PASS / continuity gap demonstrated
-**Evidence:** E-103
+**Evidence:** E-103, E-104
 
 ###### C-N1 — Warmed persistent-history paired context comparison
 **Work state:** COMPLETE — PASS
@@ -248,9 +248,9 @@ Economics:
 The assignment-scoped Assignment bound a separate provider thread `01a0aae2-6899-7e43-ace4-3b7d986166fb`; C's permanent provider thread remained `01a0aaa5-ecba-7313-ac8a-ce0afafa610e`. This exceeds the preregistered >=20% material-improvement threshold without additional cognition or quality loss. C-N1 therefore establishes that inherited provider history can impose material replay cost on a self-contained Assignment.
 
 ###### C-N2 — Cross-Assignment continuity control
-**Work state:** PLANNED / PREREGISTERED
+**Work state:** COMPLETE — PASS / continuity gap demonstrated
 
-C-N1 does not answer whether a later Assignment that genuinely depends on prior Room knowledge can operate correctly without the permanent provider thread. C-N2 tests only that boundary before any memory/index/summarization implementation.
+C-N1 did not answer whether a later Assignment that genuinely depended on prior Room knowledge could operate correctly without the permanent provider thread. C-N2 was designed to test only that boundary before any memory/index/summarization implementation.
 
 **Substrate and order**
 
@@ -367,20 +367,20 @@ Ordinary-use testing has now demonstrated that the remaining failure class is no
 
 **Design objective:** preserve the permanent A/B/C organization and agent judgment while replacing implicit conversational work state with an explicit, inspectable transaction model.
 
-Proposed state model:
+Implemented transaction model (originally proposed here):
 
 1. **Task** — one bounded objective being advanced inside a Room/Round. A task owns its current work state, completion condition, and optional budget/context policy. A Round remains the user-visible conversational/lifecycle container; tasks become the work units inside it.
-2. **Assignment** — one explicit unit of cognition assigned to one agent. It carries a task ID, target agent, bounded instruction, causal parent, execution configuration when applicable, selected context references, and a durable state such as queued / claimed / running / completed / passed / failed / cancelled / waived.
-3. **Join** — an explicit dependency set over assignments. A join records which contributions are required before integration or settlement can proceed. CORE, not prose, determines whether the join is satisfied. Timeouts, failures, cancellation, and explicit visible waivers must be represented mechanically.
+2. **Assignment** — one explicit unit of cognition assigned to one agent. It carries a task ID, target agent, bounded instruction, causal parent, execution configuration when applicable, selected context references, and a durable state from `queued | running | waiting_join | waiting_evidence | completed | passed | failed | cancelled | waived`. `HISTORY` performs bounded selection/attachment atomically and requeues the same Assignment rather than adding another wait state.
+3. **Join** — an explicit dependency set over assignments. A join records which contributions are required before integration or settlement can proceed. CORE, not prose, determines whether the join is satisfied. Terminal failure/cancellation/waiver states are mechanically visible to join settlement; no automatic assignment-timeout policy is implied by the current implementation.
 4. **Result** — the immutable outcome of an assignment, linked to the exact assignment and execution. Existing decision events and `agent_executions` can remain the durable result/provenance layer; a new standalone result table is not required unless implementation evidence shows one is necessary.
 5. **Integration** — ordinarily another explicit assignment, usually to C, created deterministically when a required join becomes ready. Integration is therefore work, not a heuristic inferred from unread passive peer messages.
 6. **Settlement** — a task-level terminal transition. A task may settle only when its explicit dependencies are resolved and the current integrating/owning assignment chooses a valid terminal action. Agent `READY_TO_FINISH` state should no longer carry task-completion semantics by itself.
 
 **Important boundary:** C/A/B continue to decide intellectual questions: whether peers add value, whom to delegate to, how to frame work, what evidence matters, how to interpret disagreement, whether a waiver is justified, and what conclusion to reach. CORE owns only declared mechanics: assignment creation, causal delivery, joins, queue ordering, retries/budgets, context assembly, and whether a requested terminal transition is mechanically valid. CORE must not infer hidden intent from prose such as “I am waiting for A.”
 
-**Structured-output implementation:** version-2 assignments use `COMPLETE | DELEGATE | PASS`. `DELEGATE` carries the target, bounded instruction, and optional C-selected execution configuration in one atomic transaction that creates the child assignment(s) and dependency join. Version 2 has no separate `invoke_targets` field, eliminating prose/routing divergence. Public/readable events remain audit history and do not become runnable work without an explicit assignment.
+**Structured-output implementation:** current version-2 assignments use `COMPLETE | DELEGATE | EVIDENCE | HISTORY | PASS`. `DELEGATE` carries target/instruction/config and atomically creates child assignments plus their join; `EVIDENCE` declares bounded source needs for deterministic CORE retrieval; `HISTORY` declares bounded prior-Room result lookup and requeues the same Assignment with exact selected event provenance. Version 2 has no separate `invoke_targets` field, eliminating prose/routing divergence. Public/readable events remain audit history and do not become runnable work without an explicit assignment.
 
-**Current-to-proposed mapping:**
+**Legacy-to-transaction mapping (implemented for opt-in v2):**
 
 - preserve `rooms`, `rounds`, persistent A/B/C identities, profiles/overlays, workspaces, custom capability bindings, exports, observer event history, model policy, durable `agent_executions`, recovery/usage-wall machinery, and WebSocket/UI transport;
 - preserve `events` primarily as audit/conversation history and exact provenance;
@@ -395,10 +395,10 @@ Proposed state model:
 
 **Staged design path — do not collapse these into one implementation:**
 
-- **Stage A — coordination transaction kernel — COMPLETE / IMPLEMENTED / VERIFIED (opt-in):** Task/Assignment/Join state, assignment envelopes, deterministic join release, terminal-state validity, and removal of passive backlog as actionable work. The current persistent SDK thread behavior remains in place so coordination reliability can be evaluated independently of context-economy changes.
-- **Stage B — bounded evidence execution:** add a declarative evidence-plan path where a model states already-known searches/reads/bounds once, CORE executes the plan deterministically, and one normalized evidence bundle returns for cognition. Native exploratory tools remain available for genuinely adaptive investigation; planned retrieval should not require a model continuation per mechanical step.
-- **Stage C — durable memory vs active context experiment:** test whether application-level persistent agent identity can be preserved with a compact versioned Room/task ledger plus targeted history/evidence instead of resuming an ever-growing full SDK thread for every execution. This may require short-lived or task-bounded SDK threads and therefore requires an explicit later design decision if adopted. D-009 already supports targeted retrieval; D-020/D-023 require persistent organizational identity, not necessarily one forever-growing provider thread.
-- **Stage D — viability gate:** only after the bounded design is implemented and deterministically verified, run a preregistered set of ordinary useful tasks. Do not resume feature development until the gate passes.
+- **Stage A — coordination transaction kernel — COMPLETE / IMPLEMENTED / VERIFIED (opt-in):** Task/Assignment/Join state, assignment envelopes, deterministic join release, terminal-state validity, and removal of passive backlog as actionable work. Stage A deliberately retained persistent SDK-thread behavior at that stage so coordination reliability could be evaluated independently; Stage C later added the opt-in assignment-scoped alternative.
+- **Stage B — bounded evidence execution — COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED:** agents declare bounded source-evidence intent through `EVIDENCE`; CORE chooses and executes the deterministic retrieval mechanics and returns normalized evidence to the same Assignment. Native exploratory/custom capability paths remain available where the structured source path does not apply.
+- **Stage C — durable memory vs active context experiment — COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED:** D-032 bounds opt-in provider context to the logical Assignment; D-033 restores deliberate cross-Assignment continuity through bounded `HISTORY` retrieval over prior completed Room results. C-N1 demonstrated lower replay cost on self-contained work, C-N2 demonstrated the continuity gap, and C-N3 demonstrated explicit recovery. No broad summarizer/index was justified.
+- **Stage D — viability gate — NEXT:** validate and preregister a bounded set of ordinary useful tasks, then judge coordination, economics, quality, and robustness before any default-activation decision. Do not resume adjacent feature development until the gate is resolved.
 
 **Provisional viability gate to validate before implementation:**
 
@@ -410,7 +410,7 @@ Proposed state model:
 
 ### Stage A detailed design — implemented transaction kernel (opt-in)
 
-Stage A changes **coordination state only**. It deliberately retains the current persistent SDK-thread model, existing Codex adapter, tool surfaces, execution recovery, and context-compaction behavior so coordination improvement can be measured independently of the later Stage C memory/context experiment.
+Stage A originally changed **coordination state only** and deliberately retained the persistent SDK-thread model so coordination improvement could be measured independently. The detailed design below is retained as the base transaction-kernel specification, with current extensions from later stages folded into the action/state notes where they affect present behavior: D-031 adds `EVIDENCE` / `waiting_evidence`, D-032 adds opt-in assignment-scoped provider threads, and D-033 adds nonterminal `HISTORY` retrieval. Version 1 and persistent-agent-thread compatibility remain intact.
 
 #### A.1 Minimal persistent schema
 
@@ -454,7 +454,7 @@ An assignment is a **logical unit of agent work**, not necessarily one model tur
 - `instruction TEXT NOT NULL` — exact bounded work instruction for this logical assignment;
 - `context_event_ids_json TEXT NOT NULL DEFAULT '[]'` — explicit additional Room-event references selected for the assignment; there is no implicit unread backlog;
 - `execution_config_id TEXT` — optional bounded C-selected peer configuration;
-- `state TEXT NOT NULL` — `queued | running | waiting_join | completed | passed | failed | cancelled | waived`;
+- `state TEXT NOT NULL` — `queued | running | waiting_join | waiting_evidence | completed | passed | failed | cancelled | waived`; `HISTORY` does not add a separate wait state because selection/attachment occurs atomically before the same Assignment is requeued;
 - `result_event_id TEXT REFERENCES events(id)` — terminal substantive result when available;
 - `resolution_reason TEXT` — failure/cancellation/waiver explanation;
 - `created_at TEXT NOT NULL`
@@ -486,7 +486,7 @@ Add one nullable provenance column to the existing execution table:
 
 - `agent_executions.assignment_id TEXT REFERENCES assignments(id)`.
 
-Legacy executions leave it null. One logical assignment may have multiple execution rows because a waiting assignment can resume after a join or a retry can create another exact SDK turn.
+Legacy executions leave it null. One logical assignment may have multiple execution rows because an Assignment can resume after a join, source-evidence cycle, bounded history retrieval, usage-wall continuation, or retry.
 
 #### A.2 Assignment state machine
 
@@ -499,6 +499,8 @@ The authoritative assignment transitions are:
 - successful `DELEGATE` decision → `waiting_join`, with one new pending join and child assignments created atomically;
 - all child assignments reach terminal states → join `ready`;
 - join release → parent assignment `queued` again, with the resolved join made explicit in its next assignment envelope, then join `released`;
+- successful `EVIDENCE` decision → `waiting_evidence`; deterministic evidence completion → the same Assignment `queued` again with bounded evidence available to its continuation;
+- successful `HISTORY` decision → CORE atomically selects/attaches bounded prior result-event IDs and returns the same Assignment to `queued` without a separate waiting state;
 - non-retryable execution failure → `failed`;
 - lifecycle stop/new Round → `cancelled`;
 - explicit supported waiver → `waived`.
@@ -528,13 +530,15 @@ Required invariants:
 
 #### A.4 Structured agent decision contract for transaction work
 
-For version-2 assignments, replace MESSAGE/PASS/FINISH plus `invoke_targets` with a smaller work-state contract:
+For current version-2 assignments, MESSAGE/PASS/FINISH plus `invoke_targets` is replaced by the transaction work-state contract:
 
-`action: COMPLETE | DELEGATE | PASS`
+`action: COMPLETE | DELEGATE | EVIDENCE | HISTORY | PASS`
+
+Stage A introduced `COMPLETE | DELEGATE | PASS`; D-031 and D-033 later extended the same contract with `EVIDENCE` and `HISTORY`.
 
 Common field:
 
-- `message: string` — substantive public result/commentary. Required for COMPLETE; optional for DELEGATE/PASS.
+- `message: string` — substantive public result/commentary. Required for COMPLETE; optional for the other actions.
 
 For `DELEGATE` only:
 
@@ -543,17 +547,19 @@ For `DELEGATE` only:
   - `instruction: non-empty bounded assignment text`;
   - optional `config: luna-medium | terra-medium | terra-high | sol-medium`, accepted only when the current agent is C and only for the target in that record.
 
-Validation:
+For `EVIDENCE` only:
 
-- COMPLETE and PASS require `delegations=null`;
-- DELEGATE requires at least one delegation and forbids duplicate targets;
-- C's D-026 differentiation rule remains cognitive/protected-instruction policy; CORE does not judge semantic quality of the two instructions;
-- DELEGATE atomically creates the join and every child assignment in the same database transaction that settles the current execution;
-- CORE, not the model, emits the mechanical observer narration that the assignment is waiting on those exact child assignments.
+- `evidence_requests: 1..16` bounded semantic source requests using `READ | SEARCH | FIND`; CORE owns source authorization, execution-form selection, deterministic retrieval, restartable evidence state, and normalized return to the same Assignment.
 
-There is deliberately **no separate `invoke_targets` field** in version 2. The delegation records are the invocation. This removes the current possibility that prose describes delegated work while an independent routing field names nobody.
+For `HISTORY` only:
 
-There is also no `FINISH` action at the agent-membership level. COMPLETE/PASS terminate the **current assignment**. Task settlement is a separate deterministic transition.
+- `history_requests: 1..4` bounded same-Room prior-result lookups using `RECENT | SEARCH`, with optional agent restriction;
+- each request may ask for at most 10 results, and one action may request/attach at most 20 results overall;
+- CORE selects only prior completed Assignment result events, attaches exact event IDs to `context_event_ids`, records audit provenance, and requeues the same Assignment.
+
+Validation keeps action-specific fields null outside their owning action. `DELEGATE` forbids duplicate targets; C's D-026 differentiation rule remains cognitive/protected-instruction policy, so CORE does not judge semantic quality of peer instructions. Delegation/join creation, evidence-state transitions, and history selection/attachment occur through deterministic transaction settlement rather than prose.
+
+There is deliberately **no separate `invoke_targets` field** in version 2. Delegation records are the peer invocation. There is also no `FINISH` action at the agent-membership level. COMPLETE/PASS terminate the **current assignment**; Task settlement is a separate deterministic transition.
 
 #### A.5 Prompt / assignment envelope
 
@@ -564,12 +570,13 @@ Each model call receives one authoritative assignment envelope containing:
 - Room/Round/Task/Assignment IDs;
 - the Round's stored public objective and applicable protected/private overlay material;
 - the assignment's exact `instruction`;
-- explicit `context_event_ids_json` material, if any;
+- explicit `context_event_ids_json` material, including exact bounded prior-result events selected by `HISTORY`, if any;
 - when resuming from a join: the join ID plus each child assignment's terminal status, result event, and failure/cancellation/waiver reason;
+- when resuming from structured source evidence: the bounded normalized evidence result and durable request/provenance state;
 - any explicit human task requirements;
-- a protected statement that this assignment is the current actionable work and prior persistent-thread history is background only.
+- a protected statement that this assignment is the current actionable work and that historical context is background rather than authoritative current work state.
 
-Public Room history remains inspectable but is not automatically injected merely because it is unread. Stage A intentionally retains the persistent SDK thread, so this does **not** claim to eliminate provider-side historical context; that is the separate Stage C experiment.
+Public Room history remains inspectable but is not automatically injected merely because it is unread. Stage A originally retained the persistent SDK thread; Stage C later added opt-in `assignment_thread`, where each logical Assignment owns its provider context while `persistent_agent_thread` remains the default.
 
 #### A.6 Round start and ordinary C→A/B→C flow
 
@@ -644,7 +651,7 @@ For a version-2 Task, agent membership state is not the completion criterion.
 
 CORE may settle only when:
 
-- there are no `queued | running | waiting_join` assignments;
+- there are no `queued | running | waiting_join | waiting_evidence` assignments;
 - there are no `pending | ready` unreleased joins;
 - explicit human required-contributor constraints are satisfied;
 - the coordinator's latest applicable assignment has reached COMPLETE or PASS, or an explicit lifecycle cancellation/failure closes the task.
@@ -659,7 +666,7 @@ Preserve the strongest part of the existing kernel:
 - SDK thread/turn binding remains durable before Room-side result settlement;
 - `record_execution_result()` remains the write-ahead result boundary;
 - retries create additional exact executions for the same logical assignment;
-- usage-wall continuation remains same-agent/same-thread in Stage A and retains the assignment ID;
+- usage-wall continuation remains bound to the exact context thread selected for the Assignment and retains the assignment ID; persistent mode uses the agent's permanent thread, while assignment-scoped mode uses the Assignment's durable `context_thread_id`;
 - stale lifecycle generations cannot settle an assignment after its Task/Round is cancelled.
 
 This is why Stage A is a kernel replacement rather than a whole-runtime rewrite.
