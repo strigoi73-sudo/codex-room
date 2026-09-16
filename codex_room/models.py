@@ -44,6 +44,7 @@ class Outcome(StrEnum):
 class TransactionAction(StrEnum):
     COMPLETE = "COMPLETE"
     DELEGATE = "DELEGATE"
+    EVIDENCE = "EVIDENCE"
     PASS = "PASS"
 
 
@@ -80,10 +81,55 @@ class DelegationRequest(BaseModel):
     config: ExecutionConfigId | None = None
 
 
+class EvidenceRequest(BaseModel):
+    operation: Literal["READ", "SEARCH", "FIND"]
+    source: Literal["workspace", "core", "room"] = "workspace"
+    room_id: str | None = None
+    path: str = Field(min_length=1, max_length=2_000)
+    query: str | None = Field(default=None, min_length=1, max_length=4_096)
+    patterns: list[str] | None = None
+    start_line: int | None = Field(default=None, ge=1)
+    max_lines: int | None = Field(default=None, ge=1, le=1_000)
+    max_results: int | None = Field(default=None, ge=1, le=200)
+
+    @model_validator(mode="after")
+    def validate_evidence_request(self) -> "EvidenceRequest":
+        if self.source == "room":
+            if not self.room_id:
+                raise ValueError("room source requires room_id")
+        elif self.room_id is not None:
+            raise ValueError("room_id is valid only for room source")
+
+        if self.patterns is not None:
+            if not 1 <= len(self.patterns) <= 16:
+                raise ValueError("patterns must contain 1 to 16 globs")
+            if any(
+                not isinstance(item, str) or not item or len(item) > 500
+                for item in self.patterns
+            ):
+                raise ValueError("patterns must contain non-empty bounded strings")
+
+        if self.operation == "READ":
+            if self.query is not None or self.patterns is not None or self.max_results is not None:
+                raise ValueError("READ accepts path/start_line/max_lines only")
+        elif self.operation == "SEARCH":
+            if self.query is None:
+                raise ValueError("SEARCH requires query")
+            if self.patterns is not None or self.start_line is not None or self.max_lines is not None:
+                raise ValueError("SEARCH does not accept read/find-only fields")
+            if self.max_results is not None and self.max_results > 100:
+                raise ValueError("SEARCH max_results cannot exceed 100")
+        else:
+            if self.query is not None or self.start_line is not None or self.max_lines is not None:
+                raise ValueError("FIND does not accept query/read-only fields")
+        return self
+
+
 class TransactionDecision(BaseModel):
     action: TransactionAction
     message: str = ""
     delegations: list[DelegationRequest] | None = None
+    evidence_requests: list[EvidenceRequest] | None = None
 
     @model_validator(mode="after")
     def validate_transaction_decision(self) -> "TransactionDecision":
@@ -96,8 +142,20 @@ class TransactionDecision(BaseModel):
             targets = [item.target for item in self.delegations]
             if len(targets) != len(set(targets)):
                 raise ValueError("delegations cannot contain duplicate targets")
-        elif self.delegations is not None:
-            raise ValueError("delegations is valid only for DELEGATE")
+            if self.evidence_requests is not None:
+                raise ValueError("evidence_requests is valid only for EVIDENCE")
+        elif self.action == TransactionAction.EVIDENCE:
+            if not self.evidence_requests:
+                raise ValueError("EVIDENCE requires at least one evidence request")
+            if len(self.evidence_requests) > 16:
+                raise ValueError("EVIDENCE supports at most 16 requests")
+            if self.delegations is not None:
+                raise ValueError("delegations is valid only for DELEGATE")
+        else:
+            if self.delegations is not None:
+                raise ValueError("delegations is valid only for DELEGATE")
+            if self.evidence_requests is not None:
+                raise ValueError("evidence_requests is valid only for EVIDENCE")
         return self
 
 
@@ -187,7 +245,7 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
     "properties": {
         "action": {
             "type": "string",
-            "enum": ["COMPLETE", "DELEGATE", "PASS"],
+            "enum": ["COMPLETE", "DELEGATE", "EVIDENCE", "PASS"],
         },
         "message": {"type": "string"},
         "delegations": {
@@ -225,8 +283,85 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                 {"type": "null"},
             ]
         },
+        "evidence_requests": {
+            "anyOf": [
+                {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "operation": {
+                                "type": "string",
+                                "enum": ["READ", "SEARCH", "FIND"],
+                            },
+                            "source": {
+                                "type": "string",
+                                "enum": ["workspace", "core", "room"],
+                            },
+                            "room_id": {
+                                "anyOf": [
+                                    {"type": "string"},
+                                    {"type": "null"},
+                                ]
+                            },
+                            "path": {"type": "string"},
+                            "query": {
+                                "anyOf": [
+                                    {"type": "string"},
+                                    {"type": "null"},
+                                ]
+                            },
+                            "patterns": {
+                                "anyOf": [
+                                    {
+                                        "type": "array",
+                                        "minItems": 1,
+                                        "maxItems": 16,
+                                        "items": {"type": "string"},
+                                    },
+                                    {"type": "null"},
+                                ]
+                            },
+                            "start_line": {
+                                "anyOf": [
+                                    {"type": "integer", "minimum": 1},
+                                    {"type": "null"},
+                                ]
+                            },
+                            "max_lines": {
+                                "anyOf": [
+                                    {"type": "integer", "minimum": 1, "maximum": 1000},
+                                    {"type": "null"},
+                                ]
+                            },
+                            "max_results": {
+                                "anyOf": [
+                                    {"type": "integer", "minimum": 1, "maximum": 200},
+                                    {"type": "null"},
+                                ]
+                            },
+                        },
+                        "required": [
+                            "operation",
+                            "source",
+                            "room_id",
+                            "path",
+                            "query",
+                            "patterns",
+                            "start_line",
+                            "max_lines",
+                            "max_results",
+                        ],
+                        "additionalProperties": False,
+                    },
+                },
+                {"type": "null"},
+            ]
+        },
     },
-    "required": ["action", "message", "delegations"],
+    "required": ["action", "message", "delegations", "evidence_requests"],
     "additionalProperties": False,
 }
 
