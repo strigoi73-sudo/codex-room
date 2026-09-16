@@ -31,6 +31,9 @@ MAX_BATCH_QUERIES = 16
 MAX_BATCH_QUERY_CHARS = 16 * 1024
 MAX_BATCH_READS = 16
 MAX_BATCH_READ_OUTPUT_BYTES = 128 * 1024
+MAX_EVIDENCE_BUNDLE_REQUESTS = 16
+MAX_EVIDENCE_BUNDLE_OUTPUT_BYTES = 512 * 1024
+MAX_EVIDENCE_BUNDLE_LABEL_CHARS = 80
 
 CORE_READ_ENTRIES = frozenset(
     {
@@ -1156,6 +1159,131 @@ def _read_many_operation(
     }
 
 
+def _evidence_bundle_operation(
+    workspace: Path,
+    inputs: dict[str, Any],
+) -> dict[str, Any]:
+    allowed = {"operation", "requests", "max_bytes"}
+    unknown = sorted(set(inputs) - allowed)
+    if unknown:
+        raise SourceInspectionError(
+            "unknown bundle field(s): " + ", ".join(unknown)
+        )
+
+    requests = inputs.get("requests")
+    max_bytes = inputs.get("max_bytes", MAX_EVIDENCE_BUNDLE_OUTPUT_BYTES)
+    if (
+        not isinstance(requests, list)
+        or not 1 <= len(requests) <= MAX_EVIDENCE_BUNDLE_REQUESTS
+        or any(not isinstance(item, dict) for item in requests)
+    ):
+        raise SourceInspectionError(
+            f"requests must contain 1 to {MAX_EVIDENCE_BUNDLE_REQUESTS} objects"
+        )
+    if (
+        not isinstance(max_bytes, int)
+        or isinstance(max_bytes, bool)
+        or not 1 <= max_bytes <= MAX_EVIDENCE_BUNDLE_OUTPUT_BYTES
+    ):
+        raise SourceInspectionError(
+            f"max_bytes must be an integer from 1 to "
+            f"{MAX_EVIDENCE_BUNDLE_OUTPUT_BYTES}"
+        )
+
+    labels: set[str] = set()
+    normalized_requests: list[tuple[str, dict[str, Any]]] = []
+    allowed_operations = {"find", "search", "search_many", "read", "read_many"}
+    for item in requests:
+        if set(item) != {"label", "request"}:
+            raise SourceInspectionError(
+                "each bundle item must contain exactly label and request"
+            )
+        label = item["label"]
+        request = item["request"]
+        if (
+            not isinstance(label, str)
+            or not label
+            or "\n" in label
+            or "\r" in label
+            or len(label) > MAX_EVIDENCE_BUNDLE_LABEL_CHARS
+        ):
+            raise SourceInspectionError(
+                f"bundle labels must be one non-empty line of at most "
+                f"{MAX_EVIDENCE_BUNDLE_LABEL_CHARS} characters"
+            )
+        if label in labels:
+            raise SourceInspectionError("bundle labels must be unique")
+        labels.add(label)
+        if not isinstance(request, dict):
+            raise SourceInspectionError("bundle request must be a JSON object")
+        operation = request.get("operation")
+        if operation not in allowed_operations:
+            raise SourceInspectionError(
+                "bundle request operation must be find, search, search_many, "
+                "read, or read_many"
+            )
+        normalized_requests.append((label, dict(request)))
+
+    transient_items: list[dict[str, Any]] = []
+    durable_items: list[dict[str, Any]] = []
+    returned_bytes = 0
+    attempted_count = 0
+    truncated = False
+    next_request_index: int | None = None
+
+    for index, (label, request) in enumerate(normalized_requests):
+        attempted_count += 1
+        result = inspect_source(workspace, request)
+        transient: dict[str, Any] = {
+            "label": label,
+            "operation": request["operation"],
+            "evidence": result["evidence"],
+        }
+        for field in ("content", "matches", "results", "reads"):
+            if field in result:
+                transient[field] = result[field]
+        encoded_bytes = len(
+            json.dumps(
+                transient,
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        )
+        if returned_bytes + encoded_bytes > max_bytes:
+            truncated = True
+            next_request_index = index
+            break
+        returned_bytes += encoded_bytes
+        transient_items.append(transient)
+        durable_items.append(
+            {
+                "label": label,
+                "operation": request["operation"],
+                "evidence": result["evidence"],
+            }
+        )
+
+    return {
+        "codex_room_capability": CAPABILITY_MARKER,
+        "capability": "inspect_source",
+        "ok": True,
+        "evidence": {
+            "operation": "bundle",
+            "requests": durable_items,
+            "requested_count": len(normalized_requests),
+            "attempted_count": attempted_count,
+            "returned_count": len(transient_items),
+            "returned_bytes": returned_bytes,
+            "max_bytes": max_bytes,
+            "truncated": truncated,
+            "truncation_reason": "bundle_max_bytes" if truncated else None,
+            "next_request_index": next_request_index,
+        },
+        "items": transient_items,
+    }
+
+
 def inspect_source(workspace: Path, inputs: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(inputs, dict):
         raise SourceInspectionError("capability input must be a JSON object")
@@ -1182,9 +1310,11 @@ def inspect_source(workspace: Path, inputs: dict[str, Any]) -> dict[str, Any]:
         return _read_operation(workspace, inputs)
     if operation == "read_many":
         return _read_many_operation(workspace, inputs)
+    if operation == "bundle":
+        return _evidence_bundle_operation(workspace, inputs)
     raise SourceInspectionError(
         "operation must be 'sources', 'find', 'search', 'search_many', "
-        "'read', or 'read_many'"
+        "'read', 'read_many', or 'bundle'"
     )
 
 
@@ -1195,7 +1325,7 @@ INSPECT_SOURCE_INPUT_SCHEMA: dict[str, Any] = {
     "properties": {
         "operation": {
             "type": "string",
-            "enum": ["sources", "find", "search", "search_many", "read", "read_many"],
+            "enum": ["sources", "find", "search", "search_many", "read", "read_many", "bundle"],
         },
         "source": {
             "type": "string",
@@ -1237,6 +1367,24 @@ INSPECT_SOURCE_INPUT_SCHEMA: dict[str, Any] = {
                 },
             },
         },
+        "requests": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": MAX_EVIDENCE_BUNDLE_REQUESTS,
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["label", "request"],
+                "properties": {
+                    "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": MAX_EVIDENCE_BUNDLE_LABEL_CHARS,
+                    },
+                    "request": {"type": "object"},
+                },
+            },
+        },
         "include_globs": {"type": "array", "items": {"type": "string"}, "default": []},
         "exclude_globs": {"type": "array", "items": {"type": "string"}, "default": []},
         "include_hidden": {"type": "boolean", "default": False},
@@ -1269,7 +1417,7 @@ INSPECT_SOURCE_INPUT_SCHEMA: dict[str, Any] = {
         "max_bytes": {
             "type": "integer",
             "minimum": 1,
-            "maximum": MAX_READ_OUTPUT_BYTES,
+            "maximum": MAX_EVIDENCE_BUNDLE_OUTPUT_BYTES,
             "default": MAX_READ_OUTPUT_BYTES,
         },
     },
@@ -1287,6 +1435,7 @@ INSPECT_SOURCE_OUTPUT_SCHEMA: dict[str, Any] = {
         "matches": {"type": "array"},
         "results": {"type": "array"},
         "reads": {"type": "array"},
+        "items": {"type": "array"},
         "capability_version": {"type": "string"},
         "implementation_sha256": {"type": "string"},
         "durable_result_fields": {
@@ -1317,6 +1466,9 @@ INSPECT_SOURCE_IMPLEMENTATION_COMPONENTS = (
     MAX_BATCH_QUERY_CHARS,
     MAX_BATCH_READS,
     MAX_BATCH_READ_OUTPUT_BYTES,
+    MAX_EVIDENCE_BUNDLE_REQUESTS,
+    MAX_EVIDENCE_BUNDLE_OUTPUT_BYTES,
+    MAX_EVIDENCE_BUNDLE_LABEL_CHARS,
     tuple(sorted(CORE_READ_ENTRIES)),
     _ROOM_ID.pattern,
     _is_link_or_reparse,
@@ -1339,5 +1491,6 @@ INSPECT_SOURCE_IMPLEMENTATION_COMPONENTS = (
     _search_many_operation,
     _read_operation,
     _read_many_operation,
+    _evidence_bundle_operation,
     inspect_source,
 )

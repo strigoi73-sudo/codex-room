@@ -952,7 +952,7 @@ def test_source_cli_avoids_json_request_files_and_batches_workspace_reads(
     ) == 0
     searched = json.loads(capsys.readouterr().out.strip())
     assert searched["capability"] == "inspect_source"
-    assert searched["capability_version"] == "2"
+    assert searched["capability_version"] == "3"
     assert searched["evidence"]["operation"] == "search_many"
     assert searched["evidence"]["query_count"] == 2
     assert [item["query"] for item in searched["results"]] == ["ALPHA", "BETA"]
@@ -982,9 +982,9 @@ def test_source_cli_avoids_json_request_files_and_batches_workspace_reads(
 def test_inspect_source_manifest_advertises_direct_source_cli() -> None:
     inspected = inspect_capability("inspect_source")["capability"]
 
-    assert inspected["version"] == "2"
+    assert inspected["version"] == "3"
     assert inspected["invocation"]["source_cli"] == "codex-room-cap source --help"
-    assert inspected["verification"] == {"status": "verified", "evidence": ["E-078", "E-081"]}
+    assert inspected["verification"] == {"status": "verified", "evidence": ["E-078", "E-081", "E-097"]}
 
 def test_source_cli_failure_is_attributed_to_inspect_source(
     tmp_path: Path, monkeypatch, capsys
@@ -998,4 +998,62 @@ def test_source_cli_failure_is_attributed_to_inspect_source(
     assert payload["codex_room_capability"] == 1
     assert payload["capability"] == "inspect_source"
     assert payload["ok"] is False
+
+def test_source_bundle_cli_accepts_compact_plan_json(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    artifact = tmp_path / "notes.txt"
+    artifact.write_text("alpha\nbeta\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    plan = {
+        "requests": [
+            {
+                "label": "notes",
+                "request": {
+                    "operation": "read",
+                    "source": "workspace",
+                    "path": "notes.txt",
+                    "start_line": 1,
+                    "max_lines": 2,
+                },
+            }
+        ]
+    }
+
+    exit_code = main(
+        ["source", "bundle", "--plan-json", json.dumps(plan)]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["capability"] == "inspect_source"
+    assert payload["capability_version"] == "3"
+    assert payload["items"][0]["label"] == "notes"
+    assert payload["items"][0]["content"] == "alpha\nbeta\n"
+
+
+def test_source_bundle_cli_accepts_workspace_plan_file(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    (tmp_path / "notes.txt").write_text("canary\n", encoding="utf-8")
+    plan = {
+        "requests": [
+            {
+                "label": "notes",
+                "request": {
+                    "operation": "read",
+                    "source": "workspace",
+                    "path": "notes.txt",
+                },
+            }
+        ]
+    }
+    (tmp_path / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(["source", "bundle", "--plan-file", "plan.json"])
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["items"][0]["content"] == "canary\n"
 

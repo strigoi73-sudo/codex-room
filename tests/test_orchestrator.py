@@ -1794,7 +1794,10 @@ async def test_agent_prompt_prefers_continuation_economy_before_registry_overhea
     assert "rather than generic inline-JSON 'invoke inspect_source'" in prompt
     assert "Search and search-many paths may identify either a file or directory" in prompt
     assert "max-matches within 1-100 and max-files within 1-200" in prompt
-    assert "normally use one search-many, then one read-many" in prompt
+    assert "codex-room-cap source bundle" in prompt
+    assert "CORE executes them and returns one normalized evidence bundle" in prompt
+    assert "search-many/read-many directly when one homogeneous batch is sufficient" in prompt
+    assert "Do not place speculative dependent follow-ups in a bundle" in prompt
     assert "specific unresolved dependency" in prompt
     assert "explicit workspace-only instruction forbids it" in prompt
     assert "codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT" in prompt
