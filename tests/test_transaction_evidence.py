@@ -184,7 +184,10 @@ async def test_pending_transaction_evidence_recovers_after_restart(
     monkeypatch.setattr(
         orchestrator_module, "execute_source_evidence", crash_before_execution
     )
-    first_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    first_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        turn_id_namespace="before_restart",
+    )
     first_adapter.decisions["agent_c"].append(
         TransactionDecision(
             action=TransactionAction.EVIDENCE,
@@ -226,7 +229,10 @@ async def test_pending_transaction_evidence_recovers_after_restart(
     monkeypatch.setattr(
         orchestrator_module, "execute_source_evidence", real_execute
     )
-    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        turn_id_namespace="after_restart",
+    )
     second_adapter.decisions["agent_c"].append(
         TransactionDecision(
             action=TransactionAction.COMPLETE,
