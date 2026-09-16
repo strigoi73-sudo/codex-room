@@ -9,6 +9,7 @@ from codex_room.agent import AgentTurnTerminalError
 from codex_room.db import Database
 from codex_room.models import (
     CreateRoomRequest,
+    HistoryRequest,
     ObserverMessageRequest,
     PrepareRoundRequest,
     RoomStatus,
@@ -395,3 +396,167 @@ async def test_persistent_provider_context_mode_remains_default(
     exported = await runtime.db.snapshot(room_id, event_limit=None)
     assert exported is not None
     assert exported["active_round"]["provider_context_mode"] == "persistent_agent_thread"
+
+def test_history_request_validation_is_bounded() -> None:
+    with pytest.raises(ValidationError, match="SEARCH history retrieval"):
+        HistoryRequest(operation="SEARCH", query="")
+    with pytest.raises(ValidationError, match="query is valid only"):
+        HistoryRequest(operation="RECENT", query="not allowed")
+    with pytest.raises(ValidationError, match="at most 20 requested results"):
+        TransactionDecision(
+            action=TransactionAction.HISTORY,
+            history_requests=[
+                HistoryRequest(operation="RECENT", max_results=10),
+                HistoryRequest(operation="RECENT", max_results=10),
+                HistoryRequest(operation="RECENT", max_results=1),
+            ],
+        )
+
+
+@pytest.mark.asyncio
+async def test_assignment_context_history_recent_recovers_prior_round_result_without_thread_inheritance(
+    context_runtime_factory,
+):
+    token = "ORBIT-7429-CEDAR"
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message=token,
+            ),
+            TransactionDecision(
+                action=TransactionAction.HISTORY,
+                history_requests=[
+                    HistoryRequest(
+                        operation="RECENT",
+                        agent="agent_c",
+                        max_results=1,
+                    )
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message=token,
+            ),
+        ]
+    )
+    runtime = await context_runtime_factory(adapter, "assignment-history-recent.db")
+    first = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Establish one continuity token.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            required_contributors=["agent_c"],
+        )
+    )
+    room_id = first["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    first_snapshot = await runtime.db.snapshot(room_id, event_limit=None)
+    assert first_snapshot is not None
+    first_round = first_snapshot["active_round"]
+    first_assignment = first_round["transaction_state"]["tasks"][0]["assignments"][0]
+    first_result_event_id = first_assignment["result_event_id"]
+
+    prepared = await runtime.prepare_round(
+        room_id,
+        PrepareRoundRequest(
+            title="Recall continuity token",
+            prompt=(
+                "Report the continuity token from the immediately preceding Round. "
+                "Do not guess."
+            ),
+            starting_agent="agent_c",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            required_contributors=["agent_c"],
+        ),
+    )
+    await runtime.start_round(room_id, prepared["active_round_id"])
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 3)
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    establishment_thread = adapter.calls["agent_c"][0]["thread_id"]
+    recall_thread = adapter.calls["agent_c"][1]["thread_id"]
+    assert establishment_thread != recall_thread
+    assert adapter.calls["agent_c"][2]["thread_id"] == recall_thread
+    assert token not in adapter.calls["agent_c"][1]["prompt"]
+    assert "<retrieved_room_history>" in adapter.calls["agent_c"][2]["prompt"]
+    assert token in adapter.calls["agent_c"][2]["prompt"]
+
+    exported = await runtime.db.snapshot(room_id, event_limit=None)
+    assert exported is not None
+    active_round = exported["active_round"]
+    assignment = active_round["transaction_state"]["tasks"][0]["assignments"][0]
+    assert assignment["context_event_ids"] == [first_result_event_id]
+    history_events = [
+        event
+        for event in active_round["events"]
+        if event["event_type"] == "tool_activity"
+        and event.get("metadata", {}).get("type") == "deterministic_room_history"
+    ]
+    assert len(history_events) == 1
+    assert history_events[0]["metadata"]["selected_event_ids"] == [first_result_event_id]
+
+
+@pytest.mark.asyncio
+async def test_assignment_context_history_search_matches_prior_round_prompt_and_returns_terminal_result(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Launch marker is ALPHA-903.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.HISTORY,
+                history_requests=[
+                    HistoryRequest(
+                        operation="SEARCH",
+                        query="Project Cedar",
+                        agent="agent_c",
+                        max_results=2,
+                    )
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Recovered ALPHA-903.",
+            ),
+        ]
+    )
+    runtime = await context_runtime_factory(adapter, "assignment-history-search.db")
+    first = await runtime.create_room(
+        CreateRoomRequest(
+            title="Project Cedar",
+            topic="Retain the Project Cedar launch marker.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            required_contributors=["agent_c"],
+        )
+    )
+    room_id = first["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    prepared = await runtime.prepare_round(
+        room_id,
+        PrepareRoundRequest(
+            title="Later unrelated round",
+            prompt="Recover the relevant earlier launch marker.",
+            starting_agent="agent_c",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            required_contributors=["agent_c"],
+        ),
+    )
+    await runtime.start_round(room_id, prepared["active_round_id"])
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 3)
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    retrieved_prompt = adapter.calls["agent_c"][2]["prompt"]
+    assert "<retrieved_room_history>" in retrieved_prompt
+    assert "Launch marker is ALPHA-903." in retrieved_prompt
+
