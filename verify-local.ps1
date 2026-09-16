@@ -242,6 +242,13 @@ function Sync-WindowsDependencies {
                 $name = $parts[0].ToLowerInvariant().Replace("_", "-")
                 $expected = $parts[1]
 
+                # uvloop is intentionally unavailable on Windows; the application's
+                # dependency markers exclude it there even though the shared constraints
+                # file pins the Linux version.
+                if ($name -eq "uvloop") {
+                    continue
+                }
+
                 if (-not $installed.ContainsKey($name) -or $installed[$name] -ne $expected) {
                     $actual = if ($installed.ContainsKey($name)) { $installed[$name] } else { "missing" }
                     $mismatches += "$name expected $expected, found $actual"
