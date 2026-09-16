@@ -20,7 +20,7 @@
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-C IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED  
 **Decision:** D-030, D-031, D-032, D-033  
 **Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103, E-104, E-105, E-106  
-**Scope:** [CORE], with later [CORE + ROOM migration] only after the remaining naturalistic/viability gates justify activation.
+**Scope:** [CORE], with later [CORE + ROOM migration] only if the Stage-D viability gate justifies broader activation.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
 
@@ -228,7 +228,7 @@ The deterministic acceptance gate is complete. Coverage verifies same-Assignment
 
 ##### Stage C.2 — Naturalistic context economics and bounded continuity
 **Work state:** COMPLETE — C-N1 PASS; C-N2 PASS / continuity gap demonstrated
-**Evidence:** E-103
+**Evidence:** E-103, E-104
 
 ###### C-N1 — Warmed persistent-history paired context comparison
 **Work state:** COMPLETE — PASS
