@@ -104,6 +104,16 @@ async def test_transaction_dual_delegation_releases_c_once_after_both_peers(
     assert len(adapter.calls["agent_b"]) == 1
     assert adapter.calls["agent_a"][0]["model"] == "gpt-5.6-luna"
     assert adapter.calls["agent_b"][0]["model"] == "gpt-5.6-terra"
+    agent_a_prompt = adapter.calls["agent_a"][0]["prompt"]
+    agent_b_prompt = adapter.calls["agent_b"][0]["prompt"]
+    assert "<declared_sibling_assignments>" in agent_a_prompt
+    assert 'agent="agent_b"' in agent_a_prompt
+    assert "Audit failure modes independently." in agent_a_prompt
+    assert "<declared_sibling_assignments>" in agent_b_prompt
+    assert 'agent="agent_a"' in agent_b_prompt
+    assert "Analyze the implementation path." in agent_b_prompt
+    assert "sibling results remain independent until the join resolves" in agent_a_prompt
+    assert "sibling results remain independent until the join resolves" in agent_b_prompt
     assert "A implementation result" in adapter.calls["agent_c"][1]["prompt"]
     assert "B failure-mode result" in adapter.calls["agent_c"][1]["prompt"]
     assert "<unread_room_events>" not in adapter.calls["agent_c"][1]["prompt"]
@@ -197,6 +207,8 @@ async def test_transaction_nested_delegation_does_not_release_outer_join_early(
     assert len(adapter.calls["agent_c"]) == 2
     assert len(adapter.calls["agent_a"]) == 2
     assert len(adapter.calls["agent_b"]) == 1
+    assert "<declared_sibling_assignments>" not in adapter.calls["agent_a"][0]["prompt"]
+    assert "<declared_sibling_assignments>" not in adapter.calls["agent_b"][0]["prompt"]
     assert "B dependency result" in adapter.calls["agent_a"][1]["prompt"]
     assert "A final after B" in adapter.calls["agent_c"][1]["prompt"]
 
