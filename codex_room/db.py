@@ -2668,7 +2668,6 @@ class Database:
                             if continuation_row else None
                         ),
                         "work_model_version": 2,
-                "provider_context_mode": agent["provider_context_mode"],
                         "provider_context_mode": agent["provider_context_mode"],
                     }
                 )
@@ -2797,6 +2796,7 @@ class Database:
                     if continuation_row else None
                 ),
                 "work_model_version": 2,
+                "provider_context_mode": agent["provider_context_mode"],
             }
         )
         return result
