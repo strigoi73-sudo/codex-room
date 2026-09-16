@@ -1,7 +1,7 @@
 # Codex Room — Evidence Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-15  
+**Last updated:** 2026-09-16  
 **Scope:** Compact empirical record supporting important project claims.  
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
@@ -3462,3 +3462,19 @@ After that diagnosis, replace the invalid adoption test with B-N2 using a genuin
 
 **Status:** B-N1 mechanically successful and answer-correct; **INCONCLUSIVE** for `bundle` adoption due to test-design error; **OBSERVED ISSUE** for command/replay efficiency. Stage B remains IN PROGRESS. Stage C remains separate.
 
+### E-099 — Stage-B consolidation identifies the shell CLI as an agent-facing abstraction leak
+**Date:** 2026-09-16  
+**Kind:** current-source architecture review + B-N1 consolidation
+
+A consolidation review of B-N1 and canonical `main` at `214fa193d93bbe5cb9a7555c0afe4130469802fc` found that deterministic capability execution is still exposed to Room cognition primarily as a shell/CLI protocol.
+
+Current source evidence:
+
+- the always-loaded deterministic-capability instruction teaches agents when to use registry `list` / `inspect`, generic invocation, direct source commands, `search-many` / `read-many`, `bundle`, inline JSON vs input files, custom-capability authoring/registration, and related operational rules;
+- `inspect_source` already contains bounded `find`, `search`, `search_many`, `read`, `read_many`, and `bundle` primitives with source confinement and output limits, so CORE already possesses the deterministic machinery needed to select an execution plan mechanically;
+- v2 already has explicit Task / Assignment / Join state and a structured transaction decision contract, providing a natural host for a bounded evidence-request action;
+- adapter telemetry still reverse-parses textual capability commands after execution. At this commit, direct source-command recognition covers `sources`, `find`, `search`, `search-many`, `read`, and `read-many`, while `source bundle` is absent from that recognizer even though the CLI and `inspect_source` implement it. This is a source-level interface inconsistency requiring compatibility repair/verification.
+
+B-N1's measured 7 tool calls, failed command, and 184,143-token single execution are consistent with the cost of letting model cognition negotiate this operational interface. The consolidation therefore changes the Stage-B validation target: a model should declare bounded source evidence once, CORE should execute it, and the same assignment should resume with normalized evidence. A second paid test that merely forces the model to remember the word `bundle` would test the old boundary rather than the desired abstraction.
+
+**Status:** source-level diagnosis VERIFIED at the stated commit; the structured evidence path is DECIDED / NOT IMPLEMENTED at this evidence point. B-N1 remains inconclusive for naturalistic `bundle` adoption under E-098.
