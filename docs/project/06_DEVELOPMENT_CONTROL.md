@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The human principal approved the Stage-B consolidation after B-N1. D-031 now fixes the boundary: agents declare bounded deterministic source-evidence intent while CORE owns invocation mechanics, validation, mechanical batching, provenance, and recovery. E-099 records the source-level abstraction-leak diagnosis.
+- **What just changed?** I-015 Stage B.2 is implemented and hosted-verified under D-031. The structured v2 `EVIDENCE` path moves bounded source-retrieval mechanics into CORE while preserving the existing CLI/operator surface and non-source registered/custom capability access. E-100 records exact implementation and verification evidence.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Implement **I-015 Stage B.2 — structured deterministic source evidence execution** as one coherent [CORE] change. The previous B-N2 plan that would force heterogeneous `bundle` adoption is retired. After deterministic/hosted verification, run a replacement naturalistic test of the structured interface itself. Stage C remains separate and deferred.
+- **What is next?** Run **I-015 Stage B.3 — naturalistic consolidated-interface validation** on the verified structured `EVIDENCE` path. The test should measure one bounded evidence request/resume shape and operating economics, not whether C remembers CLI vocabulary. Stage C remains separate and deferred.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -173,10 +173,10 @@ This is not evidence that `bundle` failed; `bundle` was never exercised. It is e
 See E-098 and E-099.
 
 #### Stage B.2 — Structured deterministic source evidence execution
-**Work state:** IN PROGRESS  
-**Reality:** DECIDED / NOT IMPLEMENTED  
+**Work state:** COMPLETE  
+**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-16  
 **Decision:** D-031  
-**Evidence:** E-098, E-099  
+**Evidence:** E-098, E-099, E-100  
 **Scope:** [CORE]
 
 Implement one bounded version-2 transaction action, conceptually `EVIDENCE`, for read-only source evidence.
@@ -199,9 +199,11 @@ The same consolidation should repair and test the current direct-`source bundle`
 **Deterministic acceptance:** schema validation; source confinement/bounds; automatic single/homogeneous/heterogeneous plan selection; equivalent evidence semantics; durable/transient separation; request/result provenance; interruption/restart recovery; v1 compatibility; existing direct CLI compatibility; focused tests; canonical full suite; applicable Windows/browser verification; hosted CI.
 
 #### Stage B.3 — Naturalistic consolidated-interface validation
-**Work state:** PLANNED — depends on Stage B.2 verification
+**Work state:** PLANNED — NEXT
 
 Use a fresh C-only v2 task with several source-evidence needs known at the start. Expected shape: C cognition → one structured `EVIDENCE` action → CORE deterministic retrieval → same C assignment resumes → answer/COMPLETE. Success requires zero CLI help/discovery, zero shell source retrieval, no agent decision between `bundle` and homogeneous batching, correct traceable evidence, and preserved provenance. For a comparable fresh task, target <=80k total execution tokens; >100k requires explanation. The main criterion is removal of repeated interface-learning/tool continuations.
+
+Stage B.2 is now mechanically ready for this paid validation. Do not alter the implementation merely to optimize the preregistered naturalistic result unless the run exposes a demonstrated defect or materially expensive behavior.
 
 #### Stage C — Persistent-context / memory economics
 **Work state:** DEFERRED — depends on Stage B closeout
