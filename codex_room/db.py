@@ -4394,7 +4394,7 @@ class Database:
                     continuation_id,
                     batch["room_id"],
                     agent["id"],
-                    agent["thread_id"],
+                    expected_thread_id,
                     batch["batch_id"],
                     batch["round_id"],
                     batch["lifecycle_version"],
@@ -4437,17 +4437,25 @@ class Database:
             current = await self._fetchone(
                 db,
                 """SELECT r.status, r.active_round_id, r.lifecycle_version,
-                          a.thread_id, x.state AS assignment_state
+                          a.thread_id, ro.provider_context_mode,
+                          x.context_thread_id, x.state AS assignment_state
                    FROM rooms r
                    JOIN agents a ON a.room_id=r.id
+                   JOIN rounds ro ON ro.id=r.active_round_id
                    JOIN assignments x ON x.id=?
                    WHERE r.id=? AND a.id=? AND x.agent_id=a.id""",
                 (batch["assignment_id"], batch["room_id"], agent["id"]),
             )
             execution = await self._fetchone(
                 db,
-                "SELECT state, assignment_id FROM agent_executions WHERE batch_id=?",
+                "SELECT state, assignment_id, sdk_thread_id FROM agent_executions WHERE batch_id=?",
                 (batch["batch_id"],),
+            )
+            expected_thread_id = (
+                current["context_thread_id"]
+                if current is not None
+                and current["provider_context_mode"] == "assignment_thread"
+                else current["thread_id"] if current is not None else None
             )
             if (
                 current is None
@@ -4455,7 +4463,8 @@ class Database:
                 or current["status"] != RoomStatus.RUNNING
                 or current["active_round_id"] != batch["round_id"]
                 or current["lifecycle_version"] != batch["lifecycle_version"]
-                or current["thread_id"] != agent["thread_id"]
+                or expected_thread_id is None
+                or execution["sdk_thread_id"] != expected_thread_id
                 or current["assignment_state"] != "running"
                 or execution["assignment_id"] != batch["assignment_id"]
                 or execution["state"] not in {"active", "recovering"}
@@ -4534,8 +4543,11 @@ class Database:
                           a.thread_id AS current_thread_id,
                           r.status AS room_status, r.active_round_id,
                           r.lifecycle_version AS current_lifecycle_version,
-                          ro.status AS round_status, x.state AS execution_state,
-                          tx.state AS assignment_state
+                          ro.status AS round_status,
+                          ro.provider_context_mode,
+                          x.state AS execution_state,
+                          tx.state AS assignment_state,
+                          tx.context_thread_id
                    FROM usage_continuations u
                    JOIN agents a ON a.id=u.agent_id
                    JOIN rooms r ON r.id=u.room_id
@@ -4547,12 +4559,18 @@ class Database:
                 (room_id, now),
             )
             for row in rows:
+                expected_thread_id = (
+                    row["context_thread_id"]
+                    if row["assignment_id"] is not None
+                    and row["provider_context_mode"] == "assignment_thread"
+                    else row["current_thread_id"]
+                )
                 base_valid = (
                     row["room_status"] == RoomStatus.RUNNING
                     and row["active_round_id"] == row["round_id"]
                     and row["current_lifecycle_version"] == row["lifecycle_version"]
                     and row["round_status"] == RoundStatus.ACTIVE
-                    and row["current_thread_id"] == row["thread_id"]
+                    and expected_thread_id == row["thread_id"]
                     and row["agent_status"] == AgentStatus.USAGE_SUSPENDED
                     and row["execution_state"] == "usage_suspended"
                 )
