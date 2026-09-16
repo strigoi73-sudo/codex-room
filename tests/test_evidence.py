@@ -99,6 +99,22 @@ def test_semantic_evidence_uses_bundle_for_heterogeneous_known_requests(tmp_path
     assert result["durable"]["operation"] == "bundle"
 
 
+def test_semantic_search_provenance_does_not_retain_raw_query(tmp_path):
+    (tmp_path / "secret.txt").write_text("needle\n", encoding="utf-8")
+
+    result = execute_source_evidence(
+        tmp_path, [_search("needle", "secret.txt")]
+    )
+
+    durable_request = result["durable_requests"][0]
+    assert durable_request["operation"] == "SEARCH"
+    assert durable_request["query_length"] == len("needle")
+    assert len(durable_request["query_sha256"]) == 64
+    assert "query" not in durable_request
+    assert "needle" not in json.dumps(durable_request, sort_keys=True)
+    assert result["payload"]["items"][0]["matches"]
+
+
 def test_semantic_evidence_returns_bounded_error_instead_of_raising(tmp_path):
     result = execute_source_evidence(tmp_path, [_read("missing.txt")])
 
