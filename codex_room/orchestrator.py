@@ -122,20 +122,35 @@ class RoomRuntime:
         "where you left off, using the existing Room/thread context. Do not redo "
         "completed work solely because this is a continuation wake."
     )
-    DETERMINISTIC_CAPABILITY_INSTRUCTION = (
+    TRANSACTION_DETERMINISTIC_CAPABILITY_INSTRUCTION = (
         "<deterministic_capabilities>\n"
         "Use deterministic execution when exact semantics, bounded evidence, reuse, provenance, "
-        "or mechanical reliability adds value. In version-2 transaction work, request known "
-        "read-only workspace/CORE/Room source evidence with the EVIDENCE action rather than "
-        "discovering or operating the source-inspection CLI yourself. EVIDENCE accepts bounded "
-        "READ, SEARCH, and FIND requests; CORE owns source authority, validation, batching, "
-        "execution, and result delivery. Use native workspace tools for coding, mutation, tests, "
-        "and genuinely adaptive investigation that the structured evidence request cannot express. "
-        "Registered custom capabilities remain available when their exact reusable behavior earns "
-        "the cost; avoid redundant registry/help discovery when the capability identity and contract "
-        "are already known. Custom capability creation/registration remains an explicit Room-side "
-        "operation because its sandbox authority is not part of the source-evidence broker. "
+        "or mechanical reliability adds value. For known read-only workspace/CORE/Room source "
+        "evidence, use the EVIDENCE action rather than discovering or operating the source-inspection "
+        "CLI yourself. EVIDENCE accepts bounded READ, SEARCH, and FIND requests; CORE owns source "
+        "authority, validation, batching, execution, recovery, and result delivery. Use native "
+        "workspace tools for coding, mutation, tests, and genuinely adaptive investigation that the "
+        "structured evidence request cannot express. Registered capabilities remain available when "
+        "their exact reusable behavior earns the cost; avoid redundant registry/help discovery when "
+        "identity and contract are already known. If new reusable deterministic software is justified, "
+        "load the detailed authoring contract on demand with codex-room-cap authoring and use the "
+        "existing Room-side registration flow; custom code remains outside the source-evidence broker. "
         "Deterministic software supports judgment; it does not replace it.\n"
+        "</deterministic_capabilities>"
+    )
+    LEGACY_DETERMINISTIC_CAPABILITY_INSTRUCTION = (
+        "<deterministic_capabilities>\n"
+        "Use deterministic execution when exact semantics, bounded evidence, reuse, provenance, "
+        "or mechanical reliability adds value. This legacy work-model version does not expose the "
+        "structured EVIDENCE action. For authorized read-only CORE/Room source inspection, use the "
+        "existing codex-room-cap source surface; load codex-room-cap source --help only when the "
+        "operation contract is actually unknown, and batch already-known related retrieval where "
+        "practical. Use native workspace tools for ordinary workspace coding, mutation, tests, and "
+        "adaptive investigation. Registered capabilities remain available when their exact reusable "
+        "behavior earns the cost; avoid redundant registry/help discovery when identity and contract "
+        "are already known. If new reusable deterministic software is justified, load the detailed "
+        "authoring contract on demand with codex-room-cap authoring and use the existing Room-side "
+        "registration flow. Deterministic software supports judgment; it does not replace it.\n"
         "</deterministic_capabilities>"
     )
 
@@ -1717,7 +1732,7 @@ class RoomRuntime:
                     "Earlier persistent-thread history is background only; do not treat an older "
                     "request as the current assignment."
                 ),
-                self.DETERMINISTIC_CAPABILITY_INSTRUCTION,
+                self.TRANSACTION_DETERMINISTIC_CAPABILITY_INSTRUCTION,
                 (
                     "Return the transaction structured decision only. action must be COMPLETE, "
                     "DELEGATE, EVIDENCE, or PASS. COMPLETE ends this assignment with a substantive "
@@ -4279,7 +4294,7 @@ Unread event count: {len(events)}
 
 {event_role_instruction}{chr(10).join(event_parts)}
 
-{self.DETERMINISTIC_CAPABILITY_INSTRUCTION}
+{self.LEGACY_DETERMINISTIC_CAPABILITY_INSTRUCTION}
 
 Respond to this event according to your own judgment. Your final response must satisfy the Room's structured schema: outcome MESSAGE, PASS, or FINISH; message text; invoke_targets; and execution_configs. For MESSAGE, invoke_targets may be {available_peer_targets}, ["all"] for every peer, or [] for a public/readable message that should make no peer runnable. The message remains public/readable to every authorized peer, but only named invoke_targets become runnable. Use null to retain legacy all-peer invocation.
 
