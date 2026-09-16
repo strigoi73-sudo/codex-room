@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from codex_room.agent import (
+    AgentDecisionValidationError,
     AgentTurnTerminalError,
     AgentTurnStateUnknownError,
     CodexAgentAdapter,
@@ -177,6 +178,73 @@ class HistoryThread(TurningThread):
             for turn_id in self.turn_ids
         ]
         return SimpleNamespace(thread=SimpleNamespace(turns=turns))
+
+
+class InvalidDecisionHandle:
+    id = "turn-invalid-decision"
+
+    async def run(self):
+        usage = SimpleNamespace(
+            model_dump=lambda **_kwargs: {
+                "input_tokens": 100,
+                "cached_input_tokens": 0,
+                "output_tokens": 20,
+                "reasoning_output_tokens": 5,
+                "total_tokens": 120,
+            }
+        )
+        return SimpleNamespace(
+            final_response=json.dumps(
+                {
+                    "action": "EVIDENCE",
+                    "message": "inspect",
+                    "delegations": None,
+                    "evidence_requests": [
+                        {
+                            "operation": "SEARCH",
+                            "source": "core",
+                            "room_id": None,
+                            "path": "",
+                            "query": "TransactionAction",
+                            "include_globs": [],
+                            "exclude_globs": [],
+                            "include_hidden": False,
+                            "case_sensitive": True,
+                            "max_files": 10,
+                            "max_matches": 20,
+                        }
+                    ],
+                    "history_requests": None,
+                }
+            ),
+            usage=usage,
+            items=[],
+        )
+
+
+@pytest.mark.asyncio
+async def test_invalid_transaction_decision_retains_completed_turn_telemetry():
+    adapter = CodexAgentAdapter()
+    thread = SimpleNamespace(id="thread-invalid-decision")
+    handle = InvalidDecisionHandle()
+
+    with pytest.raises(AgentDecisionValidationError) as raised:
+        await adapter._consume_handle(
+            {"id": "agent-one"},
+            thread,
+            handle,
+            transactional=True,
+        )
+
+    error = raised.value
+    assert "Validation error:" in str(error)
+    assert "path" in str(error)
+    assert error.usage is not None
+    assert error.usage["total_tokens"] == 120
+    assert error.activity == []
+    assert error.thread_id == "thread-invalid-decision"
+    assert error.turn_id == "turn-invalid-decision"
+    assert error.completion_source == "notification"
 
 
 class FailedHistoryHandle:

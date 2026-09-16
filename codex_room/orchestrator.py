@@ -17,6 +17,7 @@ from .agent import (
     ROOM_MODEL,
     ROOM_REASONING_EFFORT,
     AgentAdapter,
+    AgentDecisionValidationError,
     AgentRunResult,
     AgentTurnTerminalError,
     AgentTurnStateUnknownError,
@@ -160,7 +161,10 @@ class RoomRuntime:
         "For read-only source evidence from your workspace, CORE, or another Room shared "
         "workspace, declare the bounded evidence you need with transaction action EVIDENCE. "
         "Use atomic READ, SEARCH, or FIND requests and include only the source, path/query, "
-        "Room ID when applicable, and useful bounds. CORE validates authority, chooses any "
+        "Room ID when applicable, and useful bounds. Every request path must be non-empty. "
+        "For source='core', select a maintained top-level entry: use 'codex_room' for CORE "
+        "implementation source, 'tests' for tests, or 'docs' for documentation; do not use "
+        "an empty path or '.' as the CORE root. CORE validates authority, chooses any "
         "single/batched/bundled inspect_source execution mechanically, and returns normalized "
         "evidence to this same assignment. Do not use shell commands, codex-room-cap, registry "
         "discovery, bundle/read-many/search-many selection, or JSON transport mechanics for "
@@ -1790,6 +1794,20 @@ class RoomRuntime:
             f"Round objective:\n{round_item['prompt']}",
             f"Current assignment:\n{assignment['instruction']}",
         ]
+        retry_feedback = batch.get("retry_feedback")
+        if retry_feedback:
+            context_parts.extend(
+                [
+                    "<retry_feedback>",
+                    (
+                        "CORE rejected the immediately preceding execution of this same "
+                        "Assignment. Correct the reported validation/runtime issue rather than "
+                        "repeating the invalid structured decision. Failure detail:\n"
+                        + str(retry_feedback)
+                    ),
+                    "</retry_feedback>",
+                ]
+            )
         private = round_item.get("participant_private", {}).get(agent["agent_key"])
         if private:
             context_parts.append(f"Private initialization for you:\n{private}")
@@ -1935,6 +1953,82 @@ class RoomRuntime:
             ]
         )
         return "\n\n".join(context_parts)
+
+    async def _record_invalid_decision_telemetry(
+        self,
+        batch: dict[str, Any],
+        agent: dict[str, Any],
+        exc: AgentDecisionValidationError,
+    ) -> None:
+        """Preserve completed-turn economics/activity before decision-validation failure."""
+        recorded = await self.db.record_execution_failure_telemetry(
+            batch["batch_id"],
+            exc.usage,
+            exc.activity,
+            exc.completion_source,
+        )
+        if not recorded:
+            return
+
+        usage_baseline = await self.db.get_execution_usage_baseline(batch["batch_id"])
+        economics = self._execution_economics(
+            exc,
+            [],
+            previous_usage=usage_baseline["usage"],
+            has_prior_execution=usage_baseline["has_prior_execution"],
+        )
+        execution_tokens = economics["usage_delta"].get("total_tokens")
+        event = await self.db.create_event(
+            batch["room_id"],
+            "execution_economics",
+            agent["agent_key"],
+            "observer",
+            (
+                f"{agent['name']}: execution economics before decision-validation "
+                "failure — "
+                + (
+                    f"{execution_tokens} execution token(s)"
+                    if execution_tokens is not None
+                    else "execution token delta unavailable"
+                )
+            ),
+            related_event_id=batch["assignment"].get("origin_event_id"),
+            status="error",
+            metadata={
+                **economics,
+                "decision_validation_failed": True,
+                "assignment_id": batch["assignment_id"],
+                "task_id": batch["task_id"],
+                "batch_id": batch["batch_id"],
+                "work_model_version": 2,
+            },
+            discussion_id=batch["round_id"],
+            round_id=batch["round_id"],
+        )
+        self._publish_event(event)
+        for item in exc.activity:
+            tool_event = await self.db.create_event(
+                batch["room_id"],
+                "tool_activity",
+                agent["agent_key"],
+                "observer",
+                (
+                    f"{agent['name']}: {item['type'].replace('_', ' ')} "
+                    f"({item.get('status') or 'observed'})"
+                ),
+                related_event_id=batch["assignment"].get("origin_event_id"),
+                status="error" if item.get("status") not in {None, "completed"} else "recorded",
+                metadata={
+                    **item,
+                    "decision_validation_failed": True,
+                    "assignment_id": batch["assignment_id"],
+                    "task_id": batch["task_id"],
+                    "batch_id": batch["batch_id"],
+                },
+                discussion_id=batch["round_id"],
+                round_id=batch["round_id"],
+            )
+            self._publish_event(tool_event)
 
     async def _handle_assignment_failure(
         self,
@@ -2296,6 +2390,10 @@ class RoomRuntime:
                 generation,
                 retryable=False,
             )
+            return
+        except AgentDecisionValidationError as exc:
+            await self._record_invalid_decision_telemetry(batch, agent, exc)
+            await self._handle_assignment_failure(batch, agent, exc, generation)
             return
         except Exception as exc:
             await self._handle_assignment_failure(batch, agent, exc, generation)
@@ -3081,7 +3179,7 @@ class RoomRuntime:
     @classmethod
     def _execution_economics(
         cls,
-        result: AgentRunResult,
+        result: AgentRunResult | AgentDecisionValidationError,
         runnable_targets: list[str],
         *,
         previous_usage: dict[str, Any] | None = None,

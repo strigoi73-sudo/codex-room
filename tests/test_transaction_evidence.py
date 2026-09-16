@@ -5,10 +5,12 @@ import json
 
 import pytest
 
+from codex_room.agent import AgentDecisionValidationError
 from codex_room.db import Database
 from codex_room.models import (
     CreateRoomRequest,
     RoomStatus,
+    TRANSACTION_DECISION_SCHEMA,
     SourceEvidenceRequest,
     TransactionAction,
     TransactionDecision,
@@ -41,6 +43,17 @@ def _request(operation: str, path: str, **kwargs) -> SourceEvidenceRequest:
         path=path,
         **kwargs,
     )
+
+
+def test_transaction_decision_schema_requires_nonempty_evidence_paths() -> None:
+    evidence_schema = TRANSACTION_DECISION_SCHEMA["properties"]["evidence_requests"]
+    variants = evidence_schema["anyOf"][0]["items"]["anyOf"]
+
+    assert len(variants) == 3
+    for variant in variants:
+        path_schema = variant["properties"]["path"]
+        assert path_schema["minLength"] == 1
+        assert path_schema["maxLength"] == 4096
 
 
 def test_source_evidence_planner_selects_existing_primitives_mechanically() -> None:
@@ -134,6 +147,8 @@ async def test_transaction_evidence_requeues_same_assignment_with_transient_cont
     assert "<deterministic_capabilities>" in first_prompt
     assert "codex-room-cap invoke CAPABILITY_ID" in first_prompt
     assert "codex-room-cap source" not in first_prompt
+    assert "Every request path must be non-empty" in first_prompt
+    assert "do not use an empty path or '.' as the CORE root" in first_prompt
     resumed = adapter.calls["agent_c"][1]["prompt"]
     assert "<resolved_source_evidence>" in resumed
     assert "alpha evidence" in resumed
@@ -270,3 +285,232 @@ async def test_pending_transaction_evidence_recovers_after_restart(
     assert row is not None
     assert row["state"] == "consumed"
     assert row["transient_result_json"] is None
+
+
+@pytest.mark.asyncio
+async def test_retry_feedback_survives_claim_recovery_until_valid_decision(
+    evidence_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    runtime = await evidence_runtime_factory(adapter, "retry-feedback-recovery.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Preserve retry feedback across claim recovery.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            auto_start=False,
+        )
+    )
+    room_id = snapshot["id"]
+    round_id = snapshot["active_round_id"]
+    await runtime.db.start_round(room_id, round_id)
+    origin = await runtime.db.create_event(
+        room_id,
+        "observer_message",
+        "observer",
+        "agent_c",
+        "Create one explicit transaction assignment.",
+        discussion_id=round_id,
+        round_id=round_id,
+    )
+    created = await runtime.db.create_transaction_task(
+        room_id,
+        round_id,
+        origin["id"],
+        "agent_c",
+        required_contributors=["agent_c"],
+    )
+    assignment_id = created["assignment_ids"][0]
+
+    first = await runtime.db.claim_next_assignment(
+        room_id,
+        "agent_c",
+        worker_generation=0,
+        model="gpt-5.6-terra",
+        reasoning_effort="high",
+    )
+    assert first is not None
+    assert await runtime.db.bind_execution_turn(
+        first["batch_id"],
+        "thr_retry_feedback",
+        "turn_retry_feedback_1",
+        0,
+    )
+    failure_detail = (
+        "evidence_requests.0.path String should have at least 1 character."
+    )
+    failed = await runtime.db.fail_transaction_assignment(
+        room_id,
+        round_id,
+        first["batch_id"],
+        failure_detail,
+        retryable=True,
+    )
+    assert failed["retried"] is True
+
+    retry = await runtime.db.claim_next_assignment(
+        room_id,
+        "agent_c",
+        worker_generation=0,
+        model="gpt-5.6-terra",
+        reasoning_effort="high",
+    )
+    assert retry is not None
+    assert retry["retry_feedback"] == failure_detail
+
+    recovered = await runtime.db.claim_next_assignment(
+        room_id,
+        "agent_c",
+        worker_generation=0,
+        model="gpt-5.6-terra",
+        reasoning_effort="high",
+    )
+    assert recovered is not None
+    assert recovered["recovered"] is True
+    assert recovered["batch_id"] == retry["batch_id"]
+    assert recovered["retry_feedback"] == failure_detail
+
+    assert await runtime.db.bind_execution_turn(
+        retry["batch_id"],
+        "thr_retry_feedback",
+        "turn_retry_feedback_2",
+        0,
+    )
+    valid = TransactionDecision(
+        action=TransactionAction.COMPLETE,
+        message="Valid retry decision.",
+    )
+    assert await runtime.db.record_execution_result(
+        retry["batch_id"],
+        valid.model_dump(mode="json"),
+        {"total_tokens": 10},
+        [],
+        "notification",
+    )
+
+    async with runtime.db.connect() as db:
+        assignment = await runtime.db._fetchone(
+            db,
+            "SELECT resolution_reason FROM assignments WHERE id=?",
+            (assignment_id,),
+        )
+    assert assignment is not None
+    assert assignment["resolution_reason"] is None
+
+
+@pytest.mark.asyncio
+async def test_invalid_transaction_decision_retry_gets_feedback_and_keeps_telemetry(
+    evidence_runtime_factory,
+):
+    invalid = AgentDecisionValidationError(
+        (
+            "Codex returned invalid Room decision JSON. Validation error: "
+            "evidence_requests.0.path String should have at least 1 character."
+        ),
+        usage={
+            "input_tokens": 20,
+            "cached_input_tokens": 0,
+            "output_tokens": 5,
+            "reasoning_output_tokens": 1,
+            "total_tokens": 25,
+        },
+        activity=[],
+        thread_id="unused-by-fake",
+        turn_id="unused-by-fake",
+        completion_source="notification",
+    )
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        failures={"agent_c": [invalid]},
+        usages={
+            "agent_c": [
+                {
+                    "input_tokens": 40,
+                    "cached_input_tokens": 20,
+                    "output_tokens": 5,
+                    "reasoning_output_tokens": 1,
+                    "total_tokens": 45,
+                },
+                {
+                    "input_tokens": 60,
+                    "cached_input_tokens": 40,
+                    "output_tokens": 5,
+                    "reasoning_output_tokens": 1,
+                    "total_tokens": 65,
+                },
+            ]
+        },
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.EVIDENCE,
+                evidence_requests=[_request("READ", "one.txt")],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Recovered after valid evidence.",
+            ),
+        ]
+    )
+
+    runtime = await evidence_runtime_factory(adapter, "invalid-decision-retry.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Recover from one invalid transaction decision.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            auto_start=False,
+        )
+    )
+    room_id = snapshot["id"]
+    (runtime.workspace(room_id) / "one.txt").write_text(
+        "recovered evidence\n", encoding="utf-8"
+    )
+
+    await runtime.start_round(room_id, snapshot["active_round_id"])
+
+    async def finished() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.FINISHED)
+
+    await wait_until(finished)
+
+    assert len(adapter.calls["agent_c"]) == 3
+    first_prompt = adapter.calls["agent_c"][0]["prompt"]
+    retry_prompt = adapter.calls["agent_c"][1]["prompt"]
+    evidence_resume_prompt = adapter.calls["agent_c"][2]["prompt"]
+
+    assert "<retry_feedback>" not in first_prompt
+    assert "<retry_feedback>" in retry_prompt
+    assert "evidence_requests.0.path" in retry_prompt
+    assert "<retry_feedback>" not in evidence_resume_prompt
+    assert "<resolved_source_evidence>" in evidence_resume_prompt
+    assert "recovered evidence" in evidence_resume_prompt
+
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT state, usage_json, activity_json, sdk_thread_id
+               FROM agent_executions
+               WHERE round_id=?
+               ORDER BY created_at, batch_id""",
+            (snapshot["active_round_id"],),
+        )
+
+    assert len(rows) == 3
+    assert rows[0]["state"] == "failed"
+    assert json.loads(rows[0]["usage_json"])["total_tokens"] == 25
+    assert json.loads(rows[0]["activity_json"]) == []
+    assert rows[0]["sdk_thread_id"] == rows[1]["sdk_thread_id"] == rows[2]["sdk_thread_id"]
+
+    exported = await runtime.db.snapshot(room_id, event_limit=None)
+    assert exported is not None
+    failed_economics = [
+        event
+        for event in exported["events"]
+        if event["event_type"] == "execution_economics"
+        and event.get("metadata", {}).get("decision_validation_failed") is True
+    ]
+    assert len(failed_economics) == 1
+    assert failed_economics[0]["metadata"]["usage_delta"]["total_tokens"] == 25
+

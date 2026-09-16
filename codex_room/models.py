@@ -312,7 +312,11 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                     "room_id": {
                                         "anyOf": [{"type": "string"}, {"type": "null"}]
                                     },
-                                    "path": {"type": "string"},
+                                    "path": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 4096,
+                                    },
                                     "start_line": {"type": "integer"},
                                     "max_lines": {"type": "integer"},
                                     "max_bytes": {"type": "integer"},
@@ -339,8 +343,16 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                     "room_id": {
                                         "anyOf": [{"type": "string"}, {"type": "null"}]
                                     },
-                                    "path": {"type": "string"},
-                                    "query": {"type": "string"},
+                                    "path": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 4096,
+                                    },
+                                    "query": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 4096,
+                                    },
                                     "include_globs": {
                                         "type": "array",
                                         "items": {"type": "string"},
@@ -380,7 +392,11 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                     "room_id": {
                                         "anyOf": [{"type": "string"}, {"type": "null"}]
                                     },
-                                    "path": {"type": "string"},
+                                    "path": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 4096,
+                                    },
                                     "include_globs": {
                                         "type": "array",
                                         "items": {"type": "string"},
@@ -446,7 +462,11 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                 "type": "object",
                                 "properties": {
                                     "operation": {"type": "string", "enum": ["SEARCH"]},
-                                    "query": {"type": "string"},
+                                    "query": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 4096,
+                                    },
                                     "agent": {
                                         "anyOf": [
                                             {
