@@ -37,7 +37,16 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install -c constraints-test.txt ".[test]"
-      - run: python -m pytest -q
+      - name: Run pytest
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          tmp_dir="$(mktemp -d /dev/shm/codex-room-pytest.XXXXXX)"
+          trap 'rm -rf "$tmp_dir"' EXIT
+          TMPDIR="$tmp_dir" python -m pytest -q
+      - name: Run pytest
+        if: runner.os == 'Windows'
+        run: python -m pytest -q
       - name: Browser transcript stability
         if: matrix.browser
         shell: pwsh
