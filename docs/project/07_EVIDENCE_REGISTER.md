@@ -3709,3 +3709,67 @@ Both arms required exactly one model execution and preserved answer quality. The
 
 This result does not establish cross-Assignment memory adequacy. Stage C should proceed only to the preregistered C-N2 boundary test: establish one arbitrary prior fact, compare recall from a fresh assignment-scoped thread against the untouched persistent-thread control, and use that result to decide whether any targeted cross-Assignment retrieval mechanism is warranted.
 
+### E-104 — I-015 Stage C.2 C-N2 demonstrates the cross-Assignment continuity gap
+**Date:** 2026-09-16  
+**Kind:** [ROOM] paid naturalistic controlled continuity test  
+**Decision:** D-032
+
+C-N2 tested whether assignment-scoped provider context can recover one arbitrary fact established in an earlier Round without receiving prior provider-thread history.
+
+The test reused Room `room_5cbd74add7564749862f37696fa4abd4`, C only, work-model version 2, no overlays, no peers, no tools, and no source evidence. The arbitrary nonce was `ORBIT-7429-CEDAR`.
+
+**1. Persistent establishment**
+
+- Round: `round_b0dea5f54c944475898bf230c9ec9bdf`
+- Task: `task_a35e3fc9307f498a94bfbd1a5bad57fe`
+- Assignment: `assignment_4072e1f399e9460e8b57e892d5c0dc27`
+- mode: `persistent_agent_thread`
+- provider thread: C permanent thread `01a0aaa5-ecba-7313-ac8a-ce0afafa610e`
+- executions: **1**
+- per-execution input: **28,336**
+- cached input: **26,368** (**93.1%**)
+- output: **66**
+- reasoning output: **26**
+- total: **28,402**
+- result: exactly `ORBIT-7429-CEDAR`
+
+**2. Assignment-scoped recall**
+
+- Round: `round_f3b5b0c05f4a4317ab2f8b17888f43cf`
+- Task: `task_c1f93341fd964366bc11da0dd5d18ae3`
+- Assignment: `assignment_2a862b0c93cf4fe0a9f2355f8c95e1bc`
+- mode: `assignment_thread`
+- Assignment provider thread: `01a0aae8-16ee-7173-af1c-93ab12f7eb03`
+- executions: **1**
+- input: **20,750**
+- cached input: **17,152** (**82.7%**)
+- output: **47**
+- reasoning output: **14**
+- total: **20,797**
+- result: exactly `UNKNOWN`
+
+**3. Persistent recall control**
+
+- Round: `round_90ecc7d2519041ee8f9fbd51d3f9f060`
+- Task: `task_4a389d73786d427e9114c3a178a6cb42`
+- Assignment: `assignment_74415abaee0f4898ab2889d3ff1dd776`
+- mode: `persistent_agent_thread`
+- provider thread: C permanent thread `01a0aaa5-ecba-7313-ac8a-ce0afafa610e`
+- executions: **1**
+- per-execution input: **29,173**
+- cached input: **27,392** (**93.9%**)
+- output: **38**
+- reasoning output: **0**
+- total: **29,211**
+- result: exactly `ORBIT-7429-CEDAR`
+
+All three Assignments completed normally in one model execution. There were zero tool calls, capability invocations, evidence requests, peer invocations, failures, file changes, context compactions, retries, or extra model turns.
+
+**Interpretation**
+
+The control succeeded: the permanent provider thread retained the establishment nonce. The fresh assignment-scoped provider thread did not receive enough prior-Round context to recover that fact and correctly returned `UNKNOWN` rather than guessing. This is the preregistered outcome that demonstrates a real cross-Assignment continuity gap.
+
+The assignment-scoped recall nevertheless reported 17,152 cached input tokens. That cache hit cannot be treated as evidence of inherited episodic history because the nonce itself was unavailable. It is consistent with reuse of stable system/developer/prompt-prefix material across provider threads.
+
+**Assessment:** **PASS / continuity gap demonstrated.** Combined with E-103, Stage C.2 now establishes both sides of the tradeoff: Assignment-bounded provider context materially reduces inherited replay cost on self-contained work, but continuity-dependent work requires an explicit mechanism to retrieve relevant prior durable history. Stage C.3 should therefore design the smallest bounded targeted retrieval path; this evidence does not justify wholesale history injection, a general summarizer, embeddings, or default activation.
+
