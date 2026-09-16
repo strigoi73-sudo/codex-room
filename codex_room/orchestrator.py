@@ -2105,6 +2105,7 @@ class RoomRuntime:
                         (existing_evidence.get("payload") or {}).get("ok", True)
                     ),
                     "strategy": existing_evidence["strategy"],
+                    "durable_requests": existing_evidence["durable_request"],
                     "durable": existing_evidence["durable_evidence"],
                     "payload": existing_evidence.get("payload")
                     or {"ok": True, "items": []},
@@ -2239,7 +2240,7 @@ class RoomRuntime:
                         "assignment_id": batch["assignment_id"],
                         "batch_id": batch["batch_id"],
                         "transaction_action": decision.action,
-                        "evidence_requests": evidence_requests,
+                        "evidence_requests": evidence_execution["durable_requests"],
                         "evidence_strategy": evidence_execution["strategy"],
                         "evidence_ok": evidence_execution["ok"],
                         "durable_evidence": evidence_execution["durable"],
@@ -2258,6 +2259,7 @@ class RoomRuntime:
                     batch["batch_id"],
                     batch["assignment_id"],
                     evidence_requests,
+                    durable_requests=evidence_execution["durable_requests"],
                     strategy=evidence_execution["strategy"],
                     durable_evidence=evidence_execution["durable"],
                     transient_payload=evidence_execution["payload"],
