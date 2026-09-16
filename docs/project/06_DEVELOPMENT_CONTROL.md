@@ -10,7 +10,7 @@
 - **What just changed?** I-015 **Stage C.1 is COMPLETE / IMPLEMENTED / VERIFIED**. Under D-032, opt-in version-2 Rounds may now use assignment-scoped provider context: each logical Assignment owns one durable restart-resumable provider thread, while persistent A/B/C identity and the transaction ledger remain application-level state. Existing persistent-agent context remains the default. E-102 records exact implementation and hosted-verification evidence.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage C.2 is PLANNED**: preregister and run one bounded paired naturalistic context-economics comparison before expanding the memory architecture. The comparison should hold task/model/version conditions constant and measure answer quality, total/input/cached tokens, continuation count, and exact provider-context provenance under `persistent_agent_thread` versus `assignment_thread`.
+- **What is next?** **I-015 Stage C.2 / C-N1 is preregistered and ready for paid execution**: run the warmed B3 Room under `assignment_thread` first, then the identical C-only prompt under `persistent_agent_thread`, and compare correctness plus exact input/cached-token and provider-thread provenance before deciding whether any cross-Assignment memory layer is warranted.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -227,11 +227,44 @@ The deterministic acceptance gate is complete. Coverage verifies same-Assignment
 **Scope limit:** Stage C.1 does not implement broad cross-Assignment memory retrieval, provider-thread archival/retention, or default activation. D-009 remains the governing direction for later cross-Assignment continuity: index broadly, retrieve narrowly.
 
 ##### Stage C.2 — Paired naturalistic context-economics validation
-**Work state:** PLANNED
+**Work state:** IN PROGRESS — C-N1 preregistered; paid execution next
+**Protocol:** C-N1 — warmed persistent-history paired context comparison
 
-Before adding any memory/index/summarization mechanism, run one bounded paid comparison designed to expose inherited provider-history cost rather than hide it in fresh threads. Hold the useful target task, work-model version, model policy, contributor set, and repository version constant; compare `persistent_agent_thread` with `assignment_thread` on answer quality, total/input/cached token use, continuation count, and exact thread provenance. Prefer a controlled warmed-history setup so the persistent arm actually contains prior context; run the assignment-scoped arm without mutating that persistent history before its comparison point.
+Before adding any memory/index/summarization mechanism, run one bounded paid comparison designed to expose inherited provider-history cost rather than hide it in fresh threads.
 
-If assignment-scoped context materially reduces replay without degrading the answer, the next question is what minimal durable/targeted cross-Assignment continuity is actually needed. If it does not produce a meaningful economic benefit, stop rather than building a larger memory architecture without evidence.
+**C-N1 substrate and order**
+
+- reuse the completed Stage-B3 Room `room_5cbd74add7564749862f37696fa4abd4`, whose persistent C provider thread already contains the three-execution B3 history;
+- use C only: `starting_agent="agent_c"`, `required_contributors=["agent_c"]`, work-model version 2, unchanged model/profile policy, and no overlays;
+- run the `assignment_thread` arm first. Its separate Assignment provider thread must not mutate C's permanent provider thread;
+- only after that arm settles, run the identical prompt under `persistent_agent_thread`, so the persistent arm begins from the same pre-existing warmed C provider history rather than from history created by the comparison itself;
+- no repository/source evidence, deterministic capability, peer delegation, or web work is requested or needed.
+
+**Exact target prompt**
+
+> Solve this self-contained scheduling problem without using tools, source evidence, or peers. Two identical workers can each perform at most one non-preemptive task at a time. Task A takes 30 minutes. Task B takes 20 minutes. Task C takes 25 minutes and may start only after A finishes. Task D takes 15 minutes and may start only after B finishes. Task E takes 10 minutes and may start only after both C and D finish. What is the minimum possible completion time for all five tasks? Give one valid worker-by-worker schedule and a brief proof that no faster schedule is possible. Keep the answer concise.
+
+The expected optimum is **65 minutes**: the dependency chain A → C → E alone requires 65 minutes, and a valid two-worker schedule achieves that bound (for example, worker 1: A 0–30, C 30–55, E 55–65; worker 2: B 0–20, D 20–35).
+
+**Primary evidence**
+
+For each arm record:
+
+- exact Round, Task, Assignment, execution, provider-thread, and provider-context-mode provenance;
+- model execution count and any continuation count;
+- total execution tokens, input tokens, cached-input tokens/share, output tokens, and reasoning-output tokens where available;
+- tool/command/capability/evidence/peer activity;
+- final answer correctness against the 65-minute optimum.
+
+**Pass / decision rule**
+
+- mechanical validity requires one settled C-only Assignment per arm, correct context-thread provenance, no unexplained peer/tool/evidence activity, and no restart/retry anomaly;
+- quality preservation requires both arms to identify the 65-minute optimum with a valid schedule and lower-bound proof;
+- assignment-scoped context counts as a **material economic improvement** for this checkpoint if it reduces total input tokens by at least **20%** relative to the persistent arm without adding a model execution or degrading correctness;
+- if the reduction is material, Stage C proceeds to one bounded continuity test asking what cross-Assignment information actually needs targeted retrieval;
+- if the reduction is not material, stop rather than building a larger memory/index/summarization layer without stronger evidence.
+
+This is a paired diagnostic, not a broad performance benchmark. One successful pair is enough to decide whether the Stage-C memory question deserves the next bounded experiment; it is not evidence for default activation.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
