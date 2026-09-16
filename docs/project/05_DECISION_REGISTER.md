@@ -495,7 +495,7 @@ Settled boundary:
 
 - transaction-enabled agents may declare a bounded `HISTORY` need when the current Assignment requires a specific fact or result from an earlier Round in the same Room;
 - the first retrieval vocabulary is deliberately small: `RECENT` for a temporal dependency and lexical `SEARCH` for a known concept, with an optional agent filter and bounded result count;
-- CORE owns mechanical selection from durable terminal Assignment results, same-Room authorization, bounds, exact event provenance, and atomic attachment of selected result-event IDs to the requesting Assignment;
+- CORE owns mechanical selection from durable completed Assignment results, same-Room authorization, bounds, exact event provenance, and atomic attachment of selected result-event IDs to the requesting Assignment;
 - `HISTORY` is nonterminal work on the same logical Assignment. It must not release joins or settle the Task; the same Assignment resumes on its existing provider context with the selected historical results added to its authoritative envelope;
 - current Task/Assignment/Join/Evidence state remains authoritative and is not obtained through historical search. Source/file retrieval remains the separate `EVIDENCE` path;
 - prior Room history is never injected wholesale merely because the same persistent agent previously saw it;
