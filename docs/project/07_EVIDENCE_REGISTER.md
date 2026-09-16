@@ -3478,3 +3478,43 @@ Current source evidence:
 B-N1's measured 7 tool calls, failed command, and 184,143-token single execution are consistent with the cost of letting model cognition negotiate this operational interface. The consolidation therefore changes the Stage-B validation target: a model should declare bounded source evidence once, CORE should execute it, and the same assignment should resume with normalized evidence. A second paid test that merely forces the model to remember the word `bundle` would test the old boundary rather than the desired abstraction.
 
 **Status:** source-level diagnosis VERIFIED at the stated commit; the structured evidence path is DECIDED / NOT IMPLEMENTED at this evidence point. B-N1 remains inconclusive for naturalistic `bundle` adoption under E-098.
+
+### E-100 — I-015 Stage B2 structured source evidence execution implemented and hosted-verified
+**Date:** 2026-09-16  
+**Kind:** [CORE] implementation + exact-diff review + deterministic hosted verification
+
+PR #92 implements D-031's bounded structured source-evidence path for opt-in work-model version 2.
+
+**Implemented behavior**
+
+- `TransactionDecision` adds a fourth action, `EVIDENCE`, carrying 1–16 structured `READ`, `SEARCH`, or `FIND` source requests;
+- the request schema carries semantic source/path/query/bound information and excludes agent-facing execution vocabulary such as `bundle`, `read_many`, `search_many`, executable names, shell quoting, or plan-file transport;
+- CORE mechanically converts the semantic requests into existing `inspect_source` operations, using direct single operations, `read_many` for bounded homogeneous reads when its aggregate budget can preserve the declared request, and `bundle` for independent multi-request sets whose atomic semantics should be preserved;
+- multiple SEARCH requests currently use `bundle` because existing `search_many` has one shared aggregate match cap rather than independent per-request match caps;
+- `assignment_evidence` durably binds request identity to the exact assignment and originating execution batch, with pending → ready → consumed state;
+- pending evidence is restart-recoverable, successful evidence execution requeues the same assignment, and cancellation/stale-completion guards prevent obsolete evidence from reviving cancelled work;
+- bulk evidence content is persisted only while needed to survive and feed the resumed assignment, is omitted from transaction-state/export projection, and is cleared after the resumed assignment settles its next decision; bounded request/plan/result provenance remains durable;
+- version-2 prompts use the structured evidence contract for source retrieval while retaining a compact registered/custom capability contract for legitimate non-source deterministic work;
+- work-model version 1 retains its existing deterministic-capability instruction/path;
+- direct `source bundle` CLI activity is now recognized by the adapter's bounded deterministic-capability telemetry parser, closing the source-level mismatch recorded in E-099.
+
+**Verification**
+
+The exact code-bearing PR head was:
+
+`9b4e352e490a4cdeda9a8242396cabd981f3b19d`
+
+with Git tree:
+
+`2b27d2ea509f279416eb65a8c2a6161414096501`
+
+GitHub Actions run `35066558470` completed successfully on the supported matrix:
+
+- Ubuntu / Python 3.11 — **401 passed, 2 warnings**;
+- Ubuntu / Python 3.12 — **401 passed, 2 warnings**;
+- Windows / Python 3.12 — **401 passed, 2 warnings**;
+- Windows browser transcript-stability check — **3 passed**.
+
+Focused coverage includes mechanical plan selection, homogeneous-read budget fallback, same-assignment evidence resume, transient-vs-durable separation, restart recovery, v2 prompt/legacy-capability compatibility, and direct source-`bundle` telemetry promotion. Exact-diff review also corrected two issues before this final tested head: the restart simulation originally reused a fake SDK turn ID across process instances, and the first v2 prompt revision had removed useful non-source custom-capability guidance.
+
+**Status:** Stage-B2 **IMPLEMENTED / VERIFIED** on the exact tested PR head. Stage-B3 naturalistic consolidated-interface validation remains required before Stage B closes. This evidence does not establish the Stage-C context/memory answer or approve default work-model-v2 activation.
