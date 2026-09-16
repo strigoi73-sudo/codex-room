@@ -3308,5 +3308,7 @@ Current `_assignment_prompt()` provides the Round objective, the current assignm
 
 **Action:** before another paid run, expose sibling assignment agent/state/instruction metadata in the v2 assignment envelope without exposing sibling result content. Preserve nested delegation authority; the goal is to prevent avoidable duplicate cognition, not prohibit legitimate A↔B collaboration.
 
-**Status:** OBSERVED ISSUE. Stage-A settlement mechanics passed V2-N1; sibling-work context remediation is required before V2-N2.
+**Remediation and verification:** PR #85 added bounded sibling assignment context to the version-2 assignment envelope while intentionally withholding sibling result content and preserving the existing single-child nested-delegation path. The PR head `b8876351100161f157cbb6897a205995cd97d808` passed hosted GitHub Actions run `35038949753` on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 + browser. It merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; the tested PR head and squash merge share exact Git tree `1763d24377718e32606239e13ccd3343242e869e`.
+
+**Status:** OBSERVED ISSUE with IMPLEMENTED / VERIFIED targeted remediation. V2-N2 is still required to establish whether the repair removes the naturalistic duplicate-cognition path and returns this task to the intended operating-economics range.
 
