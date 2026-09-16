@@ -1297,3 +1297,48 @@ def test_safe_activity_promotes_direct_source_cli_without_persisting_transient_c
         }
     ]
 
+
+
+def test_safe_activity_promotes_direct_source_bundle_cli() -> None:
+    payload = {
+        "codex_room_capability": 1,
+        "capability": "inspect_source",
+        "capability_version": "3",
+        "implementation_sha256": "a" * 64,
+        "ok": True,
+        "durable_result_fields": ["evidence"],
+        "evidence": {
+            "operation": "bundle",
+            "requested_count": 2,
+            "returned_count": 2,
+            "truncated": False,
+        },
+        "items": [{"label": "private", "content": "transient"}],
+    }
+    item = SimpleNamespace(
+        type="commandExecution",
+        command="codex-room-cap source bundle --plan-file evidence-plan.json",
+        command_actions=[],
+        aggregated_output=json.dumps(payload),
+        status=SimpleNamespace(value="completed"),
+    )
+
+    activity = CodexAgentAdapter._safe_activity([item])
+
+    assert activity == [
+        {
+            "type": "deterministic_capability",
+            "status": "completed",
+            "capability": "inspect_source",
+            "ok": True,
+            "result": {
+                "codex_room_capability": 1,
+                "capability": "inspect_source",
+                "capability_version": "3",
+                "implementation_sha256": "a" * 64,
+                "ok": True,
+                "durable_result_fields": ["evidence"],
+                "evidence": payload["evidence"],
+            },
+        }
+    ]
