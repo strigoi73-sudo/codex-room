@@ -262,6 +262,95 @@ async def test_transaction_evidence_resumes_same_assignment_with_normalized_payl
 
 
 @pytest.mark.asyncio
+async def test_transaction_evidence_recovery_reuses_prepared_bytes_after_publication_failure(
+    transaction_runtime_factory,
+    monkeypatch,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {1}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.EVIDENCE,
+                evidence_requests=[
+                    {
+                        "operation": "READ",
+                        "source": "workspace",
+                        "room_id": None,
+                        "path": "mutable.txt",
+                        "query": None,
+                        "patterns": None,
+                        "start_line": 1,
+                        "max_lines": 20,
+                        "max_results": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Recovered the prepared alpha evidence.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "evidence-recovery.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Recover exact prepared evidence", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+    evidence_path = runtime.workspace(room_id) / "mutable.txt"
+    evidence_path.write_text("alpha\n", encoding="utf-8")
+
+    original_create_event = runtime.db.create_event
+    publication_failed = asyncio.Event()
+    injected = False
+
+    async def fail_first_evidence_publication(*args, **kwargs):
+        nonlocal injected
+        event_type = args[1] if len(args) > 1 else kwargs.get("event_type")
+        if event_type == "deterministic_evidence" and not injected:
+            injected = True
+            publication_failed.set()
+            raise RuntimeError("injected evidence publication failure")
+        return await original_create_event(*args, **kwargs)
+
+    monkeypatch.setattr(runtime.db, "create_event", fail_first_evidence_publication)
+    adapter.release_call("agent_c", 1)
+    await asyncio.wait_for(publication_failed.wait(), timeout=3)
+
+    prepared_rows = []
+    async with runtime.db.connect() as db:
+        prepared_rows = await db.execute_fetchall(
+            """SELECT e.* FROM assignment_evidence e
+               JOIN assignments x ON x.id=e.assignment_id
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+    assert len(prepared_rows) == 1
+    assert prepared_rows[0]["state"] == "prepared"
+    assert "alpha" in (prepared_rows[0]["transient_payload_json"] or "")
+
+    evidence_path.write_text("beta\n", encoding="utf-8")
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    continuation_prompt = adapter.calls["agent_c"][1]["prompt"]
+    assert "alpha" in continuation_prompt
+    assert "beta" not in continuation_prompt
+
+    events = [
+        event
+        for event in await runtime.db.get_events(room_id)
+        if event["event_type"] == "deterministic_evidence"
+    ]
+    assert len(events) == 1
+
+
+@pytest.mark.asyncio
 async def test_transaction_evidence_at_turn_limit_stops_without_resuming_and_replays_limit(
     transaction_runtime_factory,
 ):
