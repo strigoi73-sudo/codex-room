@@ -443,3 +443,27 @@ D-030 supersedes the **implementation mechanism**, but not the governing intent,
 
 **Principle:** **Agents decide the work; CORE makes declared work state reliable.**
 
+
+
+### D-031 — Agents declare deterministic intent; CORE owns source-evidence execution mechanics
+**Date:** 2026-09-16  
+**Status:** ACTIVE
+
+I-015 Stage B is consolidated around a semantic agent/CORE boundary rather than further teaching agents the mechanics of Codex Room's deterministic capability CLI.
+
+Settled direction:
+
+- agents decide the intellectual need for deterministic evidence: what fact or uncertainty must be resolved, which logical source is relevant, what bounded read/search/find evidence is needed, and how returned evidence affects the conclusion;
+- for transaction-enabled work, CORE owns the mechanics of bounded read-only source evidence execution: validation, source authority, path confinement, serialization, batching/plan selection, deterministic execution, provenance, retry/recovery, and normalized result delivery;
+- the agent-facing transaction contract should express semantic source-evidence requests rather than CLI implementation vocabulary. Agents should not need to choose among `read`, `read_many`, `search_many`, or `bundle`, locate `codex-room-cap`, discover argparse help, preserve shell quoting, or construct plan files merely to obtain known read-only evidence;
+- the existing `inspect_source` implementation, confinement rules, bounds, durable-evidence design, and direct CLI remain reusable execution/operator/compatibility surfaces behind this boundary;
+- Stage B2 is limited to read-only source evidence for version-2 transaction work. It must not move arbitrary custom capability execution into the host orchestrator, because registered custom capabilities currently inherit the Room caller/sandbox authority boundary and that authority must not be silently widened;
+- evidence execution is nonterminal work on the same Assignment. CORE executes the declared bounded request, records durable provenance, makes the normalized result available to the same Assignment, and resumes that Assignment without creating peer cognition;
+- request/result identity and recovery must be deterministic so interruption or replay cannot silently duplicate state transitions;
+- version 1 remains compatible and the ordinary default. This decision does not approve default version-2 activation;
+- Stage C remains a separate later experiment concerning provider-thread/context economics. High cached replay observed during Stage B motivates investigation but does not answer Stage C in advance;
+- naturalistic Stage-B validation should test this abstraction directly. It should not require a model to demonstrate knowledge of internal batching or CLI vocabulary.
+
+D-031 builds on D-018, D-029, and D-030. It narrows the Stage-B execution boundary without changing the permanent A/B/C organization or C's coordination-only authority.
+
+**Principle:** **Agents declare bounded deterministic intent; CORE owns deterministic execution mechanics.**
