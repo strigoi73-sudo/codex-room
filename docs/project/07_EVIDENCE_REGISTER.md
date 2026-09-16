@@ -4077,3 +4077,23 @@ Execution economics recorded **21,663 total tokens**: 21,257 input, 0 cached inp
 
 **Assessment:** **D-N1 PASS** for quality, coordination/provenance, and task-level economics. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N2 in the same Room.
 
+### E-112 — Stage-D attempt 2 D-N2 naturalistic pass
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability evidence  
+**Decision:** D-031, D-032, D-033
+
+In the same dedicated Stage-D Room used for D-N1, the preregistered D-N2 task ran under work-model version 2 with assignment-scoped provider context, starting Agent C, required contributor Agent B, ordinary default profiles/model policy, no private initialization or overlays, and max_turns=8.
+
+The transaction followed the expected shape exactly: C framed the decision, delegated one independent check to B using `luna-medium`, B completed on its own Assignment/provider thread, one Join released exactly once, and the same original C Assignment resumed on its exact prior provider thread for integration. Agent A was not invoked. No source evidence, Room-history retrieval, shell/custom capability, or model-tool activity occurred.
+
+Quality passed. B independently recommended Plan North and checked the arithmetic and relocation risk. C's final integrated answer recommended Plan North; correctly computed North at $65/month and $520 over eight months; South at $70/month and $560 over eight months; a 60% × $150 = $90 expected cancellation-fee exposure; and about $650 expected eight-month South cost. It also correctly related the household's 500 GB/month use and low upload demand to North's 1.2 TB cap and 300/20 Mbps service.
+
+Execution telemetry recorded three model executions:
+- C framing — `gpt-5.6-terra`, high reasoning effort: **21,410** execution tokens;
+- B independent check — `gpt-5.6-luna`, medium reasoning effort: **21,003** execution tokens;
+- same-C integration continuation — `gpt-5.6-terra`, high reasoning effort: **23,055** execution-token delta, with 20,224 cached input tokens on the legitimate same-Assignment continuation.
+
+Total D-N2 execution tokens: **65,468**. Post-framing model continuations: **2**.
+
+**Assessment:** **D-N2 PASS** for quality, coordination/provenance, and task-level economics. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N3 in the same Room.
+
