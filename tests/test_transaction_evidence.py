@@ -55,12 +55,23 @@ def test_source_evidence_planner_selects_existing_primitives_mechanically() -> N
 
     searches = plan_source_evidence(
         [
-            _request("SEARCH", ".", query="alpha"),
-            _request("SEARCH", ".", query="beta"),
+            _request("SEARCH", ".", query="alpha", max_matches=10),
+            _request("SEARCH", ".", query="beta", max_matches=20),
         ]
     )
-    assert searches["operation"] == "search_many"
-    assert searches["queries"] == ["alpha", "beta"]
+    assert searches["operation"] == "bundle"
+    assert [item["request"]["query"] for item in searches["requests"]] == [
+        "alpha",
+        "beta",
+    ]
+
+    oversized_reads = plan_source_evidence(
+        [
+            _request("READ", "one.txt", max_bytes=100_000),
+            _request("READ", "two.txt", max_bytes=100_000),
+        ]
+    )
+    assert oversized_reads["operation"] == "bundle"
 
     mixed = plan_source_evidence(
         [
