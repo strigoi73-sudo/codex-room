@@ -129,7 +129,11 @@ async def test_transaction_evidence_requeues_same_assignment_with_transient_cont
     await wait_until(finished)
 
     assert len(adapter.calls["agent_c"]) == 2
-    assert "<deterministic_evidence>" in adapter.calls["agent_c"][0]["prompt"]
+    first_prompt = adapter.calls["agent_c"][0]["prompt"]
+    assert "<deterministic_evidence>" in first_prompt
+    assert "<deterministic_capabilities>" in first_prompt
+    assert "codex-room-cap invoke CAPABILITY_ID" in first_prompt
+    assert "codex-room-cap source" not in first_prompt
     resumed = adapter.calls["agent_c"][1]["prompt"]
     assert "<resolved_source_evidence>" in resumed
     assert "alpha evidence" in resumed
