@@ -413,6 +413,8 @@ PR #92 code-bearing head `9b4e352e490a4cdeda9a8242396cabd981f3b19d` (Git tree `2
 
 **Scope limit:** the broker handles read-only source evidence. Arbitrary custom-capability brokerage remains outside this slice because preserving its Room/sandbox execution authority needs a separate design. Stage C is now complete separately under D-032/D-033 and E-102 through E-106.
 
+**Stage-D D-N4 remediation status — IMPLEMENTED ON PR #104 / HOSTED VERIFICATION PENDING (2026-09-16):** the provider-facing transaction schema now encodes the runtime non-empty/bounded path contract for structured source evidence, and assignment guidance states the maintained top-level CORE path boundary instead of leaving agents to infer whether `""` or `"."` is valid. Invalid structured decisions now retain completed-turn usage/activity telemetry and emit execution-economics evidence before bounded retry handling. The retry diagnostic is carried on the same Assignment, survives a claimed-but-not-yet-started execution recovery, and is cleared only after a valid decision is durably recorded so later evidence/dependency continuations are not contaminated by stale failure text. Focused exact-code-head local verification passed the Windows non-text fixture regression, invalid-decision telemetry regression, and the structured-EVIDENCE suite including the new retry-recovery case. Hosted verification remains pending because the current GitHub Actions attempts have failed before executing any job steps; E-108 records the exact evidence and limitation.
+
 ## 19. I-015 Stage C assignment-scoped provider context and bounded continuity
 
 **IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED — 2026-09-16 — opt-in work-model v2**

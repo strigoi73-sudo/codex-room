@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 **Stage D is now fully preregistered**. The gate fixes ten sequential naturalistic tasks, coordination/provenance invariants, exact economic calculations and stop conditions, task-specific quality rubrics, robustness coverage, and invalid-run handling before any Stage-D paid execution. Stage C remains COMPLETE under E-106.
+- **What just changed?** I-015 **Stage D attempt 1 remains stopped at D-N4**, but the D-N4 structured-EVIDENCE contract/telemetry defect is now **IMPLEMENTED ON PR #104 and focused locally verified**. The failed D-N4 artifact remains scored evidence; no D-N5 work was started. Hosted verification is still blocked because current GitHub Actions attempts fail before any runner steps execute. See E-107 for the failed gate checkpoint and E-108 for remediation evidence.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage D — D-N1.** Create one fresh dedicated Stage-D Room, run the exact preregistered D-N1 solo-scheduling Round under work-model v2 + assignment-scoped provider context, export it, and score it before D-N2. Version 1 remains the default throughout the gate.
+- **What is next?** **Close I-015 D-N4 remediation verification [CORE].** PR #104 now contains the contract, retry-feedback/restart-safety, and failed-turn telemetry repairs with focused local regression evidence. Resolve or outlast the GitHub Actions pre-runner startup failure, obtain applicable hosted verification on the repaired code, then merge and start a **new fresh Stage-D gate from D-N1**. Do not resume D-N5 in the failed attempt-1 Room. Version 1 remains the default.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -19,7 +19,7 @@
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-C IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED  
 **Decision:** D-030, D-031, D-032, D-033  
-**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103, E-104, E-105, E-106  
+**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103, E-104, E-105, E-106, E-107  
 **Scope:** [CORE], with later [CORE + ROOM migration] only if the Stage-D viability gate justifies broader activation.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
@@ -468,6 +468,36 @@ Overall quality requires **at least 9 of 10 tasks PASS**. Two quality failures t
 - interruption/restart safety: rely on the exact current code's deterministic restart/recovery coverage already established in E-100, E-102, and E-105 so long as no code affecting those paths changes before/during Stage D. If relevant code changes, rerun the focused restart tests and applicable hosted CI before Stage-D closeout.
 
 This avoids spending paid naturalistic cognition to recreate a failure mode already deterministically covered while still requiring naturalistic evidence for the new integrated failure/truncation/history cases.
+
+### Stage-D attempt 1 observed checkpoint — STOPPED at D-N4
+
+**Date:** 2026-09-16  
+**Work state:** IN PROGRESS — remediation required before a new gate  
+**Reality:** OBSERVED ISSUE  
+**Evidence:** E-107
+
+The first paid Stage-D attempt used one fresh dedicated Room under the exact preregistered v2 + assignment-thread configuration. D-N1 through D-N3 are valid scored results and remain part of the historical gate evidence:
+
+- **D-N1 PASS:** C-only schedule; one execution; 21,625 total execution tokens; exact 9:20 AM grocery start; transaction/thread provenance clean.
+- **D-N2 PASS:** C → B → same C; three executions; 65,365 total execution tokens; one Join released once; distinct B Assignment thread and exact C continuation-thread reuse; quality rubric passed.
+- **D-N3 PASS:** C → differentiated A+B → same C; four executions; 89,400 total execution tokens; one outer Join released once; A built the plan, B audited timing/risk, and the final result correctly used two trips.
+
+**D-N4 FAIL / observed defect:** C attempted the required structured `EVIDENCE` path twice on the same logical Assignment/provider thread. Both provider responses used `path: ""` for CORE search requests. Current `SourceEvidenceRequest.path` requires a non-empty string, so Pydantic decision validation rejected both turns before deterministic evidence execution. The second bounded retry repeated the same invalid shape and the Task closed `transaction_failed`. The Round therefore produced no required source-facts answer and fails the D-N4 quality rubric.
+
+Source inspection of the exact Stage-D code identifies a contract mismatch rather than an external invalidation:
+
+- the provider-facing transaction JSON schema types evidence `path` only as a string and does not encode the runtime non-empty constraint;
+- the underlying CORE source-inspection surface also requires a maintained top-level entry rather than a root-wide `""` or `"."` search, but the transaction EVIDENCE guidance does not state that CORE-specific rule;
+- assignment retry state records the validation diagnostic in `resolution_reason`, but the next assignment prompt does not expose that diagnostic, so the retry lacks actionable repair feedback;
+- the adapter validates the structured decision before extracting/returning usage/activity, so failed decision-validation turns leave durable execution rows without usage/activity telemetry and cannot be scored economically from normal execution facts.
+
+This attempt is **stopped before D-N5** because D-N5 exercises the same structured CORE-search boundary and further paid cognition would test a known defect while failed-turn economics remain incomplete. The D-N4 artifact is not discarded or rewritten as an external invalidation. Version 1 remains the ordinary default.
+
+**Required remediation before another paid Stage-D gate:** align provider/runtime EVIDENCE validation, state the CORE path boundary in the assignment contract, feed exact validation failure information into the one bounded retry without contaminating later continuations, preserve usage/activity/economics for invalid structured decisions, add deterministic regression tests, and obtain applicable hosted verification on the exact repaired version. A new Stage-D attempt must use a fresh dedicated Room; attempt 1 remains historical evidence.
+
+**Remediation checkpoint — 2026-09-16:** PR #104 now implements the code-side requirements above. The provider schema and CORE-path guidance are aligned; invalid-decision usage/activity/economics are preserved; retry feedback reaches the bounded retry, survives claimed-execution restart recovery, and clears after a valid durable decision. The exact code-bearing head `3c136d250bfd76d189b2c5e0d19921b04a8ee88e` passed focused local verification on Windows: **8 passed in 16.33s** across the Windows non-text fixture regression, invalid-decision telemetry regression, and the full structured-EVIDENCE regression module. GitHub Actions run `35133053329` failed all three matrix jobs with **zero job steps executed**, matching the existing Actions startup/infrastructure blocker rather than producing test-failure evidence. Therefore the remediation is **IMPLEMENTED / FOCUSED-LOCAL-VERIFIED / HOSTED VERIFICATION PENDING**, not yet eligible to restart Stage D.
+
+**Separate test-suite efficiency observation — MONITOR:** the preceding full local Windows suite took **1,197.28s (19:57)** and produced one load-sensitive stale-result timeout that then passed twice in focused isolation, while recent Linux hosted runs of the same broad suite are roughly an order of magnitude faster. The suite should be profiled and tiered after the current remediation closes; do not weaken current coverage or expand this maintenance issue inside PR #104.
 
 #### D-N1 — Solo Saturday schedule
 

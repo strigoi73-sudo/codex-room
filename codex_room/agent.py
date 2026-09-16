@@ -70,6 +70,27 @@ class AgentTurnTerminalError(RuntimeError):
         self.codex_error_info = codex_error_info
 
 
+class AgentDecisionValidationError(RuntimeError):
+    """A completed Codex turn returned a decision that failed Room validation."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        usage: dict[str, Any] | None,
+        activity: list[dict[str, Any]],
+        thread_id: str | None,
+        turn_id: str | None,
+        completion_source: str,
+    ) -> None:
+        super().__init__(message)
+        self.usage = usage
+        self.activity = activity
+        self.thread_id = thread_id
+        self.turn_id = turn_id
+        self.completion_source = completion_source
+
+
 class AgentAdapter(Protocol):
     async def initialize(self) -> dict[str, Any]: ...
 
@@ -391,6 +412,9 @@ class CodexAgentAdapter:
 
         if not result.final_response:
             raise RuntimeError("Codex turn completed without a final response")
+
+        usage = result.usage.model_dump(mode="json") if result.usage is not None else None
+        activity = self._safe_activity(result.items)
         try:
             payload = json.loads(result.final_response)
             decision = (
@@ -399,15 +423,27 @@ class CodexAgentAdapter:
                 else AgentDecision.model_validate(payload)
             )
         except (json.JSONDecodeError, ValueError) as exc:
-            raise RuntimeError(
-                f"Codex returned invalid Room decision JSON: {result.final_response[:500]}"
+            validation_detail = " ".join(str(exc).split())
+            if len(validation_detail) > 300:
+                validation_detail = validation_detail[:297] + "..."
+            response_excerpt = " ".join(result.final_response[:300].split())
+            raise AgentDecisionValidationError(
+                (
+                    "Codex returned invalid Room decision JSON. "
+                    f"Validation error: {validation_detail}. "
+                    f"Response excerpt: {response_excerpt}"
+                ),
+                usage=usage,
+                activity=activity,
+                thread_id=thread.id,
+                turn_id=handle.id,
+                completion_source=completion_source,
             ) from exc
 
-        usage = result.usage.model_dump(mode="json") if result.usage is not None else None
         return AgentRunResult(
             decision=decision,
             usage=usage,
-            activity=self._safe_activity(result.items),
+            activity=activity,
             thread_id=thread.id,
             turn_id=handle.id,
             completion_source=completion_source,

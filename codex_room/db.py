@@ -2680,6 +2680,7 @@ class Database:
                         "assignment_id": assignment["id"],
                         "task_id": assignment["task_id"],
                         "recovered": True,
+                        "retry_feedback": assignment["resolution_reason"],
                         "execution": self._decode_execution(execution),
                         "usage_continuation": (
                             self._decode_usage_continuation(continuation_row)
@@ -2752,6 +2753,7 @@ class Database:
                     raise RuntimeError("Assignment contains an unsupported execution config")
                 selected_model, selected_effort = resolved
 
+            retry_feedback = assignment["resolution_reason"]
             cursor = await db.execute(
                 """UPDATE assignments
                    SET state='running', started_at=COALESCE(started_at, ?), updated_at=?
@@ -2808,6 +2810,7 @@ class Database:
                 "assignment_id": assignment["id"],
                 "task_id": assignment["task_id"],
                 "recovered": False,
+                "retry_feedback": retry_feedback,
                 "execution": self._decode_execution(execution),
                 "usage_continuation": (
                     self._decode_usage_continuation(continuation_row)
@@ -4352,6 +4355,11 @@ class Database:
             if row["state"] in {"result_ready", "settled"}:
                 matches = row["result_json"] == result_json
                 if matches:
+                    if row["assignment_id"] is not None:
+                        await db.execute(
+                            "UPDATE assignments SET resolution_reason=NULL WHERE id=?",
+                            (row["assignment_id"],),
+                        )
                     await db.commit()
                 else:
                     await db.rollback()
@@ -4377,8 +4385,42 @@ class Database:
             if cursor.rowcount != 1:
                 await db.rollback()
                 return False
+            if row["assignment_id"] is not None:
+                await db.execute(
+                    "UPDATE assignments SET resolution_reason=NULL WHERE id=?",
+                    (row["assignment_id"],),
+                )
             await db.commit()
         return True
+
+    async def record_execution_failure_telemetry(
+        self,
+        batch_id: str,
+        usage: dict[str, Any] | None,
+        activity: list[dict[str, Any]],
+        completion_source: str,
+    ) -> bool:
+        """Persist completed-turn telemetry even when Room decision validation fails."""
+        now = utc_now()
+        usage_json = json.dumps(usage, ensure_ascii=False) if usage is not None else None
+        activity_json = json.dumps(activity, ensure_ascii=False)
+        async with self.connect() as db:
+            cursor = await db.execute(
+                """UPDATE agent_executions
+                   SET usage_json=?, activity_json=?, completion_source=?,
+                       result_recorded_at=?, last_reconciled_at=?
+                   WHERE batch_id=? AND state IN ('active','recovering')""",
+                (
+                    usage_json,
+                    activity_json,
+                    completion_source,
+                    now,
+                    now,
+                    batch_id,
+                ),
+            )
+            await db.commit()
+        return cursor.rowcount == 1
 
     async def set_execution_state(
         self, batch_id: str, state: str, error: str | None = None

@@ -3905,3 +3905,88 @@ The preregistered rule said a C-N3 pass closes Stage C and moves the program to 
 
 **Assessment:** **PASS. Stage C COMPLETE.** Assignment-scoped provider context plus explicit bounded Room-history retrieval has deterministic and naturalistic evidence for both isolation and continuity. No current evidence justifies embeddings, broad summarization, automatic whole-history injection, or a general memory index before Stage D.
 
+### E-107 — I-015 Stage D attempt 1 stopped after D-N4 structured-EVIDENCE contract failure
+**Date:** 2026-09-16  
+**Kind:** [ROOM + CORE diagnosis] paid naturalistic viability-gate checkpoint  
+**Decision:** D-031, D-032, D-033
+
+The first preregistered Stage-D viability attempt used fresh Room `room_452465d8fdbf4797b4ac9bbf60723c71`, with every scored Round on work-model v2 and `provider_context_mode="assignment_thread"`.
+
+**Valid scored results before failure**
+
+- **D-N1 PASS** — Round `round_15de552b74c94827b6e516d3a3d1aaa8`; one C Assignment/execution; 21,625 total execution tokens; exact 9:20 AM grocery start; no peers/tools/evidence/history; assignment thread distinct from C's permanent thread.
+- **D-N2 PASS** — Round `round_1efd7483b3b1449aa34757a4d43c71a7`; C → B → same C Assignment; three executions; 65,365 total execution tokens; one dependency Join released exactly once; B used a distinct Assignment thread and C resumed its exact original Assignment thread; required B contribution was integrated.
+- **D-N3 PASS** — Round `round_644baecca1d54055a8ed38c2bdc26b48`; C → differentiated A+B → same C Assignment; four executions; 89,400 total execution tokens; one outer Join released exactly once; A built the moving plan, B independently audited timing/risk, and C correctly integrated a two-trip plan.
+
+**D-N4 failed run**
+
+- Round: `round_7b38641af8d44d5b9ded3057e418efad`
+- Task: `task_7bf3771be9534a47b76acbf3a914a721`
+- Assignment: `assignment_5b5c7351aed84a248161b67af4268abf`
+- Assignment provider thread: `01a0ab3b-462d-7fe2-ac45-552d7e4f7a37`
+- first failed batch: `batch_fd5a8e8c72af41449faecfe89c658de8`
+- retry batch: `batch_cfcf8ef44a7e433992b1d3704c3d16d2`
+- both executions: `gpt-5.6-terra`, high reasoning
+- final Round close reason: `transaction_failed`
+
+Both provider responses attempted transaction action `EVIDENCE` and supplied bounded CORE SEARCH requests with `path: ""`. Runtime `SourceEvidenceRequest.path` has `min_length=1`, so `TransactionDecision.model_validate` rejected the response before `execute_source_evidence` could run. CORE retried the same logical Assignment once; the second provider response again used the invalid empty path and the coordinator Assignment then failed terminally. No D-N4 answer was produced, so D-N4 is a quality FAIL under the preregistered rubric.
+
+**Exact-version CORE diagnosis**
+
+Inspection of canonical Stage-D source at preregistration commit `321fc2b1f74c28e00e1deecc71965952b1ce2e11` established four contributing gaps:
+
+1. `TRANSACTION_DECISION_SCHEMA` exposes EVIDENCE `path` only as `{"type":"string"}`; it does not encode the Pydantic non-empty constraint.
+2. `source_inspection.py` requires CORE reads/searches to select an allowed maintained top-level entry; CORE-root `""` is invalid and `"."` is also rejected for CORE. The transaction EVIDENCE prompt does not state this source-specific rule.
+3. `fail_transaction_assignment` stores the failed diagnostic in the Assignment's `resolution_reason` before requeue, but `_assignment_prompt` does not surface that reason to the retry. The retry therefore receives no actionable validation feedback.
+4. `CodexAgentAdapter._consume_handle` validates the decision before extracting usage/activity into `AgentRunResult`. Both D-N4 durable execution rows consequently ended `failed` with model/effort/thread IDs but no usage/activity payload, preventing normal per-execution economic scoring for the failed turns.
+
+The failure is therefore an **OBSERVED ISSUE** in the integrated structured-EVIDENCE boundary, not an external invalidation of the run. The artifact remains evidence and is not eligible to be silently discarded/reclassified as a clean rerun.
+
+**Assessment:** Stage-D attempt 1 is **STOPPED after D-N4**. D-N1 through D-N3 remain valid historical PASS results; D-N4 remains a FAIL. No D-N5 paid work should begin on the preregistered version because D-N5 exercises the same structured CORE-search boundary and failed-turn economics are currently incomplete. Version 1 remains the production/default work model.
+
+**Required next evidence:** deterministic regression coverage and hosted verification for a bounded [CORE] repair that (a) aligns provider/runtime path validation, (b) states CORE path semantics in the agent contract, (c) exposes exact validation feedback on the single retry without contaminating later continuations, and (d) durably records usage/activity/economics for invalid structured decisions. A later Stage-D attempt must start in a fresh dedicated Room and preserve this attempt as historical evidence.
+
+
+
+### E-108 — I-015 D-N4 structured-EVIDENCE remediation implemented and focused locally verified; hosted CI startup blocked
+**Date:** 2026-09-16  
+**Kind:** [CORE] remediation implementation / deterministic local verification / hosted-verification limitation  
+**Decision:** D-031, D-032, D-033
+
+PR #104 repairs the exact D-N4 boundary exposed in E-107 without discarding or reclassifying the failed naturalistic gate result.
+
+**Implemented repair**
+
+- provider-facing transaction JSON schema now encodes non-empty bounded EVIDENCE paths, matching runtime validation;
+- transaction guidance makes the maintained top-level CORE path boundary explicit and rejects root-wide empty/`.` CORE requests;
+- invalid structured decisions preserve completed-turn usage/activity and emit execution-economics evidence before retry/failure settlement;
+- the exact validation diagnostic is supplied to the one bounded retry on the same logical Assignment;
+- retry feedback remains durable through a claimed-but-not-yet-started execution recovery and is cleared only when a valid decision is durably recorded, preventing both restart loss and stale-feedback leakage into later continuations;
+- a Windows-invalid test fixture named `nul.txt` was corrected to avoid the reserved Windows `NUL` device name. This was a test-fixture defect, not a product search-text defect.
+
+**Focused local evidence**
+
+Exact code-bearing head: `3c136d250bfd76d189b2c5e0d19921b04a8ee88e`.
+
+On Windows/Python 3.12.10, the exact head passed:
+
+- `test_search_text_skips_non_utf8_and_nul_files`;
+- `test_invalid_transaction_decision_retains_completed_turn_telemetry`;
+- all tests in `tests/test_transaction_evidence.py`, including the new claimed-execution retry-feedback recovery case.
+
+Combined focused result: **8 passed in 16.33s**. Python compile validation also passed on the immediately preceding code-bearing head before the final restart-safety addition; the final focused pytest import/execution used the exact `3c136d2...` source worktree.
+
+The earlier full local Windows suite on predecessor head `d66b1cbd4a49de310a6302950bc9e7fb5db17b70` produced **409 passed, 5 skipped, 2 failed in 1,197.28s**. Focused investigation established:
+- the capability failure came from the Windows-reserved `nul.txt` fixture and was corrected;
+- the ordinary v1 new-topic stale-result timeout passed twice in isolation (about 4.7–4.8s call time), so it is recorded as load-sensitive test-suite behavior rather than evidence of a PR #104 product regression.
+
+**Hosted verification limitation**
+
+GitHub Actions run `35133053329` for the exact code-bearing head completed with all three jobs reported failed:
+- Ubuntu / Python 3.11;
+- Ubuntu / Python 3.12;
+- Windows / Python 3.12 + browser.
+
+Each job contains **zero executed steps**. This matches the repeated repository-level Actions startup/runner failure already observed on prior PR #104 attempts and provides no test-result evidence against the code. It also does **not** satisfy the project requirement for applicable hosted verification.
+
+**Assessment:** **IMPLEMENTED / FOCUSED LOCAL VERIFICATION PASSED / HOSTED VERIFICATION PENDING.** PR #104 must not be described as fully verified or merged solely on this evidence. Stage D remains stopped; once hosted verification is obtained and the repair is merged, the next paid viability attempt must start in a fresh Room from D-N1. Version 1 remains the ordinary default.
