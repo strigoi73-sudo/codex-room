@@ -215,6 +215,12 @@ async def test_pending_transaction_evidence_recovers_after_restart(
         return bool(row and row["state"] == "pending")
 
     await wait_until(evidence_pending)
+    first_room = await first.db.get_room(room_id)
+    assert first_room is not None
+    assert first_room["status"] == RoomStatus.RUNNING
+    assert await first.db.has_active_transaction_task(
+        room_id, snapshot["active_round_id"]
+    )
     await first.close()
 
     monkeypatch.setattr(
@@ -233,6 +239,18 @@ async def test_pending_transaction_evidence_recovers_after_restart(
         room = await second.db.get_room(room_id)
         return bool(room and room["status"] == RoomStatus.FINISHED)
 
+    await wait_until(lambda: len(second_adapter.completed_calls["agent_c"]) == 1)
+
+    async def evidence_consumed() -> bool:
+        async with second.db.connect() as db:
+            row = await second.db._fetchone(
+                db,
+                "SELECT state FROM assignment_evidence ORDER BY created_at LIMIT 1",
+                (),
+            )
+        return bool(row and row["state"] == "consumed")
+
+    await wait_until(evidence_consumed)
     await wait_until(finished)
     assert len(second_adapter.calls["agent_c"]) == 1
     assert "restart-safe evidence" in second_adapter.calls["agent_c"][0]["prompt"]
