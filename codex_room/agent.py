@@ -77,11 +77,29 @@ class AgentAdapter(Protocol):
 
     async def start_agent(self, agent: dict[str, Any], cwd: Path) -> str: ...
 
+    async def start_context_thread(
+        self, agent: dict[str, Any], cwd: Path, *, label: str
+    ) -> str: ...
+
     async def run_agent(
         self,
         agent: dict[str, Any],
         cwd: Path,
         prompt: str,
+        on_started: Callable[[str, str], Awaitable[None]] | None = None,
+        on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        model: str = ROOM_MODEL,
+        reasoning_effort: str = ROOM_REASONING_EFFORT,
+        transactional: bool = False,
+    ) -> AgentRunResult: ...
+
+    async def run_agent_on_thread(
+        self,
+        agent: dict[str, Any],
+        cwd: Path,
+        prompt: str,
+        thread_id: str,
         on_started: Callable[[str, str], Awaitable[None]] | None = None,
         on_progress: Callable[[], Awaitable[None]] | None = None,
         *,
@@ -104,7 +122,7 @@ class AgentAdapter(Protocol):
     async def compact_agent(self, agent: dict[str, Any], cwd: Path) -> None: ...
 
     async def prepare_usage_continuation(
-        self, agent: dict[str, Any], cwd: Path
+        self, agent: dict[str, Any], cwd: Path, thread_id: str | None = None
     ) -> None: ...
 
     async def interrupt(self, agent_id: str) -> InterruptOutcome: ...
@@ -167,7 +185,13 @@ class CodexAgentAdapter:
         self._unconfirmed_handles.clear()
         self._usage_continuation_agents.clear()
 
-    async def start_agent(self, agent: dict[str, Any], cwd: Path) -> str:
+    async def _start_thread(
+        self,
+        agent: dict[str, Any],
+        cwd: Path,
+        *,
+        name: str,
+    ) -> Any:
         from openai_codex import Sandbox
 
         self._require_client()
@@ -180,16 +204,34 @@ class CodexAgentAdapter:
             model=ROOM_MODEL,
             sandbox=Sandbox.workspace_write,
         )
-        await thread.set_name(f"Codex Room · {agent['name']}")
+        await thread.set_name(name)
         if not thread.id:
             raise RuntimeError("Codex created a thread without a thread ID")
+        return thread
+
+    async def start_agent(self, agent: dict[str, Any], cwd: Path) -> str:
+        thread = await self._start_thread(
+            agent,
+            cwd,
+            name=f"Codex Room · {agent['name']}",
+        )
         self._threads[agent["id"]] = thread
         return thread.id
 
-    async def run_agent(
+    async def start_context_thread(
+        self, agent: dict[str, Any], cwd: Path, *, label: str
+    ) -> str:
+        thread = await self._start_thread(
+            agent,
+            cwd,
+            name=f"Codex Room · {agent['name']} · {label}",
+        )
+        return thread.id
+
+    async def _run_on_thread(
         self,
         agent: dict[str, Any],
-        cwd: Path,
+        thread: Any,
         prompt: str,
         on_started: Callable[[str, str], Awaitable[None]] | None = None,
         on_progress: Callable[[], Awaitable[None]] | None = None,
@@ -199,7 +241,6 @@ class CodexAgentAdapter:
         transactional: bool = False,
     ) -> AgentRunResult:
         _assert_room_model_allowed(model)
-        thread = await self._get_thread(agent, cwd)
         usage_continuation = agent["id"] in self._usage_continuation_agents
         self._usage_continuation_agents.discard(agent["id"])
         await self._wait_until_thread_idle(
@@ -222,6 +263,57 @@ class CodexAgentAdapter:
             transactional=transactional,
         )
 
+    async def run_agent(
+        self,
+        agent: dict[str, Any],
+        cwd: Path,
+        prompt: str,
+        on_started: Callable[[str, str], Awaitable[None]] | None = None,
+        on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        model: str = ROOM_MODEL,
+        reasoning_effort: str = ROOM_REASONING_EFFORT,
+        transactional: bool = False,
+    ) -> AgentRunResult:
+        _assert_room_model_allowed(model)
+        thread = await self._get_thread(agent, cwd)
+        return await self._run_on_thread(
+            agent,
+            thread,
+            prompt,
+            on_started=on_started,
+            on_progress=on_progress,
+            model=model,
+            reasoning_effort=reasoning_effort,
+            transactional=transactional,
+        )
+
+    async def run_agent_on_thread(
+        self,
+        agent: dict[str, Any],
+        cwd: Path,
+        prompt: str,
+        thread_id: str,
+        on_started: Callable[[str, str], Awaitable[None]] | None = None,
+        on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        model: str = ROOM_MODEL,
+        reasoning_effort: str = ROOM_REASONING_EFFORT,
+        transactional: bool = False,
+    ) -> AgentRunResult:
+        _assert_room_model_allowed(model)
+        thread = await self._get_thread_by_id(agent, cwd, thread_id)
+        return await self._run_on_thread(
+            agent,
+            thread,
+            prompt,
+            on_started=on_started,
+            on_progress=on_progress,
+            model=model,
+            reasoning_effort=reasoning_effort,
+            transactional=transactional,
+        )
+
     async def resume_agent(
         self,
         agent: dict[str, Any],
@@ -235,9 +327,7 @@ class CodexAgentAdapter:
         """Reattach to one durable turn without starting replacement work."""
         from openai_codex import AsyncTurnHandle
 
-        thread = await self._get_thread(agent, cwd)
-        if thread.id != thread_id:
-            raise RuntimeError("Persisted execution thread does not match the agent thread")
+        thread = await self._get_thread_by_id(agent, cwd, thread_id)
         handle = AsyncTurnHandle(self._client, thread_id, turn_id)
         return await self._consume_handle(
             agent,
@@ -496,11 +586,14 @@ class CodexAgentAdapter:
             await asyncio.sleep(0.05)
 
     async def prepare_usage_continuation(
-        self, agent: dict[str, Any], cwd: Path
+        self, agent: dict[str, Any], cwd: Path, thread_id: str | None = None
     ) -> None:
-        """Rebind the same thread after a positively identified usage wall."""
-        await self.rebind_agent_profile(agent, cwd)
-        thread = self._threads[agent["id"]]
+        """Rebind the exact provider thread after a positively identified usage wall."""
+        if thread_id is None or thread_id == agent.get("thread_id"):
+            await self.rebind_agent_profile(agent, cwd)
+            thread = self._threads[agent["id"]]
+        else:
+            thread = await self._get_thread_by_id(agent, cwd, thread_id)
         response = await thread.read()
         status_type = self._thread_status_type(response)
         if status_type not in {"idle", "systemError"}:
@@ -636,6 +729,25 @@ class CodexAgentAdapter:
             sandbox=Sandbox.workspace_write,
         )
         self._threads[agent["id"]] = thread
+        return thread
+
+    async def _get_thread_by_id(
+        self, agent: dict[str, Any], cwd: Path, thread_id: str
+    ) -> Any:
+        from openai_codex import Sandbox
+
+        if thread_id == agent.get("thread_id"):
+            return await self._get_thread(agent, cwd)
+        self._require_client()
+        thread = await self._client.thread_resume(
+            thread_id,
+            cwd=str(cwd),
+            developer_instructions=agent["developer_instructions"],
+            model=ROOM_MODEL,
+            sandbox=Sandbox.workspace_write,
+        )
+        if thread.id != thread_id:
+            raise RuntimeError("Codex resumed a different provider context thread")
         return thread
 
     def _require_client(self) -> None:

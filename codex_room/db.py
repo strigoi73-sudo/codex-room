@@ -225,6 +225,7 @@ class Database:
                     close_reason TEXT,
                     last_activity_at TEXT,
                     work_model_version INTEGER NOT NULL DEFAULT 1,
+                    provider_context_mode TEXT NOT NULL DEFAULT 'persistent_agent_thread',
                     required_contributors_json TEXT NOT NULL DEFAULT '[]'
                 );
 
@@ -276,6 +277,7 @@ class Database:
                     instruction TEXT NOT NULL,
                     context_event_ids_json TEXT NOT NULL DEFAULT '[]',
                     execution_config_id TEXT,
+                    context_thread_id TEXT,
                     state TEXT NOT NULL,
                     result_event_id TEXT REFERENCES events(id),
                     resolution_reason TEXT,
@@ -409,7 +411,14 @@ class Database:
             await self._ensure_column(db, "rounds", "participant_private_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "participant_overlays_json", "TEXT NOT NULL DEFAULT '{}'")
             await self._ensure_column(db, "rounds", "work_model_version", "INTEGER NOT NULL DEFAULT 1")
+            await self._ensure_column(
+                db,
+                "rounds",
+                "provider_context_mode",
+                "TEXT NOT NULL DEFAULT 'persistent_agent_thread'",
+            )
             await self._ensure_column(db, "rounds", "required_contributors_json", "TEXT NOT NULL DEFAULT '[]'")
+            await self._ensure_column(db, "assignments", "context_thread_id", "TEXT")
             await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
             await self._ensure_column(
                 db,
@@ -886,8 +895,8 @@ class Database:
             await db.execute(
                 """INSERT INTO rounds
                    (id, room_id, title, prompt, created_at, status, starting_agent,
-                    work_model_version, required_contributors_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, provider_context_mode, required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -897,6 +906,7 @@ class Database:
                     RoundStatus.PREPARING,
                     request.starting_agent,
                     request.work_model_version,
+                    request.provider_context_mode,
                     json.dumps(request.required_contributors),
                 ),
             )
@@ -1756,8 +1766,8 @@ class Database:
                     agent_a_private, agent_b_private, task_overlay,
                     agent_a_overlay, agent_b_overlay,
                     participant_private_json, participant_overlays_json,
-                    work_model_version, required_contributors_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, provider_context_mode, required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -1774,6 +1784,7 @@ class Database:
                     json.dumps(request.participant_private, ensure_ascii=False),
                     json.dumps(request.participant_overlays, ensure_ascii=False),
                     request.work_model_version,
+                    request.provider_context_mode,
                     json.dumps(request.required_contributors),
                 ),
             )
@@ -2604,7 +2615,8 @@ class Database:
                 db,
                 """SELECT a.*, r.status AS room_status, r.active_round_id,
                           r.max_turns, r.lifecycle_version,
-                          ro.turn_count AS round_turn_count, ro.work_model_version
+                          ro.turn_count AS round_turn_count, ro.work_model_version,
+                          ro.provider_context_mode
                    FROM agents a JOIN rooms r ON r.id=a.room_id
                    JOIN rounds ro ON ro.id=r.active_round_id
                    WHERE a.room_id=? AND a.agent_key=? AND r.status='running'
@@ -2656,6 +2668,7 @@ class Database:
                             if continuation_row else None
                         ),
                         "work_model_version": 2,
+                        "provider_context_mode": agent["provider_context_mode"],
                     }
                 )
                 return result
@@ -2688,21 +2701,28 @@ class Database:
                 await db.commit()
                 return None
 
-            continuation_row = await self._fetchone(
-                db,
-                """SELECT * FROM usage_continuations
-                   WHERE agent_id=? AND room_id=? AND round_id=?
-                     AND lifecycle_version=? AND thread_id=?
-                     AND assignment_id=? AND state='ready'""",
-                (
-                    agent["id"],
-                    room_id,
-                    agent["active_round_id"],
-                    agent["lifecycle_version"],
-                    agent["thread_id"],
-                    assignment["id"],
-                ),
+            context_thread_id = (
+                assignment["context_thread_id"]
+                if agent["provider_context_mode"] == "assignment_thread"
+                else agent["thread_id"]
             )
+            continuation_row = None
+            if context_thread_id is not None:
+                continuation_row = await self._fetchone(
+                    db,
+                    """SELECT * FROM usage_continuations
+                       WHERE agent_id=? AND room_id=? AND round_id=?
+                         AND lifecycle_version=? AND thread_id=?
+                         AND assignment_id=? AND state='ready'""",
+                    (
+                        agent["id"],
+                        room_id,
+                        agent["active_round_id"],
+                        agent["lifecycle_version"],
+                        context_thread_id,
+                        assignment["id"],
+                    ),
+                )
 
             selected_model = model
             selected_effort = reasoning_effort
@@ -2776,6 +2796,7 @@ class Database:
                     if continuation_row else None
                 ),
                 "work_model_version": 2,
+                "provider_context_mode": agent["provider_context_mode"],
             }
         )
         return result
@@ -4078,6 +4099,39 @@ class Database:
             "runnable_count": int(row["runnable_count"] or 0) if row else 0,
         }
 
+    async def bind_assignment_context_thread(
+        self,
+        assignment_id: str,
+        thread_id: str,
+    ) -> bool:
+        """Bind one version-2 logical assignment to its provider context thread."""
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            row = await self._fetchone(
+                db,
+                "SELECT context_thread_id, state FROM assignments WHERE id=?",
+                (assignment_id,),
+            )
+            if row is None or row["state"] != "running":
+                await db.rollback()
+                return False
+            if row["context_thread_id"] == thread_id:
+                await db.commit()
+                return True
+            if row["context_thread_id"] is not None:
+                await db.rollback()
+                return False
+            cursor = await db.execute(
+                """UPDATE assignments SET context_thread_id=?
+                   WHERE id=? AND state='running' AND context_thread_id IS NULL""",
+                (thread_id, assignment_id),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                return False
+            await db.commit()
+        return True
+
     async def bind_execution_turn(
         self,
         batch_id: str,
@@ -4383,17 +4437,25 @@ class Database:
             current = await self._fetchone(
                 db,
                 """SELECT r.status, r.active_round_id, r.lifecycle_version,
-                          a.thread_id, x.state AS assignment_state
+                          a.thread_id, ro.provider_context_mode,
+                          x.context_thread_id, x.state AS assignment_state
                    FROM rooms r
                    JOIN agents a ON a.room_id=r.id
+                   JOIN rounds ro ON ro.id=r.active_round_id
                    JOIN assignments x ON x.id=?
                    WHERE r.id=? AND a.id=? AND x.agent_id=a.id""",
                 (batch["assignment_id"], batch["room_id"], agent["id"]),
             )
             execution = await self._fetchone(
                 db,
-                "SELECT state, assignment_id FROM agent_executions WHERE batch_id=?",
+                "SELECT state, assignment_id, sdk_thread_id FROM agent_executions WHERE batch_id=?",
                 (batch["batch_id"],),
+            )
+            expected_thread_id = (
+                current["context_thread_id"]
+                if current is not None
+                and current["provider_context_mode"] == "assignment_thread"
+                else current["thread_id"] if current is not None else None
             )
             if (
                 current is None
@@ -4401,7 +4463,8 @@ class Database:
                 or current["status"] != RoomStatus.RUNNING
                 or current["active_round_id"] != batch["round_id"]
                 or current["lifecycle_version"] != batch["lifecycle_version"]
-                or current["thread_id"] != agent["thread_id"]
+                or expected_thread_id is None
+                or execution["sdk_thread_id"] != expected_thread_id
                 or current["assignment_state"] != "running"
                 or execution["assignment_id"] != batch["assignment_id"]
                 or execution["state"] not in {"active", "recovering"}
@@ -4444,7 +4507,7 @@ class Database:
                     continuation_id,
                     batch["room_id"],
                     agent["id"],
-                    agent["thread_id"],
+                    expected_thread_id,
                     batch["batch_id"],
                     batch["assignment_id"],
                     batch["round_id"],
@@ -4480,8 +4543,11 @@ class Database:
                           a.thread_id AS current_thread_id,
                           r.status AS room_status, r.active_round_id,
                           r.lifecycle_version AS current_lifecycle_version,
-                          ro.status AS round_status, x.state AS execution_state,
-                          tx.state AS assignment_state
+                          ro.status AS round_status,
+                          ro.provider_context_mode,
+                          x.state AS execution_state,
+                          tx.state AS assignment_state,
+                          tx.context_thread_id
                    FROM usage_continuations u
                    JOIN agents a ON a.id=u.agent_id
                    JOIN rooms r ON r.id=u.room_id
@@ -4493,12 +4559,18 @@ class Database:
                 (room_id, now),
             )
             for row in rows:
+                expected_thread_id = (
+                    row["context_thread_id"]
+                    if row["assignment_id"] is not None
+                    and row["provider_context_mode"] == "assignment_thread"
+                    else row["current_thread_id"]
+                )
                 base_valid = (
                     row["room_status"] == RoomStatus.RUNNING
                     and row["active_round_id"] == row["round_id"]
                     and row["current_lifecycle_version"] == row["lifecycle_version"]
                     and row["round_status"] == RoundStatus.ACTIVE
-                    and row["current_thread_id"] == row["thread_id"]
+                    and expected_thread_id == row["thread_id"]
                     and row["agent_status"] == AgentStatus.USAGE_SUSPENDED
                     and row["execution_state"] == "usage_suspended"
                 )

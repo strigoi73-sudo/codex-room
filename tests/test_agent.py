@@ -235,6 +235,97 @@ class ResumeClient:
         return SimpleNamespace(id=self.resumed_id)
 
 
+class ContextStartThread:
+    def __init__(self, thread_id: str) -> None:
+        self.id = thread_id
+        self.name: str | None = None
+
+    async def set_name(self, name: str) -> None:
+        self.name = name
+
+
+class ContextStartClient:
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+        self.thread = ContextStartThread("thread-assignment")
+
+    async def thread_start(self, **kwargs):
+        self.calls.append(kwargs)
+        return self.thread
+
+
+class ExactUsageSystemErrorThread:
+    def __init__(self, thread_id: str) -> None:
+        self.id = thread_id
+
+    async def read(self):
+        status = SimpleNamespace(type="systemError")
+        return SimpleNamespace(
+            thread=SimpleNamespace(status=SimpleNamespace(root=status))
+        )
+
+
+class ExactUsageResumeClient:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict]] = []
+
+    async def thread_resume(self, thread_id: str, **kwargs):
+        self.calls.append((thread_id, kwargs))
+        return ExactUsageSystemErrorThread(thread_id)
+
+
+@pytest.mark.asyncio
+async def test_assignment_context_thread_start_does_not_replace_persistent_agent_cache(
+    tmp_path: Path,
+):
+    adapter = CodexAgentAdapter()
+    client = ContextStartClient()
+    adapter._client = client
+    permanent = SimpleNamespace(id="thread-permanent")
+    adapter._threads["agent-one"] = permanent
+    agent = {
+        "id": "agent-one",
+        "name": "Agent C",
+        "thread_id": "thread-permanent",
+        "developer_instructions": "persistent instructions",
+    }
+
+    thread_id = await adapter.start_context_thread(
+        agent, tmp_path, label="assignment assignment-one"
+    )
+
+    assert thread_id == "thread-assignment"
+    assert adapter._threads["agent-one"] is permanent
+    assert client.thread.name == "Codex Room · Agent C · assignment assignment-one"
+    assert client.calls[0]["ephemeral"] is False
+    assert client.calls[0]["developer_instructions"] == "persistent instructions"
+
+
+@pytest.mark.asyncio
+async def test_assignment_context_usage_continuation_resumes_exact_non_agent_thread(
+    tmp_path: Path,
+):
+    adapter = CodexAgentAdapter()
+    client = ExactUsageResumeClient()
+    adapter._client = client
+    permanent = SimpleNamespace(id="thread-permanent")
+    adapter._threads["agent-one"] = permanent
+    agent = {
+        "id": "agent-one",
+        "thread_id": "thread-permanent",
+        "developer_instructions": "persistent instructions",
+    }
+
+    await adapter.prepare_usage_continuation(
+        agent, tmp_path, "thread-assignment"
+    )
+
+    assert adapter._threads["agent-one"] is permanent
+    assert client.calls[0][0] == "thread-assignment"
+    assert client.calls[0][1]["developer_instructions"] == "persistent instructions"
+    assert "agent-one" in adapter._usage_continuation_agents
+
+
 class UsageSystemErrorThread:
     id = "thread-one"
 
