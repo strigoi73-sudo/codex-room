@@ -4163,3 +4163,42 @@ Total D-N5 execution tokens: **150,592**. Post-framing model continuations: **4*
 
 **Assessment:** **D-N5 PASS** for quality, bounded/truncated evidence recovery, coordination/provenance, and task-level economics. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N6 in the same Room.
 
+
+
+### E-116 — Stage-D attempt 2 D-N6 semantic-continuity quality failure
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability evidence  
+**Decision:** D-031, D-032, D-033
+
+In the same dedicated Stage-D Room used for D-N1 through D-N5, the preregistered D-N6 task ran under work-model version 2 with assignment-scoped provider context, starting and requiring Agent C only, ordinary default profiles/model policy, no private initialization or overlays, and max_turns=8.
+
+The structured HISTORY mechanism behaved correctly. C issued one bounded HISTORY search for `D-N1 Solo Saturday Schedule`; deterministic history provenance selected the exact original D-N1 completion event `event_68fda3bbb6264256a5c950653e9a704c`. HISTORY remained nonterminal, and the same logical C Assignment `assignment_2122db71c4984f2aa1cff282e26a84bc` resumed on the same Assignment-scoped provider thread `01a0ac9b-49c2-7b60-8e01-1ef889079958` for final completion. No peers, joins, source evidence, shell/custom capabilities, or model-tool activity occurred.
+
+The final answer correctly reported the original D-N1 grocery-shopping start as **9:20 AM** and moved grocery shopping to **12:00 PM**. However, it moved package drop to **1:45–2:00 PM**. D-N1 explicitly required package drop to finish by **1:00 PM**, and D-N6 explicitly superseded only the original immediate-follow relation between pharmacy and grocery shopping while requiring every other D-N1 constraint to remain satisfied. This is therefore a material explicit-constraint violation.
+
+Execution telemetry recorded two C executions, both `gpt-5.6-terra` at high reasoning effort, on the same Assignment/provider thread:
+- first HISTORY request: **21,320** execution tokens;
+- final completion continuation: **23,129** execution-token delta.
+
+Total D-N6 execution tokens: **44,449**. Post-framing model continuations: **1**.
+
+**Assessment:** coordination/provenance **PASS**; task-level economics **PASS**; quality **FAIL**. This is the first Stage-D attempt-2 quality failure. Do not rerun D-N6. Because the overall gate requires at least 9/10 quality passes, D-N7 through D-N10 must all pass quality for the gate to remain viable.
+
+### E-117 — Stage-D attempt 2 D-N7 stale-history discrimination pass
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability evidence  
+**Decision:** D-031, D-032, D-033
+
+In the same dedicated Stage-D Room after both the original D-N1 result and the later D-N6 revision existed, the preregistered D-N7 task ran under work-model version 2 with assignment-scoped provider context, starting and requiring Agent C only, ordinary default profiles/model policy, no private initialization or overlays, and max_turns=8.
+
+C issued one bounded HISTORY search for `D-N1 Solo Saturday Schedule`. Deterministic history retrieval selected two durable results: the later D-N6 completion event `event_fa579b039a124b9bac267b3e4f20a231` and the intended original D-N1 completion event `event_68fda3bbb6264256a5c950653e9a704c`. The stale-history pressure was therefore real rather than avoided by an exclusive lookup. C correctly discriminated the original result and returned exactly `ORIGINAL: 9:20 AM`, not the D-N6 noon revision.
+
+The transaction used one C Assignment, `assignment_c1fd6a76a112482ba95e00a152dc708f`, and one Assignment-scoped provider thread, `01a0aca6-a970-7ba2-b4b3-a67d5127c0a2`, across both model executions. No peers, joins, EVIDENCE actions, shell/custom capabilities, or model-tool activity occurred. The Task settled cleanly.
+
+Execution telemetry recorded two C executions, both `gpt-5.6-terra` at high reasoning effort:
+- first HISTORY request: **21,275** execution tokens;
+- final completion continuation: **22,740** execution-token delta.
+
+Total D-N7 execution tokens: **44,015**. Post-framing model continuations: **1**.
+
+**Assessment:** **D-N7 PASS** for stale-history discrimination, quality, coordination/provenance, and task-level economics. Stage-D attempt 2 now stands at **6 quality passes / 1 quality failure** through D-N7. A second quality failure would make the preregistered 9/10 threshold unattainable and end the gate. Continue sequentially with D-N8 in the same Room.
