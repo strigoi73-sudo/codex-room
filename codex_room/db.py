@@ -4394,7 +4394,7 @@ class Database:
                     continuation_id,
                     batch["room_id"],
                     agent["id"],
-                    expected_thread_id,
+                    agent["thread_id"],
                     batch["batch_id"],
                     batch["round_id"],
                     batch["lifecycle_version"],
