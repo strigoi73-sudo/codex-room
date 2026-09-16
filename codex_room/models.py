@@ -273,38 +273,111 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                     "minItems": 1,
                     "maxItems": 16,
                     "items": {
-                        "type": "object",
-                        "properties": {
-                            "operation": {
-                                "type": "string",
-                                "enum": ["READ", "SEARCH", "FIND"],
+                        "anyOf": [
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {"type": "string", "enum": ["READ"]},
+                                    "source": {
+                                        "type": "string",
+                                        "enum": ["workspace", "core", "room"],
+                                    },
+                                    "room_id": {
+                                        "anyOf": [{"type": "string"}, {"type": "null"}]
+                                    },
+                                    "path": {"type": "string"},
+                                    "start_line": {"type": "integer"},
+                                    "max_lines": {"type": "integer"},
+                                    "max_bytes": {"type": "integer"},
+                                },
+                                "required": [
+                                    "operation",
+                                    "source",
+                                    "room_id",
+                                    "path",
+                                    "start_line",
+                                    "max_lines",
+                                    "max_bytes",
+                                ],
+                                "additionalProperties": False,
                             },
-                            "source": {
-                                "type": "string",
-                                "enum": ["workspace", "core", "room"],
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {"type": "string", "enum": ["SEARCH"]},
+                                    "source": {
+                                        "type": "string",
+                                        "enum": ["workspace", "core", "room"],
+                                    },
+                                    "room_id": {
+                                        "anyOf": [{"type": "string"}, {"type": "null"}]
+                                    },
+                                    "path": {"type": "string"},
+                                    "query": {"type": "string"},
+                                    "include_globs": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                    },
+                                    "exclude_globs": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                    },
+                                    "include_hidden": {"type": "boolean"},
+                                    "case_sensitive": {"type": "boolean"},
+                                    "max_files": {"type": "integer"},
+                                    "max_matches": {"type": "integer"},
+                                },
+                                "required": [
+                                    "operation",
+                                    "source",
+                                    "room_id",
+                                    "path",
+                                    "query",
+                                    "include_globs",
+                                    "exclude_globs",
+                                    "include_hidden",
+                                    "case_sensitive",
+                                    "max_files",
+                                    "max_matches",
+                                ],
+                                "additionalProperties": False,
                             },
-                            "room_id": {"anyOf": [{"type": "string"}, {"type": "null"}]},
-                            "path": {"type": "string"},
-                            "query": {"anyOf": [{"type": "string"}, {"type": "null"}]},
-                            "start_line": {"type": "integer"},
-                            "max_lines": {"type": "integer"},
-                            "max_bytes": {"type": "integer"},
-                            "include_globs": {
-                                "type": "array",
-                                "items": {"type": "string"},
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "operation": {"type": "string", "enum": ["FIND"]},
+                                    "source": {
+                                        "type": "string",
+                                        "enum": ["workspace", "core", "room"],
+                                    },
+                                    "room_id": {
+                                        "anyOf": [{"type": "string"}, {"type": "null"}]
+                                    },
+                                    "path": {"type": "string"},
+                                    "include_globs": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                    },
+                                    "exclude_globs": {
+                                        "type": "array",
+                                        "items": {"type": "string"},
+                                    },
+                                    "include_hidden": {"type": "boolean"},
+                                    "max_results": {"type": "integer"},
+                                },
+                                "required": [
+                                    "operation",
+                                    "source",
+                                    "room_id",
+                                    "path",
+                                    "include_globs",
+                                    "exclude_globs",
+                                    "include_hidden",
+                                    "max_results",
+                                ],
+                                "additionalProperties": False,
                             },
-                            "exclude_globs": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                            },
-                            "include_hidden": {"type": "boolean"},
-                            "case_sensitive": {"type": "boolean"},
-                            "max_results": {"type": "integer"},
-                            "max_files": {"type": "integer"},
-                            "max_matches": {"type": "integer"},
-                        },
-                        "required": ["operation", "source", "room_id", "path", "query"],
-                        "additionalProperties": False,
+                        ]
                     },
                 },
                 {"type": "null"},
