@@ -103,7 +103,7 @@ Collect the same JSON export/economics evidence as V2-N1. Compare V2-N2 directly
 **Work state:** COMPLETE — IMPLEMENTED / VERIFIED; direct-bundle naturalistic question superseded by B.2/B.3 consolidated interface  
 **Scope:** [CORE]
 
-PR #88 adds `inspect_source` v3 `bundle`, which composes existing bounded `find`, `search`, `search_many`, `read`, and `read_many` operations into one declarative execution when all requested evidence and bounds are known in advance. It rejects nested/adaptive plans and caps aggregate transient output. The direct `codex-room-cap source bundle` CLI accepts `--plan-json` or `--plan-file`. Agent guidance now prefers this path for heterogeneous predeclared retrieval while leaving genuinely adaptive investigation unchanged. Hosted verification passed across the full matrix. See E-097.
+PR #88 added `inspect_source` v3 `bundle`, which composes existing bounded `find`, `search`, `search_many`, `read`, and `read_many` operations into one declarative execution when all requested evidence and bounds are known in advance. It rejects nested/adaptive plans and caps aggregate transient output. The direct `codex-room-cap source bundle` CLI accepts `--plan-json` or `--plan-file`. At the Stage-B1 checkpoint, agent guidance preferred this path for heterogeneous predeclared retrieval while leaving genuinely adaptive investigation unchanged. D-031/B2 later moved ordinary version-2 source retrieval behind structured `EVIDENCE`; the direct bundle remains a compatibility/operator primitive. Hosted verification passed across the full matrix. See E-097.
 
 #### B-N1 — First Stage-B naturalistic validation
 **Work state:** COMPLETE — INCONCLUSIVE FOR BUNDLE ADOPTION / OBSERVED EFFICIENCY ISSUE  
@@ -179,7 +179,7 @@ See E-098 and E-099.
 **Evidence:** E-098, E-099, E-100  
 **Scope:** [CORE]
 
-Implement one bounded version-2 transaction action, conceptually `EVIDENCE`, for read-only source evidence.
+Implemented one bounded version-2 transaction action, `EVIDENCE`, for read-only source evidence.
 
 The agent-facing contract expresses atomic semantic needs such as `READ`, `SEARCH`, and `FIND` with logical source, path/query, Room ID where applicable, and bounded result/line limits. It does not expose `bundle`, `read_many`, `search_many`, executable names, shell quoting, registry ceremony, inline-JSON transport, or plan-file mechanics.
 
