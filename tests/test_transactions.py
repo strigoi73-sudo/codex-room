@@ -249,11 +249,6 @@ async def test_transaction_evidence_resumes_same_assignment_with_normalized_payl
         snapshot["active_round_id"],
         evidence_rows[0]["source_batch_id"],
         assignments[0]["id"],
-        evidence["request"],
-        durable_requests=evidence["durable_request"],
-        strategy=evidence["strategy"],
-        durable_evidence=evidence["durable_evidence"],
-        transient_payload={},
         provenance_event_id=evidence_rows[0]["provenance_event_id"],
     )
     assert replay["decision_applied"] is False
@@ -355,11 +350,6 @@ async def test_transaction_evidence_at_turn_limit_stops_without_resuming_and_rep
         snapshot["active_round_id"],
         evidence_row["source_batch_id"],
         assignment["id"],
-        evidence["request"],
-        durable_requests=evidence["durable_request"],
-        strategy=evidence["strategy"],
-        durable_evidence=evidence["durable_evidence"],
-        transient_payload={},
         provenance_event_id=evidence_row["provenance_event_id"],
     )
     assert replay["decision_applied"] is False
