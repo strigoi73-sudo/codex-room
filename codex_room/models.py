@@ -44,6 +44,7 @@ class Outcome(StrEnum):
 class TransactionAction(StrEnum):
     COMPLETE = "COMPLETE"
     DELEGATE = "DELEGATE"
+    EVIDENCE = "EVIDENCE"
     PASS = "PASS"
 
 
@@ -80,10 +81,43 @@ class DelegationRequest(BaseModel):
     config: ExecutionConfigId | None = None
 
 
+class SourceEvidenceRequest(BaseModel):
+    operation: Literal["READ", "SEARCH", "FIND"]
+    source: Literal["workspace", "core", "room"] = "workspace"
+    room_id: str | None = None
+    path: str = Field(min_length=1, max_length=4096)
+    query: str | None = Field(default=None, max_length=4096)
+    start_line: int = Field(default=1, ge=1)
+    max_lines: int = Field(default=400, ge=1, le=1000)
+    max_bytes: int = Field(default=32 * 1024, ge=1, le=128 * 1024)
+    include_globs: list[str] = Field(default_factory=list)
+    exclude_globs: list[str] = Field(default_factory=list)
+    include_hidden: bool = False
+    case_sensitive: bool = True
+    max_results: int = Field(default=100, ge=1, le=200)
+    max_files: int = Field(default=100, ge=1, le=200)
+    max_matches: int = Field(default=50, ge=1, le=100)
+
+    @model_validator(mode="after")
+    def validate_source_evidence_request(self) -> "SourceEvidenceRequest":
+        if self.source == "room":
+            if not self.room_id:
+                raise ValueError("room source evidence requires room_id")
+        elif self.room_id is not None:
+            raise ValueError("room_id is valid only for room source evidence")
+        if self.operation == "SEARCH":
+            if not self.query or "\n" in self.query or "\r" in self.query:
+                raise ValueError("SEARCH source evidence requires one non-empty query line")
+        elif self.query is not None:
+            raise ValueError("query is valid only for SEARCH source evidence")
+        return self
+
+
 class TransactionDecision(BaseModel):
     action: TransactionAction
     message: str = ""
     delegations: list[DelegationRequest] | None = None
+    evidence_requests: list[SourceEvidenceRequest] | None = None
 
     @model_validator(mode="after")
     def validate_transaction_decision(self) -> "TransactionDecision":
@@ -98,6 +132,13 @@ class TransactionDecision(BaseModel):
                 raise ValueError("delegations cannot contain duplicate targets")
         elif self.delegations is not None:
             raise ValueError("delegations is valid only for DELEGATE")
+        if self.action == TransactionAction.EVIDENCE:
+            if not self.evidence_requests:
+                raise ValueError("EVIDENCE requires at least one source evidence request")
+            if len(self.evidence_requests) > 16:
+                raise ValueError("EVIDENCE accepts at most 16 source evidence requests")
+        elif self.evidence_requests is not None:
+            raise ValueError("evidence_requests is valid only for EVIDENCE")
         return self
 
 
@@ -187,7 +228,7 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
     "properties": {
         "action": {
             "type": "string",
-            "enum": ["COMPLETE", "DELEGATE", "PASS"],
+            "enum": ["COMPLETE", "DELEGATE", "EVIDENCE", "PASS"],
         },
         "message": {"type": "string"},
         "delegations": {
@@ -225,8 +266,52 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                 {"type": "null"},
             ]
         },
+        "evidence_requests": {
+            "anyOf": [
+                {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "operation": {
+                                "type": "string",
+                                "enum": ["READ", "SEARCH", "FIND"],
+                            },
+                            "source": {
+                                "type": "string",
+                                "enum": ["workspace", "core", "room"],
+                            },
+                            "room_id": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                            "path": {"type": "string"},
+                            "query": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                            "start_line": {"type": "integer"},
+                            "max_lines": {"type": "integer"},
+                            "max_bytes": {"type": "integer"},
+                            "include_globs": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "exclude_globs": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                            "include_hidden": {"type": "boolean"},
+                            "case_sensitive": {"type": "boolean"},
+                            "max_results": {"type": "integer"},
+                            "max_files": {"type": "integer"},
+                            "max_matches": {"type": "integer"},
+                        },
+                        "required": ["operation", "source", "room_id", "path", "query"],
+                        "additionalProperties": False,
+                    },
+                },
+                {"type": "null"},
+            ]
+        },
     },
-    "required": ["action", "message", "delegations"],
+    "required": ["action", "message", "delegations", "evidence_requests"],
     "additionalProperties": False,
 }
 
