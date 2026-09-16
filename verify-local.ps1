@@ -257,19 +257,28 @@ if ($LASTEXITCODE -ne 0) {
     throw "Could not read the repository commit."
 }
 
-$status = @(& git -C $repoRoot status --porcelain)
+$trackedStatus = @(& git -C $repoRoot status --porcelain --untracked-files=no)
 if ($LASTEXITCODE -ne 0) {
-    throw "Could not read the repository working-tree status."
+    throw "Could not read the repository tracked working-tree status."
+}
+
+$untrackedStatus = @(& git -C $repoRoot status --porcelain --untracked-files=normal | Where-Object { $_ -like "??*" })
+if ($LASTEXITCODE -ne 0) {
+    throw "Could not read the repository untracked-file status."
 }
 
 Write-Host "Mode:   $Mode"
 Write-Host "Commit: $commit"
 
-if ($status.Count -gt 0) {
-    Write-Warning "Working tree is dirty. Results apply to the exact working tree, not only commit $commit."
+if ($trackedStatus.Count -gt 0) {
+    Write-Warning "Tracked files differ from commit $commit. Results apply to the exact working tree."
 }
 else {
-    Write-Host "Tree:   clean"
+    Write-Host "Tracked tree: clean"
+}
+
+if ($untrackedStatus.Count -gt 0) {
+    Write-Host "Untracked local files: $($untrackedStatus.Count) (not treated as tracked source changes)"
 }
 
 $overall = [System.Diagnostics.Stopwatch]::StartNew()
