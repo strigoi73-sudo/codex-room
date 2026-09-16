@@ -3821,3 +3821,87 @@ Focused deterministic coverage verifies request bounds, `RECENT` recovery from a
 
 **Assessment:** **IMPLEMENTED / VERIFIED.** The deterministic C.3 slice satisfies D-033's bounded explicit-continuity boundary. Naturalistic adequacy is intentionally not inferred from deterministic tests; C-N3 is preregistered as the final Stage-C acceptance check.
 
+### E-106 — I-015 Stage C.3 C-N3 retrieval-enabled continuity acceptance passed
+**Date:** 2026-09-16  
+**Kind:** [ROOM] paid naturalistic acceptance  
+**Decision:** D-032, D-033
+
+C-N3 tested whether a fresh assignment-scoped provider context could recover the exact arbitrary fact that C-N2 showed was unavailable without inherited provider history, using only the bounded D-033 Room-history path.
+
+**Round and work state**
+
+- Room: `room_5cbd74add7564749862f37696fa4abd4`
+- Round: `round_05c0fe8a0e3e4cdbae9c6f4909a86959`
+- title: `C-N3 Retrieval-Enabled Continuity`
+- work model: **2**
+- provider context mode: `assignment_thread`
+- required contributor: **C only**
+- status: **finished / transaction_settled**
+- Task: `task_f049e9ecbc17413fbd8da4f6dc4da173`
+- one logical Assignment: `assignment_0ccf880bbb54410c83b4c647509d419d`
+- Assignment context thread: `01a0ab11-0dfc-7ef2-9f54-45b73197c808`
+- C permanent provider thread: `01a0aaa5-ecba-7313-ac8a-ce0afafa610e`
+
+The Assignment context thread is therefore distinct from C's permanent thread. Both execution batches belong to the same logical Assignment, which has one durable `context_thread_id`.
+
+**Execution 1 — HISTORY**
+
+- batch: `batch_052f651eb6b0443c84ca1377dea24cbb`
+- action: `HISTORY`
+- request: lexical `SEARCH` for `C-N2 Establish Continuity Token`, max 3 results;
+- CORE deterministic Room-history audit selected exactly one event:
+  - `event_45aff3ef6761486c9783685905c45c24`
+- that event is the completed C result from Round `round_b0dea5f54c944475898bf230c9ec9bdf`, titled `C-N2 Establish Continuity Token`, with exact content `ORBIT-7429-CEDAR`;
+- per-execution usage: **21,092 input / 0 cached / 106 output / 21,198 total**;
+- reasoning output: **28**.
+
+**Execution 2 — COMPLETE**
+
+- batch: `batch_7bd554c57828483eb3620635d1fee6be`
+- same Assignment;
+- durable `context_event_ids`: [`event_45aff3ef6761486c9783685905c45c24`];
+- action: `COMPLETE`;
+- result: exactly `ORBIT-7429-CEDAR`;
+- per-execution usage: **22,306 input / 20,224 cached / 43 output / 22,349 total**;
+- reasoning output: **0**.
+
+**Run totals**
+
+- model executions: **2**
+- input: **43,398**
+- cached input: **20,224** (**46.6%** of aggregate input)
+- output: **149**
+- total execution tokens: **43,547**
+- model tool calls: **0**
+- failed tool calls: **0**
+- capability invocations/failures: **0 / 0**
+- peer invocations: **0**
+- sub-agent activity: **0**
+- file changes: **0**
+- context compactions: **0**
+- source-evidence requests: **0**
+- retries/restart anomalies/unexplained executions: **none observed**.
+
+**Acceptance assessment**
+
+All preregistered C-N3 conditions pass:
+
+1. one Task and one logical C Assignment;
+2. first relevant decision `HISTORY` with prior result selected;
+3. one distinct assignment-scoped `context_thread_id` spans the two execution batches;
+4. continuation returns exactly `ORBIT-7429-CEDAR`;
+5. both durable Assignment context and audit provenance contain the exact selected C-N2 event ID;
+6. no disallowed source evidence, peer, capability/tool activity, retry, restart anomaly, or unexplained extra execution;
+7. exact expected execution count: **2**.
+
+**Economics interpretation**
+
+C-N3 is a continuity/architecture acceptance test, not a claim that explicit retrieval always minimizes tokens. The two-execution retrieval path used **43,547 total tokens**, while C-N2's persistent-thread recall control used one **29,211-token** execution. Combined with C-N1, the evidence establishes a tradeoff:
+
+- for self-contained work, assignment-scoped context materially reduced inherited replay (**24.0% lower input** in C-N1);
+- when prior episodic context is genuinely needed, explicit bounded retrieval can add a model continuation and additional execution cost.
+
+The preregistered rule said a C-N3 pass closes Stage C and moves the program to Stage D rather than expanding the memory system. Whole-system economics now belong to the Stage-D ordinary-task viability gate.
+
+**Assessment:** **PASS. Stage C COMPLETE.** Assignment-scoped provider context plus explicit bounded Room-history retrieval has deterministic and naturalistic evidence for both isolation and continuity. No current evidence justifies embeddings, broad summarization, automatic whole-history injection, or a general memory index before Stage D.
+
