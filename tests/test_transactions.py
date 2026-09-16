@@ -257,11 +257,11 @@ async def test_transaction_evidence_resumes_same_assignment_with_normalized_payl
     assert replay["decision_applied"] is False
     assert replay["evidence_id"] == evidence_rows[0]["id"]
     async with runtime.db.connect() as db:
-        count = await db.execute_fetchone(
+        count_rows = await db.execute_fetchall(
             "SELECT COUNT(*) AS n FROM assignment_evidence WHERE assignment_id=?",
             (assignments[0]["id"],),
         )
-    assert count["n"] == 1
+    assert count_rows[0]["n"] == 1
 
 
 @pytest.mark.asyncio
@@ -312,17 +312,19 @@ async def test_transaction_evidence_at_turn_limit_stops_without_resuming_and_rep
     assert len(adapter.calls["agent_c"]) == 1
 
     async with runtime.db.connect() as db:
-        assignment = await db.execute_fetchone(
+        assignment_rows = await db.execute_fetchall(
             """SELECT x.* FROM assignments x
                JOIN tasks t ON t.id=x.task_id
                JOIN agents a ON a.id=x.agent_id
                WHERE t.room_id=? AND a.agent_key='agent_c'""",
             (room_id,),
         )
-        evidence_row = await db.execute_fetchone(
+        assignment = assignment_rows[0]
+        evidence_rows = await db.execute_fetchall(
             "SELECT * FROM assignment_evidence WHERE assignment_id=?",
             (assignment["id"],),
         )
+        evidence_row = evidence_rows[0]
     assert assignment["state"] == "cancelled"
     assert evidence_row["state"] == "discarded"
     assert evidence_row["transient_payload_json"] is None
