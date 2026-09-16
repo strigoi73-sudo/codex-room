@@ -1769,7 +1769,7 @@ async def test_archive_and_deliberate_reset_are_auditable(runtime_factory):
 
 
 @pytest.mark.asyncio
-async def test_agent_prompt_prefers_continuation_economy_before_registry_overhead(
+async def test_agent_prompt_exposes_semantic_evidence_boundary_not_source_cli(
     runtime_factory,
 ):
     adapter = FakeAgentAdapter()
@@ -1780,35 +1780,16 @@ async def test_agent_prompt_prefers_continuation_economy_before_registry_overhea
     await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
 
     prompt = adapter.calls["agent_c"][0]["prompt"]
-    assert "Minimize model/tool continuations" in prompt
-    assert "native workspace tools directly" in prompt
-    assert "do not inspect the capability registry merely because" in prompt
-    assert "Batch related independent reads/searches" in prompt
-    assert "do not batch speculative dependent follow-ups" in prompt
-    assert "stop retrieving once evidence is sufficient" in prompt
-    assert "codex-room-cap list" in prompt
-    assert "only when a needed capability identity is unknown" in prompt
-    assert "codex-room-cap inspect CAPABILITY_ID" in prompt
-    assert "only when its current contract is needed" in prompt
-    assert "codex-room-cap source" in prompt
-    assert "rather than generic inline-JSON 'invoke inspect_source'" in prompt
-    assert "Search and search-many paths may identify either a file or directory" in prompt
-    assert "max-matches within 1-100 and max-files within 1-200" in prompt
-    assert "codex-room-cap source bundle" in prompt
-    assert "CORE executes them and returns one normalized evidence bundle" in prompt
-    assert "search-many/read-many directly when one homogeneous batch is sufficient" in prompt
-    assert "Do not place speculative dependent follow-ups in a bundle" in prompt
-    assert "specific unresolved dependency" in prompt
-    assert "explicit workspace-only instruction forbids it" in prompt
-    assert "codex-room-cap invoke CAPABILITY_ID --input-json JSON_OBJECT" in prompt
-    assert "--input-file WORKSPACE_RELATIVE_JSON" in prompt
-    assert "Avoid redundant list/inspect calls and ceremony-only continuations" in prompt
-    assert "codex-room-cap authoring" in prompt
-    assert (
-        "codex-room-cap register CAPABILITY_ID --cases-file WORKSPACE_RELATIVE_JSON"
-        in prompt
-    )
-    assert "Registration is not active until the agent turn settles" in prompt
-    assert "run each registry list/inspect operation" not in prompt
-    assert "invoking the relevant ones separately" not in prompt
-    assert "codex-room-cap assert-file RELATIVE_PATH" not in prompt
+    assert "Use deterministic execution when exact semantics" in prompt
+    assert "In version-2 transaction work" in prompt
+    assert "EVIDENCE action" in prompt
+    assert "READ, SEARCH, and FIND" in prompt
+    assert "CORE owns source authority, validation, batching" in prompt
+    assert "Use native workspace tools for coding, mutation, tests" in prompt
+    assert "Custom capability creation/registration remains an explicit Room-side" in prompt
+    assert "codex-room-cap source" not in prompt
+    assert "read_many" not in prompt
+    assert "search_many" not in prompt
+    assert "source bundle" not in prompt
+    assert "--input-json" not in prompt
+    assert "--input-file" not in prompt
