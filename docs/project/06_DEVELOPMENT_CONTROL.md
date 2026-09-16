@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** V2-N2 completed the controlled rerun of V2-N1 on the verified sibling-context repair. The duplicate A→B path disappeared; the Room used the intended C → A+B → C shape with three assignments, one join, four executions, 85,228 execution tokens, 24.4% cached-input share, zero tools/retries/failures/stale work, and a substantively complete final answer. This closes the targeted Stage-A naturalistic checkpoint. See E-096.
+- **What just changed?** The first Stage-B bounded-evidence slice is IMPLEMENTED / VERIFIED. `inspect_source` v3 now supports one bounded declarative `bundle` of already-known heterogeneous find/search/read requests, with a direct CLI, durable per-item provenance, aggregate output bounds, and explicit rejection of adaptive/nested plans. PR #88 merged as `6158461bfee94eba375e99baec110e707c30499d`; hosted run `35041711940` passed all three supported jobs. See E-097.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Begin **Stage B — bounded evidence execution** as the next I-015 work item, starting with a bounded design/implementation slice that replaces already-known multi-step retrieval with one declarative evidence plan and one normalized evidence bundle. Keep Stage C separate for later evaluation. Default work-model-v2 activation remains unapproved until the broader viability gate. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** Run **B-N1**, the first bounded naturalistic validation of Stage B. It should test whether one agent recognizes three independently known source checks as a single declarative evidence bundle, completes them with one source-inspection invocation, and answers from the returned evidence without unnecessary peer cognition or retrieval continuations. Stage C remains separate. Default work-model-v2 activation remains unapproved. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -19,7 +19,7 @@
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGE A IMPLEMENTED / VERIFIED  
 **Decision:** D-030  
-**Evidence:** E-092, E-093, E-094, E-095, E-096  
+**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097  
 **Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
@@ -98,6 +98,58 @@ Collect the same JSON export/economics evidence as V2-N1. Compare V2-N2 directly
 **Interpretation:** the sibling-work visibility repair removed the exact duplicate-cognition path observed in V2-N1 without material answer-quality loss. This closes the bounded Stage-A naturalistic checkpoint. It does **not** establish the full multi-task median/p90/quality/robustness viability gate.
 
 Default activation remains unapproved. Stage B is now the next I-015 work item; Stage C remains separate and later.
+
+#### Stage B.1 — Declarative source evidence bundles
+**Work state:** IMPLEMENTED / VERIFIED — naturalistic validation pending  
+**Scope:** [CORE]
+
+PR #88 adds `inspect_source` v3 `bundle`, which composes existing bounded `find`, `search`, `search_many`, `read`, and `read_many` operations into one declarative execution when all requested evidence and bounds are known in advance. It rejects nested/adaptive plans and caps aggregate transient output. The direct `codex-room-cap source bundle` CLI accepts `--plan-json` or `--plan-file`. Agent guidance now prefers this path for heterogeneous predeclared retrieval while leaving genuinely adaptive investigation unchanged. Hosted verification passed across the full matrix. See E-097.
+
+#### B-N1 — First Stage-B naturalistic validation
+**Work state:** PLANNED / READY TO RUN  
+**Purpose:** Verify that an ordinary v2 agent actually uses the new deterministic bundle when the evidence plan is known in advance, without forcing the answer through peers or measuring Stage C context behavior.
+
+**Room configuration**
+
+- `work_model_version=2`;
+- starting agent: `agent_c`;
+- no required contributors;
+- `max_turns=4`;
+- ordinary default profiles/model policy;
+- fresh Room after pulling the PR #88 merge.
+
+**Prompt**
+
+> Inspect the current Codex Room source and report three implementation facts. These three checks are independent and all are known in advance: (1) in `codex_room/models.py`, confirm the default value of `work_model_version` for room creation; (2) in `codex_room/__main__.py`, report the default server host and port; (3) in `Start-Codex-Room.cmd`, report the command/path used to launch Codex Room. Use read-only source inspection and perform the known retrieval work in the fewest mechanical retrieval steps practical. Do not involve A or B unless their cognition is materially necessary. Cite the source path for each fact and stop when the three facts are established.
+
+**Expected execution shape**
+
+1. C receives one root assignment.
+2. C recognizes that the heterogeneous search/read work and bounds are already known.
+3. C uses one `codex-room-cap source bundle` invocation rather than separate source-search/read invocations or registry discovery.
+4. No peer assignment is created.
+5. C returns the three facts with source paths and `COMPLETE` settles the task.
+6. No additional retrieval occurs unless the first bundle reports a concrete unresolved/truncated dependency.
+
+**Evidence to collect**
+
+- Room JSON export;
+- transaction task/assignment state;
+- execution economics and tool/command activity;
+- exact number and kind of source-inspection invocations where telemetry exposes them;
+- final answer and cited paths;
+- any registry list/inspect ceremony, separate predictable retrievals, peers, retries, truncation, or unexplained extra turns.
+
+**Run-level assessment**
+
+- target: one model execution and one source-inspection bundle invocation;
+- acceptable: one additional model/tool continuation only when a concrete returned limitation requires it;
+- no peer cognition expected;
+- no source mutation expected;
+- quality requires all three facts to be correct and traceable to the requested source paths;
+- failure of the bundle itself, unnecessary separate predictable source calls, or unexplained extra model turns is Stage-B evidence to diagnose before a second paid validation.
+
+Stage B is not complete from deterministic tests alone. B-N1 must be assessed before expanding the Stage-B mechanism or beginning Stage C.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.

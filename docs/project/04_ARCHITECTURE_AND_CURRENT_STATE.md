@@ -381,7 +381,21 @@ PR #81 established the foundation and merged as `3043a3789d03013e4c3618eb3f6aff2
 
 **Activation status:** version 2 has passed the bounded V2-N1/V2-N2 Stage-A naturalistic checkpoint after the sibling-work remediation. This is evidence for the coordination kernel, not the full Stage-D viability gate. Version 1 remains the ordinary default; default version-2 activation has not been approved.
 
-## 17. Runtime-state and work-queue caution
+## 17. I-015 Stage B bounded evidence execution — declarative source bundles
+
+**IMPLEMENTED / VERIFIED — 2026-09-15 — first bounded slice**
+
+Stage B's first slice reuses the existing deterministic `inspect_source` engine rather than creating a second retrieval system. Capability version 3 adds a `bundle` operation for **already-known, independently bounded** source-inspection work. One bundle may contain labeled `find`, `search`, `search_many`, `read`, and `read_many` requests across authorized workspace, CORE, and Room-shared sources. CORE executes the declared requests in order and returns one normalized transient evidence bundle plus durable per-item provenance.
+
+The bundle is intentionally not an adaptive research language. Nested bundles and source-inventory discovery are rejected, labels must be unique and bounded, the number of requests is capped, and the aggregate transient result has a bundle-wide byte ceiling. A retrieval whose necessity or bounds depend on an earlier result remains a later cognitive/tool step. Existing exploratory source operations therefore remain available and unchanged.
+
+The direct CLI surface now exposes `codex-room-cap source bundle` through either compact `--plan-json` or a workspace-relative `--plan-file`. Agent guidance prefers a bundle when heterogeneous retrieval operations and their bounds are known before execution, while retaining `search-many` and `read-many` for homogeneous batches. This changes retrieval mechanics, not agent judgment about what evidence is necessary.
+
+PR #88 implemented this slice and merged as `6158461bfee94eba375e99baec110e707c30499d`. Its final tested PR head `b7e3ce3ddf9652e21ef4e66f4a5a988a0855b93d` and the squash merge share Git tree `e9b7b1d633ecee9b7fb050df794384795f377a6e`. GitHub Actions run `35041711940` passed Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 + browser. E-097 records implementation and verification evidence.
+
+**Validation status:** deterministic implementation is verified. Naturalistic evidence that agents select the bundle appropriately and reduce predictable retrieval continuations is still required before calling Stage B complete. Stage C remains separate and unimplemented.
+
+## 18. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
 
