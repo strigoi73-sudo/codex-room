@@ -4034,3 +4034,31 @@ The final `f4c39cea...` change only corrected the Windows dependency check to ig
 
 **Assessment:** **IMPLEMENTED / VERIFIED through the measured reference runs.** GitHub remains canonical source/history/review machinery. Routine mechanical verification is local and deliberate. Current merged-tree claims still attach to the exact tree actually tested; after later code merges, run the appropriate local verifier before describing that newer tree as verified.
 
+### E-110 — I-015 D-N4 remediation verified on merged canonical main
+**Date:** 2026-09-16  
+**Kind:** Exact-tree local deterministic verification / remediation closeout  
+**Decision:** D-018, D-031, D-032, D-033
+
+After PR #104 and the verification-policy/documentation updates were present on canonical `main`, the local working copy fast-forwarded cleanly from `f4c39cea...` to exact commit:
+
+`668ef98253c5bd1387eefb1b71f99ed38fd8b53c`
+
+The operator then ran the repository-standard `verify-fast.cmd` on that exact commit. The verifier reported:
+
+- mode: **Fast**;
+- tracked tree: **clean**;
+- 22 untracked local artifacts, explicitly excluded from tracked-source verification;
+- Linux/Python 3.12 focused core: **45 passed, 2 warnings** in 39.92s;
+- Windows dependency check: pinned dependencies already synchronized;
+- Windows focused portability tests: **118 passed** in 21.32s;
+- browser transcript stability: **3 passed** in 10.7s;
+- verifier summary: every phase exit code **0**;
+- total elapsed: **74.7 seconds**;
+- final result: **PASS**.
+
+The two Linux warnings were the already-observed Starlette/httpx and anyio deprecation warnings; they did not fail verification.
+
+A final `git status --short` showed only the same class of untracked local runtime/evidence/benchmark artifacts and no tracked-source modifications.
+
+**Assessment:** **PR #104 D-N4 remediation closeout VERIFIED on merged canonical code-bearing main.** The failed Stage-D attempt 1 remains historical evidence and must not be resumed at D-N5. The next paid viability attempt should start in a fresh dedicated Room at D-N1 under the preregistered Stage-D protocol. Version 1 remains the ordinary default during the gate.
+
