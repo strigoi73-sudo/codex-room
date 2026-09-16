@@ -9,6 +9,7 @@ from codex_room.agent import AgentTurnTerminalError
 from codex_room.db import Database
 from codex_room.models import (
     CreateRoomRequest,
+    ObserverMessageRequest,
     PrepareRoundRequest,
     RoomStatus,
     SourceEvidenceRequest,
@@ -124,6 +125,63 @@ async def test_assignment_context_mode_reuses_one_thread_per_logical_assignment(
     }
     assert context_by_agent["agent_c"] == c_thread
     assert context_by_agent["agent_a"] == a_thread
+
+
+@pytest.mark.asyncio
+async def test_assignment_context_mode_gives_same_agent_new_thread_for_new_assignment(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="First assignment complete.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Second assignment complete.",
+            ),
+        ]
+    )
+    runtime = await context_runtime_factory(adapter, "same-agent-distinct.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="First independent assignment.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+    first_thread = adapter.calls["agent_c"][0]["thread_id"]
+
+    await runtime.observer_message(
+        room_id,
+        ObserverMessageRequest(
+            target="agent_c",
+            content="Second independent assignment.",
+        ),
+    )
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 2)
+    await wait_until(lambda: _finished(runtime, room_id))
+    second_thread = adapter.calls["agent_c"][1]["thread_id"]
+
+    assert first_thread != second_thread
+    assert len([item for item in adapter.context_starts if item[0] == "agent_c"]) == 2
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT x.context_thread_id FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_c'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+    assert [row["context_thread_id"] for row in rows] == [
+        first_thread,
+        second_thread,
+    ]
 
 
 @pytest.mark.asyncio
