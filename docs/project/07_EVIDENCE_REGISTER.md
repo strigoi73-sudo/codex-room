@@ -3366,3 +3366,44 @@ This evidence does **not** establish the later whole-system viability gate: one 
 
 **Status:** Stage A naturalistic checkpoint PASSED. Default work-model-v2 activation remains unapproved pending the broader viability gate. Stage B bounded evidence execution is the next I-015 work item.
 
+### E-097 — I-015 Stage B declarative source evidence bundles implemented and hosted-verified
+**Date:** 2026-09-15  
+**Kind:** [CORE] implementation + deterministic hosted verification
+
+The first bounded Stage-B slice is implemented in PR #88.
+
+**Implemented behavior**
+
+- `inspect_source` advances to capability version 3 with a `bundle` operation;
+- a bundle accepts 1–16 uniquely labeled, already-known `find`, `search`, `search_many`, `read`, or `read_many` requests;
+- each request reuses the existing source-inspection implementation and therefore retains the established workspace / maintained-CORE / Room-shared source confinement and read-only permissions;
+- CORE executes the declared requests in order and returns one normalized transient `items` bundle plus durable per-item evidence/provenance;
+- aggregate bundle output is capped at 512 KiB and reports deterministic truncation metadata including the next unreturned request index;
+- nested `bundle` and `sources` requests are rejected, preventing the bundle from becoming an adaptive plan language or recursive context dump;
+- the direct CLI exposes `codex-room-cap source bundle --plan-json ...` and a workspace-relative `--plan-file` alternative;
+- agent instructions prefer the bundle only when heterogeneous retrieval operations and their bounds are already known, retain `search-many` / `read-many` for homogeneous batches, and explicitly keep speculative dependent follow-ups outside the bundle.
+
+**Verification**
+
+The final PR head was:
+
+`b7e3ce3ddf9652e21ef4e66f4a5a988a0855b93d`
+
+GitHub Actions run `35041711940` passed all supported jobs:
+
+- Ubuntu / Python 3.11;
+- Ubuntu / Python 3.12;
+- Windows / Python 3.12 + browser.
+
+PR #88 merged to canonical `main` as:
+
+`6158461bfee94eba375e99baec110e707c30499d`
+
+The final tested PR head and squash merge share exact Git tree:
+
+`e9b7b1d633ecee9b7fb050df794384795f377a6e`
+
+The deterministic tests cover heterogeneous bundled requests, cross-source evidence, transient-vs-durable evidence separation, duplicate/nested/adaptive-plan rejection, aggregate-output truncation, direct JSON/file CLI plans, v3 manifest/version behavior, and the agent prompt boundary.
+
+**Status:** IMPLEMENTED / VERIFIED for the first Stage-B source-evidence-bundle slice. Naturalistic adoption/economics remain unverified; B-N1 is preregistered before another paid run. Stage C remains unimplemented.
+
