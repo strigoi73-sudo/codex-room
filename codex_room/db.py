@@ -2864,12 +2864,18 @@ class Database:
                 await db.commit()
                 return {
                     "completed": False,
+                    "wake_agent": True,
                     "assignment_id": row["assignment_id"],
                     "agent_key": row["agent_key"],
                 }
             if row["state"] != "pending" or row["assignment_state"] != "waiting_evidence":
-                await db.rollback()
-                raise RuntimeError("Transaction evidence request is not pending")
+                await db.commit()
+                return {
+                    "completed": False,
+                    "wake_agent": False,
+                    "assignment_id": row["assignment_id"],
+                    "agent_key": row["agent_key"],
+                }
             await db.execute(
                 """UPDATE assignment_evidence
                    SET state='ready', execution_plan_json=?, durable_result_json=?,
@@ -2894,6 +2900,7 @@ class Database:
             await db.commit()
         return {
             "completed": True,
+            "wake_agent": True,
             "assignment_id": row["assignment_id"],
             "agent_key": row["agent_key"],
         }
