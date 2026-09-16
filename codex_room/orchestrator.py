@@ -2060,9 +2060,37 @@ class RoomRuntime:
                 )
             else:
                 prompt = await self._assignment_prompt(batch, agent)
+                provider_context_mode = batch.get(
+                    "provider_context_mode", "persistent_agent_thread"
+                )
+                context_thread_id = batch["assignment"].get("context_thread_id")
+                if provider_context_mode == "assignment_thread":
+                    if context_thread_id is None:
+                        context_thread_id = await self.adapter.start_context_thread(
+                            agent,
+                            self.workspace(room_id),
+                            label=f"assignment {batch['assignment_id']}",
+                        )
+                        bound_context = await self.db.bind_assignment_context_thread(
+                            batch["assignment_id"], context_thread_id
+                        )
+                        if not bound_context:
+                            try:
+                                await self.adapter.archive_thread(context_thread_id)
+                            except Exception:
+                                pass
+                            raise RuntimeError(
+                                "Assignment provider context thread could not be bound"
+                            )
+                        batch["assignment"]["context_thread_id"] = context_thread_id
+                else:
+                    context_thread_id = agent["thread_id"]
+
                 if batch.get("usage_continuation"):
                     await self.adapter.prepare_usage_continuation(
-                        agent, self.workspace(room_id)
+                        agent,
+                        self.workspace(room_id),
+                        context_thread_id,
                     )
                     prompt = (
                         f"<usage_limit_continuation>\n"
@@ -2071,6 +2099,13 @@ class RoomRuntime:
                     )
 
                 async def bind_turn(thread_id: str, turn_id: str) -> None:
+                    if (
+                        provider_context_mode == "assignment_thread"
+                        and thread_id != context_thread_id
+                    ):
+                        raise RuntimeError(
+                            "Codex turn used the wrong assignment provider context"
+                        )
                     bound = await self.db.bind_execution_turn(
                         batch["batch_id"], thread_id, turn_id, generation
                     )
@@ -2079,8 +2114,23 @@ class RoomRuntime:
                             "Codex turn could not be bound to its transaction assignment"
                         )
 
-                result = await self._await_with_inactivity_lease(
-                    self.adapter.run_agent(
+                run = (
+                    self.adapter.run_agent_on_thread(
+                        agent,
+                        self.workspace(room_id),
+                        prompt,
+                        context_thread_id,
+                        on_started=bind_turn,
+                        on_progress=progress,
+                        model=execution.get("model") or ROOM_MODEL,
+                        reasoning_effort=(
+                            execution.get("reasoning_effort")
+                            or ROOM_REASONING_EFFORT
+                        ),
+                        transactional=True,
+                    )
+                    if provider_context_mode == "assignment_thread"
+                    else self.adapter.run_agent(
                         agent,
                         self.workspace(room_id),
                         prompt,
@@ -2092,7 +2142,10 @@ class RoomRuntime:
                             or ROOM_REASONING_EFFORT
                         ),
                         transactional=True,
-                    ),
+                    )
+                )
+                result = await self._await_with_inactivity_lease(
+                    run,
                     (room_id, agent_key),
                     generation,
                 )
@@ -3060,6 +3113,8 @@ class RoomRuntime:
     async def _maybe_compact_context(
         self, batch: dict[str, Any], agent: dict[str, Any], result: AgentRunResult
     ) -> None:
+        if batch.get("provider_context_mode") == "assignment_thread":
+            return
         usage = result.usage or {}
         last_usage = usage.get("last") or {}
         input_tokens = last_usage.get("input_tokens")
