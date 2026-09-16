@@ -21,16 +21,16 @@ jobs:
       matrix:
         include:
           - label: Ubuntu / Python 3.11
-            os: ubuntu-latest
+            os: Linux
             python: "3.11"
           - label: Ubuntu / Python 3.12
-            os: ubuntu-latest
+            os: Linux
             python: "3.12"
           - label: Windows / Python 3.12 + browser
-            os: windows-latest
+            os: Windows
             python: "3.12"
             browser: true
-    runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, "${{ matrix.os }}", X64]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
