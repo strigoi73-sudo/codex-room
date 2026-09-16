@@ -400,13 +400,196 @@ Implemented transaction model (originally proposed here):
 - **Stage C — durable memory vs active context experiment — COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED:** D-032 bounds opt-in provider context to the logical Assignment; D-033 restores deliberate cross-Assignment continuity through bounded `HISTORY` retrieval over prior completed Room results. C-N1 demonstrated lower replay cost on self-contained work, C-N2 demonstrated the continuity gap, and C-N3 demonstrated explicit recovery. No broad summarizer/index was justified.
 - **Stage D — viability gate — NEXT:** validate and preregister a bounded set of ordinary useful tasks, then judge coordination, economics, quality, and robustness before any default-activation decision. Do not resume adjacent feature development until the gate is resolved.
 
-**Provisional viability gate to validate before implementation:**
+**Stage D viability gate — preregistered protocol (2026-09-16)**
 
-- coordination: zero unsatisfied explicit joins may settle; zero stale-history preemption; zero unauthorized fanout; every assignment/result causally attributable;
-- economics: target median total execution tokens <=100k/task, p90 <=200k, cached replay <=25%, median post-framing model/tool continuations <=4, and no >300k task without explicit justified escalation;
-- quality: >=90% of preregistered ordinary tasks meet a human rubric without material omission and expose provenance/partial-result state;
-- robustness: include tool failure, truncation, stale-history pressure, and interruption/resume cases;
-- stop condition: any deterministic coordination invariant failure after implementation, two independent ordinary tasks exceeding the economic ceiling without justified escalation, or quality below the agreed threshold while meeting budget ends incremental patching. At that point either the runtime is redesigned more fundamentally or the present architecture is declared non-viable.
+Stage D evaluates the integrated opt-in design already implemented in Stages A-C. It is an **absolute viability gate**, not a paid v1-v2 tournament: repeating every task under v1 would roughly double model spend while earlier evidence already establishes the failure classes that motivated I-015. Version 1 remains the production default during the gate and remains covered by compatibility tests.
+
+All ten naturalistic tasks are preregistered before the first Stage-D model execution. Run them sequentially in one fresh dedicated Stage-D Room so later continuity/history cases can exercise real accumulated Room state. Stop as soon as a hard-stop rule makes a passing final result impossible.
+
+**Fixed naturalistic configuration**
+
+- one fresh Room dedicated to Stage D;
+- every scored Round uses `work_model_version=2`;
+- every scored Round uses `provider_context_mode="assignment_thread"`;
+- starting agent C;
+- ordinary current default profiles and model policy;
+- no participant-private initialization or task/profile overlays;
+- `max_turns=8`;
+- exact execution model/effort and usage must be recorded from execution telemetry;
+- task-specific `required_contributors` is used only where listed below;
+- no prompt is changed after seeing an earlier task result, except for literal insertion of an exact prior result value where the preregistered rubric explicitly requires comparison.
+
+A preparation-only Round with zero Task/model execution may be excluded as operator administration. Once correctly configured model work starts, the result remains part of the gate. A rerun is allowed only for a clearly external invalidation that makes the run uninterpretable; the original artifact remains recorded and the rerun must use identical task wording/configuration.
+
+**Coordination / provenance pass conditions**
+
+Every scored task must satisfy all applicable transaction invariants:
+
+1. no Task settles with a nonterminal Assignment or unreleased Join;
+2. each Join releases at most once and never before all members are terminal;
+3. every model execution is attributable to exactly one v2 Assignment;
+4. no readable/audit event creates runnable work without an explicit Assignment;
+5. required contributors are causally satisfied where declared;
+6. every DELEGATE-created child and every integration resume has exact causal provenance;
+7. in assignment-scoped mode, different Assignments use different provider threads while every continuation of the same logical Assignment reuses that Assignment's exact thread;
+8. `EVIDENCE` and `HISTORY` remain nonterminal and resume the same logical Assignment;
+9. no stale/cancelled work settles after a lifecycle boundary;
+10. no unrequested shell/custom-capability path substitutes for the structured `EVIDENCE`/`HISTORY` path in tasks that explicitly constrain retrieval.
+
+Any deterministic coordination/provenance invariant failure is an immediate Stage-D hard stop.
+
+**Economic scoring**
+
+For each task, total execution tokens are the sum of per-execution usage deltas for all model executions causally attached to that Task. Record input, cached input, output, reasoning output, execution count, model/effort, model tool calls, evidence/history actions, and any retry/usage-wall activity.
+
+Across the ten tasks:
+
+- median total execution tokens must be **<=100,000/task**;
+- p90 total execution tokens uses the nearest-rank definition (the 9th value after sorting ten task totals) and must be **<=200,000/task**;
+- median post-framing model continuations, defined as `max(model_executions - 1, 0)` per task, must be **<=4**;
+- no task may exceed **300,000 total execution tokens**; none of the ten tasks has a preregistered justified escalation;
+- D-N10's first C execution input must be **<=125% of D-N1's first C execution input**, providing a direct long-Room context-isolation check after nine earlier Rounds.
+
+Cached-input share remains recorded as diagnostic evidence but is **not** a Stage-D pass/fail threshold. E-104 showed that cached input can occur on a fresh Assignment thread that lacks the prior episodic fact, and E-106 showed legitimate same-Assignment continuation at 46.6% cached input. The gate therefore measures actual total usage plus direct thread provenance/isolation instead of treating cache percentage as a proxy for unwanted memory replay.
+
+Economic early stop: the second independent task above 200,000 tokens makes the preregistered p90 ceiling unattainable and ends the gate. Any task above 300,000 ends the gate immediately.
+
+**Quality scoring**
+
+Each task receives a binary PASS/FAIL against its preregistered task-specific requirements below. A task fails quality for a material factual/logical error, violation of an explicit constraint, missing required deliverable, unsupported source/history claim, or failure to integrate a required peer contribution. Minor wording/style differences do not fail a task.
+
+Overall quality requires **at least 9 of 10 tasks PASS**. Two quality failures therefore end the gate early. Quality is assessed from the exported result/provenance against the fixed rubric; no additional paid model grader is required. The human principal retains final judgment on any genuinely ambiguous rubric call.
+
+**Robustness coverage**
+
+- truncation / bounded partial evidence: D-N5;
+- stale-history pressure: D-N7;
+- deterministic evidence failure and recovery: D-N8;
+- interruption/restart safety: rely on the exact current code's deterministic restart/recovery coverage already established in E-100, E-102, and E-105 so long as no code affecting those paths changes before/during Stage D. If relevant code changes, rerun the focused restart tests and applicable hosted CI before Stage-D closeout.
+
+This avoids spending paid naturalistic cognition to recreate a failure mode already deterministically covered while still requiring naturalistic evidence for the new integrated failure/truncation/history cases.
+
+#### D-N1 — Solo Saturday schedule
+
+**Required contributors:** `["agent_c"]`  
+**Expected shape:** one C Assignment, one model execution, no peers/tools/evidence/history.
+
+**Exact prompt**
+
+> I have Saturday from 9:00 AM to 3:00 PM. Build a concrete schedule for these items: pharmacy pickup 20 minutes; grocery shopping 45 minutes; meal prep 60 minutes and it must be after grocery shopping; package drop 15 minutes and it must finish by 1:00 PM; workout 45 minutes; lunch 30 minutes; fixed dentist appointment 11:00-11:30 AM. Assume zero travel time and one person can do only one item at a time. Use C only; do not use peers, tools, source evidence, or Room history. Give the schedule and explicitly state the grocery-shopping start time. Keep the answer concise.
+
+**Quality PASS:** schedule stays within 9:00-3:00, has no overlap, preserves the dentist slot, finishes package drop by 1:00, places meal prep after grocery shopping, includes every item, and states one unambiguous grocery start time.
+
+#### D-N2 — One-peer internet-plan decision
+
+**Required contributors:** `["agent_b"]`  
+**Expected shape:** C → B → same C Assignment; no A/tools/evidence/history.
+
+**Exact prompt**
+
+> Use Agent B as one independent checker; do not involve A unless a concrete unforeseen dependency makes it necessary. Plan North costs $55/month plus $10/month equipment, provides 300 Mbps down / 20 Mbps up, has a 1.2 TB monthly cap, and has no contract. Plan South costs $70/month with equipment included, provides 1 Gbps down / 100 Mbps up, is unlimited, and has a 12-month term with a $150 early-cancellation fee. The household has two adults, uses about 500 GB/month, mainly streams and makes video calls, does no heavy uploading, has a hard $70/month budget, and has a 60% chance of moving in 8 months. Recommend one plan and briefly quantify the cost/risk logic. C should integrate B's check into the final answer.
+
+**Quality PASS:** monthly arithmetic is correct, contract/move risk is addressed quantitatively, the recommendation is consistent with the supplied usage/budget facts, and B's checking contribution is materially reflected in C's final result.
+
+#### D-N3 — Differentiated dual-peer moving-day plan
+
+**Required contributors:** `["agent_a","agent_b"]`  
+**Expected shape:** C → differentiated A+B → same C Assignment; one outer Join released once.
+
+**Exact prompt**
+
+> Use both A and B with meaningfully different assignments. A should build the plan; B should audit timing, bottlenecks, and contingency risk. Moving day runs from 8:00 AM to 2:00 PM. There is one rented van with capacity for at most 12 boxes plus 2 furniture pieces per trip. The old and new homes are 20 minutes apart. Loading plus unloading for each trip takes 30 minutes total. Inventory is 20 boxes plus 3 furniture pieces. The elevator at the new home is reserved only from 9:00 AM to noon. Two adults are available. A final old-home walk-through takes 20 minutes and may begin only after the last load leaves. Produce a feasible plan, the required number of van trips, and identify any risk to the elevator window.
+
+**Quality PASS:** two trips are recognized as sufficient/necessary under the stated capacity, the proposed timing is internally feasible, required unloading can occur within the elevator window or any conflict is correctly identified, the walk-through constraint is respected, and C integrates distinct planning/audit contributions.
+
+#### D-N4 — Structured source facts
+
+**Required contributors:** `["agent_c"]`  
+**Expected shape:** C only; structured `EVIDENCE`; zero shell/custom-capability/model-tool activity.
+
+**Exact prompt**
+
+> Using only structured read-only source evidence and no peers, inspect current CORE and report: (1) all current `TransactionAction` values; (2) the default `work_model_version` and `provider_context_mode` on `CreateRoomRequest`; and (3) the maximum number of `HISTORY` requests allowed in one transaction action and the maximum total requested results. Cite the source path or paths. Do not use shell or custom capability commands.
+
+**Quality PASS:** reports `COMPLETE | DELEGATE | EVIDENCE | HISTORY | PASS`; defaults `work_model_version=1` and `provider_context_mode="persistent_agent_thread"`; HISTORY limits 4 requests and 20 total requested results; source provenance supports the claims.
+
+#### D-N5 — Bounded/truncated evidence recovery
+
+**Required contributors:** `["agent_c"]`  
+**Expected shape:** C only; first structured SEARCH is deliberately tight, followed by targeted structured evidence; zero shell/custom capability use.
+
+**Exact prompt**
+
+> Using structured source evidence only, find where assignment-scoped provider context is implemented. First issue a SEARCH for `assignment_thread` over maintained CORE with `max_matches=3`. Treat any truncation or partial result as a locator, then use only the targeted SEARCH/READ evidence needed to answer: (a) where the mode is validated for work-model v2, and (b) where execution selects or reuses an Assignment context thread. If the first search is not truncated because it finds three or fewer matches, issue one bounded SEARCH for `assignment` with `max_matches=3` solely to exercise the truncation/partial-result path before continuing. Cite source paths. Do not use peers, shell, or custom capabilities.
+
+**Quality PASS:** the bounded partial/truncation condition is actually exercised, the task recovers through targeted structured evidence, the validation and execution/thread-reuse descriptions are source-correct, and provenance shows no shell/custom-capability fallback.
+
+#### D-N6 — Semantic continuity and revision
+
+**Required contributors:** `["agent_c"]`  
+**Expected shape:** C uses `HISTORY` to retrieve D-N1, then completes on the same Assignment thread; no peers/tools/source evidence.
+
+**Exact prompt**
+
+> Retrieve the completed result from the earlier Round titled `D-N1 Solo Saturday Schedule`. Do not use source evidence, tools, or peers. Use bounded Room-history retrieval. Preserve that schedule except change the grocery-shopping start time to 12:00 PM; move only items that must move to keep all original constraints valid. Return the revised schedule and state the original grocery-shopping start time you retrieved.
+
+**Quality PASS:** exact D-N1 result provenance is selected; the original grocery start matches D-N1; the revised grocery start is noon; the revised schedule remains feasible under every D-N1 constraint; HISTORY and completion reuse the same logical Assignment/provider thread.
+
+#### D-N7 — Stale-history discrimination
+
+**Required contributors:** `["agent_c"]`  
+**Expected shape:** C-only HISTORY lookup after both D-N1 and D-N6 exist.
+
+**Exact prompt**
+
+> There are now two related Saturday schedules in Room history: the original D-N1 result and the later D-N6 revision. Use bounded Room-history retrieval to answer only this: what grocery-shopping start time did the original `D-N1 Solo Saturday Schedule` result specify? Do not report the D-N6 revised time. Use no peers, tools, or source evidence. Return exactly `ORIGINAL: <time>`.
+
+**Quality PASS:** returns the exact D-N1 time, not 12:00 PM unless D-N1 itself happened to use noon, and durable selected-event provenance includes the intended original result rather than silently relying on provider-thread inheritance.
+
+#### D-N8 — Evidence failure and recovery
+
+**Required contributors:** `["agent_c"]`  
+**Expected shape:** C-only; first EVIDENCE result is an intentional missing-path error; same Task/Assignment recovers through later structured evidence; no shell/custom-capability fallback.
+
+**Exact prompt**
+
+> Find the current source definition of `TransactionAction.HISTORY`. To simulate an ordinary stale-path failure, first use structured READ evidence on maintained CORE path `codex_room/stage_d_missing_file.py`. After that request returns an error, recover within the same task using bounded structured FIND/SEARCH/READ evidence only; do not use shell, custom capabilities, or peers. Report the real source path and the exact enum value.
+
+**Quality PASS:** first evidence request fails in the declared deterministic path without terminating/corrupting the Task; the same logical Assignment remains recoverable; later structured evidence identifies `codex_room/models.py` and `HISTORY = "HISTORY"`; no shell/custom-capability/model-tool workaround occurs.
+
+#### D-N9 — Nested delegation
+
+**Required contributors:** `["agent_a","agent_b"]`  
+**Expected shape:** C → A → B → same A Assignment → same C Assignment; inner and outer Joins each release exactly once.
+
+**Exact prompt**
+
+> C: delegate one planning assignment to A. A's assignment should build a two-stage emergency-preparedness checklist for a 48-hour power outage in a two-person apartment, and A should ask B to audit only safety and omission risks before A finalizes its contribution. C should then integrate the completed A branch. Keep the final checklist to at most 12 items, prioritize the first 6 hours separately from the rest of the outage, and flag any item that depends on local conditions. Do not use web, source evidence, or other tools.
+
+**Quality PASS:** the nested dependency shape is preserved mechanically; B's contribution is an audit rather than duplicate plan generation; A resumes only after B is terminal; C resumes only after A is terminal; final answer has at most 12 items, separates first-six-hour priorities from later actions, incorporates material safety/omission findings, and flags location-dependent guidance.
+
+#### D-N10 — Long-Room self-contained isolation check
+
+**Required contributors:** `["agent_c"]`  
+**Expected shape:** one C Assignment/execution after the earlier Stage-D Room history; no HISTORY/evidence/tools/peers.
+
+**Exact prompt**
+
+> Solve this self-contained decision without using Room history, source evidence, tools, or peers. You have $120 for groceries. Fixed essentials cost $47.50. Three optional bundles cost $26.25, $31.40, and $19.95. Which combinations fit within the budget, and which feasible combination spends the most without exceeding it? Show the arithmetic briefly.
+
+**Quality PASS:** correctly identifies every feasible combination, rejects the all-three combination at $125.10 total, and identifies the $26.25 + $31.40 pair as the highest-spend feasible option with total spend $105.15. Context-isolation economics also require D-N10's first C input to remain within 125% of D-N1's first C input.
+
+**Final Stage-D decision rule**
+
+Stage D passes only if:
+
+- all coordination/provenance invariants hold;
+- all robustness requirements above are satisfied or supported by unchanged exact-version deterministic restart evidence;
+- median/p90/continuation/context-isolation economic thresholds pass;
+- no task exceeds 300,000 tokens;
+- at least 9/10 task-quality rubrics pass.
+
+A PASS permits preparation of a separate default-activation/migration decision; it does **not** itself change the v1 default. A hard-stop failure ends incremental Stage-D patching. Preserve the exact failure evidence and return to architecture-level judgment: either a more fundamental redesign is justified or the present v2 architecture is declared non-viable for default activation.
 
 ### Stage A detailed design — implemented transaction kernel (opt-in)
 
