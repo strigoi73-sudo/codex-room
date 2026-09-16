@@ -4138,3 +4138,28 @@ Total D-N4 execution tokens: **84,259**. Post-framing model continuations: **2**
 
 **Assessment:** **D-N4 PASS** for quality, structured-evidence provenance, repaired-path behavior, and task-level economics. The attempt-1 empty structured-EVIDENCE path defect did not recur. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N5 in the same Room.
 
+### E-115 — Stage-D attempt 2 D-N5 bounded/truncated evidence-recovery pass
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability evidence  
+**Decision:** D-031, D-032, D-033
+
+In the same dedicated Stage-D Room used for D-N1 through D-N4, the preregistered D-N5 task ran under work-model version 2 with assignment-scoped provider context, starting and requiring Agent C only, ordinary default profiles/model policy, no private initialization or overlays, and max_turns=8.
+
+The required bounded partial/truncation condition was exercised exactly. C's first structured evidence request was a maintained-CORE SEARCH for `assignment_thread` at path `codex_room` with `max_matches=3`. The result returned exactly three locations and `truncated=true` with `truncation_reason="max_matches"`. C then treated those results as locators and used targeted structured READ/SEARCH requests to narrow into the validation path and Assignment execution/thread-reuse implementation. Four structured EVIDENCE actions completed successfully before one final COMPLETE action. No peer Assignments, joins, shell/custom-capability commands, or model-tool activity occurred. All five model executions used the same C Assignment and exact same Assignment-scoped provider thread.
+
+Quality passed. The final answer correctly identified:
+- `codex_room/models.py:520-539`, where `CreateRoomRequest` permits `assignment_thread` but rejects it unless `work_model_version == 2`;
+- `codex_room/db.py` around `claim_next_assignment`, where assignment-scoped mode selects `assignment["context_thread_id"]` rather than the persistent agent thread, checks a ready `usage_continuations` row for the same Assignment/thread, and marks it running when reused;
+- the existing-execution recovery branch that returns the already-bound Assignment/execution before claiming new work.
+
+Execution telemetry recorded five C executions, all `gpt-5.6-terra` at high reasoning effort:
+- **21,362** execution tokens;
+- **23,352** execution-token delta;
+- **29,658** execution-token delta;
+- **36,389** execution-token delta;
+- **39,831** execution-token delta.
+
+Total D-N5 execution tokens: **150,592**. Post-framing model continuations: **4**. This remains below the Stage-D 200k warning threshold and well below the 300k immediate-stop threshold.
+
+**Assessment:** **D-N5 PASS** for quality, bounded/truncated evidence recovery, coordination/provenance, and task-level economics. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N6 in the same Room.
+
