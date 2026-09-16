@@ -3948,9 +3948,9 @@ The failure is therefore an **OBSERVED ISSUE** in the integrated structured-EVID
 
 
 
-### E-108 — I-015 D-N4 structured-EVIDENCE remediation implemented and focused locally verified; hosted CI startup blocked
+### E-108 — I-015 D-N4 structured-EVIDENCE remediation implemented, focused locally verified, and merged
 **Date:** 2026-09-16  
-**Kind:** [CORE] remediation implementation / deterministic local verification / hosted-verification limitation  
+**Kind:** [CORE] remediation implementation / deterministic local verification / merge closeout  
 **Decision:** D-031, D-032, D-033
 
 PR #104 repairs the exact D-N4 boundary exposed in E-107 without discarding or reclassifying the failed naturalistic gate result.
@@ -3989,4 +3989,48 @@ GitHub Actions run `35133053329` for the exact code-bearing head completed with 
 
 Each job contains **zero executed steps**. This matches the repeated repository-level Actions startup/runner failure already observed on prior PR #104 attempts and provides no test-result evidence against the code. It also does **not** satisfy the project requirement for applicable hosted verification.
 
-**Assessment:** **IMPLEMENTED / FOCUSED LOCAL VERIFICATION PASSED / HOSTED VERIFICATION PENDING.** PR #104 must not be described as fully verified or merged solely on this evidence. Stage D remains stopped; once hosted verification is obtained and the repair is merged, the next paid viability attempt must start in a fresh Room from D-N1. Version 1 remains the ordinary default.
+**Process supersession and merge — 2026-09-16:** after this evidence was first recorded, the principal abandoned GitHub Actions as the routine verification path and D-018 was amended accordingly. The Python/dependency workflows were removed from canonical `main`, so the zero-step Actions failure above remains historical infrastructure evidence and no longer blocks the remediation.
+
+PR #104 then merged to canonical `main` as `79bffbfbbdcdbda535d6e69104e2c826208b0451`. Direct comparison showed the changed remediation files `agent.py`, `models.py`, `orchestrator.py`, `tests/test_agent.py`, and `tests/test_transaction_evidence.py` are byte-identical to the focused-tested code-bearing version; `db.py` differs at one unrelated pre-existing Room-ordering line inherited from the newer base, outside the remediation paths.
+
+**Assessment:** **IMPLEMENTED / FOCUSED LOCAL VERIFICATION PASSED / MERGED.** One routine `verify-fast.cmd` run on the merged current `main` remains the exact-tree integration check before restarting Stage D. The next paid viability attempt must use a fresh dedicated Room from D-N1; the failed attempt-1 Room remains historical evidence. Version 1 remains the ordinary default.
+
+### E-109 — Routine verification migrated from GitHub Actions to deterministic local verifier
+**Date:** 2026-09-16  
+**Kind:** Repository/process inspection + local operator verification measurements  
+**Decision:** D-018
+
+Repeated GitHub Actions startup/runner failures consumed substantial maintenance effort without producing test execution. The principal directed that Actions stop being the routine verification path. Canonical `main` then removed `.github/workflows/python-tests.yml` and `.github/workflows/dependency-review.yml` and introduced:
+
+- `verify-fast.cmd`;
+- `verify-full.cmd`;
+- shared implementation `verify-local.ps1`.
+
+The repository transition is represented by the sequence from `498faca7271623c62afa23776d66370931c328a6` through `f4c39cea9db18be04024750a4d5016eb0cd74903`. The implementation evolved to normalize embedded Bash line endings, avoid multiline Windows→WSL command transport, keep the temporary Bash program under `.git`, distinguish tracked source changes from untracked local artifacts, make Fast mode genuinely focused/cache-aware, and ignore Unix-only `uvloop` in the Windows dependency check.
+
+**Verifier contract**
+
+- **Fast:** Linux/Python 3.12 focused core tests; pinned Windows dependency check/synchronization; focused Windows portability tests; browser transcript stability.
+- **Full:** Linux/Python 3.12 full pytest; Linux/Python 3.11 full pytest; pinned Windows dependency check/synchronization; Windows full pytest; browser transcript stability; pinned `pip-audit==2.10.1`.
+- the verifier reports the exact commit and tracked-tree cleanliness separately from untracked local files.
+
+**Measured local reference runs**
+
+At `731f25b5e48797e9c7db397a85894ba3ee634bba`, the then-exhaustive local path passed end to end:
+
+- Linux/Python 3.12 full pytest: **413 passed, 2 warnings**;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **3 passed**;
+- total elapsed: **316.3 seconds**.
+
+At `7ff25ca1f9c8a6f80abd7def1be1ab0f3e1aea9c`, optimized Fast mode passed:
+
+- Linux/Python 3.12 focused core: **42 passed, 2 warnings**;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **3 passed**;
+- total elapsed: **75.6 seconds**.
+
+The final `f4c39cea...` change only corrected the Windows dependency check to ignore Unix-only `uvloop`; it was intentionally left for the next normal verifier run rather than triggering another special rerun.
+
+**Assessment:** **IMPLEMENTED / VERIFIED through the measured reference runs.** GitHub remains canonical source/history/review machinery. Routine mechanical verification is local and deliberate. Current merged-tree claims still attach to the exact tree actually tested; after later code merges, run the appropriate local verifier before describing that newer tree as verified.
+
