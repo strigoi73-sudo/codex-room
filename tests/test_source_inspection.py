@@ -48,7 +48,7 @@ def _canonical_fixture(tmp_path: Path) -> tuple[Path, Path, Path]:
 def test_inspect_source_is_registered_read_only_core_capability() -> None:
     spec = CORE_CAPABILITIES["inspect_source"]
 
-    assert spec.version == "2"
+    assert spec.version == "3"
     assert spec.durable_result_fields == ("evidence",)
     assert spec.permissions["workspace_read"] is True
     assert spec.permissions["cross_room_read"] is True
@@ -448,4 +448,149 @@ def test_read_many_enforces_total_output_bound(tmp_path: Path) -> None:
     assert result["evidence"]["returned_count"] == 1
     assert result["evidence"]["truncated"] is True
     assert result["evidence"]["truncation_reason"] == "batch_max_bytes"
+
+def test_evidence_bundle_executes_heterogeneous_known_requests(tmp_path: Path) -> None:
+    current, _, _ = _canonical_fixture(tmp_path)
+
+    result = inspect_source(
+        current,
+        {
+            "operation": "bundle",
+            "requests": [
+                {
+                    "label": "core-canary-search",
+                    "request": {
+                        "operation": "search_many",
+                        "source": "core",
+                        "path": "codex_room",
+                        "queries": ["CORE_CANARY"],
+                    },
+                },
+                {
+                    "label": "other-room-notes",
+                    "request": {
+                        "operation": "read",
+                        "source": "room",
+                        "room_id": "room_other",
+                        "path": "notes.txt",
+                        "start_line": 1,
+                        "max_lines": 2,
+                    },
+                },
+            ],
+        },
+    )
+
+    assert result["evidence"]["operation"] == "bundle"
+    assert result["evidence"]["requested_count"] == 2
+    assert result["evidence"]["attempted_count"] == 2
+    assert result["evidence"]["returned_count"] == 2
+    assert result["evidence"]["truncated"] is False
+    assert [item["label"] for item in result["items"]] == [
+        "core-canary-search",
+        "other-room-notes",
+    ]
+    assert result["items"][0]["operation"] == "search_many"
+    assert result["items"][0]["results"][0]["matches"][0]["path"] == "codex_room/db.py"
+    assert result["items"][1]["content"] == (
+        "other room shared evidence\nSECOND_CANARY\n"
+    )
+    assert [item["label"] for item in result["evidence"]["requests"]] == [
+        "core-canary-search",
+        "other-room-notes",
+    ]
+    assert "content" not in result["evidence"]["requests"][1]
+
+
+@pytest.mark.parametrize(
+    ("requests", "match"),
+    [
+        (
+            [
+                {
+                    "label": "duplicate",
+                    "request": {
+                        "operation": "read",
+                        "source": "workspace",
+                        "path": "current.txt",
+                    },
+                },
+                {
+                    "label": "duplicate",
+                    "request": {
+                        "operation": "read",
+                        "source": "workspace",
+                        "path": "current.txt",
+                    },
+                },
+            ],
+            "labels must be unique",
+        ),
+        (
+            [
+                {
+                    "label": "nested",
+                    "request": {
+                        "operation": "bundle",
+                        "requests": [],
+                    },
+                }
+            ],
+            "operation must be find",
+        ),
+        (
+            [
+                {
+                    "label": "inventory",
+                    "request": {"operation": "sources"},
+                }
+            ],
+            "operation must be find",
+        ),
+    ],
+)
+def test_evidence_bundle_rejects_ambiguous_or_adaptive_plan_shapes(
+    tmp_path: Path,
+    requests: list[dict[str, object]],
+    match: str,
+) -> None:
+    current, _, _ = _canonical_fixture(tmp_path)
+
+    with pytest.raises(SourceInspectionError, match=match):
+        inspect_source(
+            current,
+            {
+                "operation": "bundle",
+                "requests": requests,
+            },
+        )
+
+
+def test_evidence_bundle_reports_bundle_wide_output_truncation(tmp_path: Path) -> None:
+    current, _, _ = _canonical_fixture(tmp_path)
+
+    result = inspect_source(
+        current,
+        {
+            "operation": "bundle",
+            "max_bytes": 1,
+            "requests": [
+                {
+                    "label": "too-large",
+                    "request": {
+                        "operation": "read",
+                        "source": "workspace",
+                        "path": "current.txt",
+                    },
+                }
+            ],
+        },
+    )
+
+    assert result["items"] == []
+    assert result["evidence"]["attempted_count"] == 1
+    assert result["evidence"]["returned_count"] == 0
+    assert result["evidence"]["truncated"] is True
+    assert result["evidence"]["truncation_reason"] == "bundle_max_bytes"
+    assert result["evidence"]["next_request_index"] == 0
 
