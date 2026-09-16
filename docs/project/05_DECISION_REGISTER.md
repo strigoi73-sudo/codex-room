@@ -484,3 +484,25 @@ Settled experimental boundary:
 This decision extends D-030 by separating **persistent organizational identity** from **provider context transport**. It does not change A/B/C peer status, C's coordination responsibility, evidence authority, or transaction settlement semantics.
 
 **Principle:** **Preserve durable identity and explicit work state; bound provider context to the smallest unit that safely carries the work.**
+
+### D-033 — Cross-Assignment continuity uses explicit bounded Room-history retrieval
+**Date:** 2026-09-16  
+**Status:** ACTIVE
+
+Stage C.2 established that Assignment-bounded provider context materially reduces inherited replay cost but does not itself carry needed episodic continuity from earlier Rounds. The first continuity mechanism should therefore retrieve prior durable Room results explicitly rather than restore a forever-growing provider thread.
+
+Settled boundary:
+
+- transaction-enabled agents may declare a bounded `HISTORY` need when the current Assignment requires a specific fact or result from an earlier Round in the same Room;
+- the first retrieval vocabulary is deliberately small: `RECENT` for a temporal dependency and lexical `SEARCH` for a known concept, with an optional agent filter and bounded result count;
+- CORE owns mechanical selection from durable terminal Assignment results, same-Room authorization, bounds, exact event provenance, and atomic attachment of selected result-event IDs to the requesting Assignment;
+- `HISTORY` is nonterminal work on the same logical Assignment. It must not release joins or settle the Task; the same Assignment resumes on its existing provider context with the selected historical results added to its authoritative envelope;
+- current Task/Assignment/Join/Evidence state remains authoritative and is not obtained through historical search. Source/file retrieval remains the separate `EVIDENCE` path;
+- prior Room history is never injected wholesale merely because the same persistent agent previously saw it;
+- the initial implementation should reuse the existing durable `context_event_ids` Assignment field and prior public terminal result events rather than introduce a separate memory database, summarizer, embedding index, or provider-thread archive;
+- D-009 remains the longer-range direction. A broader searchable archive/index should be added only when ordinary use demonstrates that bounded recent/lexical result retrieval is insufficient.
+
+This decision extends D-032 by supplying deliberate continuity across Assignment boundaries without redefining persistent A/B/C identity or undoing provider-context isolation.
+
+**Principle:** **Retrieve the prior result the work needs; do not replay the history the agent once happened to see.**
+
