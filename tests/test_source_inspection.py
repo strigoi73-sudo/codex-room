@@ -188,7 +188,7 @@ def test_read_content_is_transient_under_capability_durable_contract(
 
     assert result["content"] == "CORE README\n"
     assert result["durable_result_fields"] == ["evidence"]
-    assert result["capability_version"] == "2"
+    assert result["capability_version"] == "3"
     assert len(result["implementation_sha256"]) == 64
 
 
