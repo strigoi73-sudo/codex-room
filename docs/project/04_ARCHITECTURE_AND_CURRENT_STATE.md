@@ -393,7 +393,7 @@ The direct CLI surface now exposes `codex-room-cap source bundle` through either
 
 PR #88 implemented this slice and merged as `6158461bfee94eba375e99baec110e707c30499d`. Its final tested PR head `b7e3ce3ddf9652e21ef4e66f4a5a988a0855b93d` and the squash merge share Git tree `e9b7b1d633ecee9b7fb050df794384795f377a6e`. GitHub Actions run `35041711940` passed Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12 + browser. E-097 records implementation and verification evidence.
 
-**Validation status:** deterministic implementation is verified. Naturalistic evidence that agents select the bundle appropriately and reduce predictable retrieval continuations is still required before calling Stage B complete. Stage C remains separate and unimplemented.
+**Validation status:** this direct CLI/bundle slice remains implemented and verified as a compatibility/operator primitive. The later D-031 structured broker removed batching selection from ordinary version-2 agent cognition, and Stage B3 / E-101 supplied the naturalistic closeout evidence for the consolidated Stage-B interface. Stage B is complete. Stage C remains separate and unimplemented.
 
 ## 18. I-015 Stage B2 structured deterministic source evidence execution
 
@@ -409,7 +409,9 @@ The existing CLI and deterministic capability substrate remain available as oper
 
 PR #92 code-bearing head `9b4e352e490a4cdeda9a8242396cabd981f3b19d` (Git tree `2b27d2ea509f279416eb65a8c2a6161414096501`) passed GitHub Actions run `35066558470`: **401 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12; the Windows browser transcript-stability check additionally passed **3 tests**. E-100 records the exact implementation and verification evidence.
 
-**Scope limit:** this first broker handles only read-only source evidence. Arbitrary custom-capability brokerage remains outside this slice because preserving its Room/sandbox execution authority needs a separate design. Stage-B3 naturalistic validation still needs to establish model adoption and operating economics before Stage B closes. Stage C remains separate and deferred.
+**Naturalistic closeout:** Stage B3 / E-101 passed on 2026-09-16 in a fresh C-only version-2 Room. C declared the three known source needs as one structured FIND + SEARCH + READ evidence request; CORE mechanically selected a heterogeneous bundle; the same assignment resumed and made one evidence-dependent follow-up READ after SEARCH supplied the declaration's line location; then C completed the task correctly. The run used **72,271 total execution tokens**, with zero agent CLI/tool calls, zero failures, zero file changes, and preserved request/plan/result provenance. This closes Stage B as **IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED**.
+
+**Scope limit:** the broker handles read-only source evidence. Arbitrary custom-capability brokerage remains outside this slice because preserving its Room/sandbox execution authority needs a separate design. Stage C is now the next I-015 experiment and remains unimplemented.
 
 ## 19. Runtime-state and work-queue caution
 
