@@ -3462,3 +3462,35 @@ After that diagnosis, replace the invalid adoption test with B-N2 using a genuin
 
 **Status:** B-N1 mechanically successful and answer-correct; **INCONCLUSIVE** for `bundle` adoption due to test-design error; **OBSERVED ISSUE** for command/replay efficiency. Stage B remains IN PROGRESS. Stage C remains separate.
 
+
+
+### E-099 — B-N1 raw-rollout diagnosis and Stage-B interface consolidation
+**Date:** 2026-09-16  
+**Scope:** [CORE design evidence] Exact local rollout diagnosis of B-N1 plus fresh source inspection of the deterministic-capability interface.
+
+The raw C rollout for B-N1 was inspected after E-098. The exact thread was `01a0a7cd-87ca-78a1-aa10-7249100c3721` in Room `room_a83ecc1e0287498d8665eedfbc93c620`.
+
+The seven recorded tool calls were:
+
+1. `rg --files -g models.py -g __main__.py -g Start-Codex-Room.cmd` in the Room shared workspace; it returned no output.
+2. `Get-Command codex-room-cap | Select-Object -ExpandProperty Source`; this located `C:\\Codex Room\\codex-room-cap.cmd`.
+3. `codex-room-cap source --help`.
+4. `codex-room-cap source sources`; this exposed the authorized CORE source and a large Room inventory.
+5. `codex-room-cap source bundle --help`.
+6. `codex-room-cap source read-many --help`.
+7. One useful retrieval: `codex-room-cap source read-many core --read codex_room/models.py 1 1000 --read codex_room/__main__.py 1 1000 --read Start-Codex-Room.cmd 1 200`.
+
+That final retrieval correctly established all requested facts. The provider-usage timeline contained eight usage records with cumulative execution totals of 20,683; 41,520; 62,495; 83,768; 107,360; 131,192; 155,367; and 184,143 tokens. The run therefore combined a mechanically successful source read with repeated provider continuations that replayed substantial active context after CLI/discovery steps.
+
+Interpretation:
+
+- B-N1 does not show a `bundle` failure. The task was homogeneous known-file reading, so `read_many` was policy-consistent.
+- The costly path arose before the useful read: the agent had to discover executable identity, CLI grammar, source inventory, and competing batching commands. These are execution-interface mechanics rather than intellectual decisions required by the task.
+- The always-loaded deterministic-capability instruction in `orchestrator.py` currently contains substantial CLI/operator detail, including list/inspect rules, direct source syntax, bundle-vs-homogeneous selection, JSON/file transport, and custom-capability registration mechanics. This is evidence of an abstraction leak rather than a reason for another command-specific prompt patch.
+- Fresh source inspection also found an interface-synchronization gap: `CodexAgentAdapter._parse_capability_script()` recognizes direct source operations `sources`, `find`, `search`, `search-many`, `read`, and `read-many`, but not direct `source bundle`. Bundle execution and CLI tests exist elsewhere. This is a source-level provenance/telemetry inconsistency; this evidence does not claim a demonstrated live telemetry failure for a bundle invocation.
+- `TransactionDecision` currently exposes only `COMPLETE | DELEGATE | PASS`, so structured source evidence is DECIDED / NOT IMPLEMENTED at this evidence point.
+- The public Python SDK surface used by Codex Room does not need to be replaced to implement the first consolidation slice: the existing version-2 structured transaction result can carry semantic evidence intent, while CORE can reuse `inspect_source` directly. Experimental/native dynamic-tool transport can remain a future option rather than a Stage-B dependency.
+
+**Resulting decision:** D-031. B-N2 in its former “prove bundle adoption” form is superseded. I-015 Stage B2 should implement structured, restart-safe, read-only source-evidence execution, then run a naturalistic test of the semantic interface itself.
+
+**Status:** B-N1 diagnosis COMPLETE. Interface-consolidation need OBSERVED / D-031 DECIDED; Stage-B2 implementation not yet claimed by this record.
