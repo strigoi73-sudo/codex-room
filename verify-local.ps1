@@ -146,18 +146,15 @@ TMPDIR="$tmp_dir" "$venv/bin/python" -m pytest -q
     $bash = $bash.Replace("`r`n", "`n").Replace("`r", "")
 
     # Do not pass a multiline Bash program through the Windows -> WSL command line.
-    # That boundary can rewrite quoting. Write exact UTF-8/LF bytes to a temporary
-    # script and execute the file inside WSL instead.
-    $tempScript = Join-Path $env:TEMP ("codex-room-verify-" + [guid]::NewGuid().ToString("N") + ".sh")
+    # Store the exact UTF-8/LF script under .git, whose WSL path is already known
+    # from $wslRepo. This avoids a second Windows-path -> WSL-path conversion.
+    $scriptName = "codex-room-verify-" + [guid]::NewGuid().ToString("N") + ".sh"
+    $tempScript = Join-Path (Join-Path $repoRoot ".git") $scriptName
+    $wslScript = "$wslRepo/.git/$scriptName"
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($tempScript, $bash, $utf8NoBom)
 
     try {
-        $wslScript = (& $wsl -d $Distro -- wslpath -a $tempScript).Trim()
-        if ($LASTEXITCODE -ne 0 -or -not $wslScript) {
-            throw "Could not resolve the temporary verification script inside WSL."
-        }
-
         Invoke-NativeStep $Label {
             $args = @(
                 "-d", $Distro,
