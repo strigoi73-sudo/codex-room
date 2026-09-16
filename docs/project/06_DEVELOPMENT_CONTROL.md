@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 **Stage C is COMPLETE**. C-N3 passed the preregistered naturalistic acceptance: one C-only assignment-scoped Assignment used `HISTORY → COMPLETE`, CORE selected the exact C-N2 establishment result by durable event ID, the same Assignment context thread continued, and C returned `ORBIT-7429-CEDAR`. E-106 records the exact run and economics.
+- **What just changed?** I-015 **Stage D is now fully preregistered**. The gate fixes ten sequential naturalistic tasks, coordination/provenance invariants, exact economic calculations and stop conditions, task-specific quality rubrics, robustness coverage, and invalid-run handling before any Stage-D paid execution. Stage C remains COMPLETE under E-106.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage D — viability gate.** Validate the provisional gate before executing it, then preregister a bounded set of ordinary useful tasks covering coordination, economics, quality, and robustness. Version 1 remains the default until that later gate justifies activation.
+- **What is next?** **I-015 Stage D — D-N1.** Create one fresh dedicated Stage-D Room, run the exact preregistered D-N1 solo-scheduling Round under work-model v2 + assignment-scoped provider context, export it, and score it before D-N2. Version 1 remains the default throughout the gate.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
