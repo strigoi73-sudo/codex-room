@@ -10,7 +10,7 @@
 - **What just changed?** I-015 **Stage C.2 is COMPLETE**. C-N1 showed a **24.0% input-token reduction** from assignment-scoped context on self-contained work, and C-N2 then demonstrated the missing continuity boundary: fresh assignment context returned `UNKNOWN` for an immediately prior arbitrary fact while the untouched persistent-thread control recalled it exactly. E-103 and E-104 record the evidence.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage C.3 — targeted cross-Assignment retrieval implementation and verification** under D-033. The first slice adds bounded `HISTORY` retrieval over prior durable terminal Assignment results using existing Assignment context-event references; no broad summarization/index layer is included.
+- **What is next?** **I-015 Stage C.3 — targeted cross-Assignment retrieval implementation and verification** under D-033. The first slice adds bounded `HISTORY` retrieval over prior durable completed Assignment results using existing Assignment context-event references; no broad summarization/index layer is included.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -288,7 +288,7 @@ C-N2 is a boundary test, not approval for a general memory system. It establishe
 ##### Stage C.3 — Targeted cross-Assignment retrieval
 **Work state:** IN PROGRESS — D-033 settled; first implementation slice under review
 
-Implement and verify the smallest explicit retrieval path over durable Room history that can satisfy a later Assignment's specific continuity dependency without replaying the entire permanent provider thread. D-033 settles the first interface: transaction action `HISTORY` with bounded `RECENT` and lexical `SEARCH` requests over prior terminal Assignment results in the same Room.
+Implement and verify the smallest explicit retrieval path over durable Room history that can satisfy a later Assignment's specific continuity dependency without replaying the entire permanent provider thread. D-033 settles the first interface: transaction action `HISTORY` with bounded `RECENT` and lexical `SEARCH` requests over prior completed Assignment results in the same Room.
 
 Design constraints:
 
