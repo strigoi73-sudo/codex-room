@@ -60,6 +60,7 @@ from .models import (
     PrepareRoundRequest,
     RolloverRoomRequest,
     RoomStatus,
+    HistoryRequest,
     SourceEvidenceRequest,
     UpdateRoomRequest,
 )
@@ -168,6 +169,21 @@ class RoomRuntime:
         "registered-capability work remains available when the task genuinely requires it.\n"
         "</deterministic_evidence>"
     )
+    TRANSACTION_HISTORY_INSTRUCTION = (
+        "<room_history>\n"
+        "When this assignment needs a specific fact or result from an earlier Round in this "
+        "same Room and that history is not already supplied, declare the bounded need with "
+        "transaction action HISTORY. Use RECENT for a temporal dependency or SEARCH with one "
+        "specific lexical query when you know the relevant concept; optionally restrict the "
+        "request to one agent and request only as many results as are likely necessary. CORE "
+        "selects only durable terminal Assignment results from earlier Rounds and returns the "
+        "exact bounded result events to this same assignment. Do not use HISTORY to recover "
+        "current Task/Join/Evidence state already supplied in the assignment envelope, to read "
+        "source files, or for broad catch-up. Ask again only when the returned history leaves a "
+        "specific unresolved dependency.\n"
+        "</room_history>"
+    )
+    TRANSACTION_HISTORY_CONTEXT_MAX_CHARS = 24_000
     TRANSACTION_CAPABILITY_INSTRUCTION = (
         "<deterministic_capabilities>\n"
         "Registered deterministic capabilities remain available for non-source work when they "
@@ -1749,6 +1765,22 @@ class RoomRuntime:
         evidence_results = await self.db.get_assignment_evidence_results(
             assignment["id"]
         )
+        raw_context_event_ids = assignment.get("context_event_ids_json") or "[]"
+        context_event_ids = (
+            json.loads(raw_context_event_ids)
+            if isinstance(raw_context_event_ids, str)
+            else list(raw_context_event_ids)
+        )
+        history_events = await self.db.get_events_by_ids(
+            batch["room_id"], context_event_ids
+        )
+        history_resume = False
+        if assignment.get("result_event_id"):
+            prior_result = await self.db.get_event(assignment["result_event_id"])
+            history_resume = bool(
+                prior_result
+                and prior_result.get("metadata", {}).get("transaction_action") == "HISTORY"
+            )
         context_parts = [
             "<transaction_assignment>",
             f"Room ID: {batch['room_id']}",
@@ -1805,6 +1837,46 @@ class RoomRuntime:
                     ]
                 )
             context_parts.append("</resolved_dependencies>")
+        if history_events or history_resume:
+            context_parts.append("<retrieved_room_history>")
+            if history_events:
+                remaining_chars = self.TRANSACTION_HISTORY_CONTEXT_MAX_CHARS
+                for event in history_events:
+                    if remaining_chars <= 0:
+                        context_parts.append(
+                            "[Additional selected Room-history results omitted by CORE context bound.]"
+                        )
+                        break
+                    raw_content = event.get("content") or ""
+                    content = raw_content[:remaining_chars]
+                    remaining_chars -= len(content)
+                    context_parts.extend(
+                        [
+                            (
+                                f"<history_result event_id=\"{event['id']}\" "
+                                f"round_id=\"{event.get('round_id') or ''}\" "
+                                f"agent=\"{event.get('source') or ''}\">"
+                            ),
+                            content,
+                            "</history_result>",
+                        ]
+                    )
+                    if len(content) < len(raw_content):
+                        context_parts.append(
+                            "[This selected historical result was truncated by CORE context bound.]"
+                        )
+                        remaining_chars = 0
+            else:
+                context_parts.append(
+                    "CORE found no matching prior terminal Assignment results for the "
+                    "most recent HISTORY request."
+                )
+            context_parts.append("</retrieved_room_history>")
+            context_parts.append(
+                "The Room history above is bounded historical context, not current work state. "
+                "Use it only for the dependency that justified retrieval; the current Assignment "
+                "and durable Task/Join/Evidence state remain authoritative."
+            )
         if evidence_results:
             context_parts.append("<resolved_source_evidence>")
             for item in evidence_results:
@@ -1843,17 +1915,21 @@ class RoomRuntime:
                     + context_boundary
                 ),
                 self.TRANSACTION_EVIDENCE_INSTRUCTION,
+                self.TRANSACTION_HISTORY_INSTRUCTION,
                 self.TRANSACTION_CAPABILITY_INSTRUCTION,
                 (
                     "Return the transaction structured decision only. action must be COMPLETE, "
-                    "DELEGATE, EVIDENCE, or PASS. COMPLETE ends this assignment with a substantive "
-                    "message. DELEGATE pauses this assignment and must include one or more distinct "
-                    "peer delegations, each with target, bounded instruction, and optional config. "
-                    "EVIDENCE pauses this same assignment and must include 1-16 bounded READ, SEARCH, "
-                    "or FIND source-evidence requests. PASS ends this assignment without substantive "
-                    "output. Do not announce that you are waiting for a peer unless you actually use "
-                    "DELEGATE to create that work. delegations must be null outside DELEGATE, and "
-                    "evidence_requests must be null outside EVIDENCE."
+                    "DELEGATE, EVIDENCE, HISTORY, or PASS. COMPLETE ends this assignment with a "
+                    "substantive message. DELEGATE pauses this assignment and must include one or "
+                    "more distinct peer delegations, each with target, bounded instruction, and "
+                    "optional config. EVIDENCE pauses this same assignment and must include 1-16 "
+                    "bounded READ, SEARCH, or FIND source-evidence requests. HISTORY immediately "
+                    "selects bounded terminal results from earlier Rounds in this Room and resumes "
+                    "this same assignment with those exact events supplied as historical context. "
+                    "PASS ends this assignment without substantive output. Do not announce that you "
+                    "are waiting for a peer unless you actually use DELEGATE to create that work. "
+                    "delegations must be null outside DELEGATE, evidence_requests must be null "
+                    "outside EVIDENCE, and history_requests must be null outside HISTORY."
                 ),
                 self._transaction_execution_config_prompt(agent["agent_key"]),
             ]
@@ -2246,6 +2322,10 @@ class RoomRuntime:
                 item.model_dump(mode="json")
                 for item in (decision.evidence_requests or [])
             ]
+            history_requests = [
+                item.model_dump(mode="json")
+                for item in (decision.history_requests or [])
+            ]
             for item in delegations:
                 if item["target"] == agent_key or item["target"] not in participants:
                     raise ValueError("Transaction delegation must target an available peer")
@@ -2400,6 +2480,11 @@ class RoomRuntime:
                     f"Requested {len(evidence_requests)} bounded source evidence "
                     "operation(s) from CORE."
                 )
+            if decision.action == TransactionAction.HISTORY and not content:
+                content = (
+                    f"Requested {len(history_requests)} bounded prior-Room history "
+                    "lookup(s) from CORE."
+                )
             result_event = await self.db.create_event(
                 room_id,
                 event_type,
@@ -2414,6 +2499,7 @@ class RoomRuntime:
                     "transaction_action": decision.action,
                     "delegations": delegations or None,
                     "evidence_requests": evidence_requests or None,
+                    "history_requests": history_requests or None,
                     "work_model_version": 2,
                 },
                 discussion_id=batch["round_id"],
@@ -2432,7 +2518,32 @@ class RoomRuntime:
                 result_event["id"],
                 delegations,
                 evidence_requests,
+                history_requests,
             )
+            if decision.action == TransactionAction.HISTORY:
+                history_event = await self.db.create_event(
+                    room_id,
+                    "tool_activity",
+                    "room",
+                    "observer",
+                    (
+                        "CORE selected "
+                        f"{len(settlement['history_event_ids'])} prior durable Room result(s) "
+                        "for Assignment context."
+                    ),
+                    related_event_id=result_event["id"],
+                    metadata={
+                        "type": "deterministic_room_history",
+                        "assignment_id": batch["assignment_id"],
+                        "request_batch_id": batch["batch_id"],
+                        "selected_event_ids": settlement["history_event_ids"],
+                        "history_requests": history_requests,
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(history_event)
             await self.db.set_agent_status(agent["id"], AgentStatus.IDLE)
             await self.db.set_execution_state(batch["batch_id"], "settled")
             continuation = batch.get("usage_continuation")
