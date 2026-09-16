@@ -68,6 +68,7 @@ class FakeAgentAdapter:
         self._call_gates: dict[tuple[str, int], asyncio.Event] = {}
         self._inactive_agents: set[str] = set()
         self.starts: list[tuple[str, str]] = []
+        self.context_starts: list[tuple[str, str, str]] = []
         self.calls: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self.completed_calls: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self.archived: list[str] = []
@@ -88,6 +89,15 @@ class FakeAgentAdapter:
     async def start_agent(self, agent: dict[str, Any], cwd: Path) -> str:
         thread_id = f"thr_fake_{agent['agent_key']}_{len(self.starts) + 1}"
         self.starts.append((agent["agent_key"], thread_id))
+        return thread_id
+
+    async def start_context_thread(
+        self, agent: dict[str, Any], cwd: Path, *, label: str
+    ) -> str:
+        thread_id = (
+            f"thr_fake_context_{agent['agent_key']}_{len(self.context_starts) + 1}"
+        )
+        self.context_starts.append((agent["agent_key"], thread_id, label))
         return thread_id
 
     async def run_agent(
@@ -159,6 +169,32 @@ class FakeAgentAdapter:
             turn_id=turn_id,
         )
 
+    async def run_agent_on_thread(
+        self,
+        agent: dict[str, Any],
+        cwd: Path,
+        prompt: str,
+        thread_id: str,
+        on_started: Callable[[str, str], Awaitable[None]] | None = None,
+        on_progress: Callable[[], Awaitable[None]] | None = None,
+        *,
+        model: str = "gpt-5.6-terra",
+        reasoning_effort: str = "high",
+        transactional: bool = False,
+    ) -> AgentRunResult:
+        contextual_agent = dict(agent)
+        contextual_agent["thread_id"] = thread_id
+        return await self.run_agent(
+            contextual_agent,
+            cwd,
+            prompt,
+            on_started=on_started,
+            on_progress=on_progress,
+            model=model,
+            reasoning_effort=reasoning_effort,
+            transactional=transactional,
+        )
+
     async def resume_agent(
         self,
         agent: dict[str, Any],
@@ -210,12 +246,12 @@ class FakeAgentAdapter:
             )
 
     async def prepare_usage_continuation(
-        self, agent: dict[str, Any], cwd: Path
+        self, agent: dict[str, Any], cwd: Path, thread_id: str | None = None
     ) -> None:
         self.usage_continuation_prepares.append(
             {
                 "agent_key": agent["agent_key"],
-                "thread_id": agent["thread_id"],
+                "thread_id": thread_id or agent["thread_id"],
                 "cwd": str(cwd),
             }
         )
