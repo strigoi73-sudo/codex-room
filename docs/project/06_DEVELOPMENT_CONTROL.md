@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 **Stage C.2 / C-N1 passed**. In the warmed B3 Room, the assignment-scoped arm used **20,810 input tokens** versus **27,389** for the persistent-thread arm, a **24.0% reduction**, while both used one C execution, no tools/peers/evidence, and correctly solved the 65-minute task. E-103 records the paired naturalistic evidence.
+- **What just changed?** I-015 **Stage C.2 is COMPLETE**. C-N1 showed a **24.0% input-token reduction** from assignment-scoped context on self-contained work, and C-N2 then demonstrated the missing continuity boundary: fresh assignment context returned `UNKNOWN` for an immediately prior arbitrary fact while the untouched persistent-thread control recalled it exactly. E-103 and E-104 record the evidence.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **I-015 Stage C.2 / C-N2 is preregistered and ready for paid execution**: establish one arbitrary continuity token on C's permanent provider thread, test recall from a fresh assignment-scoped thread, then test the same recall from the untouched permanent thread. This determines whether assignment-scoped context now needs one targeted cross-Assignment continuity mechanism.
+- **What is next?** **I-015 Stage C.3 — targeted cross-Assignment retrieval design**: design the smallest explicit Room-history retrieval mechanism that lets an assignment-scoped agent request only relevant prior durable context. Do not restore implicit permanent-thread history or build a broad summarization/index layer without further evidence.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -19,7 +19,7 @@
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-B IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED / STAGE C.1 IMPLEMENTED / VERIFIED  
 **Decision:** D-030, D-031, D-032  
-**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103  
+**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103, E-104  
 **Scope:** [CORE], with later [CORE + ROOM migration] only after the remaining naturalistic/viability gates justify activation.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
@@ -227,7 +227,7 @@ The deterministic acceptance gate is complete. Coverage verifies same-Assignment
 **Scope limit:** Stage C.1 does not implement broad cross-Assignment memory retrieval, provider-thread archival/retention, or default activation. D-009 remains the governing direction for later cross-Assignment continuity: index broadly, retrieve narrowly.
 
 ##### Stage C.2 — Naturalistic context economics and bounded continuity
-**Work state:** IN PROGRESS — C-N1 COMPLETE / PASS; C-N2 preregistered; paid execution next
+**Work state:** COMPLETE — C-N1 PASS; C-N2 PASS / continuity gap demonstrated
 **Evidence:** E-103
 
 ###### C-N1 — Warmed persistent-history paired context comparison
@@ -272,13 +272,34 @@ C-N1 does not answer whether a later Assignment that genuinely depends on prior 
 
 For all three executions record exact Round/Task/Assignment/thread provenance, per-execution token deltas, tool/peer/evidence activity, and final content.
 
-- establishment must return exactly `ORBIT-7429-CEDAR`;
-- the persistent recall control must return exactly `ORBIT-7429-CEDAR`; otherwise the experiment is invalid because the control failed to preserve ordinary provider-thread continuity;
-- if the assignment-scoped recall returns `UNKNOWN` while the persistent control succeeds, existing assignment-scoped context lacks cross-Assignment continuity and Stage C may design the smallest targeted retrieval mechanism justified by this evidence;
-- if the assignment-scoped recall returns the exact token with no hidden tool/evidence path, inspect provenance before concluding that existing durable context already supplies continuity;
-- any guessed/wrong token, peer/tool/evidence activity, restart anomaly, or extra unexplained execution invalidates that arm and must be diagnosed rather than counted as a memory result.
+**Observed result — PASS / continuity gap demonstrated**
 
-C-N2 is a boundary test, not approval for a general memory system. Any follow-up implementation must remain bounded to the minimum demonstrated continuity need.
+- establishment, `persistent_agent_thread`: one execution, **28,336 input / 28,402 total**, **26,368 cached input**, returned exactly `ORBIT-7429-CEDAR`;
+- assignment recall, `assignment_thread`: one execution, **20,750 input / 20,797 total**, **17,152 cached input**, returned exactly `UNKNOWN`;
+- persistent recall control, `persistent_agent_thread`: one execution, **29,173 input / 29,211 total**, **27,392 cached input**, returned exactly `ORBIT-7429-CEDAR`;
+- all three executions had zero tools, capabilities, peers, evidence requests, file changes, compactions, retries, or extra model turns;
+- establishment and persistent recall used C's permanent provider thread `01a0aaa5-ecba-7313-ac8a-ce0afafa610e`;
+- assignment recall used distinct Assignment thread `01a0aae8-16ee-7173-af1c-93ab12f7eb03`.
+
+The assignment arm's 17,152 cached input does not imply inherited Room history: despite that cache hit, it lacked the established nonce while the persistent control retained it. The cached material is therefore at least substantially reusable prompt/instruction prefix rather than sufficient cross-Assignment episodic continuity.
+
+C-N2 is a boundary test, not approval for a general memory system. It establishes the specific need for **targeted cross-Assignment retrieval** if assignment-scoped context is to replace indefinite provider-thread inheritance on continuity-dependent work.
+
+##### Stage C.3 — Targeted cross-Assignment retrieval
+**Work state:** PLANNED — design next
+
+Design the smallest explicit retrieval path over durable Room history that can satisfy a later Assignment's specific continuity dependency without replaying the entire permanent provider thread.
+
+Design constraints:
+
+1. retrieval is agent-declared and bounded; no automatic wholesale prior-Round injection;
+2. CORE owns deterministic archive lookup, authorization, bounds, provenance, and replay-safe transaction state;
+3. retrieved material is supplied only to the requesting Assignment and becomes part of its durable provenance;
+4. the first slice should reuse existing durable Room/transaction/event state and deterministic text search/recent-result access before considering embeddings, summarization, or a new general index;
+5. the mechanism must distinguish current authoritative work state from historical context and preserve D-009's **index broadly, retrieve narrowly** direction;
+6. acceptance must include a C-N2 successor test demonstrating nonce recovery through the explicit retrieval path while preserving assignment-scoped provider isolation.
+
+Do not implement broad memory summarization, embedding search, provider-thread archival policy, or default activation as part of this first slice unless the bounded design proves they are necessary.
 
 
 Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
