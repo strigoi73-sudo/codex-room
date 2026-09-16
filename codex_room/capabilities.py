@@ -1443,12 +1443,12 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
             "Discover and inspect authorized read-only sources beyond the current "
             "Room workspace: the maintained CORE source surface and any Personal "
             "Room shared workspace. Supports bounded source discovery, file finding, "
-            "literal text search, and UTF-8 text reads without granting cross-boundary "
-            "write authority or exposing CORE runtime data."
+            "literal text search, UTF-8 text reads, and declarative heterogeneous evidence "
+            "bundles without granting cross-boundary write authority or exposing CORE runtime data."
         ),
         origin="core",
         scope="core",
-        version="2",
+        version="3",
         input_schema=INSPECT_SOURCE_INPUT_SCHEMA,
         output_schema=INSPECT_SOURCE_OUTPUT_SCHEMA,
         durable_result_fields=("evidence",),
@@ -1461,7 +1461,7 @@ CORE_CAPABILITIES: dict[str, CapabilitySpec] = {
             "external_process": False,
         },
         side_effects="none",
-        verification={"status": "verified", "evidence": ["E-078", "E-081"]},
+        verification={"status": "verified", "evidence": ["E-078", "E-081", "E-097"]},
         handler=_invoke_inspect_source,
         implementation_components=(
             *INSPECT_SOURCE_IMPLEMENTATION_COMPONENTS,
@@ -1853,6 +1853,30 @@ def build_parser() -> argparse.ArgumentParser:
     )
     read_many.add_argument("--max-bytes", type=int, default=128 * 1024)
 
+    bundle_source = source_ops.add_parser(
+        "bundle",
+        help=(
+            "Execute one bounded declarative bundle of already-known source "
+            "find/search/read requests."
+        ),
+    )
+    bundle_plan = bundle_source.add_mutually_exclusive_group(required=True)
+    bundle_plan.add_argument(
+        "--plan-json",
+        help=(
+            "JSON object containing requests; intended for compact plans when "
+            "shell quoting is safe."
+        ),
+    )
+    bundle_plan.add_argument(
+        "--plan-file",
+        help=(
+            "Workspace-relative UTF-8 JSON object containing requests; prefer "
+            "this when command-line JSON quoting is fragile."
+        ),
+    )
+    bundle_source.add_argument("--max-bytes", type=int)
+
     # Backward-compatible P4.1 command. New agent prompts use registry discovery/invoke.
     assert_file_parser = subparsers.add_parser(
         "assert-file",
@@ -1869,10 +1893,32 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 
-def _source_cli_inputs(args: argparse.Namespace) -> dict[str, Any]:
+def _source_cli_inputs(args: argparse.Namespace, root: Path) -> dict[str, Any]:
     operation = args.source_operation.replace("-", "_")
     if operation == "sources":
         return {"operation": "sources"}
+    if operation == "bundle":
+        if args.plan_file is not None:
+            inputs = _load_invocation_input_file(root, args.plan_file)
+        else:
+            try:
+                inputs = json.loads(args.plan_json)
+            except json.JSONDecodeError as exc:
+                raise CapabilityUsageError(
+                    f"bundle plan JSON is invalid: {exc}"
+                ) from exc
+            if not isinstance(inputs, dict):
+                raise CapabilityUsageError("bundle plan must be one JSON object")
+        existing_operation = inputs.get("operation")
+        if existing_operation not in {None, "bundle"}:
+            raise CapabilityUsageError(
+                "bundle plan operation must be omitted or equal 'bundle'"
+            )
+        inputs = dict(inputs)
+        inputs["operation"] = "bundle"
+        if args.max_bytes is not None:
+            inputs["max_bytes"] = args.max_bytes
+        return inputs
 
     inputs: dict[str, Any] = {
         "operation": operation,
@@ -1972,7 +2018,7 @@ def main(argv: list[str] | None = None) -> int:
             result = invoke_capability(
                 Path.cwd(),
                 "inspect_source",
-                _source_cli_inputs(args),
+                _source_cli_inputs(args, Path.cwd()),
             )
         elif args.command == "assert-file":
             result = invoke_capability(
