@@ -476,9 +476,9 @@ This avoids spending paid naturalistic cognition to recreate a failure mode alre
 
 **Exact prompt**
 
-> I have Saturday from 9:00 AM to 3:00 PM. Build a concrete schedule for these items: pharmacy pickup 20 minutes; grocery shopping 45 minutes; meal prep 60 minutes and it must be after grocery shopping; package drop 15 minutes and it must finish by 1:00 PM; workout 45 minutes; lunch 30 minutes; fixed dentist appointment 11:00-11:30 AM. Assume zero travel time and one person can do only one item at a time. Use C only; do not use peers, tools, source evidence, or Room history. Give the schedule and explicitly state the grocery-shopping start time. Keep the answer concise.
+> I have Saturday from 9:00 AM to 3:00 PM. Build a concrete schedule for these items: pharmacy pickup 20 minutes and it must be the first item starting at 9:00 AM; grocery shopping 45 minutes and it must immediately follow the pharmacy pickup; meal prep 60 minutes and it must be after grocery shopping; package drop 15 minutes and it must finish by 1:00 PM; workout 45 minutes; lunch 30 minutes; fixed dentist appointment 11:00-11:30 AM. Assume zero travel time and one person can do only one item at a time. Use C only; do not use peers, tools, source evidence, or Room history. Give the schedule and explicitly state the grocery-shopping start time. Keep the answer concise.
 
-**Quality PASS:** schedule stays within 9:00-3:00, has no overlap, preserves the dentist slot, finishes package drop by 1:00, places meal prep after grocery shopping, includes every item, and states one unambiguous grocery start time.
+**Quality PASS:** schedule stays within 9:00-3:00, has no overlap, starts pharmacy at 9:00, starts grocery shopping at **9:20 AM**, preserves the dentist slot, finishes package drop by 1:00, places meal prep after grocery shopping, and includes every item.
 
 #### D-N2 — One-peer internet-plan decision
 
@@ -531,9 +531,9 @@ This avoids spending paid naturalistic cognition to recreate a failure mode alre
 
 **Exact prompt**
 
-> Retrieve the completed result from the earlier Round titled `D-N1 Solo Saturday Schedule`. Do not use source evidence, tools, or peers. Use bounded Room-history retrieval. Preserve that schedule except change the grocery-shopping start time to 12:00 PM; move only items that must move to keep all original constraints valid. Return the revised schedule and state the original grocery-shopping start time you retrieved.
+> Retrieve the completed result from the earlier Round titled `D-N1 Solo Saturday Schedule`. Do not use source evidence, tools, or peers. Use bounded Room-history retrieval. Revise the schedule so grocery shopping starts at 12:00 PM. This revision supersedes only D-N1's requirement that grocery shopping immediately follow the pharmacy pickup; preserve every other D-N1 constraint and move only items that must move. Return the revised schedule and state the original grocery-shopping start time you retrieved.
 
-**Quality PASS:** exact D-N1 result provenance is selected; the original grocery start matches D-N1; the revised grocery start is noon; the revised schedule remains feasible under every D-N1 constraint; HISTORY and completion reuse the same logical Assignment/provider thread.
+**Quality PASS:** exact D-N1 result provenance is selected; the original grocery start is **9:20 AM**; the revised grocery start is noon; every D-N1 constraint other than the explicitly superseded immediate-follow relation remains satisfied; HISTORY and completion reuse the same logical Assignment/provider thread.
 
 #### D-N7 — Stale-history discrimination
 
@@ -544,7 +544,7 @@ This avoids spending paid naturalistic cognition to recreate a failure mode alre
 
 > There are now two related Saturday schedules in Room history: the original D-N1 result and the later D-N6 revision. Use bounded Room-history retrieval to answer only this: what grocery-shopping start time did the original `D-N1 Solo Saturday Schedule` result specify? Do not report the D-N6 revised time. Use no peers, tools, or source evidence. Return exactly `ORIGINAL: <time>`.
 
-**Quality PASS:** returns the exact D-N1 time, not 12:00 PM unless D-N1 itself happened to use noon, and durable selected-event provenance includes the intended original result rather than silently relying on provider-thread inheritance.
+**Quality PASS:** returns exactly `ORIGINAL: 9:20 AM`, does not substitute the D-N6 noon revision, and durable selected-event provenance includes the intended original result rather than silently relying on provider-thread inheritance.
 
 #### D-N8 — Evidence failure and recovery
 
