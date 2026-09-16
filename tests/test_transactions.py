@@ -150,6 +150,203 @@ async def test_transaction_dual_delegation_releases_c_once_after_both_peers(
 
 
 @pytest.mark.asyncio
+async def test_transaction_evidence_resumes_same_assignment_with_normalized_payload(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {1}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.EVIDENCE,
+                evidence_requests=[
+                    {
+                        "operation": "READ",
+                        "source": "workspace",
+                        "room_id": None,
+                        "path": "fact.txt",
+                        "query": None,
+                        "patterns": None,
+                        "start_line": 1,
+                        "max_lines": 20,
+                        "max_results": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="The evidence says alpha.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "evidence-resume.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Read one known fact", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 1)
+    runtime.workspace(room_id).joinpath("fact.txt").write_text(
+        "alpha\n", encoding="utf-8"
+    )
+    adapter.release_call("agent_c", 1)
+
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    assert len(adapter.calls["agent_a"]) == 0
+    assert len(adapter.calls["agent_b"]) == 0
+    continuation_prompt = adapter.calls["agent_c"][1]["prompt"]
+    assert "<deterministic_evidence>" in continuation_prompt
+    assert '"operation":"READ"' in continuation_prompt
+    assert "alpha" in continuation_prompt
+    assert "codex-room-cap source" not in continuation_prompt
+    assert "read_many" not in continuation_prompt
+    assert "bundle" not in continuation_prompt
+
+    async with runtime.db.connect() as db:
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+        evidence_rows = await db.execute_fetchall(
+            """SELECT e.* FROM assignment_evidence e
+               JOIN assignments x ON x.id=e.assignment_id
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+    assert len(assignments) == 1
+    assert assignments[0]["agent_key"] == "agent_c"
+    assert assignments[0]["state"] == "completed"
+    assert len(evidence_rows) == 1
+    assert evidence_rows[0]["state"] == "consumed"
+    assert evidence_rows[0]["transient_payload_json"] is None
+
+    evidence_events = [
+        event
+        for event in await runtime.db.get_events(room_id)
+        if event["event_type"] == "deterministic_evidence"
+    ]
+    assert len(evidence_events) == 1
+    metadata = evidence_events[0]["metadata"]
+    assert metadata["evidence_strategy"] == "read"
+    assert "alpha" not in str(metadata["durable_evidence"])
+    assert "transient_payload" not in metadata
+
+    evidence = await runtime.db.get_assignment_evidence_by_batch(
+        evidence_rows[0]["source_batch_id"]
+    )
+    assert evidence is not None
+    replay = await runtime.db.settle_transaction_evidence(
+        room_id,
+        snapshot["active_round_id"],
+        evidence_rows[0]["source_batch_id"],
+        assignments[0]["id"],
+        evidence["request"],
+        strategy=evidence["strategy"],
+        durable_evidence=evidence["durable_evidence"],
+        transient_payload={},
+        provenance_event_id=evidence_rows[0]["provenance_event_id"],
+    )
+    assert replay["decision_applied"] is False
+    assert replay["evidence_id"] == evidence_rows[0]["id"]
+    async with runtime.db.connect() as db:
+        count = await db.execute_fetchone(
+            "SELECT COUNT(*) AS n FROM assignment_evidence WHERE assignment_id=?",
+            (assignments[0]["id"],),
+        )
+    assert count["n"] == 1
+
+
+@pytest.mark.asyncio
+async def test_transaction_evidence_at_turn_limit_stops_without_resuming_and_replays_limit(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.EVIDENCE,
+                evidence_requests=[
+                    {
+                        "operation": "FIND",
+                        "source": "workspace",
+                        "room_id": None,
+                        "path": ".",
+                        "query": None,
+                        "patterns": ["*.txt"],
+                        "start_line": None,
+                        "max_lines": None,
+                        "max_results": 10,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="This continuation must not run.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "evidence-turn-limit.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Stop after evidence",
+            work_model_version=2,
+            max_turns=1,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+    assert len(adapter.calls["agent_c"]) == 1
+
+    async with runtime.db.connect() as db:
+        assignment = await db.execute_fetchone(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_c'""",
+            (room_id,),
+        )
+        evidence_row = await db.execute_fetchone(
+            "SELECT * FROM assignment_evidence WHERE assignment_id=?",
+            (assignment["id"],),
+        )
+    assert assignment["state"] == "cancelled"
+    assert evidence_row["state"] == "discarded"
+    assert evidence_row["transient_payload_json"] is None
+
+    evidence = await runtime.db.get_assignment_evidence_by_batch(
+        evidence_row["source_batch_id"]
+    )
+    replay = await runtime.db.settle_transaction_evidence(
+        room_id,
+        snapshot["active_round_id"],
+        evidence_row["source_batch_id"],
+        assignment["id"],
+        evidence["request"],
+        strategy=evidence["strategy"],
+        durable_evidence=evidence["durable_evidence"],
+        transient_payload={},
+        provenance_event_id=evidence_row["provenance_event_id"],
+    )
+    assert replay["decision_applied"] is False
+    assert replay["turn_limit_hit"] is True
+    assert replay["wake_agent_keys"] == []
+
+
+@pytest.mark.asyncio
 async def test_transaction_nested_delegation_does_not_release_outer_join_early(
     transaction_runtime_factory,
 ):
