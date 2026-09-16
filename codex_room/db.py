@@ -4099,6 +4099,39 @@ class Database:
             "runnable_count": int(row["runnable_count"] or 0) if row else 0,
         }
 
+    async def bind_assignment_context_thread(
+        self,
+        assignment_id: str,
+        thread_id: str,
+    ) -> bool:
+        """Bind one version-2 logical assignment to its provider context thread."""
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            row = await self._fetchone(
+                db,
+                "SELECT context_thread_id, state FROM assignments WHERE id=?",
+                (assignment_id,),
+            )
+            if row is None or row["state"] != "running":
+                await db.rollback()
+                return False
+            if row["context_thread_id"] == thread_id:
+                await db.commit()
+                return True
+            if row["context_thread_id"] is not None:
+                await db.rollback()
+                return False
+            cursor = await db.execute(
+                """UPDATE assignments SET context_thread_id=?
+                   WHERE id=? AND state='running' AND context_thread_id IS NULL""",
+                (thread_id, assignment_id),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                return False
+            await db.commit()
+        return True
+
     async def bind_execution_turn(
         self,
         batch_id: str,
