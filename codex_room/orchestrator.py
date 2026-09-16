@@ -827,6 +827,9 @@ class RoomRuntime:
                 "has_task_overlay": bool(round_item.get("task_overlay")),
                 "required_contributors": round_item.get("required_contributors", []),
                 "work_model_version": round_item.get("work_model_version", 1),
+                "provider_context_mode": round_item.get(
+                    "provider_context_mode", "persistent_agent_thread"
+                ),
             },
             round_id=round_item["id"],
             discussion_id=round_item["id"],
@@ -887,6 +890,9 @@ class RoomRuntime:
             metadata={
                 "starting_agent": round_item["starting_agent"],
                 "work_model_version": round_item.get("work_model_version", 1),
+                "provider_context_mode": round_item.get(
+                    "provider_context_mode", "persistent_agent_thread"
+                ),
             },
             deliver_to=(
                 ()
@@ -1817,13 +1823,24 @@ class RoomRuntime:
                 "assignment. Interpret it directly; request more evidence only for a specific "
                 "unresolved dependency."
             )
+        provider_context_mode = round_item.get(
+            "provider_context_mode", "persistent_agent_thread"
+        )
+        context_boundary = (
+            "This provider context is bounded to the current logical Assignment. Durable Room, "
+            "Task, dependency, and evidence state supplied above is authoritative continuity; "
+            "do not assume unsupplied history from another Assignment or earlier Round."
+            if provider_context_mode == "assignment_thread"
+            else
+            "Earlier persistent-thread history is background only; do not treat an older "
+            "request as the current assignment."
+        )
         context_parts.extend(
             [
                 "</transaction_assignment>",
                 (
                     "The transaction assignment above is the only current actionable Room work. "
-                    "Earlier persistent-thread history is background only; do not treat an older "
-                    "request as the current assignment."
+                    + context_boundary
                 ),
                 self.TRANSACTION_EVIDENCE_INSTRUCTION,
                 self.TRANSACTION_CAPABILITY_INSTRUCTION,
@@ -1968,7 +1985,14 @@ class RoomRuntime:
                         "reported_retry_at": reported_retry_at,
                         "wake_at": wake_at,
                         "agent": agent["agent_key"],
-                        "thread_id": agent["thread_id"],
+                        "thread_id": (
+                            batch["assignment"].get("context_thread_id")
+                            if batch.get("provider_context_mode") == "assignment_thread"
+                            else agent["thread_id"]
+                        ),
+                        "provider_context_mode": batch.get(
+                            "provider_context_mode", "persistent_agent_thread"
+                        ),
                         "source_batch_id": batch["batch_id"],
                         "assignment_id": batch["assignment_id"],
                         "task_id": batch["task_id"],
