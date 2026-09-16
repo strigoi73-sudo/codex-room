@@ -91,6 +91,7 @@ set -euo pipefail
 
 repo="$CODEX_ROOM_REPO"
 series="$CODEX_ROOM_PYTHON_SERIES"
+mode="$CODEX_ROOM_VERIFY_MODE"
 
 find_python() {
     if command -v "python${series}" >/dev/null 2>&1; then
@@ -133,13 +134,50 @@ if [ ! -x "$venv/bin/python" ]; then
 fi
 
 cd "$repo"
-"$venv/bin/python" -m pip install --disable-pip-version-check -q \
-    -c constraints-test.txt "${repo}[test]"
+
+if "$venv/bin/python" - <<'PY'
+from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
+import sys
+
+mismatches = []
+for raw in Path("constraints-test.txt").read_text(encoding="utf-8").splitlines():
+    line = raw.strip()
+    if not line or line.startswith("#") or "==" not in line:
+        continue
+    name, expected = line.split("==", 1)
+    try:
+        actual = version(name)
+    except PackageNotFoundError:
+        actual = None
+    if actual != expected:
+        mismatches.append((name, expected, actual))
+
+if mismatches:
+    for name, expected, actual in mismatches:
+        print(f"{name}: expected {expected}, found {actual or 'missing'}", file=sys.stderr)
+    raise SystemExit(1)
+PY
+then
+    echo "Pinned Linux dependencies already synchronized."
+else
+    "$venv/bin/python" -m pip install --disable-pip-version-check -q \
+        -c constraints-test.txt "${repo}[test]"
+fi
 
 tmp_dir="$(mktemp -d /dev/shm/codex-room-verify.XXXXXX)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
-TMPDIR="$tmp_dir" "$venv/bin/python" -m pytest -q
+if [ "$mode" = "Fast" ]; then
+    TMPDIR="$tmp_dir" PYTHONPATH="$repo" "$venv/bin/python" -m pytest -q \
+        tests/test_api.py \
+        tests/test_assignment_context.py \
+        tests/test_rounds.py \
+        tests/test_transaction_evidence.py \
+        tests/test_three_agent_ui.py
+else
+    TMPDIR="$tmp_dir" PYTHONPATH="$repo" "$venv/bin/python" -m pytest -q
+fi
 '@
 
     # Windows checkouts may convert this PowerShell file to CRLF. Bash requires LF.
@@ -162,6 +200,7 @@ TMPDIR="$tmp_dir" "$venv/bin/python" -m pytest -q
                 "env",
                 "CODEX_ROOM_REPO=$wslRepo",
                 "CODEX_ROOM_PYTHON_SERIES=$Series",
+                "CODEX_ROOM_VERIFY_MODE=$Mode",
                 "bash", $wslScript
             )
             & $wsl @args
@@ -175,9 +214,49 @@ TMPDIR="$tmp_dir" "$venv/bin/python" -m pytest -q
 function Sync-WindowsDependencies {
     param([string]$Python)
 
-    Invoke-NativeStep "Windows dependency sync" {
+    Invoke-NativeStep "Windows dependency check" {
         Push-Location $repoRoot
         try {
+            $installed = @{}
+            $pipList = & $Python -m pip list --format=json | ConvertFrom-Json
+
+            if ($LASTEXITCODE -ne 0) {
+                exit $LASTEXITCODE
+            }
+
+            foreach ($package in $pipList) {
+                $key = $package.name.ToLowerInvariant().Replace("_", "-")
+                $installed[$key] = $package.version
+            }
+
+            $mismatches = @()
+
+            foreach ($line in Get-Content -LiteralPath "constraints-test.txt") {
+                $trimmed = $line.Trim()
+
+                if (-not $trimmed -or $trimmed.StartsWith("#") -or -not $trimmed.Contains("==")) {
+                    continue
+                }
+
+                $parts = $trimmed.Split(@("=="), 2, [System.StringSplitOptions]::None)
+                $name = $parts[0].ToLowerInvariant().Replace("_", "-")
+                $expected = $parts[1]
+
+                if (-not $installed.ContainsKey($name) -or $installed[$name] -ne $expected) {
+                    $actual = if ($installed.ContainsKey($name)) { $installed[$name] } else { "missing" }
+                    $mismatches += "$name expected $expected, found $actual"
+                }
+            }
+
+            if ($mismatches.Count -eq 0) {
+                Write-Host "Pinned Windows dependencies already synchronized."
+                $global:LASTEXITCODE = 0
+                return
+            }
+
+            Write-Host "Dependency differences detected; synchronizing:"
+            $mismatches | ForEach-Object { Write-Host "  $_" }
+
             $args = @(
                 "-m", "pip", "install",
                 "--disable-pip-version-check", "-q",
@@ -300,14 +379,15 @@ $overall = [System.Diagnostics.Stopwatch]::StartNew()
 try {
     $windowsPython = Get-WindowsPython
 
-    Invoke-LinuxPytest -Series "3.12" -Label "Linux Python 3.12 full pytest"
-    Sync-WindowsDependencies -Python $windowsPython
-
     if ($Mode -eq "Fast") {
+        Invoke-LinuxPytest -Series "3.12" -Label "Linux Python 3.12 focused core"
+        Sync-WindowsDependencies -Python $windowsPython
         Invoke-WindowsFocused -Python $windowsPython
     }
     else {
+        Invoke-LinuxPytest -Series "3.12" -Label "Linux Python 3.12 full pytest"
         Invoke-LinuxPytest -Series "3.11" -Label "Linux Python 3.11 full pytest"
+        Sync-WindowsDependencies -Python $windowsPython
         Invoke-WindowsFull -Python $windowsPython
         Invoke-DependencyAudit -Python $windowsPython
     }
