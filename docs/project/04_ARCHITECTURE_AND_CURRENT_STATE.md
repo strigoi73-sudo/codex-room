@@ -38,17 +38,13 @@ The canonical routine full-test command is:
 
 Clean-environment verification collected **129 tests** and completed successfully. The browser transcript check `test-transcript-stability.ps1` remains separate from the canonical Python command because it requires Node.js plus Chrome or Edge; I-011 now runs it automatically in the hosted Windows lane with pinned `@playwright/test@1.63.0`. `uv` was not adopted because the existing pip/venv path was sufficient.
 
-### Hosted GitHub verification and dependency assurance
+### Local deterministic verification and historical hosted assurance
 
-**IMPLEMENTED / VERIFIED — 2026-09-15**
+**IMPLEMENTED / HISTORICALLY VERIFIED — local verifier introduced 2026-09-16**
 
-`.github/workflows/python-tests.yml` runs on pushes to `main` and pull requests targeting `main`, with read-only repository contents permission and installation through `constraints-test.txt`. I-011 expands the hosted matrix to Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12. Every lane runs the canonical pytest command; the Windows lane also runs the browser transcript suite using pinned `@playwright/test@1.63.0`. Project-document-only changes remain excluded from this Python workflow.
+Routine repository verification now uses `verify-fast.cmd` and `verify-full.cmd`, backed by `verify-local.ps1`. Fast mode exercises the focused Linux/Python 3.12 core set, Windows dependency/portability checks, and browser transcript stability. Full mode runs complete Linux/Python 3.12 and 3.11 pytest, complete Windows pytest, browser transcript stability, and the pinned dependency audit. Cached verification environments and dependency synchronization keep the routine fast path materially cheaper than the earlier exhaustive Windows-first process.
 
-`.github/workflows/dependency-review.yml` provides deliberate dependency assurance without automatic upgrades. It runs pinned `pip-audit==2.10.1` against the fully pinned constraint set, reports available package updates informationally, and runs on dependency/workflow changes, monthly, or on manual dispatch.
-
-The new Windows lane exposed a real portability defect in `inspect_source`: UTF-8 read output reflected platform-native CRLF line endings. I-011 normalizes transient read content to LF while preserving raw-file SHA-256 and byte-size evidence; the version-2 capability interface/schema remains unchanged.
-
-Final exact verification is recorded in E-088: all three Python lanes passed **370 tests, 2 warnings**, Windows passed **3 browser tests**, and the dependency audit reported **no known vulnerabilities** on both the exact PR tree and canonical `main`.
+The previous GitHub Actions verification/dependency workflows were removed from `main` on 2026-09-16 after repeated pre-runner startup failures made them unreliable as the routine path. Earlier hosted runs remain historical exact-version evidence, including the I-011 portability finding and E-088 verification. GitHub continues to provide canonical history/review; routine mechanical verification is local and deliberate under amended D-018. See E-109.
 
 ### SDK-pinned Codex runtime selection
 
@@ -413,7 +409,7 @@ PR #92 code-bearing head `9b4e352e490a4cdeda9a8242396cabd981f3b19d` (Git tree `2
 
 **Scope limit:** the broker handles read-only source evidence. Arbitrary custom-capability brokerage remains outside this slice because preserving its Room/sandbox execution authority needs a separate design. Stage C is now complete separately under D-032/D-033 and E-102 through E-106.
 
-**Stage-D D-N4 remediation status — IMPLEMENTED ON PR #104 / HOSTED VERIFICATION PENDING (2026-09-16):** the provider-facing transaction schema now encodes the runtime non-empty/bounded path contract for structured source evidence, and assignment guidance states the maintained top-level CORE path boundary instead of leaving agents to infer whether `""` or `"."` is valid. Invalid structured decisions now retain completed-turn usage/activity telemetry and emit execution-economics evidence before bounded retry handling. The retry diagnostic is carried on the same Assignment, survives a claimed-but-not-yet-started execution recovery, and is cleared only after a valid decision is durably recorded so later evidence/dependency continuations are not contaminated by stale failure text. Focused exact-code-head local verification passed the Windows non-text fixture regression, invalid-decision telemetry regression, and the structured-EVIDENCE suite including the new retry-recovery case. Hosted verification remains pending because the current GitHub Actions attempts have failed before executing any job steps; E-108 records the exact evidence and limitation.
+**Stage-D D-N4 remediation status — MERGED / FOCUSED LOCAL VERIFICATION PASSED / MERGED-TREE FAST CHECK PENDING (2026-09-16):** PR #104 merged to canonical `main` as `79bffbfbbdcdbda535d6e69104e2c826208b0451`. The provider-facing transaction schema now encodes the runtime non-empty/bounded path contract for structured source evidence; assignment guidance states the maintained top-level CORE path boundary; invalid structured decisions retain completed-turn usage/activity and emit execution-economics evidence; and exact retry diagnostics persist through the one bounded retry and clear after a valid durable decision. The remediation runtime/test bytes match the focused-tested code-bearing version except for one unrelated pre-existing `db.py` ordering line inherited from the newer base. E-108 records the repair evidence. One normal `verify-fast.cmd` run on merged current `main` remains the exact-tree verification step before restarting the paid Stage-D gate.
 
 ## 19. I-015 Stage C assignment-scoped provider context and bounded continuity
 
