@@ -502,14 +502,15 @@ This attempt is **stopped before D-N5** because D-N5 exercises the same structur
 ### Stage-D attempt 2 observed checkpoint — IN PROGRESS
 
 **Date:** 2026-09-16  
-**Work state:** IN PROGRESS — D-N1 and D-N2 complete; D-N3 next  
+**Work state:** IN PROGRESS — D-N1 through D-N3 complete; D-N4 next  
 **Reality:** NATURALISTIC CHECKPOINT PASS SO FAR  
 **Evidence:** E-111
 
 A fresh dedicated Stage-D Room was created as `room_c47cba973de44f12bde8ef3aaf80bce1` under the exact preregistered v2 + assignment-thread configuration. The preparation-only opening Round had zero Task/model execution and is excluded under the protocol.
 
 - **D-N1 PASS:** title `D-N1 Solo Saturday Schedule`; one C Assignment; one model execution; no joins, peers, tools, EVIDENCE, or HISTORY; exact **9:20 AM** grocery start; all schedule constraints satisfied; **21,663 total execution tokens** (21,257 input, 406 output, 275 reasoning output, 0 cached input); C used `gpt-5.6-terra` at high reasoning effort; task settled cleanly.
-- **D-N2 PASS:** title `D-N2 One-Peer Internet-Plan Decision`; exact C → B → same C shape; B used `gpt-5.6-luna` at medium effort while C used `gpt-5.6-terra` at high effort; one Join released once; no A/tools/EVIDENCE/HISTORY; final answer correctly recommended Plan North and quantified $65/month, $520 over 8 months, South's $90 expected cancellation exposure and about $650 expected 8-month cost; **65,468 total execution tokens** across three executions; same C Assignment/provider thread resumed after B. The next scored task is D-N3 in the same Room.
+- **D-N2 PASS:** title `D-N2 One-Peer Internet-Plan Decision`; exact C → B → same C shape; B used `gpt-5.6-luna` at medium effort while C used `gpt-5.6-terra` at high effort; one Join released once; no A/tools/EVIDENCE/HISTORY; final answer correctly recommended Plan North and quantified $65/month, $520 over 8 months, South's $90 expected cancellation exposure and about $650 expected 8-month cost; **65,468 total execution tokens** across three executions; same C Assignment/provider thread resumed after B. 
+- **D-N3 PASS:** title `D-N3 Differentiated Dual-Peer Moving-Day Plan`; exact C → differentiated A+B → same C shape; A and B both used `gpt-5.6-luna` at medium effort while C used `gpt-5.6-terra` at high effort; one outer Join released once; no tools/EVIDENCE/HISTORY; final answer correctly used two capacity-valid trips, kept both unloads inside the 9:00 AM–noon elevator window, respected the post-last-load walk-through constraint, and incorporated B's transport/bottleneck audit; **90,947 total execution tokens** across four executions; same C Assignment/provider thread resumed after the dual-peer Join. The next scored task is D-N4 in the same Room.
 
 #### D-N1 — Solo Saturday schedule
 
