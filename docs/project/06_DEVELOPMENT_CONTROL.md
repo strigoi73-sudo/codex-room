@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable CI, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** The principal adopted the I-015 transaction-work-state redesign as D-030, and Stage A was implemented in two bounded [CORE] slices behind explicit `work_model_version=2` opt-in. The final merged state on canonical `main` (`a4f53a7c4f62a5d03a0907365f5024d266801e1c`) passed the complete hosted Python matrix, including the Windows browser job. Stage A now has deterministic Task/Assignment/Join scheduling, atomic structured delegation, explicit settlement dependencies, required-contributor enforcement, transaction-aware restart/usage-wall recovery, and snapshot/export visibility while legacy v1 remains the default. See E-094.
+- **What just changed?** V2-N1 provided the first paid naturalistic Stage-A evidence: transaction settlement worked cleanly and answer quality was useful, but missing sibling-work visibility caused one redundant A→B delegation path and pushed the run to 131,976 execution tokens. The bounded repair is now merged and hosted-verified in PR #85: v2 children see declared sibling agent/state/instruction metadata without sibling results. See E-095.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **Remediate the V2-N1 sibling-work visibility gap before another paid run.** Add bounded declared-sibling assignment context to version-2 assignment envelopes, verify it deterministically without restricting legitimate nested delegation, then rerun the same V2-N1 task as V2-N2 for a controlled comparison. Default activation remains unapproved. Do not begin Stage B or the Stage C context experiment yet. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
+- **What is next?** Run **V2-N2**, an exact controlled rerun of the V2-N1 prompt/configuration on the verified sibling-context repair. Compare assignment shape, execution count, total execution tokens, cached-input share, and answer quality. Default activation remains unapproved. Do not begin Stage B or the Stage C context experiment yet. I-003 remains low priority, D-019 remains blocked, and no automatic model router is authorized.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
@@ -19,10 +19,10 @@
 **Work state:** IN PROGRESS  
 **Reality:** OBSERVED ISSUE / DECIDED redesign / STAGE A IMPLEMENTED / VERIFIED  
 **Decision:** D-030  
-**Evidence:** E-092, E-093, E-094  
+**Evidence:** E-092, E-093, E-094, E-095  
 **Scope:** [CORE], with later [CORE + ROOM migration] after deterministic verification.
 
-**Stage A status:** COMPLETE for the opt-in coordination kernel. Canonical `main` at `a4f53a7c4f62a5d03a0907365f5024d266801e1c` passed hosted verification across Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. Version 1 remains the ordinary default; version 2 is ready for bounded naturalistic validation, not default activation.
+**Stage A status:** COMPLETE for the opt-in coordination kernel, including the V2-N1 sibling-work visibility repair. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. Version 1 remains the ordinary default; version 2 is ready for V2-N2, not default activation.
 
 #### V2-N1 — First bounded naturalistic validation
 **Work state:** COMPLETE — exposed targeted remediation  
@@ -70,7 +70,28 @@
 
 **Observed result:** mechanically successful settlement, useful final answer, six executions / 131,976 execution tokens, and one redundant nested A→B delegation path caused by missing sibling-work visibility in the assignment envelope. See E-095.
 
-**Remediation state:** IN PROGRESS. Add bounded sibling assignment metadata to the v2 assignment envelope, preserve independent sibling results and legitimate nested delegation, pass deterministic/hosted verification, then repeat this same task as V2-N2.
+**Remediation state:** COMPLETE / VERIFIED. PR #85 adds bounded sibling assignment metadata to the v2 assignment envelope, preserves independent sibling results and legitimate nested delegation, and passed the hosted three-job matrix. See E-095.
+
+Default activation remains unapproved. Stage B and Stage C remain on hold.
+
+#### V2-N2 — Controlled sibling-context rerun
+**Work state:** PLANNED / READY TO RUN  
+**Purpose:** Test whether the verified PR #85 sibling-work context removes V2-N1's duplicate peer delegation and restores the same task to the intended economic/coordination shape.
+
+**Protocol:** use a fresh Room with the exact V2-N1 configuration and exact V2-N1 prompt. No task wording, required-contributor setting, turn ceiling, or model-policy change is permitted for this comparison.
+
+**Expected comparison**
+
+1. C creates the same differentiated A/B sibling assignments.
+2. Each child envelope exposes the other declared sibling's agent/state/instruction, without the sibling's result.
+3. A and B normally complete their own assignments without recreating substantially duplicate sibling work; legitimate nested delegation remains allowed if a concrete dependency makes it necessary.
+4. The outer join releases once after both required children terminate.
+5. C resumes once, integrates, and settles the task.
+6. Target execution shape: about four model executions and <=4 post-framing continuations.
+7. Economic target: <=100k total execution tokens and <=25% cached-input share; >200k requires explanation, and >300k without justified escalation meets the existing stop condition.
+8. Quality must remain at least as useful as V2-N1; lower token use does not compensate for material omission or degraded reasoning.
+
+Collect the same JSON export/economics evidence as V2-N1. Compare V2-N2 directly against V2-N1 / E-095 before any default-activation decision.
 
 Default activation remains unapproved. Stage B and Stage C remain on hold.
 
