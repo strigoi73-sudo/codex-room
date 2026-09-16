@@ -4097,3 +4097,24 @@ Total D-N2 execution tokens: **65,468**. Post-framing model continuations: **2**
 
 **Assessment:** **D-N2 PASS** for quality, coordination/provenance, and task-level economics. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N3 in the same Room.
 
+### E-113 — Stage-D attempt 2 D-N3 naturalistic pass
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability evidence  
+**Decision:** D-031, D-032, D-033
+
+In the same dedicated Stage-D Room used for D-N1 and D-N2, the preregistered D-N3 task ran under work-model version 2 with assignment-scoped provider context, starting Agent C, required contributors A and B, ordinary default profiles/model policy, no private initialization or overlays, and max_turns=8.
+
+The transaction matched the preregistered shape. C delegated two meaningfully differentiated peer assignments in one action: A was asked to build the logistics plan, while B was asked to audit timing, bottlenecks, contingency risk, and elevator exposure. A and B each ran on their own Assignment/provider thread using `luna-medium`. One outer Join released exactly once after both peers completed, and the same original C Assignment resumed on its original provider thread for integration. No source evidence, Room-history retrieval, shell/custom capability, or model-tool activity occurred.
+
+Quality passed. The final integrated answer correctly identified two trips as both necessary and sufficient, using a capacity-valid 12-box + 2-furniture / 8-box + 1-furniture split. It produced an internally feasible schedule, completed both elevator unloads by 10:25 AM inside the 9:00 AM–noon reservation, left 95 minutes of elevator buffer, scheduled the final old-home walk-through only after the last load had left, and incorporated B's audit warning that starting the walk-through while Trip 2 was in transit would require independent transport for the adult left behind.
+
+Execution telemetry recorded four model executions:
+- C framing — `gpt-5.6-terra`, high reasoning effort: **21,493** execution tokens;
+- B audit — `gpt-5.6-luna`, medium reasoning effort: **22,418** execution tokens;
+- A plan — `gpt-5.6-luna`, medium reasoning effort: **22,914** execution tokens;
+- same-C integration continuation — `gpt-5.6-terra`, high reasoning effort: **24,122** execution-token delta.
+
+Total D-N3 execution tokens: **90,947**. Post-framing model continuations: **3**.
+
+**Assessment:** **D-N3 PASS** for quality, differentiated dual-peer coordination/provenance, and task-level economics. Stage-D attempt 2 remains IN PROGRESS; continue sequentially with D-N4 in the same Room.
+
