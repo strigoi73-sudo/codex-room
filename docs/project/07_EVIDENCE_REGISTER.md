@@ -3773,3 +3773,51 @@ The assignment-scoped recall nevertheless reported 17,152 cached input tokens. T
 
 **Assessment:** **PASS / continuity gap demonstrated.** Combined with E-103, Stage C.2 now establishes both sides of the tradeoff: Assignment-bounded provider context materially reduces inherited replay cost on self-contained work, but continuity-dependent work requires an explicit mechanism to retrieve relevant prior durable history. Stage C.3 should therefore design the smallest bounded targeted retrieval path; this evidence does not justify wholesale history injection, a general summarizer, embeddings, or default activation.
 
+### E-105 — I-015 Stage C.3 bounded Room-history retrieval implemented and hosted-verified
+**Date:** 2026-09-16  
+**Kind:** [CORE] implementation / deterministic hosted verification  
+**Decision:** D-033
+
+PR #99 implemented the first bounded cross-Assignment continuity mechanism without adding a general memory system.
+
+**Implemented boundary**
+
+- transaction action `HISTORY`;
+- request operations `RECENT` and lexical `SEARCH`;
+- optional `agent_a|agent_b|agent_c` restriction;
+- at most 4 requests per action, at most 10 results per request, at most 20 requested/attached results overall;
+- selection restricted to non-empty result events from **completed Assignments in earlier Rounds of the same Room**;
+- lexical `SEARCH` matches prior Round prompt/title or completed result content;
+- selected exact event IDs are attached to the requesting Assignment through the pre-existing durable `context_event_ids` field;
+- `HISTORY` is nonterminal and atomically requeues the same Assignment, preserving its logical Assignment identity and assignment-scoped provider thread;
+- retrieved history is supplied in a distinct `<retrieved_room_history>` envelope under a 24,000-character bound;
+- deterministic audit events retain request and exact selected-event provenance;
+- no new memory database, embeddings, summarizer, automatic whole-history injection, or provider-thread archive was introduced.
+
+Focused deterministic coverage verifies request bounds, `RECENT` recovery from a prior Round without provider-thread inheritance, same-Assignment thread reuse across retrieval, durable selected-event provenance, and lexical `SEARCH` by prior Round prompt/title.
+
+**Exact PR verification**
+
+- PR: **#99 — I-015 Stage C3: add bounded cross-Assignment history retrieval**
+- final PR head: `78586e96a09f81fb010361604dda3aa4fcd1352b`
+- tree: `2d56a4c7631899b66af7d545f571c64209f34f54`
+- hosted run: `35119746412`
+- Ubuntu Python 3.11: **413 passed, 2 warnings**
+- Ubuntu Python 3.12: **413 passed, 2 warnings**
+- Windows Python 3.12: **413 passed, 2 warnings**
+- Windows browser transcript stability: **3 passed**
+
+**Canonical merge and verification**
+
+- squash-merge commit: `6b88867fc3b22c5e87af0b6d9e9e4281467e0491`
+- merge tree: `2d56a4c7631899b66af7d545f571c64209f34f54`
+- the merge tree exactly matches the verified PR-head tree;
+- canonical-main hosted run: `35120567860`
+- Ubuntu Python 3.11: **413 passed, 2 warnings in 86.42s**
+- Ubuntu Python 3.12: **413 passed, 2 warnings in 82.31s**
+- Windows Python 3.12: **413 passed, 2 warnings in 751.21s**
+- Windows browser transcript stability: **3 passed in 27.0s**
+- run conclusion: **success**.
+
+**Assessment:** **IMPLEMENTED / VERIFIED.** The deterministic C.3 slice satisfies D-033's bounded explicit-continuity boundary. Naturalistic adequacy is intentionally not inferred from deterministic tests; C-N3 is preregistered as the final Stage-C acceptance check.
+
