@@ -27,13 +27,13 @@ def update_development_control() -> None:
     replace_once(
         path,
         '**Evidence:** E-092 through E-122  \n**Scope:** [CORE]. Legacy Rooms were deleted rather than migrated; no compatibility migration remains.\n',
-        '**Evidence:** E-092 through E-123  \n**Scope:** [CORE]. Legacy Rooms were deleted rather than migrated; no compatibility migration remains.\n\n**Post-close ordinary-use repair — COMPLETE / IMPLEMENTED / VERIFIED (2026-09-16):** The Common Cause implementation Round exposed a residual transaction-contract/retry edge after I-015 closeout: EVIDENCE path semantics were not explicit enough for the agent-facing contract, HISTORY schema bounds were incompletely advertised, and a malformed decision after a successful continuation could exhaust the Assignment retry budget. PR #108 applies the bounded repair and adds exact regression coverage. This is ordinary-use defect repair under the existing D-031/D-033/D-034 architecture, not a reopening of I-015 or a new broad validation program. See E-123.\n',
+        '**Evidence:** E-092 through E-123\n**Scope:** [CORE]. Legacy Rooms were deleted rather than migrated; no compatibility migration remains.\n\n**Post-close ordinary-use repair — COMPLETE / IMPLEMENTED / VERIFIED (2026-09-16):** The Common Cause implementation Round exposed a residual transaction-contract/retry edge after I-015 closeout: EVIDENCE path semantics were not explicit enough for the agent-facing contract, HISTORY schema bounds were incompletely advertised, and a malformed decision after a successful continuation could exhaust the Assignment retry budget. PR #108 applies the bounded repair and adds exact regression coverage. This is ordinary-use defect repair under the existing D-031/D-033/D-034 architecture, not a reopening of I-015 or a new broad validation program. See E-123.\n',
     )
 
 
 def update_architecture() -> None:
     path = "docs/project/04_ARCHITECTURE_AND_CURRENT_STATE.md"
-    replace_once(path, '**Last synthesized:** 2026-09-14  \n', '**Last synthesized:** 2026-09-16  \n')
+    replace_once(path, '**Last synthesized:** 2026-09-14  \n', '**Last synthesized:** 2026-09-16\n')
     marker = '**Stage-D D-N4 remediation status — IMPLEMENTED / VERIFIED / MERGED (2026-09-16):** PR #104 merged the structured-EVIDENCE contract/telemetry repair, and the repository-standard `verify-fast.cmd` then passed on exact code-bearing canonical-main commit `668ef98253c5bd1387eefb1b71f99ed38fd8b53c`: Linux/Python 3.12 focused core **45 passed, 2 warnings**; Windows focused portability **118 passed**; browser transcript stability **3 passed**; total verifier time **74.7 seconds** with all phases exit code 0 and a clean tracked tree. The repair aligns provider/runtime path validation, states CORE path semantics, preserves invalid-decision usage/activity/economics, and supplies one-shot retry feedback without stale leakage. E-108 records implementation/focused evidence; E-110 records merged-tree verification.\n'
     addition = marker + '\n**Post-activation ordinary-use transaction robustness repair — IMPLEMENTED / VERIFIED — 2026-09-16:** A Common Cause implementation Round exposed residual contract/retry edge cases after D-N4: C supplied an absolute Windows workspace path to `EVIDENCE` because the agent-facing contract did not state source-relative path semantics, then emitted `HISTORY max_results=12` because the provider JSON schema omitted the Pydantic maximum of 10. The second malformed decision became terminal because Assignment retry eligibility counted every prior execution, including successful `EVIDENCE` / `HISTORY` continuations. PR #108 aligns provider schema bounds with runtime bounds, states that EVIDENCE paths are normalized source-relative forward-slash paths (`.` may select a workspace/Room root but not the CORE root), states HISTORY\'s 1–10 / maximum-four request contract, and makes the single corrective retry budget depend on prior failed executions rather than successful continuations. The hidden aggregate HISTORY request-sum validator was removed; retained prior-Round context remains mechanically capped at 20 event IDs by the selector. Regression coverage includes the exact successful-EVIDENCE → malformed-decision → retry → valid-completion path. See E-123.\n'
     replace_once(path, marker, addition)
@@ -47,7 +47,7 @@ def update_evidence_register() -> None:
         raise RuntimeError("E-123 already exists")
     entry = r'''
 ### E-123 — Ordinary-use transaction contract/retry repair
-**Date:** 2026-09-16  
+**Date:** 2026-09-16
 **Kind:** Naturalistic production defect + bounded CORE repair
 
 A Common Cause implementation Round in Room `room_975e0a78e6b040d5bf26d460d577e312` exposed a residual work-model-v2 robustness defect before any game implementation began.
