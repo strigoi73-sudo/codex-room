@@ -150,6 +150,37 @@ def test_legacy_ab_only_profile_update_preserves_c_default(tmp_path):
         )
 
 
+def test_http_new_topic_uses_v2_assignment_context(tmp_path):
+    adapter = FakeAgentAdapter()
+    app = create_app(
+        database_path=tmp_path / "new-topic-v2.db",
+        data_root=tmp_path / "data",
+        adapter=adapter,
+    )
+
+    with TestClient(app) as client:
+        created = client.post(
+            "/api/rooms",
+            json={
+                "title": "Topic room",
+                "topic": "Initial topic",
+                "auto_start": False,
+            },
+        )
+        assert created.status_code == 201
+        room_id = created.json()["id"]
+
+        changed = client.post(
+            f"/api/rooms/{room_id}/new-topic",
+            json={"topic": "Replacement topic"},
+        )
+        assert changed.status_code == 200
+        active_round = changed.json()["active_round"]
+        assert active_round["title"] == "New topic"
+        assert active_round["work_model_version"] == 2
+        assert active_round["provider_context_mode"] == "assignment_thread"
+
+
 def test_http_profile_and_staged_round_endpoints(tmp_path):
     adapter = FakeAgentAdapter()
     app = create_app(
