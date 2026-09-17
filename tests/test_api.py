@@ -60,6 +60,8 @@ def test_http_create_state_and_exports(tmp_path):
         }
         assert len({agent["thread_id"] for agent in payload["agents"]}) == 3
         assert payload["active_round"]["starting_agent"] == "agent_c"
+        assert payload["active_round"]["work_model_version"] == 2
+        assert payload["active_round"]["provider_context_mode"] == "assignment_thread"
 
         room_id = payload["id"]
         state = client.get(f"/api/rooms/{room_id}")
@@ -151,6 +153,8 @@ def test_http_profile_and_staged_round_endpoints(tmp_path):
         prepared = prepared_response.json()
         assert prepared["status"] == "preparing"
         assert prepared["active_round"]["status"] == "preparing"
+        assert prepared["active_round"]["work_model_version"] == 2
+        assert prepared["active_round"]["provider_context_mode"] == "assignment_thread"
         assert sum(len(calls) for calls in adapter.calls.values()) == baseline_calls
 
         started = client.post(
