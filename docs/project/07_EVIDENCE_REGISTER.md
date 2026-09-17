@@ -4366,3 +4366,33 @@ The fresh production-default smoke Room used:
 The requested exact final response was `V2 DEFAULT SMOKE PASS`, which the Room returned exactly. The smoke command completed with `=== V2 CLEAN CUTOVER SMOKE PASS ===`, reporting the v2 production work model and Assignment-thread context mode.
 
 **Assessment:** **PASS.** The legacy Room store has been deliberately cleared, and the first retained Room in the clean store successfully executed through the activated v2 production path. I-015 activation follow-through is complete; no further compatibility migration or broad validation is required absent a concrete defect.
+
+### E-123 — Ordinary-use transaction contract/retry repair
+**Date:** 2026-09-16
+**Kind:** Naturalistic production defect + bounded CORE repair
+
+A Common Cause implementation Round in Room `room_975e0a78e6b040d5bf26d460d577e312` exposed a residual work-model-v2 robustness defect before any game implementation began.
+
+Observed sequence from `Three-Player-Strategy-Game (2).json`:
+
+- C requested workspace `EVIDENCE` with an absolute Windows shared-workspace path; the source inspector correctly rejected it because paths are normalized relative paths.
+- On the resumed Assignment, C requested `HISTORY` with `max_results=12`. The provider-facing transaction JSON schema did not advertise the runtime Pydantic maximum of 10, so a provider decision could satisfy the presented schema and still fail internal validation.
+- Because the Assignment had already completed one valid EVIDENCE continuation, retry eligibility counted two total Assignment executions and made this malformed decision terminal. The Round closed `transaction_failed`.
+- The two C executions consumed **44,496 execution tokens** (21,511 + 22,985) without implementation work beginning.
+
+Repair:
+
+- the transaction provider schema now mirrors the relevant Pydantic bounds for delegation instructions, EVIDENCE READ/SEARCH/FIND limits, and HISTORY `max_results`;
+- EVIDENCE agent guidance now states source-relative normalized forward-slash paths, forbids absolute filesystem paths, and states `.` root semantics;
+- HISTORY guidance states 1–10 results per request and at most four requests;
+- the hidden aggregate requested-result validator was removed while actual retained prior-Round context remains mechanically capped at 20 selected event IDs;
+- one corrective Assignment retry now depends on the count of prior failed executions, so successful EVIDENCE/HISTORY continuations do not consume the retry budget;
+- regression coverage reproduces successful EVIDENCE → malformed decision → feedback retry → valid completion.
+
+Verification:
+
+- code-bearing repair commit `4c5644fb2273dfe8c9a3d2de809423bb5e988984`;
+- exact post-regression-alignment head `9022e4ab4320de96ffa27d1c2ee9fd2673435a47` passed Linux/Python 3.12 full suite **421 passed, 2 warnings** and `git diff --check`;
+- Windows focused transaction/source tests passed **43 tests** on `a04edb2a831643f8cfb125a7a87d6e7f61ee1be0`, whose production bytes match `9022e4ab...`; the later difference is the aligned history-validation regression test.
+
+**Assessment:** OBSERVED ISSUE → IMPLEMENTED / VERIFIED bounded repair. This is post-I-015 ordinary-use defect repair, not a reopening of broad v2 validation.
