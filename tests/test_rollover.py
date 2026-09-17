@@ -44,7 +44,7 @@ from .fakes import FakeAgentAdapter, wait_until
 
 
 def test_rollover_http_endpoint_leaves_successor_preparing(tmp_path):
-    adapter = FakeAgentAdapter({"agent_a": [(Outcome.PASS, "")]})
+    adapter = FakeAgentAdapter()
     app = create_app(
         database_path=tmp_path / "rollover-api.db",
         data_root=tmp_path / "data",
@@ -81,6 +81,8 @@ def test_rollover_http_endpoint_leaves_successor_preparing(tmp_path):
         assert successor["status"] == RoomStatus.PREPARING
         assert successor["active_round"]["prompt"] == "visible API checkpoint"
         assert successor["active_round"]["starting_agent"] == "agent_c"
+        assert successor["active_round"]["work_model_version"] == 2
+        assert successor["active_round"]["provider_context_mode"] == "assignment_thread"
         assert {agent["agent_key"] for agent in successor["agents"]} == {
             "agent_a", "agent_b", "agent_c"
         }
