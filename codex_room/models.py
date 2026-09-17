@@ -517,9 +517,9 @@ class CreateRoomRequest(BaseModel):
     inactivity_seconds: int = Field(default=900, ge=30, le=86_400)
     starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] = "agent_c"
     auto_start: bool = True
-    work_model_version: Literal[1, 2] = 1
+    work_model_version: Literal[1, 2] = 2
     provider_context_mode: Literal["persistent_agent_thread", "assignment_thread"] = (
-        "persistent_agent_thread"
+        "assignment_thread"
     )
     required_contributors: list[
         Literal["agent_a", "agent_b", "agent_c"]
@@ -575,9 +575,9 @@ class PrepareRoundRequest(BaseModel):
     task_overlay: str | None = Field(default=None, max_length=50_000)
     agent_a_overlay: str | None = Field(default=None, max_length=50_000)
     agent_b_overlay: str | None = Field(default=None, max_length=50_000)
-    work_model_version: Literal[1, 2] = 1
+    work_model_version: Literal[1, 2] = 2
     provider_context_mode: Literal["persistent_agent_thread", "assignment_thread"] = (
-        "persistent_agent_thread"
+        "assignment_thread"
     )
     required_contributors: list[
         Literal["agent_a", "agent_b", "agent_c"]
