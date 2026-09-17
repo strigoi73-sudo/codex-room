@@ -539,6 +539,13 @@ class CreateRoomRequest(BaseModel):
         return self
 
 
+class CreateRoomApiRequest(CreateRoomRequest):
+    """Production API contract after the work-model-v2 default cutover."""
+
+    work_model_version: Literal[2] = 2
+    provider_context_mode: Literal["assignment_thread"] = "assignment_thread"
+
+
 class AddAgentRequest(BaseModel):
     agent_key: Literal["agent_c"] = "agent_c"
 
@@ -549,6 +556,13 @@ class RolloverRoomRequest(BaseModel):
     institutional_release_sha256: str | None = Field(
         default=None, pattern=r"^[0-9a-f]{64}$"
     )
+
+
+class RolloverRoomApiRequest(RolloverRoomRequest):
+    """Production rollover contract after the work-model-v2 default cutover."""
+
+    work_model_version: Literal[2] = 2
+    provider_context_mode: Literal["assignment_thread"] = "assignment_thread"
 
 
 class BindInstitutionalReleaseRequest(BaseModel):
@@ -618,6 +632,13 @@ class PrepareRoundRequest(BaseModel):
                     raise ValueError(f"Conflicting overlay for {key}")
                 self.participant_overlays[key] = value
         return self
+
+
+class PrepareRoundApiRequest(PrepareRoundRequest):
+    """Production API contract after the work-model-v2 default cutover."""
+
+    work_model_version: Literal[2] = 2
+    provider_context_mode: Literal["assignment_thread"] = "assignment_thread"
 
 
 class DefaultProfilesUpdate(BaseModel):

@@ -1112,9 +1112,23 @@ class Database:
             await db.execute(
                 """INSERT INTO rounds
                    (id, room_id, title, prompt, created_at, status, starting_agent,
-                    participant_private_json, participant_overlays_json)
-                   VALUES (?, ?, ?, ?, ?, ?, 'agent_c', '{}', '{}')""",
-                (round_id, successor_id, "Inherited checkpoint", request.checkpoint, now, RoundStatus.PREPARING),
+                    participant_private_json, participant_overlays_json,
+                    work_model_version, provider_context_mode)
+                   VALUES (?, ?, ?, ?, ?, ?, 'agent_c', '{}', '{}', ?, ?)""",
+                (
+                    round_id,
+                    successor_id,
+                    "Inherited checkpoint",
+                    request.checkpoint,
+                    now,
+                    RoundStatus.PREPARING,
+                    getattr(request, "work_model_version", 1),
+                    getattr(
+                        request,
+                        "provider_context_mode",
+                        "persistent_agent_thread",
+                    ),
+                ),
             )
             await db.executemany(
                 """INSERT INTO round_agent_state (round_id, agent_id, context_stored_at)

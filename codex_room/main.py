@@ -14,12 +14,12 @@ from .exporter import as_json, as_markdown
 from .models import (
     AddAgentRequest,
     BindInstitutionalReleaseRequest,
-    CreateRoomRequest,
+    CreateRoomApiRequest,
     DefaultProfilesUpdate,
     NewTopicRequest,
     ObserverMessageRequest,
-    PrepareRoundRequest,
-    RolloverRoomRequest,
+    PrepareRoundApiRequest,
+    RolloverRoomApiRequest,
     UpdateRoomRequest,
 )
 from .orchestrator import RoomRuntime
@@ -77,7 +77,7 @@ def create_app(
         return rooms
 
     @app.post("/api/rooms", status_code=201)
-    async def create_room(request: CreateRoomRequest) -> dict[str, Any]:
+    async def create_room(request: CreateRoomApiRequest) -> dict[str, Any]:
         try:
             return await runtime.create_room(request)
         except RuntimeError as exc:
@@ -99,7 +99,7 @@ def create_app(
         return await _translate_errors(runtime.rebind_agent_profile(room_id, agent_key))
 
     @app.post("/api/rooms/{room_id}/rollover", status_code=201)
-    async def rollover_room(room_id: str, request: RolloverRoomRequest) -> dict[str, Any]:
+    async def rollover_room(room_id: str, request: RolloverRoomApiRequest) -> dict[str, Any]:
         return await _translate_errors(runtime.rollover(room_id, request))
 
     @app.post("/api/rooms/{room_id}/institutional-release")
@@ -134,10 +134,18 @@ def create_app(
 
     @app.post("/api/rooms/{room_id}/new-topic")
     async def new_topic(room_id: str, request: NewTopicRequest) -> dict[str, Any]:
-        return await _translate_errors(runtime.new_topic(room_id, request))
+        prepared = await _translate_errors(
+            runtime.prepare_round(
+                room_id,
+                PrepareRoundApiRequest(title="New topic", prompt=request.topic),
+            )
+        )
+        return await _translate_errors(
+            runtime.start_round(room_id, prepared["active_round_id"])
+        )
 
     @app.post("/api/rooms/{room_id}/rounds", status_code=201)
-    async def prepare_round(room_id: str, request: PrepareRoundRequest) -> dict[str, Any]:
+    async def prepare_round(room_id: str, request: PrepareRoundApiRequest) -> dict[str, Any]:
         return await _translate_errors(runtime.prepare_round(room_id, request))
 
     @app.post("/api/rooms/{room_id}/rounds/{round_id}/start")

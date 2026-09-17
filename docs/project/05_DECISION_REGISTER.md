@@ -506,3 +506,25 @@ This decision extends D-032 by supplying deliberate continuity across Assignment
 
 **Principle:** **Retrieve the prior result the work needs; do not replay the history the agent once happened to see.**
 
+
+
+### D-034 — Work-model v2 becomes the public default by clean cutover
+**Date:** 2026-09-16  
+**Status:** ACTIVE
+
+After I-015 Stage D passed the preregistered viability gate, the principal approved activation of the version-2 task-transaction architecture as Codex Room's normal public work model.
+
+Settled cutover boundary:
+
+- new Rooms created through the product/API use work-model version 2 with `provider_context_mode="assignment_thread"`;
+- later staged Rounds and New Topic work created through the product/API use the same v2 + assignment-thread configuration;
+- rollover successor opening Rounds use the same public v2 configuration;
+- the public API does not offer work-model version 1 as a selectable production mode after cutover;
+- legacy Rooms will be deleted rather than converted, so no Room-history migration or reinterpretation layer is required;
+- historical v1 implementation paths and deterministic fixtures may remain internally where removing them provides no immediate product value; their continued presence does not make v1 a supported public operating mode;
+- legacy historical evidence remains historical evidence and is not rewritten;
+- activation must still pass the repository-standard deterministic verifier on the exact activation bytes before merge and ordinary use.
+
+This decision completes the product-direction question left open by D-030 through D-033 after Stage D. It does not authorize unrelated v1-code cleanup merely for tidiness.
+
+**Principle:** **Stage-D-proven transaction semantics are the production path; do not spend migration complexity on Rooms we intend to delete.**

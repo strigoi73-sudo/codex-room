@@ -60,6 +60,8 @@ def test_http_create_state_and_exports(tmp_path):
         }
         assert len({agent["thread_id"] for agent in payload["agents"]}) == 3
         assert payload["active_round"]["starting_agent"] == "agent_c"
+        assert payload["active_round"]["work_model_version"] == 2
+        assert payload["active_round"]["provider_context_mode"] == "assignment_thread"
 
         room_id = payload["id"]
         state = client.get(f"/api/rooms/{room_id}")
@@ -73,6 +75,62 @@ def test_http_create_state_and_exports(tmp_path):
         assert md_export.status_code == 200
         assert "# Test" in md_export.text
         assert "Agent A thread" in md_export.text
+
+
+def test_http_rejects_legacy_work_model_selection(tmp_path):
+    adapter = FakeAgentAdapter()
+    app = create_app(
+        database_path=tmp_path / "v2-only-api.db",
+        data_root=tmp_path / "data",
+        adapter=adapter,
+    )
+
+    with TestClient(app) as client:
+        legacy_room = client.post(
+            "/api/rooms",
+            json={
+                "title": "Legacy request",
+                "topic": "Should be rejected",
+                "auto_start": False,
+                "work_model_version": 1,
+                "provider_context_mode": "persistent_agent_thread",
+            },
+        )
+        assert legacy_room.status_code == 422
+
+        persistent_context = client.post(
+            "/api/rooms",
+            json={
+                "title": "Persistent-context request",
+                "topic": "Should also be rejected",
+                "auto_start": False,
+                "work_model_version": 2,
+                "provider_context_mode": "persistent_agent_thread",
+            },
+        )
+        assert persistent_context.status_code == 422
+
+        room = client.post(
+            "/api/rooms",
+            json={
+                "title": "V2 room",
+                "topic": "Use production defaults",
+                "auto_start": False,
+            },
+        )
+        assert room.status_code == 201
+        room_id = room.json()["id"]
+
+        legacy_round = client.post(
+            f"/api/rooms/{room_id}/rounds",
+            json={
+                "title": "Legacy round request",
+                "prompt": "Should also be rejected",
+                "work_model_version": 1,
+                "provider_context_mode": "persistent_agent_thread",
+            },
+        )
+        assert legacy_round.status_code == 422
 
 
 def test_legacy_ab_only_profile_update_preserves_c_default(tmp_path):
@@ -102,6 +160,37 @@ def test_legacy_ab_only_profile_update_preserves_c_default(tmp_path):
             after["agent_c"]["developer_instructions"]
             == before["agent_c"]["developer_instructions"]
         )
+
+
+def test_http_new_topic_uses_v2_assignment_context(tmp_path):
+    adapter = FakeAgentAdapter()
+    app = create_app(
+        database_path=tmp_path / "new-topic-v2.db",
+        data_root=tmp_path / "data",
+        adapter=adapter,
+    )
+
+    with TestClient(app) as client:
+        created = client.post(
+            "/api/rooms",
+            json={
+                "title": "Topic room",
+                "topic": "Initial topic",
+                "auto_start": False,
+            },
+        )
+        assert created.status_code == 201
+        room_id = created.json()["id"]
+
+        changed = client.post(
+            f"/api/rooms/{room_id}/new-topic",
+            json={"topic": "Replacement topic"},
+        )
+        assert changed.status_code == 200
+        active_round = changed.json()["active_round"]
+        assert active_round["title"] == "New topic"
+        assert active_round["work_model_version"] == 2
+        assert active_round["provider_context_mode"] == "assignment_thread"
 
 
 def test_http_profile_and_staged_round_endpoints(tmp_path):
@@ -151,6 +240,8 @@ def test_http_profile_and_staged_round_endpoints(tmp_path):
         prepared = prepared_response.json()
         assert prepared["status"] == "preparing"
         assert prepared["active_round"]["status"] == "preparing"
+        assert prepared["active_round"]["work_model_version"] == 2
+        assert prepared["active_round"]["provider_context_mode"] == "assignment_thread"
         assert sum(len(calls) for calls in adapter.calls.values()) == baseline_calls
 
         started = client.post(
