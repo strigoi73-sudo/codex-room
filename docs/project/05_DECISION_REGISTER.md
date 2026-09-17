@@ -1,7 +1,7 @@
 # Codex Room — Decision Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-16  
+**Last updated:** 2026-09-17  
 **Scope:** Settled architectural, governance, product-direction, and development-order decisions.  
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
@@ -528,3 +528,32 @@ Settled cutover boundary:
 This decision completes the product-direction question left open by D-030 through D-033 after Stage D. It does not authorize unrelated v1-code cleanup merely for tidiness.
 
 **Principle:** **Stage-D-proven transaction semantics are the production path; do not spend migration complexity on Rooms we intend to delete.**
+
+### D-035 — C sequences dependent work and allocates substantial fallback to low-context capable assignments
+**Date:** 2026-09-16  
+**Status:** ACTIVE
+
+Ordinary Common Cause implementation exposed a coordination-economics failure that is not adequately addressed by peer-count limits or differentiated delegation alone. C may choose distinct assignments that are individually sensible yet still waste cognition if they are launched before their prerequisite results exist, and C may later absorb expensive fallback onto an already accumulated coordination context.
+
+Settled coordination policy:
+
+- before delegating multiple assignments concurrently, C must determine whether each assignment can produce a useful result without another assignment's output;
+- genuinely independent work should remain parallel;
+- work whose useful completion depends on a prerequisite artifact, evidence, or result should be sequenced after that prerequisite exists;
+- verification of an artifact should not be treated as concurrent with creation or modification of that same artifact unless the verifier has meaningful independent work it can complete before the artifact exists;
+- when delegated implementation, correction, or investigation fails to produce needed work, **or when fallback work reaches C because another assignment failed or settled without producing it**, C should normally place substantial tool-heavy execution in a fresh bounded peer assignment rather than perform it itself;
+- that fallback rule applies whether C is acting in its root coordination assignment or in a child assignment created by a peer;
+- when choosing where fallback should run, prefer the capable assignment with the least unnecessary accumulated context rather than automatically using the coordinator's already-large context;
+- C may still execute directly when the work is demonstrably small in expected execution and context cost, urgent, inseparable from integration, or no fresh peer is likely to perform it reliably at lower total cost;
+- a code/file change that looks small does not by itself establish that model execution will be cheap;
+- correctness, safety, continuity, and reliability remain controlling constraints and override context-cost minimization;
+- the rule is domain-general and does not make A a permanent implementer or B a permanent verifier in cognitive terms. Assignment responsibility is chosen from the task;
+- the rule does not weaken A/B/C peer judgment and does not give C authority over conclusions.
+
+The implementation is intentionally an instruction-level coordination refinement rather than a new CORE scheduler or persistent role system. PR #109 introduced dependency-aware sequencing plus the first context-aware fallback rule. PR #110 tightened the fallback wording so it covers substantial fallback reaching C from any failed/empty delegated path, including C child assignments, and replaces the earlier weaker “consider another bounded peer” wording.
+
+Adoption boundary: the refined protected C structural instructions apply to **freshly composed Rooms going forward**. Existing Room snapshots are not retroactively rewritten. Rollover successors retain predecessor instructions unless a later deliberate mechanism changes that behavior.
+
+Behavioral compliance remains an evidence question. Exact instruction regression/PR verification proves composition, not that a fresh C will obey the policy in every task. The next naturalistic evidence step is the controlled fresh-Room Common Cause rerun described in Development Control.
+
+**Principle:** **Parallelize independence; sequence dependencies; put substantial fallback where capable cognition has the least unnecessary accumulated context.**
