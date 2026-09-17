@@ -437,13 +437,13 @@ Hosted deterministic coverage verifies same-Assignment reuse, same-agent distinc
 
 ### Stage D viability closeout
 
-**NATURALISTIC VIABILITY GATE PASSED — 2026-09-16 — opt-in architecture remains non-default pending separate activation decision**
+**NATURALISTIC VIABILITY GATE PASSED — 2026-09-16 — PUBLIC V2 DEFAULT ACTIVATED / VERIFIED / MERGED**
 
 The preregistered I-015 Stage-D attempt 2 completed all ten scored tasks in one dedicated Room using `work_model_version=2` with assignment-scoped provider context. Final quality was **9/10 PASS**; all coordination/provenance invariants and robustness requirements passed. Aggregate economics also passed: **74,863.5 median task tokens**, **150,592 nearest-rank p90**, **2 median post-framing continuations**, **182,555 maximum task**, and D-N10 first-C input **21,170** versus D-N1 **21,257** (inside the 125% context-isolation ceiling). See E-111 through E-120.
 
 D-N6 was the sole quality failure and is preserved rather than rerun: history retrieval and Assignment/thread continuity were correct, but C's revised schedule violated the preserved package-drop deadline. The remaining tasks passed their fixed rubrics, including truncation recovery, stale-history discrimination, deterministic evidence failure/recovery, nested delegation, and the final long-Room self-contained isolation check.
 
-This closes the naturalistic viability question for the current opt-in version-2 task-transaction architecture. **Version 1 remains the ordinary default.** Stage-D PASS authorizes consideration of a separate default-activation / migration decision; it does not itself constitute that decision or implementation.
+This closed the naturalistic viability question for the version-2 task-transaction architecture. The principal subsequently approved D-034, and PR #107 activated **work-model version 2 with `provider_context_mode="assignment_thread"` as the public production path** for new Room work, staged Rounds, New Topic, and rollover successors. Exact PR head `6a9137a47de0da27a0425ab7683ca09b9aa41940` passed the repository fast verifier and merged as `03136c3b11c8c05b8385d0e9f30822dbc014a756`. Public v1 selection is rejected. Legacy Rooms will be deleted rather than converted; no migration/reinterpretation layer is part of the production architecture. See E-121.
 
 ## 20. Runtime-state and work-queue caution
 
