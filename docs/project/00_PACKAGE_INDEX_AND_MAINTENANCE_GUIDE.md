@@ -14,7 +14,7 @@
 | `04_ARCHITECTURE_AND_CURRENT_STATE.md` | Best current synthesis of implemented behavior and system structure. | Moderate |
 | `05_DECISION_REGISTER.md` | Settled design/product decisions and later supersessions. | Moderate |
 | `06_DEVELOPMENT_CONTROL.md` | Current focus, priorities, known issues, planned work, and open questions. | High |
-| `07_EVIDENCE_REGISTER.md` | Compact record of measurements, tests, observations, and their limits. | Moderate |
+| `07_EVIDENCE_REGISTER.md` + `07a_EVIDENCE_REGISTER_CONTINUATION.md` | Single canonical Evidence Register split across physical volumes. `07` contains the earlier record; `07a` continues the same `E-###` identifier sequence. | Moderate |
 | `08_PRODUCT_VISION.md` | Longer-range direction and deliberately deferred capabilities. | Low |
 | `09_REPOSITORY_AND_OPERATIONS_REFERENCE.md` | Dated repository map, maintenance boundaries, recovery notes, and verification conventions. | Moderate |
 | `10_WORK_PROGRAM_AND_IDENTIFIER_INDEX.md` | Stable human-facing legend and cross-reference for phase, issue, decision, evidence, assurance, and scope identifiers. It does not own current status. | Low |
@@ -25,7 +25,7 @@
 
 **Manifest policy:** `MANIFEST.md` is **not a live maintained Project source**. Generate a manifest only for a deliberate export, handoff, or archival package where exact package inventory and hashes are useful.
 
-**Filename convention:** preserve the leading canonical document number (for example `06_` or `10_`). Repository filenames under `docs/project/` are canonical. Automatic trailing download/upload suffixes such as ` (1)` or ` (3)` before the extension are incidental historical artifacts and do not change logical document identity.
+**Filename convention:** preserve the leading canonical document number (for example `06_` or `10_`). Repository filenames under `docs/project/` are canonical. A lettered suffix may identify a physical continuation of the same logical maintained source when file size or tooling limits make continuation preferable; such a continuation must preserve the original document's ownership and identifier namespace. Automatic trailing download/upload suffixes such as ` (1)` or ` (3)` before the extension are incidental historical artifacts and do not change logical document identity.
 
 ## 2. How to resolve disagreements
 
@@ -35,7 +35,7 @@ Do not assign one universal authority order to all project material. Resolve con
 - **What Codex Room is intended or permitted to do:** prefer the current ratified Constitution, Charter where applicable, and later explicit decisions recorded in the Decision Register.
 - **Best current implementation summary:** use `04_ARCHITECTURE_AND_CURRENT_STATE.md`, then verify volatile or consequential claims against fresher technical evidence when available.
 - **What should be worked on now:** use the latest `06_DEVELOPMENT_CONTROL.md`.
-- **Why an important claim is believed:** use `07_EVIDENCE_REGISTER.md` and, when needed, the external artifact it cites.
+- **Why an important claim is believed:** use the canonical Evidence Register (`07_EVIDENCE_REGISTER.md` and its continuation volumes) and, when needed, the external artifact it cites.
 - **Longer-range direction:** use `08_PRODUCT_VISION.md`; do not infer that vision items are implemented or committed.
 - **What a shorthand identifier such as `P3`, `EF-2`, `I-004`, `D-018`, or `E-023` means:** use `10_WORK_PROGRAM_AND_IDENTIFIER_INDEX.md`, then follow its pointer to the owning source for current detail/status.
 
@@ -89,7 +89,7 @@ After substantial work, update only the files materially affected.
 
 - Implementation changed → update **Architecture & Current State**.
 - A design/product decision became settled or was superseded → update **Decision Register**.
-- A test, benchmark, measurement, or important observation changed the evidentiary picture → update **Evidence Register**.
+- A test, benchmark, measurement, or important observation changed the evidentiary picture → update the current physical volume of the **Evidence Register** while continuing the existing `E-###` sequence.
 - Priority, blocker, issue, planned work, or open question changed → update **Development Control**.
 - A foundational purpose or durable governance rule changed → deliberately update the **Charter** or **Constitution & Institutional Rules** and record the decision.
 - Long-range product direction changed → update **Product Vision**.
@@ -97,6 +97,8 @@ After substantial work, update only the files materially affected.
 - Work-program identifier added, renamed, retired, or materially re-scoped → update **Work Program & Identifier Index** after updating the owning source.
 
 Use explicit dates for volatile claims. Remove resolved questions from Development Control after their resolution is recorded elsewhere as appropriate.
+
+**Evidence Register continuation policy:** `07_EVIDENCE_REGISTER.md` and any lettered continuation named by this guide form one logical maintained source. Continue evidence IDs monotonically across volumes; do not create a new evidence namespace, duplicate earlier entries, or treat a continuation as a competing authority. Add new evidence to the latest listed continuation volume unless the package guide is deliberately revised again.
 
 **Repository/source boundary:** the canonical maintained Project sources themselves live under `docs/project/` and are versioned by Git/GitHub. Their contents track durable **meaning**, while Git/GitHub also remain authoritative for mechanically changing repository facts such as current HEAD, refs, diffs, commit history, pull requests, CI runs, and hosted verification; local Git is authoritative for the local working tree and local ref state. Do not update Project-source prose merely because a commit SHA or CI run changed. Preserve exact commits, test counts, or run IDs in the Evidence Register only when they materially support a durable claim, closeout, decision, or assurance result.
 
