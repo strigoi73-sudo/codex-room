@@ -4245,3 +4245,71 @@ Execution telemetry recorded five executions:
 Total D-N9 execution tokens: **109,411**. Post-framing model continuations: **4**.
 
 **Assessment:** **D-N9 PASS** for quality, nested coordination/provenance, and task-level economics. Stage-D attempt 2 now stands at **8 quality passes / 1 quality failure** through D-N9. D-N10 must pass quality for the 9/10 gate to succeed.
+
+
+### E-120 — Stage-D attempt 2 final viability-gate pass
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability closeout + aggregate gate assessment  
+**Decision:** D-030, D-031, D-032, D-033
+
+The preregistered ten-task Stage-D attempt 2 completed sequentially in one fresh dedicated Room, `room_c47cba973de44f12bde8ef3aaf80bce1`, under work-model version 2 with `provider_context_mode="assignment_thread"`. The preparation-only opening Round had zero model execution and remained excluded exactly as preregistered.
+
+#### D-N10 result
+
+D-N10 ran as one C-only Assignment/execution with no peers, joins, HISTORY, EVIDENCE, tool activity, or other external context. The exact execution used `gpt-5.6-terra` at high reasoning effort, with **21,170 input tokens** and **21,509 total execution tokens**.
+
+The answer correctly enumerated all seven feasible combinations, rejected the all-three combination at **$125.10**, and identified the **$26.25 + $31.40** pair as the highest-spend feasible option at **$105.15** total. D-N10 therefore **PASSed quality**.
+
+The context-isolation baseline from D-N1 was **21,257 first-C input tokens**. The preregistered 125% ceiling was **26,571.25**. D-N10's **21,170** first-C input was about **99.6%** of D-N1 and comfortably inside the ceiling.
+
+#### Ten-task aggregate economics
+
+Per-task total execution tokens:
+
+- D-N1: **21,663**
+- D-N2: **65,468**
+- D-N3: **90,947**
+- D-N4: **84,259**
+- D-N5: **150,592**
+- D-N6: **44,449**
+- D-N7: **44,015**
+- D-N8: **182,555**
+- D-N9: **109,411**
+- D-N10: **21,509**
+
+Sorted totals are **21,509, 21,663, 44,015, 44,449, 65,468, 84,259, 90,947, 109,411, 150,592, 182,555**.
+
+Aggregate thresholds therefore resolve as:
+- median total execution tokens: **74,863.5** <= **100,000** — PASS;
+- nearest-rank p90: **150,592** <= **200,000** — PASS;
+- post-framing continuations by task: **0, 2, 3, 2, 4, 1, 1, 6, 4, 0**; median **2** <= **4** — PASS;
+- maximum task total: **182,555** < **300,000** — PASS;
+- no task exceeded **200,000**, so the repeated->200k hard-stop condition never arose;
+- D-N10 first-C input: **21,170** <= **26,571.25** — context-isolation PASS.
+
+Total paid execution-token use across the ten scored tasks was **814,868**.
+
+#### Quality and robustness
+
+Quality results were **9 PASS / 1 FAIL**. D-N6 was the sole quality failure because its final revised schedule moved package drop past the preserved 1:00 PM deadline. D-N1 through D-N5 and D-N7 through D-N10 passed their preregistered rubrics.
+
+Naturalistic robustness requirements passed:
+- D-N5 exercised bounded/truncated evidence and recovered;
+- D-N7 exercised stale-history pressure and discriminated the intended original result;
+- D-N8 exercised deterministic evidence failure and recovered on the same logical Assignment/thread.
+
+For interruption/restart safety, the post-D-N4-remediation exact code-bearing main commit `668ef98253c5bd1387eefb1b71f99ed38fd8b53c` passed `verify-fast.cmd`. That fast suite includes the exact focused files containing pending-EVIDENCE restart recovery, assignment-thread usage-wall and exact-active-turn recovery, HISTORY continuity coverage, and transaction restart/retry-feedback recovery. A direct comparison from that tested commit to the Stage-D closeout repository state shows only maintained Project-document files changed afterward; no runtime or test code changed. The preregistered unchanged-code condition for relying on E-100, E-102, and E-105 restart evidence is therefore satisfied.
+
+#### Final assessment
+
+All preregistered Stage-D decision conditions are satisfied:
+
+- coordination/provenance invariants: **PASS**;
+- robustness coverage: **PASS**;
+- economics: **PASS**;
+- no task above 300k: **PASS**;
+- quality: **9/10 PASS**.
+
+**Stage D attempt 2 therefore PASSES the viability gate.**
+
+This result establishes that the opt-in version-2 task-transaction architecture is viable under the preregistered gate. It does **not** itself change the ordinary default from version 1. Per the protocol, the next step is a separate default-activation / migration decision.
