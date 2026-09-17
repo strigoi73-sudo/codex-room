@@ -52,13 +52,11 @@ def test_assignment_context_mode_requires_transaction_work_model() -> None:
     with pytest.raises(ValidationError, match="requires work_model_version=2"):
         CreateRoomRequest(
             topic="invalid",
-            work_model_version=1,
             provider_context_mode="assignment_thread",
         )
     with pytest.raises(ValidationError, match="requires work_model_version=2"):
         PrepareRoundRequest(
             prompt="invalid",
-            work_model_version=1,
             provider_context_mode="assignment_thread",
         )
 
