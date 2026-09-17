@@ -14,11 +14,11 @@ from .exporter import as_json, as_markdown
 from .models import (
     AddAgentRequest,
     BindInstitutionalReleaseRequest,
-    CreateRoomRequest,
+    CreateRoomApiRequest,
     DefaultProfilesUpdate,
     NewTopicRequest,
     ObserverMessageRequest,
-    PrepareRoundRequest,
+    PrepareRoundApiRequest,
     RolloverRoomRequest,
     UpdateRoomRequest,
 )
@@ -77,7 +77,7 @@ def create_app(
         return rooms
 
     @app.post("/api/rooms", status_code=201)
-    async def create_room(request: CreateRoomRequest) -> dict[str, Any]:
+    async def create_room(request: CreateRoomApiRequest) -> dict[str, Any]:
         try:
             return await runtime.create_room(request)
         except RuntimeError as exc:
@@ -137,7 +137,7 @@ def create_app(
         return await _translate_errors(runtime.new_topic(room_id, request))
 
     @app.post("/api/rooms/{room_id}/rounds", status_code=201)
-    async def prepare_round(room_id: str, request: PrepareRoundRequest) -> dict[str, Any]:
+    async def prepare_round(room_id: str, request: PrepareRoundApiRequest) -> dict[str, Any]:
         return await _translate_errors(runtime.prepare_round(room_id, request))
 
     @app.post("/api/rooms/{room_id}/rounds/{round_id}/start")
