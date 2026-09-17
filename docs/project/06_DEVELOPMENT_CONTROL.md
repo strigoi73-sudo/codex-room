@@ -7,25 +7,31 @@
 ## Operator summary
 
 - **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` is the public production path. Legacy Rooms were deliberately cleared rather than migrated.
-- **What just changed?** Ordinary continuation of the existing Common Cause Room naturally exercised PR #110's failed/empty-delegation fallback: after A's requested follow-up settled with `PASS` and did not produce the needed strengthening work, C moved the substantial fallback to a fresh bounded B assignment, which completed it. C's next exact turn then falsely failed in CORE as `Codex turn was interrupted` even though the local SDK rollout recorded a valid final `DELEGATE` decision and `task_complete`. Forensics isolated an exact-turn reconciliation race; commit `6b810f0e327da4055ced97f38a60977f4eba9c46` implements a narrow interrupted-only reconciliation grace.
-- **Verification state:** dependency-aware sequencing and PR #110 fallback allocation are now **NATURALISTICALLY SUPPORTED**. The false-interruption repair is **IMPLEMENTED / REVIEWED / VERIFIED TO SUFFICIENT EVIDENCE / PUSHED**: focused `tests/test_agent.py` passed 46/46, `verify-fast.cmd` passed its Linux, Windows, and browser phases, and `git diff --check` passed. An additional exact-commit full-verifier attempt passed 426 Linux/Python-3.12 tests and then stopped because Python 3.11 was unavailable inside WSL; do not describe that incomplete run as a full-verifier PASS.
-- **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. No high-priority CORE blocker is currently known. The existing Common Cause game needs one final independent exact-artifact verification after the CORE restart before it should be called play-ready.
-- **What is next?** Restart Codex Room so the repaired CORE is live. Then continue in the existing Common Cause Room/workspace with a new continuation Round whose scope is only the missing final independent nonmodifying game verification that C had already attempted to delegate. Do not rebuild the game. Competitive play remains a separate human authorization after play-readiness is verified.
-- **What are we deliberately not doing?** No further synthetic Common Cause benchmark; no retroactive rewrite of the failed Room transaction; no fourth persistent agent; no broad v2 redesign; no new memory/index architecture; no personality calibration; no automatic model router; no adjacent maintenance investigation without a demonstrated problem; no additional broad pytest runs for this already-bounded repair absent new evidence.
+- **What just changed?** The exact-turn reconciliation repair at `6b810f0e327da4055ced97f38a60977f4eba9c46` is live. A subsequent Windows Codex helper failure was traced to redirected user `TEMP`/`TMP` on `F:`; restoring both to `C:\Users\strig\AppData\Local\Temp` and restarting Codex Room restored sandbox setup, confirmed by a one-command SDK probe and a clean `errors=[]` setup refresh (E-128). The existing Common Cause artifact then completed its previously blocked independent final verification in Round `round_557922a63c8c463ba7c40d185ddd0d58` and is now verified play-ready (E-129).
+- **Verification state:** dependency-aware sequencing and PR #110 fallback allocation are **NATURALISTICALLY SUPPORTED**. The false-interruption repair remains **IMPLEMENTED / REVIEWED / VERIFIED TO SUFFICIENT EVIDENCE / PUSHED**; E-129 adds one normal post-repair continuation that closed by `transaction_settled` without recurrence. Common Cause itself is **VERIFIED PLAY-READY**: both Python files compiled, the existing 11-test suite passed, an illegal CLI action was rejection-atomic in the exercised case, and a deterministic 48-pass smoke sequence completed all eight rounds with no unresolved offer or defense state and a final winner.
+- **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. No high-priority CORE blocker is currently known. Common Cause implementation is not blocked; competitive play awaits the principal's separate authorization.
+- **What is next?** If the principal authorizes competitive play, begin the first actual Common Cause match in the same persistent Room/workspace with the now-frozen play-ready artifact. Do not add another pre-match verification round unless the artifact changes or a genuine defect appears.
+- **What are we deliberately not doing?** No further synthetic Common Cause benchmark; no retroactive rewrite of failed historical Room transactions; no fourth persistent agent; no broad v2 redesign; no new memory/index architecture; no personality calibration; no automatic model router; no adjacent maintenance investigation without a demonstrated problem; no repetitive broad pytest runs absent new evidence.
 
 ## Current focus
 
-### Common Cause continuation closeout and ordinary-use monitoring
+### Common Cause competitive-play authorization and ordinary-use monitoring
 
-**Work state:** IN PROGRESS
+**Work state:** PLANNED
 
-**Scope:** Activate the repaired CORE, preserve the existing Common Cause workspace, complete the one missing independent exact-artifact verification, and then return to ordinary use. Continue to monitor the repaired reconciliation boundary and coordination-allocation rules naturally rather than manufacturing another benchmark.
+**Dependency:** explicit human authorization for competitive play.
 
-The dedicated synthetic benchmark series remains closed. No new synthetic validation gate blocks ordinary use.
+**Evidence:** E-125 through E-129
+
+The Common Cause implementation/repair/verification sequence is complete. The artifact in the existing shared workspace is verified play-ready. No further implementation or verification work is currently required.
+
+When competitive play is authorized, use the same Room, persistent A/B/C identities/threads, and existing shared workspace. Freeze the verified game rules/engine except for a genuine defect. The first match is an ordinary competitive exercise, not another CORE benchmark.
+
+Continue to monitor the repaired reconciliation boundary and coordination-allocation rules naturally rather than manufacturing dedicated tests.
 
 ### Ordinary continuation after the controlled replication
 
-**Evidence:** E-126, E-127
+**Evidence:** E-126 through E-129
 
 The principal chose to continue the existing Common Cause Room rather than discard already-spent work. A implemented an explicit zero-cost `pass` action to resolve the game-specification deadlock. When a requested A follow-up later returned `PASS` without performing the needed strengthening work, C placed the substantial fallback with a fresh bounded B assignment. B added the requested regressions/documentation and reported 11 passing tests without changing the engine mechanic.
 
@@ -33,11 +39,13 @@ That sequence naturally exercised the PR #110 fallback condition and supports th
 
 `identify bounded defect -> fresh capable worker corrects/strengthens -> verifier checks exact result -> integrate`
 
-C then attempted to delegate one final independent exact-artifact verification. The local SDK rollout completed that exact turn with a valid `DELEGATE` decision and `task_complete`, but CORE recorded the same exact execution as `Codex turn was interrupted` and failed the transaction. The resulting forensic work identified a reconciliation race rather than a provider/model interruption.
+C then attempted to delegate one final independent exact-artifact verification. The local SDK rollout completed that exact turn with a valid `DELEGATE` decision and `task_complete`, but CORE recorded the same exact execution as `Codex turn was interrupted` and failed the transaction. Forensics identified a reconciliation race rather than a provider/model interruption. Repair commit `6b810f0e327da4055ced97f38a60977f4eba9c46` gives only the authoritative interrupted case a 0.05-second bounded opportunity for the already-started notification stream to settle; real `failed` history remains authoritative. See E-127.
 
-Repair commit `6b810f0e327da4055ced97f38a60977f4eba9c46` distinguishes authoritative interrupted history from other terminal failures and gives only that interrupted case a 0.05-second bounded opportunity for the already-started notification stream to settle. Real `failed` history remains authoritative, including usage-wall error classification. See E-127.
+After restart, a separate local environment regression temporarily blocked shell execution: redirected user `TEMP`/`TMP` pointed to `F:\Users\strig\AppData\Local\Temp`, where the Codex Windows sandbox helper could not apply its required write ACE. Restoring both variables to the Windows-profile temp directory on `C:` and restarting resolved the helper failure; a one-command SDK probe returned `CODEX_SANDBOX_OK` and sandbox setup logged `errors=[]`. See E-128.
 
-The failed Round remains historical evidence and should not be rewritten. Resume through a new continuation Round in the same Room/workspace after the CORE restart.
+The final continuation Round `round_557922a63c8c463ba7c40d185ddd0d58` then completed the missing nonmodifying verification. B performed the substantive independent checks; both Python files compiled, the existing unit suite passed 11 tests, CLI rejection atomicity was demonstrated for the exercised illegal action, and 48 deterministic pass actions completed all eight rounds with no unresolved offer or defense state and a final winner. C integrated the result and the Round closed normally by `transaction_settled`. See E-129.
+
+The game is therefore verified play-ready. Competitive play remains a separate human authorization.
 
 ## Common Cause coordination-economics follow-up — complete
 
@@ -45,13 +53,14 @@ The failed Round remains historical evidence and should not be rewritten. Resume
 
 **Decision:** D-035
 
-**Evidence:** E-124 through E-127
+**Evidence:** E-124 through E-129
 
 **Reality:**
 
 - dependency-aware sequencing — **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY SUPPORTED**;
 - post-PR-#110 failed-delegation fallback allocation — **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY SUPPORTED / MONITOR**;
-- coordinator-interruption issue — **REPRODUCED IN ORDINARY CONTINUATION / CORE REPAIR IMPLEMENTED AND VERIFIED TO SUFFICIENT EVIDENCE / MONITOR**.
+- coordinator-interruption issue — **REPRODUCED IN ORDINARY CONTINUATION / CORE REPAIR IMPLEMENTED AND VERIFIED TO SUFFICIENT EVIDENCE / MONITOR**;
+- Common Cause artifact — **VERIFIED PLAY-READY / AWAITING HUMAN MATCH AUTHORIZATION**.
 
 ### Historical successful implementation baseline
 
@@ -106,7 +115,7 @@ Verified blobs:
 - `codex_room/personalities.py`: `6fbe105abc8684173bd05878eac5f46c2c6ece25`;
 - `tests/test_c_structural_coordination.py`: `590a11e2616c7ac69d17c12a756b8b3dee094285`.
 
-The protected C rule says that when delegated implementation, correction, or investigation fails to produce needed work, or fallback reaches C because another assignment failed or settled without producing it, C should normally place substantial tool-heavy execution in a fresh bounded capable peer assignment. This applies in the root coordination assignment and in peer-created child assignments. Direct C execution remains available for demonstrably small, urgent, integration-inseparable work or when no fresh peer is likely to perform the work reliably at lower total cost.
+The protected C rule says that when delegated implementation, correction, or investigation fails to produce needed work, or fallback reaches C because another assignment failed or settled without producing it, C should normally place substantial tool-heavy execution in a fresh bounded capable peer assignment. This applies in the root coordination assignment and in peer-created child assignments. Direct C execution remains available for demonstrably small, urgent, integration-inseparable work or when no fresh peer is likely to perform it reliably at lower total cost.
 
 E-126 later supplied the first natural ordinary-use support for this exact tightened branch: A's follow-up settled with `PASS` without producing the requested strengthening work, and C moved the substantial fallback to fresh B rather than doing it on C's accumulated context. B completed the work successfully.
 
@@ -158,9 +167,9 @@ The completed replication was **557,564 raw tokens / 36.9% below** the historica
 
 ### Common Cause stop condition
 
-The dedicated synthetic coordination benchmark series remains stopped. Ordinary continuation provided the missing fallback evidence naturally and exposed a real CORE reconciliation defect, which has now received a bounded repair. Do not manufacture another benchmark solely to retest either branch.
+The dedicated synthetic coordination benchmark series remains stopped. Ordinary continuation provided the missing fallback evidence naturally and exposed a real CORE reconciliation defect, which received a bounded repair. The game's turn-completion contradiction was addressed by the explicit zero-cost pass mechanic, and E-129 completed the final independent exact-artifact verification.
 
-The game's earlier missing turn-completion rule has been addressed in the existing workspace by the agents' zero-cost pass mechanic. One final independent exact-artifact verification remains before calling that game play-ready. That is a ROOM/game closeout task, not a new CORE benchmark.
+Common Cause is now **VERIFIED PLAY-READY**. Do not add another verification gate before competitive play unless the artifact changes or a genuine defect appears. Competitive play starts only after explicit principal authorization.
 
 ## Completed major program state
 
@@ -226,7 +235,7 @@ E-126 shows the tightened branch operating as intended in ordinary continuation:
 
 **Reality:** IMPLEMENTED / REVIEWED / VERIFIED TO SUFFICIENT EVIDENCE
 
-E-127 records the reproduced false interruption, forensic diagnosis, and bounded repair at commit `6b810f0e327da4055ced97f38a60977f4eba9c46`. Monitor normal Rooms for recurrence. Do not widen the 0.05-second interrupted-only grace or redesign reconciliation absent new evidence.
+E-127 records the reproduced false interruption, forensic diagnosis, and bounded repair at commit `6b810f0e327da4055ced97f38a60977f4eba9c46`. E-129 adds one normal post-repair continuation that closed by `transaction_settled` without recurrence. Continue ordinary-use monitoring. Do not widen the 0.05-second interrupted-only grace or redesign reconciliation absent new evidence.
 
 ### I-003 — Provider-side instruction adoption after same-thread profile rebind
 
@@ -240,7 +249,7 @@ Current deterministic evidence verifies the local rebind mechanism and fail-clos
 
 **Work state:** MONITOR
 
-E-086 demonstrated that the continuation-economy repair can radically reduce tool-loop replay on a controlled fixture. E-090 showed broader source work can still become expensive. The current `EVIDENCE` interface and assignment-scoped production context further change that cost surface. Continue to record concrete expensive recurrences; do not launch synthetic benchmark matrices.
+E-086 demonstrated that the continuation-economy repair can radically reduce tool-loop replay on a controlled fixture. E-090 showed broader source work can still become expensive. E-129 adds a concrete smaller recurrence: a requested single-verifier closeout took the path C -> A -> B, with A acting as a zero-tool relay and consuming 45,338 raw execution tokens without adding independent verification evidence. Treat this as ordinary-use cost evidence; avoid purchasing another synthetic benchmark solely to investigate it unless similar relay patterns recur or become materially expensive.
 
 ## Deferred work
 
@@ -261,8 +270,8 @@ Keep these deferred unless new evidence or explicit principal direction repriori
 
 No high-priority conceptual question currently blocks ordinary Codex Room use or development.
 
-The Common Cause coordination questions that motivated PRs #109/#110 now have naturalistic support for both dependency-aware sequencing and the tightened failed-delegation fallback. Continue ordinary-use monitoring rather than opening another synthetic series.
+The Common Cause coordination questions that motivated PRs #109/#110 now have naturalistic support for both dependency-aware sequencing and the tightened failed-delegation fallback. The game artifact is verified play-ready. The only remaining Common Cause gate is the principal's separate authorization to begin competitive play.
 
-The repaired exact-turn interruption boundary is also monitor-only unless it recurs. The immediate Common Cause task is operational: restart onto the repaired CORE and complete the already-planned final independent exact-artifact verification in the existing workspace.
+The repaired exact-turn interruption boundary is monitor-only unless it recurs. The TEMP/TMP sandbox-helper regression is resolved and recorded in E-128; do not reopen it absent recurrence.
 
 D-019 remains blocked on provider allowance/credit-pool semantics. Other deferred work should remain deferred until new evidence or explicit principal direction gives it priority.
