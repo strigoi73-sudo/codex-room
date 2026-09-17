@@ -517,9 +517,9 @@ class CreateRoomRequest(BaseModel):
     inactivity_seconds: int = Field(default=900, ge=30, le=86_400)
     starting_agent: Literal["agent_a", "agent_b", "agent_c", "either"] = "agent_c"
     auto_start: bool = True
-    work_model_version: Literal[1, 2] = 2
+    work_model_version: Literal[1, 2] = 1
     provider_context_mode: Literal["persistent_agent_thread", "assignment_thread"] = (
-        "assignment_thread"
+        "persistent_agent_thread"
     )
     required_contributors: list[
         Literal["agent_a", "agent_b", "agent_c"]
@@ -537,6 +537,13 @@ class CreateRoomRequest(BaseModel):
                 "assignment_thread provider context requires work_model_version=2"
             )
         return self
+
+
+class CreateRoomApiRequest(CreateRoomRequest):
+    """Production API contract after the work-model-v2 default cutover."""
+
+    work_model_version: Literal[2] = 2
+    provider_context_mode: Literal["assignment_thread"] = "assignment_thread"
 
 
 class AddAgentRequest(BaseModel):
@@ -575,9 +582,9 @@ class PrepareRoundRequest(BaseModel):
     task_overlay: str | None = Field(default=None, max_length=50_000)
     agent_a_overlay: str | None = Field(default=None, max_length=50_000)
     agent_b_overlay: str | None = Field(default=None, max_length=50_000)
-    work_model_version: Literal[1, 2] = 2
+    work_model_version: Literal[1, 2] = 1
     provider_context_mode: Literal["persistent_agent_thread", "assignment_thread"] = (
-        "assignment_thread"
+        "persistent_agent_thread"
     )
     required_contributors: list[
         Literal["agent_a", "agent_b", "agent_c"]
@@ -618,6 +625,13 @@ class PrepareRoundRequest(BaseModel):
                     raise ValueError(f"Conflicting overlay for {key}")
                 self.participant_overlays[key] = value
         return self
+
+
+class PrepareRoundApiRequest(PrepareRoundRequest):
+    """Production API contract after the work-model-v2 default cutover."""
+
+    work_model_version: Literal[2] = 2
+    provider_context_mode: Literal["assignment_thread"] = "assignment_thread"
 
 
 class DefaultProfilesUpdate(BaseModel):
