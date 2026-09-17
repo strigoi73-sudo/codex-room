@@ -1,0 +1,79 @@
+name: One-shot transaction robustness fix
+
+on:
+  push:
+    branches:
+      - fix/transaction-contract-recovery-20260916
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: python -m pip install -e '.[test]'
+      - name: Apply bounded repair
+        run: python tools/apply_transaction_robustness_fix.py
+      - name: Run focused transaction tests
+        run: python -m pytest -q tests/test_transaction_evidence.py tests/test_transactions.py
+      - name: Commit repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add codex_room/models.py codex_room/orchestrator.py codex_room/db.py tests/test_transaction_evidence.py
+          git diff --cached --check
+          git commit -m "Fix transaction contract and continuation retry robustness"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+  verify:
+    if: github.actor == 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install test dependencies
+        run: python -m pip install -e ".[test]"
+      - name: Run full Python suite
+        run: python -m pytest -q
+
+  cleanup:
+    if: github.actor == 'github-actions[bot]' && success()
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove one-shot repair machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm .github/workflows/one-shot-transaction-robustness-fix.yml
+          rm tools/apply_transaction_robustness_fix.py
+          rmdir .github/workflows 2>/dev/null || true
+          rmdir .github 2>/dev/null || true
+          rmdir tools 2>/dev/null || true
+          git add -A
+          git diff --cached --check
+          git commit -m "Remove one-shot transaction repair machinery"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
