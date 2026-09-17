@@ -14,6 +14,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - name: Prepare native Python 3.12
         shell: bash
         run: |
@@ -24,7 +27,7 @@ jobs:
           "$RUNNER_TEMP/codex-room-verify-venv/bin/python" -m pip install -c constraints-test.txt ".[test]"
       - name: Check diff whitespace
         shell: bash
-        run: git diff --check origin/main...HEAD
+        run: git diff --check ${{ github.event.pull_request.base.sha }}...HEAD
       - name: Run full Python suite
         shell: bash
         run: |
@@ -38,6 +41,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
