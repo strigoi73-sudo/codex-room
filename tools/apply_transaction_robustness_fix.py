@@ -8,298 +8,82 @@ def replace_once(path: str, old: str, new: str) -> None:
     text = target.read_text(encoding="utf-8")
     count = text.count(old)
     if count != 1:
-        raise RuntimeError(f"{path}: expected exactly one match, found {count}: {old[:80]!r}")
+        raise RuntimeError(f"{path}: expected exactly one match, found {count}: {old[:120]!r}")
     target.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 
-def replace_exact_count(path: str, old: str, new: str, expected: int) -> None:
-    target = Path(path)
-    text = target.read_text(encoding="utf-8")
-    count = text.count(old)
-    if count != expected:
-        raise RuntimeError(f"{path}: expected {expected} matches, found {count}: {old[:80]!r}")
-    target.write_text(text.replace(old, new), encoding="utf-8")
-
-
-def append_once(path: str, marker: str, addition: str) -> None:
-    target = Path(path)
-    text = target.read_text(encoding="utf-8")
-    if marker in text:
-        return
-    target.write_text(text.rstrip() + "\n\n" + addition.strip() + "\n", encoding="utf-8")
-
-
-def patch_models() -> None:
-    path = "codex_room/models.py"
+def update_development_control() -> None:
+    path = "docs/project/06_DEVELOPMENT_CONTROL.md"
     replace_once(
         path,
-        '            if sum(item.max_results for item in self.history_requests) > 20:\n'
-        '                raise ValueError("HISTORY accepts at most 20 requested results per action")\n',
-        "",
+        '- **What just changed?** **D-034 activation follow-through is complete.** After PR #107 activated v2 + `assignment_thread`, the local checkout fast-forwarded to canonical `main`, **77 legacy Rooms were deleted offline with foreign-key checks**, Room workspaces/bindings were cleared, and one fresh production smoke Room (`room_e150b0dce6504d979183609ab0d5d08d`) completed through the v2 transaction path with one C Assignment, zero Joins, one `COMPLETE`, and one model execution. See E-121 and E-122.\n',
+        '- **What just changed?** Ordinary Common Cause use exposed one bounded post-I-015 transaction robustness defect before implementation began. PR #108 repairs the EVIDENCE/HISTORY contract mismatch and makes the existing one-shot validation retry independent of successful Assignment continuations. Exact Linux full-suite verification passed **421 tests, 2 warnings**; Windows transaction/source verification passed **43 tests** on identical production bytes. See E-123.\n',
     )
     replace_once(
         path,
-        '                            "instruction": {"type": "string"},\n',
-        '                            "instruction": {\n'
-        '                                "type": "string",\n'
-        '                                "minLength": 1,\n'
-        '                                "maxLength": 50_000,\n'
-        '                            },\n',
+        '- **What is next?** **Return to ordinary Codex Room development/use.** I-015 is closed. Do not launch additional v2 compatibility/migration work or broad validation unless ordinary use exposes a concrete defect.\n',
+        '- **What is next?** **Resume ordinary Codex Room development/use, including the interrupted Common Cause implementation.** I-015 remains closed. Do not launch broader v2 compatibility/migration or validation work unless ordinary use exposes another concrete defect.\n',
     )
     replace_once(
         path,
-        '                                    "start_line": {"type": "integer"},\n'
-        '                                    "max_lines": {"type": "integer"},\n'
-        '                                    "max_bytes": {"type": "integer"},\n',
-        '                                    "start_line": {\n'
-        '                                        "type": "integer",\n'
-        '                                        "minimum": 1,\n'
-        '                                    },\n'
-        '                                    "max_lines": {\n'
-        '                                        "type": "integer",\n'
-        '                                        "minimum": 1,\n'
-        '                                        "maximum": 1000,\n'
-        '                                    },\n'
-        '                                    "max_bytes": {\n'
-        '                                        "type": "integer",\n'
-        '                                        "minimum": 1,\n'
-        '                                        "maximum": 128 * 1024,\n'
-        '                                    },\n',
-    )
-    replace_once(
-        path,
-        '                                    "max_files": {"type": "integer"},\n'
-        '                                    "max_matches": {"type": "integer"},\n',
-        '                                    "max_files": {\n'
-        '                                        "type": "integer",\n'
-        '                                        "minimum": 1,\n'
-        '                                        "maximum": 200,\n'
-        '                                    },\n'
-        '                                    "max_matches": {\n'
-        '                                        "type": "integer",\n'
-        '                                        "minimum": 1,\n'
-        '                                        "maximum": 100,\n'
-        '                                    },\n',
-    )
-    replace_once(
-        path,
-        '                                    "include_hidden": {"type": "boolean"},\n'
-        '                                    "max_results": {"type": "integer"},\n',
-        '                                    "include_hidden": {"type": "boolean"},\n'
-        '                                    "max_results": {\n'
-        '                                        "type": "integer",\n'
-        '                                        "minimum": 1,\n'
-        '                                        "maximum": 200,\n'
-        '                                    },\n',
-    )
-    replace_exact_count(
-        path,
-        '                                    "max_results": {"type": "integer"},\n',
-        '                                    "max_results": {\n'
-        '                                        "type": "integer",\n'
-        '                                        "minimum": 1,\n'
-        '                                        "maximum": 10,\n'
-        '                                    },\n',
-        2,
+        '**Evidence:** E-092 through E-122  \n**Scope:** [CORE]. Legacy Rooms were deleted rather than migrated; no compatibility migration remains.\n',
+        '**Evidence:** E-092 through E-123  \n**Scope:** [CORE]. Legacy Rooms were deleted rather than migrated; no compatibility migration remains.\n\n**Post-close ordinary-use repair — COMPLETE / IMPLEMENTED / VERIFIED (2026-09-16):** The Common Cause implementation Round exposed a residual transaction-contract/retry edge after I-015 closeout: EVIDENCE path semantics were not explicit enough for the agent-facing contract, HISTORY schema bounds were incompletely advertised, and a malformed decision after a successful continuation could exhaust the Assignment retry budget. PR #108 applies the bounded repair and adds exact regression coverage. This is ordinary-use defect repair under the existing D-031/D-033/D-034 architecture, not a reopening of I-015 or a new broad validation program. See E-123.\n',
     )
 
 
-def patch_orchestrator() -> None:
-    path = "codex_room/orchestrator.py"
-    replace_once(
-        path,
-        '        "Use atomic READ, SEARCH, or FIND requests and include only the source, path/query, "\n'
-        '        "Room ID when applicable, and useful bounds. Every request path must be non-empty. "\n'
-        '        "For source=\'core\', select a maintained top-level entry: use \'codex_room\' for CORE "\n',
-        '        "Use atomic READ, SEARCH, or FIND requests and include only the source, path/query, "\n'
-        '        "Room ID when applicable, and useful bounds. Every request path must be non-empty, "\n'
-        '        "normalized, forward-slash, and relative to the selected source; never send an "\n'
-        '        "absolute filesystem path. For source=\'workspace\' or source=\'room\', use \'.\' "\n'
-        '        "when the selected shared-workspace root itself is the target. "\n'
-        '        "For source=\'core\', select a maintained top-level entry: use \'codex_room\' for CORE "\n',
-    )
-    replace_once(
-        path,
-        '        "specific lexical query when you know the relevant concept; optionally restrict the "\n'
-        '        "request to one agent and request only as many results as are likely necessary. CORE "\n',
-        '        "specific lexical query when you know the relevant concept; optionally restrict the "\n'
-        '        "request to one agent and request only as many results as are likely necessary. Each "\n'
-        '        "HISTORY request may ask for 1-10 results, with at most 4 requests in one action. CORE "\n',
-    )
+def update_architecture() -> None:
+    path = "docs/project/04_ARCHITECTURE_AND_CURRENT_STATE.md"
+    replace_once(path, '**Last synthesized:** 2026-09-14  \n', '**Last synthesized:** 2026-09-16  \n')
+    marker = '**Stage-D D-N4 remediation status — IMPLEMENTED / VERIFIED / MERGED (2026-09-16):** PR #104 merged the structured-EVIDENCE contract/telemetry repair, and the repository-standard `verify-fast.cmd` then passed on exact code-bearing canonical-main commit `668ef98253c5bd1387eefb1b71f99ed38fd8b53c`: Linux/Python 3.12 focused core **45 passed, 2 warnings**; Windows focused portability **118 passed**; browser transcript stability **3 passed**; total verifier time **74.7 seconds** with all phases exit code 0 and a clean tracked tree. The repair aligns provider/runtime path validation, states CORE path semantics, preserves invalid-decision usage/activity/economics, and supplies one-shot retry feedback without stale leakage. E-108 records implementation/focused evidence; E-110 records merged-tree verification.\n'
+    addition = marker + '\n**Post-activation ordinary-use transaction robustness repair — IMPLEMENTED / VERIFIED — 2026-09-16:** A Common Cause implementation Round exposed residual contract/retry edge cases after D-N4: C supplied an absolute Windows workspace path to `EVIDENCE` because the agent-facing contract did not state source-relative path semantics, then emitted `HISTORY max_results=12` because the provider JSON schema omitted the Pydantic maximum of 10. The second malformed decision became terminal because Assignment retry eligibility counted every prior execution, including successful `EVIDENCE` / `HISTORY` continuations. PR #108 aligns provider schema bounds with runtime bounds, states that EVIDENCE paths are normalized source-relative forward-slash paths (`.` may select a workspace/Room root but not the CORE root), states HISTORY\'s 1–10 / maximum-four request contract, and makes the single corrective retry budget depend on prior failed executions rather than successful continuations. The hidden aggregate HISTORY request-sum validator was removed; retained prior-Round context remains mechanically capped at 20 event IDs by the selector. Regression coverage includes the exact successful-EVIDENCE → malformed-decision → retry → valid-completion path. See E-123.\n'
+    replace_once(path, marker, addition)
 
 
-def patch_db() -> None:
-    path = "codex_room/db.py"
-    replace_once(
-        path,
-        '            attempts = await self._fetchone(\n'
-        '                db,\n'
-        '                "SELECT COUNT(*) AS count FROM agent_executions WHERE assignment_id=?",\n'
-        '                (assignment["id"],),\n'
-        '            )\n'
-        '            should_retry = (\n'
-        '                retryable\n'
-        '                and int(attempts["count"] if attempts else 0) < 2\n'
-        '                and assignment["state"] == "running"\n'
-        '            )\n',
-        '            prior_failures = await self._fetchone(\n'
-        '                db,\n'
-        '                """SELECT COUNT(*) AS count FROM agent_executions\n'
-        '                   WHERE assignment_id=? AND state=\'failed\'""",\n'
-        '                (assignment["id"],),\n'
-        '            )\n'
-        '            # One retry belongs to the assignment\'s failure budget, not its\n'
-        '            # successful EVIDENCE/HISTORY continuation count.\n'
-        '            should_retry = (\n'
-        '                retryable\n'
-        '                and int(prior_failures["count"] if prior_failures else 0) < 1\n'
-        '                and assignment["state"] == "running"\n'
-        '            )\n',
-    )
+def update_evidence_register() -> None:
+    path = Path("docs/project/07_EVIDENCE_REGISTER.md")
+    text = path.read_text(encoding="utf-8")
+    heading = "### E-123 — Ordinary-use transaction contract/retry repair"
+    if heading in text:
+        raise RuntimeError("E-123 already exists")
+    entry = r'''
+### E-123 — Ordinary-use transaction contract/retry repair
+**Date:** 2026-09-16  
+**Kind:** Naturalistic production defect + bounded CORE repair
 
+A Common Cause implementation Round in Room `room_975e0a78e6b040d5bf26d460d577e312` exposed a residual work-model-v2 robustness defect before any game implementation began.
 
-def patch_tests() -> None:
-    path = "tests/test_transaction_evidence.py"
-    replace_once(path, "import asyncio\nimport json\n", "import asyncio\nfrom collections import deque\nimport json\n")
+Observed sequence from `Three-Player-Strategy-Game (2).json`:
 
-    replace_once(
-        path,
-        '''def test_transaction_decision_schema_requires_nonempty_evidence_paths() -> None:\n    evidence_schema = TRANSACTION_DECISION_SCHEMA["properties"]["evidence_requests"]\n    variants = evidence_schema["anyOf"][0]["items"]["anyOf"]\n\n    assert len(variants) == 3\n    for variant in variants:\n        path_schema = variant["properties"]["path"]\n        assert path_schema["minLength"] == 1\n        assert path_schema["maxLength"] == 4096\n''',
-        '''def test_transaction_decision_schema_matches_runtime_bounds() -> None:\n    evidence_schema = TRANSACTION_DECISION_SCHEMA["properties"]["evidence_requests"]\n    variants = evidence_schema["anyOf"][0]["items"]["anyOf"]\n\n    assert len(variants) == 3\n    for variant in variants:\n        path_schema = variant["properties"]["path"]\n        assert path_schema["minLength"] == 1\n        assert path_schema["maxLength"] == 4096\n\n    read = variants[0]["properties"]\n    assert read["start_line"] == {"type": "integer", "minimum": 1}\n    assert read["max_lines"] == {"type": "integer", "minimum": 1, "maximum": 1000}\n    assert read["max_bytes"] == {\n        "type": "integer",\n        "minimum": 1,\n        "maximum": 128 * 1024,\n    }\n\n    search = variants[1]["properties"]\n    assert search["max_files"] == {"type": "integer", "minimum": 1, "maximum": 200}\n    assert search["max_matches"] == {"type": "integer", "minimum": 1, "maximum": 100}\n\n    find = variants[2]["properties"]\n    assert find["max_results"] == {"type": "integer", "minimum": 1, "maximum": 200}\n\n    delegation = TRANSACTION_DECISION_SCHEMA["properties"]["delegations"]["anyOf"][0]\n    instruction = delegation["items"]["properties"]["instruction"]\n    assert instruction == {"type": "string", "minLength": 1, "maxLength": 50_000}\n\n    history = TRANSACTION_DECISION_SCHEMA["properties"]["history_requests"]["anyOf"][0]\n    assert history["minItems"] == 1\n    assert history["maxItems"] == 4\n    for variant in history["items"]["anyOf"]:\n        assert variant["properties"]["max_results"] == {\n            "type": "integer",\n            "minimum": 1,\n            "maximum": 10,\n        }\n\n\ndef test_history_runtime_accepts_four_individually_bounded_requests() -> None:\n    decision = TransactionDecision(\n        action=TransactionAction.HISTORY,\n        history_requests=[\n            {"operation": "RECENT", "query": None, "agent": key, "max_results": 10}\n            for key in ("agent_a", "agent_b", "agent_c", None)\n        ],\n    )\n    assert len(decision.history_requests or []) == 4\n''',
-    )
+- C requested workspace `EVIDENCE` with an absolute Windows shared-workspace path; the source inspector correctly rejected it because paths are normalized relative paths.
+- On the resumed Assignment, C requested `HISTORY` with `max_results=12`. The provider-facing transaction JSON schema did not advertise the runtime Pydantic maximum of 10, so a provider decision could satisfy the presented schema and still fail internal validation.
+- Because the Assignment had already completed one valid EVIDENCE continuation, retry eligibility counted two total Assignment executions and made this malformed decision terminal. The Round closed `transaction_failed`.
+- The two C executions consumed **44,496 execution tokens** (21,511 + 22,985) without implementation work beginning.
 
-    replace_once(
-        path,
-        '    assert "Every request path must be non-empty" in first_prompt\n'
-        '    assert "do not use an empty path or \'.\' as the CORE root" in first_prompt\n',
-        '    assert "Every request path must be non-empty" in first_prompt\n'
-        '    assert "relative to the selected source" in first_prompt\n'
-        '    assert "never send an absolute filesystem path" in first_prompt\n'
-        '    assert "use \'.\' when the selected shared-workspace root itself is the target" in first_prompt\n'
-        '    assert "do not use an empty path or \'.\' as the CORE root" in first_prompt\n',
-    )
+Repair:
 
-    append_once(
-        path,
-        "test_invalid_transaction_decision_after_evidence_continuation_gets_one_retry",
-        r'''@pytest.mark.asyncio
-async def test_invalid_transaction_decision_after_evidence_continuation_gets_one_retry(
-    evidence_runtime_factory,
-):
-    invalid = AgentDecisionValidationError(
-        (
-            "Codex returned invalid Room decision JSON. Validation error: "
-            "history_requests.0.max_results Input should be less than or equal to 10"
-        ),
-        usage={
-            "input_tokens": 20,
-            "cached_input_tokens": 0,
-            "output_tokens": 5,
-            "reasoning_output_tokens": 1,
-            "total_tokens": 25,
-        },
-        activity=[],
-        thread_id="unused-by-fake",
-        turn_id="unused-by-fake",
-        completion_source="notification",
-    )
+- the transaction provider schema now mirrors the relevant Pydantic bounds for delegation instructions, EVIDENCE READ/SEARCH/FIND limits, and HISTORY `max_results`;
+- EVIDENCE agent guidance now states source-relative normalized forward-slash paths, forbids absolute filesystem paths, and states `.` root semantics;
+- HISTORY guidance states 1–10 results per request and at most four requests;
+- the hidden aggregate requested-result validator was removed while actual retained prior-Round context remains mechanically capped at 20 selected event IDs;
+- one corrective Assignment retry now depends on the count of prior failed executions, so successful EVIDENCE/HISTORY continuations do not consume the retry budget;
+- regression coverage reproduces successful EVIDENCE → malformed decision → feedback retry → valid completion.
 
-    class FailSecondTransactionalCall(FakeAgentAdapter):
-        async def run_agent_on_thread(self, agent, *args, **kwargs):
-            if agent["agent_key"] == "agent_c" and len(self.calls["agent_c"]) == 1:
-                self.failures.setdefault("agent_c", deque()).append(invalid)
-            return await super().run_agent_on_thread(agent, *args, **kwargs)
+Verification:
 
-    adapter = FailSecondTransactionalCall(
-        {"agent_a": [], "agent_b": [], "agent_c": []}
-    )
-    adapter.decisions["agent_c"].extend(
-        [
-            TransactionDecision(
-                action=TransactionAction.EVIDENCE,
-                evidence_requests=[_request("READ", "one.txt")],
-            ),
-            TransactionDecision(
-                action=TransactionAction.COMPLETE,
-                message="Recovered after post-evidence validation retry.",
-            ),
-        ]
-    )
+- code-bearing repair commit `4c5644fb2273dfe8c9a3d2de809423bb5e988984`;
+- exact post-regression-alignment head `9022e4ab4320de96ffa27d1c2ee9fd2673435a47` passed Linux/Python 3.12 full suite **421 passed, 2 warnings** and `git diff --check`;
+- Windows focused transaction/source tests passed **43 tests** on `a04edb2a831643f8cfb125a7a87d6e7f61ee1be0`, whose production bytes match `9022e4ab...`; the later difference is the aligned history-validation regression test.
 
-    runtime = await evidence_runtime_factory(adapter, "post-evidence-invalid-retry.db")
-    snapshot = await runtime.create_room(
-        CreateRoomRequest(
-            topic="Recover one malformed decision after evidence continuation.",
-            work_model_version=2,
-            provider_context_mode="assignment_thread",
-            auto_start=False,
-        )
-    )
-    room_id = snapshot["id"]
-    (runtime.workspace(room_id) / "one.txt").write_text(
-        "post-continuation evidence\n", encoding="utf-8"
-    )
-
-    await runtime.start_round(room_id, snapshot["active_round_id"])
-
-    async def finished() -> bool:
-        room = await runtime.db.get_room(room_id)
-        return bool(room and room["status"] == RoomStatus.FINISHED)
-
-    await wait_until(finished)
-
-    assert len(adapter.calls["agent_c"]) == 3
-    evidence_prompt = adapter.calls["agent_c"][1]["prompt"]
-    retry_prompt = adapter.calls["agent_c"][2]["prompt"]
-    assert "<resolved_source_evidence>" in evidence_prompt
-    assert "post-continuation evidence" in evidence_prompt
-    assert "<retry_feedback>" in retry_prompt
-    assert "history_requests.0.max_results" in retry_prompt
-    assert "<resolved_source_evidence>" in retry_prompt
-
-    async with runtime.db.connect() as db:
-        executions = await db.execute_fetchall(
-            """SELECT state FROM agent_executions
-               WHERE assignment_id IS NOT NULL AND round_id=?
-               ORDER BY created_at, batch_id""",
-            (snapshot["active_round_id"],),
-        )
-        task = await runtime.db._fetchone(
-            db,
-            "SELECT state FROM tasks WHERE round_id=?",
-            (snapshot["active_round_id"],),
-        )
-        assignment = await runtime.db._fetchone(
-            db,
-            """SELECT state, resolution_reason FROM assignments
-               WHERE task_id=(SELECT id FROM tasks WHERE round_id=?)""",
-            (snapshot["active_round_id"],),
-        )
-
-    assert [row["state"] for row in executions] == ["settled", "failed", "settled"]
-    assert task is not None and task["state"] == "settled"
-    assert assignment is not None and assignment["state"] == "completed"
-    assert assignment["resolution_reason"] is None
-
-    exported = await runtime.db.snapshot(room_id, event_limit=None)
-    assert exported is not None
-    retry_errors = [
-        event
-        for event in exported["events"]
-        if event["event_type"] == "agent_error"
-        and event.get("metadata", {}).get("will_retry") is True
-    ]
-    assert len(retry_errors) == 1
-''',
-    )
+**Assessment:** OBSERVED ISSUE → IMPLEMENTED / VERIFIED bounded repair. This is post-I-015 ordinary-use defect repair, not a reopening of broad v2 validation.
+'''
+    path.write_text(text.rstrip() + "\n\n" + entry.strip() + "\n", encoding="utf-8")
 
 
 def main() -> None:
-    patch_models()
-    patch_orchestrator()
-    patch_db()
-    patch_tests()
-    print("Applied bounded transaction contract/retry robustness fix.")
+    update_development_control()
+    update_architecture()
+    update_evidence_register()
+    print("Updated owning project documents for E-123.")
 
 
 if __name__ == "__main__":
