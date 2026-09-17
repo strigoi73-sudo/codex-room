@@ -52,11 +52,13 @@ def test_assignment_context_mode_requires_transaction_work_model() -> None:
     with pytest.raises(ValidationError, match="requires work_model_version=2"):
         CreateRoomRequest(
             topic="invalid",
+            work_model_version=1,
             provider_context_mode="assignment_thread",
         )
     with pytest.raises(ValidationError, match="requires work_model_version=2"):
         PrepareRoundRequest(
             prompt="invalid",
+            work_model_version=1,
             provider_context_mode="assignment_thread",
         )
 
@@ -370,7 +372,7 @@ async def test_assignment_context_exact_active_turn_recovers_by_recorded_thread(
 
 
 @pytest.mark.asyncio
-async def test_persistent_provider_context_mode_remains_default(
+async def test_transaction_assignment_context_is_default(
     context_runtime_factory,
 ):
     adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
@@ -380,9 +382,9 @@ async def test_persistent_provider_context_mode_remains_default(
             message="Default mode complete.",
         )
     )
-    runtime = await context_runtime_factory(adapter, "persistent-default.db")
+    runtime = await context_runtime_factory(adapter, "transaction-default.db")
     snapshot = await runtime.create_room(
-        CreateRoomRequest(topic="Preserve default behavior.", work_model_version=2)
+        CreateRoomRequest(topic="Use the production transaction defaults.")
     )
     room_id = snapshot["id"]
     permanent_c = next(
@@ -391,11 +393,12 @@ async def test_persistent_provider_context_mode_remains_default(
     await wait_until(lambda: _finished(runtime, room_id))
 
     assert len(adapter.calls["agent_c"]) == 1
-    assert adapter.calls["agent_c"][0]["thread_id"] == permanent_c
-    assert adapter.context_starts == []
+    assert adapter.calls["agent_c"][0]["thread_id"] != permanent_c
+    assert len([item for item in adapter.context_starts if item[0] == "agent_c"]) == 1
     exported = await runtime.db.snapshot(room_id, event_limit=None)
     assert exported is not None
-    assert exported["active_round"]["provider_context_mode"] == "persistent_agent_thread"
+    assert exported["active_round"]["work_model_version"] == 2
+    assert exported["active_round"]["provider_context_mode"] == "assignment_thread"
 
 def test_history_request_validation_is_bounded() -> None:
     with pytest.raises(ValidationError, match="SEARCH history retrieval"):
