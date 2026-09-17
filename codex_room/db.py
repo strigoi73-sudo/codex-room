@@ -1112,8 +1112,9 @@ class Database:
             await db.execute(
                 """INSERT INTO rounds
                    (id, room_id, title, prompt, created_at, status, starting_agent,
-                    participant_private_json, participant_overlays_json)
-                   VALUES (?, ?, ?, ?, ?, ?, 'agent_c', '{}', '{}')""",
+                    participant_private_json, participant_overlays_json,
+                    work_model_version, provider_context_mode)
+                   VALUES (?, ?, ?, ?, ?, ?, 'agent_c', '{}', '{}', 2, 'assignment_thread')""",
                 (round_id, successor_id, "Inherited checkpoint", request.checkpoint, now, RoundStatus.PREPARING),
             )
             await db.executemany(
