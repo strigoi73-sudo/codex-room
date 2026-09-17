@@ -7,19 +7,19 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable local verification, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 **Stage D attempt 1 remains historical and stopped at D-N4**. The bounded D-N4 structured-EVIDENCE remediation is now **IMPLEMENTED / VERIFIED / MERGED**: PR #104 merged, and `verify-fast.cmd` passed on exact code-bearing canonical-main commit `668ef98253c5bd1387eefb1b71f99ed38fd8b53c` with 45 Linux focused tests, 118 Windows portability tests, and 3 browser tests. See E-107 through E-110.
+- **What just changed?** I-015 **Stage D attempt 2 PASSED the preregistered viability gate** in one fresh dedicated Room. Final result: **9/10 quality PASS**, all coordination/provenance invariants PASS, robustness PASS, median **74,863.5**, nearest-rank p90 **150,592**, continuation median **2**, maximum task **182,555**, and D-N10 first-C input **21,170** versus the **26,571.25** ceiling. See E-111 through E-120. Attempt 1 remains historical and stopped at D-N4.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Restart **I-015 Stage D in one new fresh dedicated Room at D-N1** under the exact preregistered gate. Score/export D-N1 before proceeding sequentially to D-N2. Do not resume D-N5 in the failed attempt-1 Room. Version 1 remains the default throughout the gate.
+- **What is next?** Prepare the **separate default-activation / migration decision** permitted by the Stage-D PASS. Do not change the ordinary version-1 default merely because Stage D passed; activation remains a deliberate human-principal decision.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### I-015 — Task-transaction stabilization redesign
-**Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE / DECIDED redesign / STAGES A-C IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED  
+**Work state:** COMPLETE — Stage-D viability gate passed; separate default-activation / migration decision next  
+**Reality:** IMPLEMENTED / VERIFIED opt-in v2 architecture / STAGE-D VIABILITY GATE PASSED  
 **Decision:** D-030, D-031, D-032, D-033  
-**Evidence:** E-092, E-093, E-094, E-095, E-096, E-097, E-098, E-099, E-100, E-101, E-102, E-103, E-104, E-105, E-106, E-107, E-108, E-109, E-110, E-111, E-112, E-113, E-114, E-115, E-116, E-117  
+**Evidence:** E-092 through E-120  
 **Scope:** [CORE], with later [CORE + ROOM migration] only if the Stage-D viability gate justifies broader activation.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
@@ -499,27 +499,44 @@ This attempt is **stopped before D-N5** because D-N5 exercises the same structur
 
 **Verification-process follow-up — COMPLETE:** the earlier 1,197-second Windows-first run helped motivate the local-verifier redesign. E-109 records a **75.6-second Fast** reference run and a **316.3-second** broader reference run. No adjacent CI/runner or test-suite profiling work is currently planned; use the established local verifier and return to product development.
 
-### Stage-D attempt 2 observed checkpoint — IN PROGRESS
+### Stage-D attempt 2 final result — COMPLETE / PASS
 
 **Date:** 2026-09-16  
-**Work state:** IN PROGRESS — D-N1 through D-N9 complete; D-N10 next  
-**Reality:** NATURALISTIC CHECKPOINT — 8 QUALITY PASSES / 1 QUALITY FAILURE THROUGH D-N9  
-**Evidence:** E-111, E-112, E-113, E-114, E-115, E-116, E-117, E-118, E-119
+**Work state:** COMPLETE — preregistered viability gate passed  
+**Reality:** NATURALISTIC VIABILITY GATE PASSED — 9 QUALITY PASSES / 1 QUALITY FAILURE  
+**Evidence:** E-111 through E-120
 
-A fresh dedicated Stage-D Room was created as `room_c47cba973de44f12bde8ef3aaf80bce1` under the exact preregistered v2 + assignment-thread configuration. The preparation-only opening Round had zero Task/model execution and is excluded under the protocol.
+A fresh dedicated Stage-D Room, `room_c47cba973de44f12bde8ef3aaf80bce1`, completed D-N1 through D-N10 sequentially under the exact preregistered v2 + assignment-thread configuration. The preparation-only opening Round executed no model work and is excluded.
 
-- **D-N1 PASS:** title `D-N1 Solo Saturday Schedule`; one C Assignment; one model execution; no joins, peers, tools, EVIDENCE, or HISTORY; exact **9:20 AM** grocery start; all schedule constraints satisfied; **21,663 total execution tokens**.
-- **D-N2 PASS:** title `D-N2 One-Peer Internet-Plan Decision`; exact C → B → same C shape; one Join released once; no A/tools/EVIDENCE/HISTORY; final answer correctly recommended Plan North and quantified the cost/risk logic; **65,468 total execution tokens**.
-- **D-N3 PASS:** title `D-N3 Differentiated Dual-Peer Moving-Day Plan`; exact C → differentiated A+B → same C shape; one outer Join released once; final answer correctly used two capacity-valid trips, kept elevator unloading inside the reservation, and integrated B's audit; **90,947 total execution tokens**.
-- **D-N4 PASS:** title `D-N4 Structured Source Facts`; C only; repaired structured EVIDENCE path succeeded; final answer correctly reported the current transaction actions, CreateRoomRequest defaults, and HISTORY limits; **84,259 total execution tokens**.
-- **D-N5 PASS:** title `D-N5 Bounded-Truncated Evidence Recovery`; C only; required first truncated SEARCH occurred and C recovered through targeted structured evidence on the same Assignment/thread; **150,592 total execution tokens** and four post-framing continuations.
-- **D-N6 QUALITY FAIL / COORDINATION PASS / ECONOMICS PASS:** title `D-N6 Semantic Continuity and Revision`; HISTORY correctly selected original D-N1 and the same C Assignment/thread resumed, but the final revision moved package drop to **1:45–2:00 PM**, violating the preserved requirement that package drop finish by **1:00 PM**; **44,449 total execution tokens**. First quality failure; do not rerun.
-- **D-N7 PASS:** title `D-N7 Stale-History Discrimination`; bounded HISTORY selected both the later D-N6 revision and original D-N1, yet C correctly returned exactly `ORIGINAL: 9:20 AM`; one C Assignment/thread; **44,015 total execution tokens**.
-- **D-N8 PASS:** title `D-N8 Evidence Failure and Recovery`; first structured READ intentionally failed on `codex_room/stage_d_missing_file.py` with deterministic `invalid_source_evidence`; the same C Task/Assignment/thread then recovered using bounded structured SEARCH/FIND/READ evidence only and correctly reported `codex_room/models.py` with `TransactionAction.HISTORY = "HISTORY"`; no peers, joins, HISTORY, shell/custom-capability fallback, or model-tool activity; **182,555 total execution tokens** across seven C executions and six post-framing continuations.
+Task results:
+- D-N1 PASS — **21,663** tokens, 0 continuations.
+- D-N2 PASS — **65,468** tokens, 2 continuations.
+- D-N3 PASS — **90,947** tokens, 3 continuations.
+- D-N4 PASS — **84,259** tokens, 2 continuations.
+- D-N5 PASS — **150,592** tokens, 4 continuations.
+- D-N6 **QUALITY FAIL / coordination PASS / economics PASS** — **44,449** tokens, 1 continuation; package drop violated the preserved 1:00 PM deadline.
+- D-N7 PASS — **44,015** tokens, 1 continuation.
+- D-N8 PASS — **182,555** tokens, 6 continuations.
+- D-N9 PASS — **109,411** tokens, 4 continuations.
+- D-N10 PASS — **21,509** tokens, 0 continuations; one C Assignment/execution, no peers/HISTORY/EVIDENCE/tools; all feasible grocery combinations were correct, all-three was correctly rejected at **$125.10**, and **$105.15** was correctly identified as the highest feasible spend.
 
-- **D-N9 PASS:** title `D-N9 Nested Delegation`; exact nested C → A → B → same A → same C dependency shape; one inner and one outer Join each released exactly once after its child became terminal; B remained a safety/omission auditor rather than duplicate planner; A incorporated the audit before completing; C integrated an 11-item two-stage checklist with first-six-hour and later-outage sections plus `[LOCAL]` condition flags; no EVIDENCE, HISTORY, or tool activity; **109,411 total execution tokens** across five executions and four post-framing continuations.
+Aggregate economics:
+- median total: **74,863.5** <= 100k — PASS;
+- nearest-rank p90: **150,592** <= 200k — PASS;
+- median post-framing continuations: **2** <= 4 — PASS;
+- maximum task: **182,555** < 300k — PASS;
+- no task exceeded 200k;
+- D-N10 first-C input: **21,170** versus D-N1 **21,257**, well below the **26,571.25** 125% ceiling — PASS.
 
-**Gate consequence after D-N9:** the quality tally is **8 PASS / 1 FAIL**. D-N10 is the final scored task and **must pass quality** to reach the required 9/10. Any D-N10 quality failure ends the gate. No task has exceeded 200k tokens, and no 300k immediate-stop condition has occurred. Continue with D-N10 in the same Room; do not rerun any scored task absent a valid external invalidation.
+Robustness:
+- D-N5 bounded/truncated evidence — PASS;
+- D-N7 stale-history pressure — PASS;
+- D-N8 deterministic evidence failure/recovery — PASS;
+- interruption/restart reliance remains valid because the post-remediation `verify-fast.cmd` exact-tree check covered the focused restart/recovery suites, and comparison from tested code-bearing commit `668ef982...` to Stage-D closeout shows only Project-document changes afterward.
+
+**Final Stage-D decision:** **PASS.** All coordination/provenance invariants, robustness requirements, economics thresholds, the 300k task ceiling, and the >=9/10 quality requirement are satisfied.
+
+**Consequence:** Stage D permits preparation of a **separate default-activation / migration decision**. It does **not** itself change the ordinary version-1 default. Do not perform default activation or Room migration until the human principal makes that separate decision.
 
 #### D-N1 — Solo Saturday schedule
 
