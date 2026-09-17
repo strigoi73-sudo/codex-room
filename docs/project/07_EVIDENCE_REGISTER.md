@@ -4313,3 +4313,30 @@ All preregistered Stage-D decision conditions are satisfied:
 **Stage D attempt 2 therefore PASSES the viability gate.**
 
 This result establishes that the opt-in version-2 task-transaction architecture is viable under the preregistered gate. It does **not** itself change the ordinary default from version 1. Per the protocol, the next step is a separate default-activation / migration decision.
+
+
+### E-121 — Work-model v2 public-default activation verified and merged
+**Date:** 2026-09-16  
+**Kind:** Exact-head local verification + production-default activation evidence  
+**Decision:** D-034
+
+After the Stage-D viability gate passed, the principal approved a clean production cutover to work-model version 2 with Assignment-scoped provider context. Legacy Rooms are to be deleted rather than converted.
+
+Draft PR #107, `I-015: activate work-model v2 as the public default`, implemented the bounded activation surface:
+- public Room creation uses work-model version 2 with `provider_context_mode="assignment_thread"`;
+- public staged Round creation uses the same configuration;
+- New Topic uses the same configuration;
+- rollover successor opening Rounds carry the v2 + assignment-thread public selection;
+- explicit public API attempts to select work-model version 1 or the old persistent-agent-thread production mode are rejected;
+- dormant internal legacy request paths remain only where useful for deterministic historical tests and are not a supported public production mode.
+
+The exact PR head `6a9137a47de0da27a0425ab7683ca09b9aa41940` was verified locally with the repository-standard `verify-fast.cmd`:
+- Linux Python 3.12 focused core: **47 passed, 2 warnings**;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **3 passed**;
+- tracked working tree: **clean**;
+- 42 untracked local artifacts were present but excluded from tracked-source verification.
+
+The PR head remained exactly `6a9137a47de0da27a0425ab7683ca09b9aa41940` at merge time. PR #107 merged successfully to canonical `main` as merge commit `03136c3b11c8c05b8385d0e9f30822dbc014a756`.
+
+**Assessment:** **IMPLEMENTED / VERIFIED / MERGED.** Work-model v2 with Assignment-scoped provider context is now the public production path for new Room work. No legacy-Room migration layer is required under D-034; legacy Rooms are to be deleted deliberately. A bounded live smoke Room remains the next operational verification after the local checkout fast-forwards to the merged main.
