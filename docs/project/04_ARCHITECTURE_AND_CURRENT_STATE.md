@@ -44,7 +44,13 @@ C's protected coordination policy currently includes:
 - C may still execute directly when work is demonstrably small in expected execution/context cost, urgent, inseparable from integration, or no fresh peer is likely to perform it reliably at lower total cost;
 - do not infer that model execution will be cheap merely because a code/file change appears small.
 
-PR #109 introduced dependency-aware sequencing plus context-aware fallback allocation. PR #110 tightened the fallback rule after review showed the original wording could still permit substantial fallback to accumulate on C, particularly when C was itself operating in a child assignment. These rules affect freshly composed Rooms from this point forward; existing Room snapshots are not retroactively rewritten. See D-035 / E-124.
+PR #109 introduced dependency-aware sequencing plus the first context-aware fallback rule. A fresh design-only Common Cause rerun then supplied useful naturalistic evidence for the sequencing side: C deliberately ran two genuinely independent design assignments in parallel, with no tools/retries, using **93,939 raw execution tokens** versus the historical **98,996** Stage-1 baseline. This is a behavioral **PASS for avoiding over-serialization**; it is not an implementation/fallback test.
+
+A controlled implementation rerun then exercised the dependency boundary directly. C ran A's implementation concurrently with B's artifact-independent verification-matrix design, waited for the implementation artifact before auditing actual code, found a genuine defect, and delegated a bounded correction. That sequence supports the dependency-aware rule. The same run exposed a remaining fallback loophole: after the correction assignment settled without applying its patch, substantial tool-heavy work reached C in a peer-created child assignment and C executed the fallback itself. PR #110 tightened the fallback wording specifically for that failure mode.
+
+Therefore the current naturalistic status is asymmetric: **dependency sequencing is behaviorally supported; post-PR-#110 fallback allocation is not yet behaviorally verified.** The controlled implementation rerun stopped at the Room turn limit before full requested regression coverage/readiness, so its observed **863,799 raw execution tokens** must not be treated as a completed benchmark win against the 1,511,456-token historical implementation baseline.
+
+These rules affect freshly composed Rooms from this point forward; existing Room snapshots are not retroactively rewritten. See D-035 / E-124 and current Development Control for the rerun record and next test.
 
 ## 4. Production work model: explicit transaction state
 
@@ -120,7 +126,9 @@ A recurring economic failure mode was model→tool→model continuation amplific
 
 The controlled LAB-2C post-fix run used 3 tool calls / 4 provider responses / 92,765 total tokens, versus 38 tool calls / 39 provider responses / 1,805,314 tokens in the pre-fix Room run on the same fixture. This is evidence for the repaired mechanism, not a universal savings claim. See E-081 through E-090.
 
-The Common Cause baseline later demonstrated another expensive pattern at the coordination level: dependent implementation/verification scheduled concurrently, followed by failed corrective delegations and large fallback execution on accumulated C context. The D-035 structural rules target that demonstrated pattern without creating a new scheduler, fourth agent, or hard-coded cognitive specialty. See E-124.
+The historical Common Cause implementation later demonstrated another expensive pattern at the coordination level: dependent implementation/verification scheduled concurrently, followed by failed corrective delegations and large fallback execution on accumulated C context. The successful historical implementation Round consumed **1,511,456 raw execution tokens**, including **1,041,653 on C**. PRs #109/#110 target that demonstrated pattern without creating a new scheduler, fourth agent, or hard-coded cognitive specialty.
+
+The controlled post-#109 implementation rerun consumed **863,799 raw execution tokens through its turn-limit stop**, with C at **354,530**, A at **485,893**, and B at **23,376**. It showed materially less C accumulation and correct artifact-dependent sequencing, but it did not finish the requested regression/readiness work. The 42.9% raw-token difference from the historical successful implementation is therefore **directional evidence only, not a completed savings benchmark**. It also exposed the fallback loophole that PR #110 subsequently tightened.
 
 ## 10. Recovery, usage walls, and lifecycle safety
 
@@ -148,8 +156,10 @@ The Room UI exposes the persistent Room ID and current/last execution model/effo
 
 ## 13. Current development posture
 
-The major foundation, A2, P4, A3 remediation, and I-015 transaction redesign/cutover are complete. PR #108 closed the ordinary-use transaction contract/retry defect; PRs #109 and #110 implemented and verified the Common Cause coordination-economics structural refinement.
+The major foundation, A2, P4, A3 remediation, and I-015 transaction redesign/cutover are complete. PR #108 closed the ordinary-use transaction contract/retry defect; PRs #109 and #110 implemented and exact-head-verified the Common Cause coordination-economics structural refinement.
 
-The next bounded product evidence step is a **fresh-Room Common Cause rerun** using the original staged prompts and current protected C instructions. The purpose is to observe whether the new dependency sequencing and fallback-allocation rules change actual coordination topology/economics while preserving quality. The instruction regression proves composition, not behavioral compliance; the rerun remains necessary naturalistic evidence.
+The design-only structural rerun is already complete and should **not** be repeated: it preserved useful independent parallelism at 93,939 raw tokens and provided naturalistic support for the dependency-sequencing rule. The controlled implementation rerun also provided naturalistic support for artifact-dependent sequencing, but exposed the fallback loophole addressed by PR #110 and then stopped at the Room turn limit before full readiness.
 
-Do not launch adjacent broad v2 redesign, personality calibration, new memory architecture, or unrelated maintenance merely because this checkpoint exists. Resume ordinary product use after the bounded rerun unless new concrete evidence demonstrates another expensive defect.
+The next bounded evidence step is therefore **implementation/fallback only** in a fresh Room created after PR #110. Reuse the controlled historical Common Cause implementation specification rather than rerunning Stage 1. Use a somewhat higher turn ceiling so the experiment is not terminated merely because it finds and corrects a real defect. Primary questions are whether post-#110 fallback goes to a fresh low-context capable peer when appropriate, whether exact corrected bytes are verified before integration, whether quality/readiness completes, and what the completed economics are.
+
+Do not launch adjacent broad v2 redesign, personality calibration, new memory architecture, or unrelated maintenance merely because this checkpoint exists. Resume ordinary product use after the bounded implementation/fallback rerun unless new concrete evidence demonstrates another expensive defect.
