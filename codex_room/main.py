@@ -19,7 +19,7 @@ from .models import (
     NewTopicRequest,
     ObserverMessageRequest,
     PrepareRoundApiRequest,
-    RolloverRoomRequest,
+    RolloverRoomApiRequest,
     UpdateRoomRequest,
 )
 from .orchestrator import RoomRuntime
@@ -99,7 +99,7 @@ def create_app(
         return await _translate_errors(runtime.rebind_agent_profile(room_id, agent_key))
 
     @app.post("/api/rooms/{room_id}/rollover", status_code=201)
-    async def rollover_room(room_id: str, request: RolloverRoomRequest) -> dict[str, Any]:
+    async def rollover_room(room_id: str, request: RolloverRoomApiRequest) -> dict[str, Any]:
         return await _translate_errors(runtime.rollover(room_id, request))
 
     @app.post("/api/rooms/{room_id}/institutional-release")
