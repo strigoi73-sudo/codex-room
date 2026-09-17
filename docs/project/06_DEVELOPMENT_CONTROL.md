@@ -502,9 +502,9 @@ This attempt is **stopped before D-N5** because D-N5 exercises the same structur
 ### Stage-D attempt 2 observed checkpoint — IN PROGRESS
 
 **Date:** 2026-09-16  
-**Work state:** IN PROGRESS — D-N1 through D-N8 complete; D-N9 next  
-**Reality:** NATURALISTIC CHECKPOINT — 7 QUALITY PASSES / 1 QUALITY FAILURE THROUGH D-N8  
-**Evidence:** E-111, E-112, E-113, E-114, E-115, E-116, E-117, E-118
+**Work state:** IN PROGRESS — D-N1 through D-N9 complete; D-N10 next  
+**Reality:** NATURALISTIC CHECKPOINT — 8 QUALITY PASSES / 1 QUALITY FAILURE THROUGH D-N9  
+**Evidence:** E-111, E-112, E-113, E-114, E-115, E-116, E-117, E-118, E-119
 
 A fresh dedicated Stage-D Room was created as `room_c47cba973de44f12bde8ef3aaf80bce1` under the exact preregistered v2 + assignment-thread configuration. The preparation-only opening Round had zero Task/model execution and is excluded under the protocol.
 
@@ -517,7 +517,9 @@ A fresh dedicated Stage-D Room was created as `room_c47cba973de44f12bde8ef3aaf80
 - **D-N7 PASS:** title `D-N7 Stale-History Discrimination`; bounded HISTORY selected both the later D-N6 revision and original D-N1, yet C correctly returned exactly `ORIGINAL: 9:20 AM`; one C Assignment/thread; **44,015 total execution tokens**.
 - **D-N8 PASS:** title `D-N8 Evidence Failure and Recovery`; first structured READ intentionally failed on `codex_room/stage_d_missing_file.py` with deterministic `invalid_source_evidence`; the same C Task/Assignment/thread then recovered using bounded structured SEARCH/FIND/READ evidence only and correctly reported `codex_room/models.py` with `TransactionAction.HISTORY = "HISTORY"`; no peers, joins, HISTORY, shell/custom-capability fallback, or model-tool activity; **182,555 total execution tokens** across seven C executions and six post-framing continuations.
 
-**Gate consequence after D-N8:** the quality tally is **7 PASS / 1 FAIL**. The gate remains viable, but **D-N9 and D-N10 must both pass quality** to reach the required 9/10. Any second quality failure ends the gate immediately. No task has exceeded 200k tokens, and no 300k immediate-stop condition has occurred. Continue with D-N9 in the same Room; do not rerun any scored task absent a valid external invalidation.
+- **D-N9 PASS:** title `D-N9 Nested Delegation`; exact nested C → A → B → same A → same C dependency shape; one inner and one outer Join each released exactly once after its child became terminal; B remained a safety/omission auditor rather than duplicate planner; A incorporated the audit before completing; C integrated an 11-item two-stage checklist with first-six-hour and later-outage sections plus `[LOCAL]` condition flags; no EVIDENCE, HISTORY, or tool activity; **109,411 total execution tokens** across five executions and four post-framing continuations.
+
+**Gate consequence after D-N9:** the quality tally is **8 PASS / 1 FAIL**. D-N10 is the final scored task and **must pass quality** to reach the required 9/10. Any D-N10 quality failure ends the gate. No task has exceeded 200k tokens, and no 300k immediate-stop condition has occurred. Continue with D-N10 in the same Room; do not rerun any scored task absent a valid external invalidation.
 
 #### D-N1 — Solo Saturday schedule
 
