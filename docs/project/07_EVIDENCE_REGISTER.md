@@ -4202,3 +4202,21 @@ Execution telemetry recorded two C executions, both `gpt-5.6-terra` at high reas
 Total D-N7 execution tokens: **44,015**. Post-framing model continuations: **1**.
 
 **Assessment:** **D-N7 PASS** for stale-history discrimination, quality, coordination/provenance, and task-level economics. Stage-D attempt 2 now stands at **6 quality passes / 1 quality failure** through D-N7. A second quality failure would make the preregistered 9/10 threshold unattainable and end the gate. Continue sequentially with D-N8 in the same Room.
+
+
+### E-118 — Stage-D attempt 2 D-N8 deterministic evidence-failure recovery pass
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability evidence  
+**Decision:** D-031, D-032, D-033
+
+In the same dedicated Stage-D Room used for D-N1 through D-N7, the preregistered D-N8 task ran under work-model version 2 with assignment-scoped provider context, starting and requiring Agent C only, ordinary default profiles/model policy, no private initialization or overlays, and max_turns=8.
+
+The intended stale-path failure occurred first. C issued structured READ evidence against maintained CORE path `codex_room/stage_d_missing_file.py`; the deterministic source-evidence layer returned `ok=false` with `invalid_source_evidence` / `path is unavailable`. The Task and logical Assignment remained intact rather than terminating or corrupting.
+
+C then recovered entirely through later structured source evidence on the same logical Assignment and exact Assignment-scoped provider thread. The recovery sequence used bounded SEARCH/FIND/READ requests only: SEARCH for `TransactionAction.HISTORY`, FIND for transaction/action implementation candidates, READ of `codex_room/transaction_evidence.py`, SEARCH for `TransactionAction` in `codex_room/models.py`, and a final bounded READ of the enum declaration. No peers, joins, HISTORY actions, shell/custom-capability fallback, or model-tool activity occurred.
+
+The final answer correctly stated that the stale-path READ failed, identified the real definition at `codex_room/models.py`, and reported the exact enum value `TransactionAction.HISTORY = "HISTORY"`.
+
+Execution telemetry recorded seven C executions, all `gpt-5.6-terra` at high reasoning effort, all on Assignment `assignment_89a168dba2fd4ad9bbf85d6b78ce3006` and provider thread `01a0acab-6673-78e2-9308-5f1ff655fe58`. Per-execution token deltas were **21,286**, **22,632**, **24,160**, **25,544**, **27,848**, **29,791**, and **31,294**, for **182,555 total execution tokens** and **6 post-framing continuations**.
+
+**Assessment:** **D-N8 PASS** for quality, deterministic evidence-failure recovery, coordination/provenance, and task-level economics. The task remains below the 200k warning threshold and 300k immediate-stop threshold. Stage-D attempt 2 now stands at **7 quality passes / 1 quality failure** through D-N8. Because the overall gate requires at least 9/10 quality passes, D-N9 and D-N10 must both pass quality.
