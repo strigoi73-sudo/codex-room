@@ -558,6 +558,13 @@ class RolloverRoomRequest(BaseModel):
     )
 
 
+class RolloverRoomApiRequest(RolloverRoomRequest):
+    """Production rollover contract after the work-model-v2 default cutover."""
+
+    work_model_version: Literal[2] = 2
+    provider_context_mode: Literal["assignment_thread"] = "assignment_thread"
+
+
 class BindInstitutionalReleaseRequest(BaseModel):
     institutional_release_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
