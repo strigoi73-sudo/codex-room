@@ -3504,14 +3504,17 @@ class Database:
             if assignment is None or assignment["room_id"] != room_id:
                 await db.rollback()
                 raise RuntimeError("Transaction failure assignment is unavailable")
-            attempts = await self._fetchone(
+            prior_failures = await self._fetchone(
                 db,
-                "SELECT COUNT(*) AS count FROM agent_executions WHERE assignment_id=?",
+                """SELECT COUNT(*) AS count FROM agent_executions
+                   WHERE assignment_id=? AND state='failed'""",
                 (assignment["id"],),
             )
+            # One retry belongs to the assignment's failure budget, not its
+            # successful EVIDENCE/HISTORY continuation count.
             should_retry = (
                 retryable
-                and int(attempts["count"] if attempts else 0) < 2
+                and int(prior_failures["count"] if prior_failures else 0) < 1
                 and assignment["state"] == "running"
             )
             await db.execute(
