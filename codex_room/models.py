@@ -162,8 +162,6 @@ class TransactionDecision(BaseModel):
                 raise ValueError("HISTORY requires at least one Room-history request")
             if len(self.history_requests) > 4:
                 raise ValueError("HISTORY accepts at most 4 Room-history requests")
-            if sum(item.max_results for item in self.history_requests) > 20:
-                raise ValueError("HISTORY accepts at most 20 requested results per action")
         elif self.history_requests is not None:
             raise ValueError("history_requests is valid only for HISTORY")
         return self
@@ -270,7 +268,11 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                 "type": "string",
                                 "enum": ["agent_a", "agent_b", "agent_c"],
                             },
-                            "instruction": {"type": "string"},
+                            "instruction": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 50_000,
+                            },
                             "config": {
                                 "anyOf": [
                                     {
@@ -317,9 +319,20 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                         "minLength": 1,
                                         "maxLength": 4096,
                                     },
-                                    "start_line": {"type": "integer"},
-                                    "max_lines": {"type": "integer"},
-                                    "max_bytes": {"type": "integer"},
+                                    "start_line": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                    },
+                                    "max_lines": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 1000,
+                                    },
+                                    "max_bytes": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 128 * 1024,
+                                    },
                                 },
                                 "required": [
                                     "operation",
@@ -363,8 +376,16 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                     },
                                     "include_hidden": {"type": "boolean"},
                                     "case_sensitive": {"type": "boolean"},
-                                    "max_files": {"type": "integer"},
-                                    "max_matches": {"type": "integer"},
+                                    "max_files": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 200,
+                                    },
+                                    "max_matches": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 100,
+                                    },
                                 },
                                 "required": [
                                     "operation",
@@ -406,7 +427,11 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                         "items": {"type": "string"},
                                     },
                                     "include_hidden": {"type": "boolean"},
-                                    "max_results": {"type": "integer"},
+                                    "max_results": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 200,
+                                    },
                                 },
                                 "required": [
                                     "operation",
@@ -448,7 +473,11 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                             {"type": "null"},
                                         ]
                                     },
-                                    "max_results": {"type": "integer"},
+                                    "max_results": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 10,
+                                    },
                                 },
                                 "required": [
                                     "operation",
@@ -476,7 +505,11 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                             {"type": "null"},
                                         ]
                                     },
-                                    "max_results": {"type": "integer"},
+                                    "max_results": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 10,
+                                    },
                                 },
                                 "required": [
                                     "operation",
