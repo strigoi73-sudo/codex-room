@@ -402,13 +402,14 @@ def test_history_request_validation_is_bounded() -> None:
         HistoryRequest(operation="SEARCH", query="")
     with pytest.raises(ValidationError, match="query is valid only"):
         HistoryRequest(operation="RECENT", query="not allowed")
-    with pytest.raises(ValidationError, match="at most 20 requested results"):
+    with pytest.raises(ValidationError, match="less than or equal to 10"):
+        HistoryRequest(operation="RECENT", max_results=11)
+    with pytest.raises(ValidationError, match="at most 4 Room-history requests"):
         TransactionDecision(
             action=TransactionAction.HISTORY,
             history_requests=[
-                HistoryRequest(operation="RECENT", max_results=10),
-                HistoryRequest(operation="RECENT", max_results=10),
-                HistoryRequest(operation="RECENT", max_results=1),
+                HistoryRequest(operation="RECENT", max_results=1)
+                for _ in range(5)
             ],
         )
 
