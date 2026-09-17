@@ -7,20 +7,20 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable local verification, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** I-015 **Stage D attempt 2 PASSED the preregistered viability gate** in one fresh dedicated Room. Final result: **9/10 quality PASS**, all coordination/provenance invariants PASS, robustness PASS, median **74,863.5**, nearest-rank p90 **150,592**, continuation median **2**, maximum task **182,555**, and D-N10 first-C input **21,170** versus the **26,571.25** ceiling. See E-111 through E-120. Attempt 1 remains historical and stopped at D-N4.
+- **What just changed?** After Stage D passed, the principal approved **D-034: clean activation of v2 as the public production work model**. Legacy Rooms will be deleted rather than migrated. Draft PR **#107** implements the bounded cutover for Room creation, staged Rounds, New Topic, and rollover successors; public v1 selection is rejected. The branch is not yet verified or merged.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Prepare the **separate default-activation / migration decision** permitted by the Stage-D PASS. Do not change the ordinary version-1 default merely because Stage D passed; activation remains a deliberate human-principal decision.
+- **What is next?** Run the repository-standard **`verify-fast.cmd` on the exact PR #107 head**. If it passes, review the exact diff, merge the activation PR, fast-forward the local working copy, delete the legacy Rooms deliberately, and run one bounded live smoke Room under the new default.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### I-015 — Task-transaction stabilization redesign
-**Work state:** COMPLETE — Stage-D viability gate passed; separate default-activation / migration decision next  
-**Reality:** IMPLEMENTED / VERIFIED opt-in v2 architecture / STAGE-D VIABILITY GATE PASSED  
-**Decision:** D-030, D-031, D-032, D-033  
+**Work state:** IN PROGRESS — Stage-D gate passed; v2 public-default activation PR #107 awaiting exact-head verification  
+**Reality:** STAGE-D VIABILITY GATE PASSED / DEFAULT ACTIVATION DECIDED / NOT YET VERIFIED OR MERGED  
+**Decision:** D-030, D-031, D-032, D-033, D-034  
 **Evidence:** E-092 through E-120  
-**Scope:** [CORE], with later [CORE + ROOM migration] only if the Stage-D viability gate justifies broader activation.
+**Scope:** [CORE]. No legacy Room migration is planned; legacy Rooms will be deleted.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the opt-in coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. Version 1 remains the ordinary default; broader default activation awaits the later viability gate.
 
