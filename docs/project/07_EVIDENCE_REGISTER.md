@@ -4340,3 +4340,29 @@ The exact PR head `6a9137a47de0da27a0425ab7683ca09b9aa41940` was verified locall
 The PR head remained exactly `6a9137a47de0da27a0425ab7683ca09b9aa41940` at merge time. PR #107 merged successfully to canonical `main` as merge commit `03136c3b11c8c05b8385d0e9f30822dbc014a756`.
 
 **Assessment:** **IMPLEMENTED / VERIFIED / MERGED.** Work-model v2 with Assignment-scoped provider context is now the public production path for new Room work. No legacy-Room migration layer is required under D-034; legacy Rooms are to be deleted deliberately. A bounded live smoke Room remains the next operational verification after the local checkout fast-forwards to the merged main.
+
+
+### E-122 — Clean v2 cutover and live production smoke
+**Date:** 2026-09-16  
+**Kind:** Destructive legacy-Room cleanup + live post-activation production verification  
+**Decision:** D-034
+
+After PR #107 activated work-model v2 with Assignment-scoped provider context as the public production path, the local checkout was fast-forwarded to canonical `main` and confirmed clean.
+
+Codex Room was then stopped completely before destructive state cleanup. The offline SQLite cleanup enumerated **77 legacy Rooms**, deleted all Room rows with foreign keys enabled, cascaded their Room-scoped relational state, ran a foreign-key integrity check, and reported **Rooms remaining after cleanup: 0**. The legacy `data/rooms` workspace tree and Room-specific custom-capability binding/staging directories were removed. Global agent profiles, institutional releases, and verified custom-capability packages/registrations/verifications were deliberately preserved.
+
+One transcript-only diagnostic in the PowerShell wrapper then printed `Room store was expected to be empty` after the API restart. This was not supported by the authoritative cleanup state and did not prevent the subsequent fresh Room creation. The offline database check immediately beforehand had reported zero Room rows. The fresh smoke Room created afterward was `room_e150b0dce6504d979183609ab0d5d08d`, demonstrating that the post-cleanup store accepted a new Room normally.
+
+The fresh production-default smoke Room used:
+- work-model version **2**;
+- `provider_context_mode="assignment_thread"`;
+- exactly **one transaction Task**;
+- exactly **one C Assignment**;
+- **zero Joins**;
+- exactly one transaction action, **COMPLETE**;
+- exactly one model execution;
+- **21,172 execution tokens**.
+
+The requested exact final response was `V2 DEFAULT SMOKE PASS`, which the Room returned exactly. The smoke command completed with `=== V2 CLEAN CUTOVER SMOKE PASS ===`, reporting the v2 production work model and Assignment-thread context mode.
+
+**Assessment:** **PASS.** The legacy Room store has been deliberately cleared, and the first retained Room in the clean store successfully executed through the activated v2 production path. I-015 activation follow-through is complete; no further compatibility migration or broad validation is required absent a concrete defect.
