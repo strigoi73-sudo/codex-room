@@ -70,6 +70,10 @@ class AgentTurnTerminalError(RuntimeError):
         self.codex_error_info = codex_error_info
 
 
+class AgentTurnInterruptedError(AgentTurnTerminalError):
+    """The exact recovered Codex turn was authoritatively interrupted."""
+
+
 class AgentDecisionValidationError(RuntimeError):
     """A completed Codex turn returned a decision that failed Room validation."""
 
@@ -162,6 +166,9 @@ class CodexAgentAdapter:
 
     INTERRUPT_TIMEOUT_SECONDS = 2.0
     RECONCILIATION_INTERVAL_SECONDS = 2.0
+    # One event-loop handoff plus modest local notification jitter; this is not a
+    # retry window and applies only to an authoritative interrupted observation.
+    RECONCILIATION_TERMINAL_GRACE_SECONDS = 0.05
     THREAD_IDLE_TIMEOUT_SECONDS = 120.0
 
     def __init__(self, *, codex_bin: str | None = None) -> None:
@@ -505,7 +512,27 @@ class CodexAgentAdapter:
                     recovered = await self._read_exact_turn(
                         thread, handle.id, on_observed=observe
                     )
-                except (AgentTurnTerminalError, AgentTurnStateUnknownError):
+                except AgentTurnInterruptedError:
+                    # History and notification delivery are independent views of the
+                    # same exact turn. A terminal history observation can arrive in
+                    # the narrow interval while a usable notification completion is
+                    # already settling. Give only that already-started stream a
+                    # bounded chance to finish; otherwise preserve the terminal,
+                    # fail-closed history result.
+                    done, _ = await asyncio.wait(
+                        {stream_task}, timeout=self.RECONCILIATION_TERMINAL_GRACE_SECONDS
+                    )
+                    if stream_task in done:
+                        try:
+                            return stream_task.result(), "notification"
+                        except RuntimeError:
+                            pass
+                    raise
+                except AgentTurnTerminalError:
+                    # A failed or otherwise terminal exact-history status remains
+                    # authoritative; only the interrupted state gets the grace.
+                    raise
+                except AgentTurnStateUnknownError:
                     raise
                 except Exception:
                     # A transient read failure is not evidence that the running turn
@@ -565,7 +592,7 @@ class CodexAgentAdapter:
                 codex_error_info=error_info if isinstance(error_info, str) else None,
             )
         if status == "interrupted":
-            raise AgentTurnTerminalError("Codex turn was interrupted")
+            raise AgentTurnInterruptedError("Codex turn was interrupted")
         if status != "completed":
             raise AgentTurnTerminalError(f"Codex turn has unknown status: {status}")
         items_view = getattr(turn, "items_view", "full")

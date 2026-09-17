@@ -180,6 +180,105 @@ class HistoryThread(TurningThread):
         return SimpleNamespace(thread=SimpleNamespace(turns=turns))
 
 
+class InterruptedRaceHandle:
+    id = "turn-interrupted-race"
+
+    def __init__(self) -> None:
+        self.release_completion = asyncio.Event()
+        self.cancelled = asyncio.Event()
+
+    async def run(self):
+        try:
+            await self.release_completion.wait()
+            # Let the interrupted history read return first, so this is a genuine
+            # scheduling race rather than a pre-completed stream task.
+            await asyncio.sleep(0)
+            return SimpleNamespace(
+                final_response='{"outcome":"FINISH","message":"notification wins"}',
+                usage=None,
+                items=[],
+            )
+        finally:
+            self.cancelled.set()
+
+
+class InterruptedRaceThread:
+    id = "thread-interrupted-race"
+
+    def __init__(self, handle: InterruptedRaceHandle) -> None:
+        self.handle = handle
+
+    async def read(self, *, include_turns: bool = False):
+        assert include_turns
+        self.handle.release_completion.set()
+        turn = SimpleNamespace(
+            id=self.handle.id,
+            status=SimpleNamespace(value="interrupted"),
+            error=None,
+            items=[],
+        )
+        return SimpleNamespace(thread=SimpleNamespace(turns=[turn]))
+
+
+class FailedRaceHandle(InterruptedRaceHandle):
+    id = "turn-failed-race"
+
+    async def run(self):
+        try:
+            await self.release_completion.wait()
+            return SimpleNamespace(
+                final_response='{"outcome":"FINISH","message":"must not win"}',
+                usage=None,
+                items=[],
+            )
+        finally:
+            self.cancelled.set()
+
+
+class FailedRaceThread:
+    id = "thread-failed-race"
+
+    def __init__(self, handle: FailedRaceHandle) -> None:
+        self.handle = handle
+
+    async def read(self, *, include_turns: bool = False):
+        assert include_turns
+        self.handle.release_completion.set()
+        # Make the apparently successful notification result available before the
+        # authoritative failed history response is returned.
+        await asyncio.sleep(0)
+        error = SimpleNamespace(
+            message="authoritative failure",
+            codex_error_info=SimpleNamespace(
+                root=SimpleNamespace(value="usageLimitExceeded")
+            ),
+        )
+        turn = SimpleNamespace(
+            id=self.handle.id,
+            status=SimpleNamespace(value="failed"),
+            error=error,
+            items=[],
+        )
+        return SimpleNamespace(thread=SimpleNamespace(turns=[turn]))
+
+
+class InterruptedHistoryThread:
+    id = "thread-genuine-interruption"
+
+    def __init__(self, handle: HistoryHandle) -> None:
+        self.handle = handle
+
+    async def read(self, *, include_turns: bool = False):
+        assert include_turns
+        turn = SimpleNamespace(
+            id=self.handle.id,
+            status=SimpleNamespace(value="interrupted"),
+            error=None,
+            items=[],
+        )
+        return SimpleNamespace(thread=SimpleNamespace(turns=[turn]))
+
+
 class InvalidDecisionHandle:
     id = "turn-invalid-decision"
 
@@ -288,6 +387,49 @@ async def test_failed_notification_recovers_authoritative_usage_limit_code():
 
     assert raised.value.codex_error_info == "usageLimitExceeded"
     assert "Sep 6th, 2026 1:33 AM" in str(raised.value)
+
+
+@pytest.mark.asyncio
+async def test_successful_notification_wins_interrupted_history_race():
+    adapter = CodexAgentAdapter()
+    adapter.RECONCILIATION_INTERVAL_SECONDS = 0.01
+    adapter.RECONCILIATION_TERMINAL_GRACE_SECONDS = 0.05
+    handle = InterruptedRaceHandle()
+
+    result, completion_source = await adapter._run_with_reconciliation(
+        InterruptedRaceThread(handle), handle
+    )
+
+    assert completion_source == "notification"
+    assert result.final_response == '{"outcome":"FINISH","message":"notification wins"}'
+    assert handle.cancelled.is_set()
+
+
+@pytest.mark.asyncio
+async def test_authoritative_failed_history_cannot_be_overridden_by_notification_success():
+    adapter = CodexAgentAdapter()
+    adapter.RECONCILIATION_INTERVAL_SECONDS = 0.01
+    adapter.RECONCILIATION_TERMINAL_GRACE_SECONDS = 0.05
+    handle = FailedRaceHandle()
+
+    with pytest.raises(AgentTurnTerminalError) as raised:
+        await adapter._run_with_reconciliation(FailedRaceThread(handle), handle)
+
+    assert raised.value.codex_error_info == "usageLimitExceeded"
+    assert handle.cancelled.is_set()
+
+
+@pytest.mark.asyncio
+async def test_genuine_interruption_without_completion_remains_terminal():
+    adapter = CodexAgentAdapter()
+    adapter.RECONCILIATION_INTERVAL_SECONDS = 0.01
+    adapter.RECONCILIATION_TERMINAL_GRACE_SECONDS = 0.01
+    handle = HistoryHandle()
+
+    with pytest.raises(AgentTurnTerminalError, match="interrupted"):
+        await adapter._run_with_reconciliation(InterruptedHistoryThread(handle), handle)
+
+    assert handle.cancelled.is_set()
 
 
 class ResumeClient:
