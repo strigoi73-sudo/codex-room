@@ -1,57 +1,15 @@
-name: One-shot transaction robustness fix
+name: Verify transaction robustness repair
 
 on:
-  push:
-    branches:
-      - fix/transaction-contract-recovery-20260916
   pull_request:
     branches:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply:
-    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
-    runs-on: [self-hosted, Linux, X64]
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Prepare native Python 3.12
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version'
-          python3 -m venv "$RUNNER_TEMP/codex-room-repair-venv"
-          echo "$RUNNER_TEMP/codex-room-repair-venv/bin" >> "$GITHUB_PATH"
-          "$RUNNER_TEMP/codex-room-repair-venv/bin/python" -m pip install -c constraints-test.txt ".[test]"
-      - name: Apply bounded repair
-        shell: bash
-        run: python tools/apply_transaction_robustness_fix.py
-      - name: Run focused transaction tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          tmp_dir="$(mktemp -d /dev/shm/codex-room-repair-pytest.XXXXXX)"
-          trap 'rm -rf "$tmp_dir"' EXIT
-          TMPDIR="$tmp_dir" python -m pytest -q tests/test_transaction_evidence.py tests/test_transactions.py
-      - name: Commit repair
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add codex_room/models.py codex_room/orchestrator.py codex_room/db.py tests/test_transaction_evidence.py
-          git diff --cached --check
-          git commit -m "Fix transaction contract and continuation retry robustness"
-          git push origin "HEAD:${{ github.head_ref }}"
-
   verify-linux:
-    if: github.event_name == 'push' && github.actor == 'github-actions[bot]'
     runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 10
     steps:
@@ -64,6 +22,9 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/codex-room-verify-venv"
           echo "$RUNNER_TEMP/codex-room-verify-venv/bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/codex-room-verify-venv/bin/python" -m pip install -c constraints-test.txt ".[test]"
+      - name: Check diff whitespace
+        shell: bash
+        run: git diff --check origin/main...HEAD
       - name: Run full Python suite
         shell: bash
         run: |
@@ -73,7 +34,6 @@ jobs:
           TMPDIR="$tmp_dir" python -m pytest -q
 
   verify-windows:
-    if: github.event_name == 'push' && github.actor == 'github-actions[bot]'
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 15
     steps:
@@ -90,28 +50,3 @@ jobs:
           tests/test_transaction_evidence.py
           tests/test_transactions.py
           tests/test_source_inspection.py
-
-  cleanup:
-    if: github.event_name == 'push' && github.actor == 'github-actions[bot]' && success()
-    needs: [verify-linux, verify-windows]
-    runs-on: [self-hosted, Linux, X64]
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Remove one-shot repair machinery
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm .github/workflows/one-shot-transaction-robustness-fix.yml
-          rm tools/apply_transaction_robustness_fix.py
-          rmdir .github/workflows 2>/dev/null || true
-          rmdir .github 2>/dev/null || true
-          rmdir tools 2>/dev/null || true
-          git add -A
-          git diff --cached --check
-          git commit -m "Remove one-shot transaction repair machinery"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
