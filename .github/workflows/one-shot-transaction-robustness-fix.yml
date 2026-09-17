@@ -4,18 +4,22 @@ on:
   push:
     branches:
       - fix/transaction-contract-recovery-20260916
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: github.actor != 'github-actions[bot]'
+    if: github.event_name == 'pull_request' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -34,10 +38,10 @@ jobs:
           git add codex_room/models.py codex_room/orchestrator.py codex_room/db.py tests/test_transaction_evidence.py
           git diff --cached --check
           git commit -m "Fix transaction contract and continuation retry robustness"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "HEAD:${{ github.head_ref }}"
 
   verify:
-    if: github.actor == 'github-actions[bot]'
+    if: github.event_name == 'push' && github.actor == 'github-actions[bot]'
     strategy:
       fail-fast: false
       matrix:
@@ -55,7 +59,7 @@ jobs:
         run: python -m pytest -q
 
   cleanup:
-    if: github.actor == 'github-actions[bot]' && success()
+    if: github.event_name == 'push' && github.actor == 'github-actions[bot]' && success()
     needs: verify
     runs-on: ubuntu-latest
     steps:
