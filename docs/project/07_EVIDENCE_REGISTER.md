@@ -4220,3 +4220,28 @@ The final answer correctly stated that the stale-path READ failed, identified th
 Execution telemetry recorded seven C executions, all `gpt-5.6-terra` at high reasoning effort, all on Assignment `assignment_89a168dba2fd4ad9bbf85d6b78ce3006` and provider thread `01a0acab-6673-78e2-9308-5f1ff655fe58`. Per-execution token deltas were **21,286**, **22,632**, **24,160**, **25,544**, **27,848**, **29,791**, and **31,294**, for **182,555 total execution tokens** and **6 post-framing continuations**.
 
 **Assessment:** **D-N8 PASS** for quality, deterministic evidence-failure recovery, coordination/provenance, and task-level economics. The task remains below the 200k warning threshold and 300k immediate-stop threshold. Stage-D attempt 2 now stands at **7 quality passes / 1 quality failure** through D-N8. Because the overall gate requires at least 9/10 quality passes, D-N9 and D-N10 must both pass quality.
+
+
+### E-119 — Stage-D attempt 2 D-N9 nested-delegation pass
+**Date:** 2026-09-16  
+**Kind:** Paid naturalistic Stage-D viability evidence  
+**Decision:** D-031, D-032, D-033
+
+In the same dedicated Stage-D Room used for D-N1 through D-N8, the preregistered D-N9 task ran under work-model version 2 with assignment-scoped provider context, starting at Agent C, requiring Agents A and B, ordinary default profiles/model policy, no private initialization or overlays, and max_turns=8.
+
+The required nested dependency shape was preserved exactly: C delegated one planning Assignment to A; A delegated a safety/omission-only audit Assignment to B; B completed; the inner Join released once to the same A Assignment; A resumed on its exact Assignment/provider thread and completed; the outer Join then released once to the same C Assignment; C resumed on its exact Assignment/provider thread and completed. No EVIDENCE, HISTORY, shell/custom-capability, or model-tool activity occurred.
+
+B's contribution remained an audit rather than duplicate plan generation. It identified CO/fire, food-safety, medical-device/medication, temperature, water/sanitation, egress/building, electrical, and communications/local-alert risks. A explicitly incorporated those findings into its finalized contribution, and C's final answer integrated that branch.
+
+The final answer contained **11 checklist items**, separated **First 6 hours** from **Remaining outage (to 48 hours)**, incorporated the material safety/omission findings, and marked local-condition-dependent guidance with `[LOCAL]`.
+
+Execution telemetry recorded five executions:
+- C framing: `gpt-5.6-terra` / high, **21,476** tokens;
+- A first pass: `gpt-5.6-luna` / medium, **20,753** tokens;
+- B audit: `gpt-5.6-terra` / high, **20,985** tokens;
+- A continuation on the same Assignment/thread: `gpt-5.6-luna` / medium, **22,742** tokens;
+- C integration continuation on the same Assignment/thread: `gpt-5.6-terra` / high, **23,455** tokens.
+
+Total D-N9 execution tokens: **109,411**. Post-framing model continuations: **4**.
+
+**Assessment:** **D-N9 PASS** for quality, nested coordination/provenance, and task-level economics. Stage-D attempt 2 now stands at **8 quality passes / 1 quality failure** through D-N9. D-N10 must pass quality for the 9/10 gate to succeed.
