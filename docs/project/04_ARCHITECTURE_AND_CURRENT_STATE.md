@@ -435,6 +435,16 @@ Hosted deterministic coverage verifies same-Assignment reuse, same-agent distinc
 
 **Stage C closeout:** Stage C is COMPLETE. No separate memory database, embeddings, summarization layer, automatic wholesale history injection, or provider-thread archive is justified by current evidence. Broader D-009 indexing remains future direction only if ordinary use demonstrates the bounded recent/lexical result path is insufficient. A narrow crash window can still create an unused orphan provider thread after provider-thread creation but before durable Assignment binding; no model turn has started in that window, so current evidence does not indicate duplicate cognition.
 
+### Stage D viability closeout
+
+**NATURALISTIC VIABILITY GATE PASSED — 2026-09-16 — opt-in architecture remains non-default pending separate activation decision**
+
+The preregistered I-015 Stage-D attempt 2 completed all ten scored tasks in one dedicated Room using `work_model_version=2` with assignment-scoped provider context. Final quality was **9/10 PASS**; all coordination/provenance invariants and robustness requirements passed. Aggregate economics also passed: **74,863.5 median task tokens**, **150,592 nearest-rank p90**, **2 median post-framing continuations**, **182,555 maximum task**, and D-N10 first-C input **21,170** versus D-N1 **21,257** (inside the 125% context-isolation ceiling). See E-111 through E-120.
+
+D-N6 was the sole quality failure and is preserved rather than rerun: history retrieval and Assignment/thread continuity were correct, but C's revised schedule violated the preserved package-drop deadline. The remaining tasks passed their fixed rubrics, including truncation recovery, stale-history discrimination, deterministic evidence failure/recovery, nested delegation, and the final long-Room self-contained isolation check.
+
+This closes the naturalistic viability question for the current opt-in version-2 task-transaction architecture. **Version 1 remains the ordinary default.** Stage-D PASS authorizes consideration of a separate default-activation / migration decision; it does not itself constitute that decision or implementation.
+
 ## 20. Runtime-state and work-queue caution
 
 Current priorities, maintenance issues, blockers, and open questions are owned by `06_DEVELOPMENT_CONTROL.md` and are intentionally not duplicated in this architecture synthesis.
