@@ -7,20 +7,20 @@
 ## Operator summary
 
 - **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable local verification, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** **D-034 is IMPLEMENTED / VERIFIED / MERGED.** PR **#107** activated work-model v2 with `provider_context_mode="assignment_thread"` as the public production path for Room creation, staged Rounds, New Topic, and rollover successors; public v1 selection is rejected. Exact PR head `6a9137a47de0da27a0425ab7683ca09b9aa41940` passed `verify-fast.cmd` (47 Linux focused, 118 Windows portability, 3 browser), then merged as `03136c3b11c8c05b8385d0e9f30822dbc014a756`. See E-121.
+- **What just changed?** **D-034 activation follow-through is complete.** After PR #107 activated v2 + `assignment_thread`, the local checkout fast-forwarded to canonical `main`, **77 legacy Rooms were deleted offline with foreign-key checks**, Room workspaces/bindings were cleared, and one fresh production smoke Room (`room_e150b0dce6504d979183609ab0d5d08d`) completed through the v2 transaction path with one C Assignment, zero Joins, one `COMPLETE`, and one model execution. See E-121 and E-122.
 - **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
 - **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** Fast-forward the local working copy to canonical `main`, then deliberately delete the legacy Rooms and run **one bounded live smoke Room** under the new v2 + assignment-thread production default. Stop after that smoke unless it exposes a concrete defect.
+- **What is next?** **Return to ordinary Codex Room development/use.** I-015 is closed. Do not launch additional v2 compatibility/migration work or broad validation unless ordinary use exposes a concrete defect.
 - **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
 
 ## Current Focus
 
 ### I-015 — Task-transaction stabilization redesign
-**Work state:** COMPLETE — v2 public-default activation implemented, verified, and merged; one bounded live smoke remains operational follow-through  
-**Reality:** IMPLEMENTED / VERIFIED / MERGED / STAGE-D VIABILITY GATE PASSED  
+**Work state:** COMPLETE — v2 public-default activation and clean cutover finished  
+**Reality:** IMPLEMENTED / VERIFIED / MERGED / LIVE PRODUCTION SMOKE PASSED  
 **Decision:** D-030, D-031, D-032, D-033, D-034  
-**Evidence:** E-092 through E-121  
-**Scope:** [CORE]. No legacy Room migration is planned; legacy Rooms will be deleted.
+**Evidence:** E-092 through E-122  
+**Scope:** [CORE]. Legacy Rooms were deleted rather than migrated; no compatibility migration remains.
 
 **Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. D-034 / PR #107 later promoted the Stage-D-proven v2 + assignment-thread configuration to the public production path.
 
