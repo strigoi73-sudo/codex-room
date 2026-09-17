@@ -134,7 +134,15 @@ def create_app(
 
     @app.post("/api/rooms/{room_id}/new-topic")
     async def new_topic(room_id: str, request: NewTopicRequest) -> dict[str, Any]:
-        return await _translate_errors(runtime.new_topic(room_id, request))
+        prepared = await _translate_errors(
+            runtime.prepare_round(
+                room_id,
+                PrepareRoundApiRequest(title="New topic", prompt=request.topic),
+            )
+        )
+        return await _translate_errors(
+            runtime.start_round(room_id, prepared["active_round_id"])
+        )
 
     @app.post("/api/rooms/{room_id}/rounds", status_code=201)
     async def prepare_round(room_id: str, request: PrepareRoundApiRequest) -> dict[str, Any]:
