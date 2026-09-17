@@ -132,3 +132,73 @@ After commit, an additional exhaustive attempt on the exact commit produced **42
 The commit was pushed to canonical `main`, and local `HEAD` and `origin/main` were confirmed equal at `6b810f0e327da4055ced97f38a60977f4eba9c46` immediately after push.
 
 **Assessment:** the false coordinator interruption is a demonstrated **CORE lifecycle/reconciliation race**, not evidence that C's provider turn actually failed. The bounded exact-turn reconciliation repair is **IMPLEMENTED / REVIEWED / VERIFIED TO SUFFICIENT EVIDENCE / PUSHED** at the stated commit. Further synthetic reproduction is not required; monitor ordinary execution for recurrence. The interrupted Common Cause Round itself remains historically failed in durable Room state and should not be rewritten retroactively.
+
+---
+
+### E-128 — Windows Codex sandbox helper failure from redirected TEMP/TMP and deterministic recovery
+**Date:** 2026-09-17  
+**Kind:** [LOCAL environment issue / Codex sandbox provisioning / operational recovery]
+
+After the CORE repair was restarted, the next Common Cause continuation could not execute shell commands. A, B, and C encountered the same pre-command failure: `helper_unknown_error: setup refresh had errors`. No game runtime verification actually began in that Round.
+
+Local sandbox logs isolated the failure to the Windows sandbox setup helper attempting to grant its write ACE on the user's redirected temporary directory:
+
+`F:\Users\strig\AppData\Local\Temp`
+
+The helper repeatedly recorded:
+
+`write ACE grant failed ... SetNamedSecurityInfoW failed: 5`
+
+followed by `setup refresh had errors`. The redirect had been introduced during an earlier pytest-temp workaround by changing user-level `TEMP` and `TMP` from the Windows-profile location on `C:` to the parallel `F:` tree. ACL inspection showed the ordinary `C:\Users\strig\AppData\Local\Temp` path was owned by the user and already carried Codex sandbox-specific permissions, while the `F:` temp path was owned by `BUILTIN\Administrators` and lacked the same Codex-specific ACL arrangement.
+
+Recovery deliberately avoided changing the F: ACL. User-level and process-level `TEMP`/`TMP` were restored to:
+
+`C:\Users\strig\AppData\Local\Temp`
+
+Codex Room was restarted. A one-command SDK sandbox probe using the same `openai-codex` workspace-write boundary then returned `CODEX_SANDBOX_OK`, and the newest sandbox setup log recorded:
+
+`setup refresh: processed 2 write roots (read roots delegated); errors=[]`
+
+No repository code change was required.
+
+**Assessment:** the helper failure was a local environment regression caused by redirecting TEMP/TMP to a path on which Codex sandbox setup could not apply the required write ACE. It is **RESOLVED** by restoring TEMP/TMP to the Windows-profile temp directory. Do not globally redirect TEMP/TMP again merely to work around pytest cleanup without first accounting for Codex sandbox ACL/provisioning requirements.
+
+---
+
+### E-129 — Common Cause final exact-artifact verification and play-readiness closeout
+**Date:** 2026-09-17  
+**Kind:** [ROOM final verification / game artifact / ordinary-use post-repair evidence]
+
+After E-128 restored shell execution, the existing Common Cause Room and workspace were continued without rebuilding or redesigning the game:
+
+- Room: `room_01f030b67b0a44f08922391836a6fdd8`;
+- Round: `round_557922a63c8c463ba7c40d185ddd0d58`;
+- Task: `task_0649d48012f3411694bc19a0c640f94a`.
+
+The bounded objective was the previously missing nonmodifying exact-artifact verification. B performed the substantive independent verification against the current `common_cause.py`, `test_common_cause.py`, and `README.md`; the Round recorded no persistent game-file modification.
+
+Verification evidence reported by B and then integrated by A and C:
+
+- `python -m py_compile common_cause.py test_common_cause.py` exited **0**;
+- `python -m unittest -v test_common_cause` exited **0** with **11 passing tests**;
+- a fresh temporary state rejected illegal `claim B AB` with exit **1** and `RuleError: it is not that player's turn`;
+- SHA-256 of that temporary state was identical before and after the rejected command: `e97cf31b089c486f389bf9f51613839071d70b69be9058f8fbf1b5c57effe996`, demonstrating CLI rejection atomicity for the exercised case;
+- from that temporary state, **48 deterministic pass actions** completed all eight rounds;
+- final state reported `finished=True`, round 8, no pending offer, zero unresolved defense choices, and a final winner (`WINNER: A` under the deterministic smoke sequence);
+- source review found no genuine blocker to competitive play; remaining work was characterized as optional polish.
+
+The Round closed normally by `transaction_settled`. This is also one natural ordinary-use completion after the E-127 reconciliation repair without recurrence of the false `Codex turn was interrupted` failure; one successful continuation is supporting evidence, not proof against all future races.
+
+Execution economics for this final verification Round:
+
+- Room executions: **7**;
+- total raw execution tokens: **280,433**;
+- C: **46,646**;
+- A: **45,338**;
+- B: **188,449**;
+- native model tool calls: **2**;
+- failed tool calls: **0**.
+
+Coordination note: C announced one independent verifier, but the actual path was C -> A -> B, with A acting as a zero-tool relay before and after B's substantive verification. B remained the independent executor, so this does not undermine the artifact result, but A's relay consumed **45,338** raw execution tokens and did not materially add verification evidence. Treat that as concrete token-economy evidence for future ordinary-use coordination; it does not justify reopening the closed synthetic benchmark series by itself.
+
+**Assessment:** the existing Common Cause artifact is **VERIFIED PLAY-READY** for the intended three-agent competitive exercise. Competitive play remains a separate human authorization; this evidence does not itself start a match.
