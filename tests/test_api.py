@@ -77,6 +77,50 @@ def test_http_create_state_and_exports(tmp_path):
         assert "Agent A thread" in md_export.text
 
 
+def test_http_rejects_legacy_work_model_selection(tmp_path):
+    adapter = FakeAgentAdapter()
+    app = create_app(
+        database_path=tmp_path / "v2-only-api.db",
+        data_root=tmp_path / "data",
+        adapter=adapter,
+    )
+
+    with TestClient(app) as client:
+        legacy_room = client.post(
+            "/api/rooms",
+            json={
+                "title": "Legacy request",
+                "topic": "Should be rejected",
+                "auto_start": False,
+                "work_model_version": 1,
+                "provider_context_mode": "persistent_agent_thread",
+            },
+        )
+        assert legacy_room.status_code == 422
+
+        room = client.post(
+            "/api/rooms",
+            json={
+                "title": "V2 room",
+                "topic": "Use production defaults",
+                "auto_start": False,
+            },
+        )
+        assert room.status_code == 201
+        room_id = room.json()["id"]
+
+        legacy_round = client.post(
+            f"/api/rooms/{room_id}/rounds",
+            json={
+                "title": "Legacy round request",
+                "prompt": "Should also be rejected",
+                "work_model_version": 1,
+                "provider_context_mode": "persistent_agent_thread",
+            },
+        )
+        assert legacy_round.status_code == 422
+
+
 def test_legacy_ab_only_profile_update_preserves_c_default(tmp_path):
     adapter = FakeAgentAdapter()
     app = create_app(
