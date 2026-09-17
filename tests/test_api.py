@@ -98,6 +98,18 @@ def test_http_rejects_legacy_work_model_selection(tmp_path):
         )
         assert legacy_room.status_code == 422
 
+        persistent_context = client.post(
+            "/api/rooms",
+            json={
+                "title": "Persistent-context request",
+                "topic": "Should also be rejected",
+                "auto_start": False,
+                "work_model_version": 2,
+                "provider_context_mode": "persistent_agent_thread",
+            },
+        )
+        assert persistent_context.status_code == 422
+
         room = client.post(
             "/api/rooms",
             json={
