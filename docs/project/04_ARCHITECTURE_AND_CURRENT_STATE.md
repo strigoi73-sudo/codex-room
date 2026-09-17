@@ -21,7 +21,7 @@ The canonical repository is the private GitHub repo `strigoi73-sudo/codex-room`;
 
 Routine mechanical verification is local. `verify-fast.cmd` is the normal PR gate and `verify-full.cmd` is the exhaustive/manual tier, both backed by `verify-local.ps1`. GitHub Actions is no longer the routine verification path after repeated pre-runner startup failures. GitHub remains the canonical history/review bridge. See D-018 and E-109.
 
-Exact review validity attaches to the reviewed bytes. A push or merge is not itself verification; applicable deterministic checks must pass on the version being described as verified.
+Exact review validity attaches to the reviewed bytes. A push or merge is not itself verification; applicable deterministic checks must pass on the version being described as verified. Verification depth should be proportional to the demonstrated risk and changed behavior rather than repeating broad pytest coverage after sufficient focused evidence already exists.
 
 ## 3. Personal organization and protected instruction composition
 
@@ -48,9 +48,9 @@ PR #109 introduced dependency-aware sequencing plus the first context-aware fall
 
 A controlled implementation rerun then exercised the dependency boundary directly. C ran A's implementation concurrently with B's artifact-independent verification-matrix design, waited for the implementation artifact before auditing actual code, found a genuine defect, and delegated a bounded correction. That sequence supports the dependency-aware rule. The same run exposed a remaining fallback loophole: after the correction assignment settled without applying its patch, substantial tool-heavy work reached C in a peer-created child assignment and C executed the fallback itself. PR #110 tightened the fallback wording specifically for that failure mode.
 
-Therefore the current naturalistic status is asymmetric: **dependency sequencing is behaviorally supported; post-PR-#110 fallback allocation is not yet behaviorally verified.** The controlled implementation rerun stopped at the Room turn limit before full requested regression coverage/readiness, so its observed **863,799 raw execution tokens** must not be treated as a completed benchmark win against the 1,511,456-token historical implementation baseline.
+A later ordinary continuation in the post-PR-#110 Room supplied the missing natural evidence. A requested follow-up settled with `PASS` without producing the needed strengthening work; C responded by creating a fresh bounded B assignment rather than absorbing the substantial fallback onto its accumulated coordinator context. B completed the requested regressions/documentation successfully. Therefore both sides of the coordination refinement now have naturalistic support: **dependency-aware sequencing is behaviorally supported, and post-PR-#110 fallback allocation is NATURALISTICALLY SUPPORTED**. Continue monitoring ordinary work rather than manufacturing another benchmark. See D-035 / E-124 through E-126 and current Development Control.
 
-These rules affect freshly composed Rooms from this point forward; existing Room snapshots are not retroactively rewritten. See D-035 / E-124 and current Development Control for the rerun record and next test.
+These rules affect freshly composed Rooms from their implementation point forward; existing Room snapshots are not retroactively rewritten.
 
 ## 4. Production work model: explicit transaction state
 
@@ -130,13 +130,21 @@ The historical Common Cause implementation later demonstrated another expensive 
 
 The controlled post-#109 implementation rerun consumed **863,799 raw execution tokens through its turn-limit stop**, with C at **354,530**, A at **485,893**, and B at **23,376**. It showed materially less C accumulation and correct artifact-dependent sequencing, but it did not finish the requested regression/readiness work. The 42.9% raw-token difference from the historical successful implementation is therefore **directional evidence only, not a completed savings benchmark**. It also exposed the fallback loophole that PR #110 subsequently tightened.
 
+The post-#110 controlled replication then used **953,892 raw execution tokens** and completed the artifact-dependent audit correctly, while later ordinary continuation supplied direct naturalistic support for the tightened fresh-peer fallback. Do not treat these different endpoints as a single comparable benchmark series. See E-125 and E-126.
+
 ## 10. Recovery, usage walls, and lifecycle safety
 
-**IMPLEMENTED / VERIFIED**
+**IMPLEMENTED / VERIFIED / MONITOR**
 
 Codex Room retains durable exact execution binding, serialized per-agent execution, lifecycle generations, stale-result protection, restart reconciliation, and fail-closed recovery. Usage-limit walls create delayed continuation work tied to the exact relevant provider context; repeated walls reschedule rather than storm immediate retries. Transaction-mode restart/recovery preserves Assignment identity and exact Assignment provider context where applicable.
 
-Maintenance watchdog health is operator-visible through `/api/health`, including runtime/source provenance and failure/recovery state. See E-068, E-069, E-100, E-102, and E-105.
+A later ordinary Common Cause continuation exposed a narrow exact-turn reconciliation race. The provider SDK rollout recorded a valid final decision and `task_complete`, while CORE's concurrent exact-history reconciliation observed `interrupted` and failed the execution before the usable notification completion was preserved. This produced a false terminal `Codex turn was interrupted` and a `transaction_failed` Round even though the model/provider turn had actually completed.
+
+Commit `6b810f0e327da4055ced97f38a60977f4eba9c46` repairs that boundary narrowly. `interrupted` history now raises an interruption-specific terminal subtype and receives a **0.05-second** bounded opportunity for the already-started notification stream to settle. If a usable notification completion arrives in that window, it is accepted; if not, the genuine interruption remains terminal. Other terminal failures remain authoritative and do not receive the grace, including usage-limit/error-code history. No replacement work, broad retry loop, or overlapping turn is introduced.
+
+Focused reconciliation coverage passed 46/46, and the canonical fast verifier passed its Linux, Windows, and browser phases on the reviewed working tree. An additional exhaustive exact-commit attempt passed 426 Linux/Python-3.12 tests before stopping because Python 3.11 was unavailable inside WSL; that incomplete run is not represented as a full-verifier PASS. See E-127.
+
+Maintenance watchdog health is operator-visible through `/api/health`, including runtime/source provenance and failure/recovery state. See E-068, E-069, E-100, E-102, E-105, and E-127.
 
 ## 11. Data, exports, and operator maintenance
 
@@ -156,10 +164,10 @@ The Room UI exposes the persistent Room ID and current/last execution model/effo
 
 ## 13. Current development posture
 
-The major foundation, A2, P4, A3 remediation, and I-015 transaction redesign/cutover are complete. PR #108 closed the ordinary-use transaction contract/retry defect; PRs #109 and #110 implemented and exact-head-verified the Common Cause coordination-economics structural refinement.
+The major foundation, A2, P4, A3 remediation, and I-015 transaction redesign/cutover are complete. PR #108 closed the ordinary-use transaction contract/retry defect; PRs #109 and #110 implemented the Common Cause coordination-economics structural refinement. Subsequent ordinary continuation supplied naturalistic support for both dependency-aware sequencing and PR #110's tightened failed-delegation fallback.
 
-The design-only structural rerun is already complete and should **not** be repeated: it preserved useful independent parallelism at 93,939 raw tokens and provided naturalistic support for the dependency-sequencing rule. The controlled implementation rerun also provided naturalistic support for artifact-dependent sequencing, but exposed the fallback loophole addressed by PR #110 and then stopped at the Room turn limit before full readiness.
+That same continuation exposed a real CORE lifecycle defect at the exact-turn reconciliation boundary. The defect is now repaired and sufficiently verified at E-127. No further synthetic Common Cause coordination benchmark is required.
 
-The next bounded evidence step is therefore **implementation/fallback only** in a fresh Room created after PR #110. Reuse the controlled historical Common Cause implementation specification rather than rerunning Stage 1. Use a somewhat higher turn ceiling so the experiment is not terminated merely because it finds and corrects a real defect. Primary questions are whether post-#110 fallback goes to a fresh low-context capable peer when appropriate, whether exact corrected bytes are verified before integration, whether quality/readiness completes, and what the completed economics are.
+The existing Common Cause game workspace should be preserved. After restarting Codex Room onto the repaired CORE, the immediate ROOM task is only the independent final exact-artifact verification that C had already attempted to delegate when the false interruption occurred. Competitive play is a separate human authorization after that play-readiness check. Volatile sequencing and monitor state live in `06_DEVELOPMENT_CONTROL.md` rather than here.
 
-Do not launch adjacent broad v2 redesign, personality calibration, new memory architecture, or unrelated maintenance merely because this checkpoint exists. Resume ordinary product use after the bounded implementation/fallback rerun unless new concrete evidence demonstrates another expensive defect.
+Do not launch adjacent broad v2 redesign, personality calibration, new memory architecture, automatic model routing, or unrelated maintenance merely because this checkpoint exists.
