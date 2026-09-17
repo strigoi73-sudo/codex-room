@@ -1,0 +1,70 @@
+# Codex Room — Evidence Register, Continuation
+
+**Continues:** `07_EVIDENCE_REGISTER.md`  
+**Initialized:** 2026-09-17  
+**Scope:** Continuation of the canonical Evidence Register. Evidence identifiers continue the existing `E-###` sequence without a new namespace.  
+**Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
+
+## Continuation rule
+
+This file is the second physical volume of the single Codex Room Evidence Register. `07_EVIDENCE_REGISTER.md` retains E-001 through E-124 and their historical record. New evidence entries continue here beginning with E-125. Cross-references may cite `E-###` without encoding the physical volume in the identifier.
+
+---
+
+### E-125 — Post-PR-#110 Common Cause controlled replication
+**Date:** 2026-09-17  
+**Kind:** [ROOM controlled replication / coordination behavior / execution economics]  
+**Decision:** D-035
+
+A fresh controlled implementation replication was run after PR #110 using:
+
+- Room `room_01f030b67b0a44f08922391836a6fdd8`;
+- Round `round_6409c600e2414a32a73a5f6f8e94bf51`;
+- work-model version 2;
+- `provider_context_mode="assignment_thread"`;
+- starter C;
+- required contributors empty;
+- fresh empty workspace;
+- the same controlled Common Cause implementation specification used in the prior implementation rerun;
+- `max_turns=20`;
+- `max_consecutive_passes=3`;
+- `inactivity_seconds=1800`.
+
+Observed sequence:
+
+1. C confirmed the shared workspace was empty.
+2. C delegated A implementation and B artifact-independent rules-audit/test-design work concurrently.
+3. A implemented and tested the artifact while B returned an independent acceptance matrix.
+4. After the artifact existed, C inspected the exact engine, tests, and documentation.
+5. C then delegated B to black-box verify the existing artifact against the earlier audit.
+6. B completed the artifact audit and found a reproducible deadlock in the approved game specification: a legal state can leave a player with one required action remaining while every enumerated action is illegal or unaffordable and no Pass/turn-completion rule exists.
+7. The dependency join released; C resumed normally, integrated B's result, did not invent an unapproved rule, and requested human clarification.
+8. The Room closed normally with `close_reason="transaction_settled"` after **12 of 20 turns**.
+
+Replication result:
+
+- the earlier terminal `Codex turn was interrupted` immediately after the verifier's artifact audit **did not reproduce**;
+- artifact-dependent verification occurred only after the artifact existed: **PASS**;
+- the run completed below its turn ceiling: **PASS**;
+- quality was preserved: black-box verification exercised atomic rejection, final-round offer timing, Work 3 handling/action resumption, scoring/tie-break behavior, and identified the reproducible turn-completion contradiction;
+- C stopped at the correct human-decision boundary instead of silently changing the approved game rules;
+- PR #110's failed-delegation fallback condition **was not exercised** because no delegated implementation, correction, or investigation failed or settled empty. The tightened fallback rule therefore remains behaviorally unverified.
+
+Execution economics:
+
+- Room executions: **12**;
+- total raw execution tokens: **953,892**;
+- C: **161,672**;
+- A: **309,159**;
+- B: **483,061**;
+- native model tool calls: **14**;
+- failed tool calls: **4**;
+- cached-input share: approximately **80.8%**.
+
+The Room export does not directly expose underlying provider-response records for this run, so a provider-response count is not inferred from execution/tool-call counts.
+
+Relative to the historical successful implementation baseline of **1,511,456 raw execution tokens**, the completed replication used **557,564 fewer tokens / 36.9% less**. This comparison is directional because the endpoints differed: the replication correctly stopped on an unresolved game-specification contradiction, whereas the historical baseline reached a competitive-play-ready implementation.
+
+The replication used more raw tokens than the interrupted partial rerun because it continued through the complete black-box audit and coordinator integration. Do not treat completed-versus-interrupted totals as a savings comparison.
+
+**Assessment:** D-035's dependency-aware sequencing is behaviorally supported, and the previously observed coordinator interruption was **NOT REPRODUCED** in this controlled replication. PR #110's tightened fallback allocation remains **IMPLEMENTED / EXACT-HEAD VERIFIED / BEHAVIORALLY UNVERIFIED** because its trigger condition did not occur. Stop the dedicated Common Cause synthetic benchmark series unless ordinary use demonstrates another concrete recurrence or defect. Observe the fallback rule naturally if a real failed/empty delegation occurs.
