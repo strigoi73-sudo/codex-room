@@ -1,1349 +1,260 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-16  
-**Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.  
+**Last updated:** 2026-09-17
+**Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
-- **Where are we?** The minimum Engineering Foundation, GPT Project review, D-020 permanent Personal triad / C-integration migration, **A2 — Assurance Pass 2**, **P4 — Deterministic Room and agent capabilities**, and the **A3 — Whole-system housekeeping, efficiency, and operational assurance audit plus its bounded remediation sequence** are complete. The repository baseline is canonical `main`; verify exact HEAD, applicable local verification, and local Git state directly when consequential rather than maintaining those mechanically changing facts here.
-- **What just changed?** Ordinary Common Cause use exposed one bounded post-I-015 transaction robustness defect before implementation began. PR #108 repairs the EVIDENCE/HISTORY contract mismatch and makes the existing one-shot validation retry independent of successful Assignment continuations. Exact Linux full-suite verification passed **421 tests, 2 warnings**; Windows transaction/source verification passed **43 tests** on identical production bytes. See E-123.
-- **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. The A3 remediation sequence is complete.
-- **Where is P4?** **COMPLETE.** E-030 through E-040 contain the implementation/live-verification evidence across P4.1–P4.5.
-- **What is next?** **Resume ordinary Codex Room development/use, including the interrupted Common Cause implementation.** I-015 remains closed. Do not launch broader v2 compatibility/migration or validation work unless ordinary use exposes another concrete defect.
-- **What are we deliberately not doing?** No further personality calibration, blind recognizability testing, stronger personality prose, or attempts to force cognitive specialization through persistent identity unless ordinary usage demonstrates a concrete product problem.
+- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` is the public production path. Legacy Rooms were deliberately cleared rather than migrated.
+- **What just changed?** Common Cause ordinary use exposed an expensive coordination topology. PR #109 added dependency-aware sequencing plus an initial context-aware fallback rule. Naturalistic reruns then showed the sequencing rule working but exposed a fallback loophole. PR #110 tightened that loophole and merged to canonical `main` as `ad9e46310068c07facea34ef0de76456881cd271`.
+- **Verification state:** PR #110 exact head `da4e47efb8d6e350503325f7521a2e9e56735bc1` passed the focused C-structural regression, `verify-fast.cmd`, exact-head/blob rechecks, and tracked-tree cleanliness. Canonical `main` carries verified `personalities.py` blob `6fbe105abc8684173bd05878eac5f46c2c6ece25`.
+- **Naturalistic state:** dependency-aware sequencing has behavioral support. Post-PR-#110 fallback allocation does not yet have behavioral verification.
+- **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. No other high-priority blocker is known.
+- **What is next?** Run a fresh **implementation/fallback-only Common Cause benchmark** after PR #110. Do not repeat Stage 1. Use the controlled historical implementation specification and a modestly higher turn ceiling than 16 so a real defect/correction cycle does not terminate the experiment prematurely.
+- **What are we deliberately not doing?** No retroactive rewrite of existing Room snapshots; no fourth persistent agent; no broad v2 redesign; no new memory/index architecture; no personality calibration; no automatic model router; no adjacent maintenance investigation unless the next rerun or ordinary use demonstrates a concrete problem.
 
 ## Current Focus
 
-### I-015 — Task-transaction stabilization redesign
-**Work state:** COMPLETE — v2 public-default activation and clean cutover finished  
-**Reality:** IMPLEMENTED / VERIFIED / MERGED / LIVE PRODUCTION SMOKE PASSED  
-**Decision:** D-030, D-031, D-032, D-033, D-034  
-**Evidence:** E-092 through E-123
-**Scope:** [CORE]. Legacy Rooms were deleted rather than migrated; no compatibility migration remains.
+### Common Cause coordination-economics follow-up
 
-**Post-close ordinary-use repair — COMPLETE / IMPLEMENTED / VERIFIED (2026-09-16):** The Common Cause implementation Round exposed a residual transaction-contract/retry edge after I-015 closeout: EVIDENCE path semantics were not explicit enough for the agent-facing contract, HISTORY schema bounds were incompletely advertised, and a malformed decision after a successful continuation could exhaust the Assignment retry budget. PR #108 applies the bounded repair and adds exact regression coverage. This is ordinary-use defect repair under the existing D-031/D-033/D-034 architecture, not a reopening of I-015 or a new broad validation program. See E-123.
+**Work state:** IN PROGRESS — PR #110 merged; post-#110 fallback rerun next
 
-**Stage A status:** COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED for the coordination kernel. PR #85 merged as `19e5100508e4401f45cd27c11684c438171aa5c5`; its tested head and merge share tree `1763d24377718e32606239e13ccd3343242e869e`, and hosted run `35038949753` passed Ubuntu Python 3.11, Ubuntu Python 3.12, and Windows Python 3.12 + browser. V2-N2 then confirmed the repair in ordinary paid execution at 85,228 tokens with the intended four-execution coordination shape. D-034 / PR #107 later promoted the Stage-D-proven v2 + assignment-thread configuration to the public production path.
+**Reality:** dependency sequencing IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY SUPPORTED; tightened fallback allocation IMPLEMENTED / EXACT-HEAD VERIFIED / BEHAVIORALLY UNVERIFIED
 
-#### V2-N1 — First bounded naturalistic validation
-**Work state:** COMPLETE — exposed targeted remediation  
-**Purpose:** Test Stage A coordination mechanics in one useful, tool-light ordinary task before any default-activation decision.
+**Decision:** D-035
 
-**Room configuration**
+**Evidence:** E-124 plus the 2026-09-17 Common Cause rerun records summarized below
 
-- `work_model_version=2`;
-- starting agent: `agent_c`;
-- required contributors: `agent_a`, `agent_b`;
-- `max_turns=8`;
-- ordinary default profiles and model policy; C may choose bounded peer execution configurations through the version-2 delegation contract;
-- no repository/source inspection is requested.
+**Scope:** [ROOM naturalistic evaluation of current CORE instructions]
 
-**Prompt**
+### Historical successful implementation baseline
 
-> I want to spend one Saturday using Codex Room as a practical personal assistant instead of developing Codex Room itself. Identify three concrete non-coding tasks that would meaningfully test whether the product is useful in ordinary personal life. Choose the strongest first trial and give me a step-by-step way to run it, including what I should provide, what a good result would look like, and what would count as a failure. Use both A and B, with distinct assignments that genuinely benefit the answer. Do not inspect the repository or use tools unless essential. Keep the work bounded: prefer one delegation wave, integrate the peer contributions, and finish when the recommendation is complete.
+The historical successful Common Cause implementation Round `round_f2075476746b4263a394203a2a2e7f3` produced the game implementation and passed 9/9 unit tests, but its coordination/economic shape was poor:
 
-**Expected coordination shape**
+- 16 Room executions;
+- 33 underlying provider responses;
+- 17 native tool calls;
+- **1,511,456 raw execution tokens**;
+- C: **1,041,653**;
+- A: **405,252**;
+- B: **64,551**.
 
-1. C receives one root assignment.
-2. C performs one structured `DELEGATE` creating distinct A and B child assignments under one explicit join.
-3. A and B each resolve their child assignment without unrelated fanout.
-4. CORE releases the join only after both child assignments are terminal.
-5. The same C parent assignment resumes exactly once with the resolved peer results.
-6. C integrates the contributions and `COMPLETE` settles the task.
-7. No transaction assignment or join remains open after settlement.
+The principal failure topology was:
 
-**Evidence to collect**
+1. implementation and artifact-dependent verification were delegated concurrently;
+2. the verifier therefore could only produce a plan before the artifact existed;
+3. later corrective assignments failed to produce the needed substantive correction/audit;
+4. C then absorbed large tool-heavy fallback on accumulated coordinator context.
 
-- Room JSON export after completion;
-- transaction Task/Assignment/Join states and causal IDs;
-- agent execution count and per-execution usage;
-- total execution tokens and cached-input share where available;
-- tool/command continuation count;
-- any retries, usage-wall events, spurious wakes, settlement blocks, stale results, or unexplained extra model turns.
+The desired domain-general topology is:
 
-**Run-level assessment**
+`produce prerequisite -> verify exact result -> integrate`
 
-- deterministic coordination invariant failure: immediate Stage A defect; stop and diagnose before another paid run;
-- expected model executions: about 4; up to 6 may be explainable, while unexplained additional turns are an efficiency concern;
-- economic target for this run: <=100k total execution tokens; >200k requires explanation; >300k without justified escalation meets the existing stop condition;
-- zero repository/source-tool activity is expected for this prompt unless an agent can justify why it was essential;
-- quality is judged on whether the final answer is coherent, integrates meaningfully distinct A/B contributions, and provides a usable first trial rather than merely summarizing peer messages.
+If correction is needed:
 
-**Observed result:** mechanically successful settlement, useful final answer, six executions / 131,976 execution tokens, and one redundant nested A→B delegation path caused by missing sibling-work visibility in the assignment envelope. See E-095.
+`identify bounded defect -> fresh capable worker corrects -> verifier checks exact corrected bytes -> integrate`
 
-**Remediation state:** COMPLETE / VERIFIED. PR #85 adds bounded sibling assignment metadata to the v2 assignment envelope, preserves independent sibling results and legitimate nested delegation, and passed the hosted three-job matrix. See E-095.
+Independent work should still run in parallel. The policy does not permanently specialize A or B cognitively.
 
-**Checkpoint-era note:** at the V2-N1 checkpoint, default activation remained unapproved and Stages B/C had not yet begun. Those later stages are now complete; this sentence records the sequencing decision at that time.
+### Structural rerun Stage 1 — complete
 
-#### V2-N2 — Controlled sibling-context rerun
-**Work state:** COMPLETE — PASS  
-**Purpose:** Test whether the verified PR #85 sibling-work context removes V2-N1's duplicate peer delegation and restores the same task to the intended economic/coordination shape.
+Fresh Room:
 
-**Protocol:** use a fresh Room with the exact V2-N1 configuration and exact V2-N1 prompt. No task wording, required-contributor setting, turn ceiling, or model-policy change is permitted for this comparison.
+`room_e910bab728bb4b518bb54ecfea9c67e9`
 
-**Expected comparison**
+Round:
 
-1. C creates the same differentiated A/B sibling assignments.
-2. Each child envelope exposes the other declared sibling's agent/state/instruction, without the sibling's result.
-3. A and B normally complete their own assignments without recreating substantially duplicate sibling work; legitimate nested delegation remains allowed if a concrete dependency makes it necessary.
-4. The outer join releases once after both required children terminate.
-5. C resumes once, integrates, and settles the task.
-6. Target execution shape: about four model executions and <=4 post-framing continuations.
-7. Economic target: <=100k total execution tokens and <=25% cached-input share; >200k requires explanation, and >300k without justified escalation meets the existing stop condition.
-8. Quality must remain at least as useful as V2-N1; lower token use does not compensate for material omission or degraded reasoning.
+`round_62c0413093d54ed99a552d2524785f7b`
 
-Collect the same JSON export/economics evidence as V2-N1. Compare V2-N2 directly against V2-N1 / E-095 before any default-activation decision.
+Observed result:
 
-**Observed result:** PASS. The Room settled cleanly with one task, three completed assignments, one released join, and exactly four model executions: C delegation 20,675 tokens; A 20,389; B 20,988; C integration 23,176. Total execution use was **85,228 tokens**, down **46,748 / 35.4%** from V2-N1. Cached-input deltas were 20,224 against 82,866 input-token deltas, **24.4%**, inside the <=25% target. There was no nested delegation, no tool activity, no retry/failure/usage-wall/stale-result activity, and the final answer retained the required three trials, selected first trial, step-by-step protocol, success criteria, and failure criteria. See E-096.
+- C deliberately assigned A an original complete rules concept and B an independent mechanics/failure-mode analysis;
+- both assignments were genuinely independent and ran concurrently;
+- no native tools, retries, or failures occurred;
+- total raw execution tokens: **93,939**;
+- historical Stage-1 baseline: **98,996**;
+- difference: **5,057 fewer / 5.1% lower**.
 
-**Interpretation:** the sibling-work visibility repair removed the exact duplicate-cognition path observed in V2-N1 without material answer-quality loss. This closes the bounded Stage-A naturalistic checkpoint. It does **not** establish the full multi-task median/p90/quality/robustness viability gate.
+Interpretation: **PASS for “do not over-serialize.”** The dependency-aware rule preserved useful independent parallelism. Stage 1 did not test implementation→verification dependency or fallback behavior and does not need to be repeated for the next benchmark.
 
-**Checkpoint-era note:** after V2-N2, default activation remained unapproved, Stage B was next, and Stage C was intentionally deferred. Stages B/C are now complete; default activation is still reserved for the Stage-D viability decision.
+### Controlled implementation rerun — complete as evidence, incomplete as product readiness
 
-#### Stage B.1 — Declarative source evidence bundles
-**Work state:** COMPLETE — IMPLEMENTED / VERIFIED; direct-bundle naturalistic question superseded by B.2/B.3 consolidated interface  
-**Scope:** [CORE]
+Fresh Room:
 
-PR #88 added `inspect_source` v3 `bundle`, which composes existing bounded `find`, `search`, `search_many`, `read`, and `read_many` operations into one declarative execution when all requested evidence and bounds are known in advance. It rejects nested/adaptive plans and caps aggregate transient output. The direct `codex-room-cap source bundle` CLI accepts `--plan-json` or `--plan-file`. At the Stage-B1 checkpoint, agent guidance preferred this path for heterogeneous predeclared retrieval while leaving genuinely adaptive investigation unchanged. D-031/B2 later moved ordinary version-2 source retrieval behind structured `EVIDENCE`; the direct bundle remains a compatibility/operator primitive. Hosted verification passed across the full matrix. See E-097.
+`room_5c3fd157970f4f54ba391a7b009e3b8a`
 
-#### B-N1 — First Stage-B naturalistic validation
-**Work state:** COMPLETE — INCONCLUSIVE FOR BUNDLE ADOPTION / OBSERVED EFFICIENCY ISSUE  
-**Purpose:** Verify that an ordinary v2 agent actually uses the new deterministic bundle when the evidence plan is known in advance, without forcing the answer through peers or measuring Stage C context behavior.
+Round:
 
-**Room configuration**
+`round_65eac0c64bb347eaa9fa5977f0fd08c0`
 
-- `work_model_version=2`;
-- starting agent: `agent_c`;
-- no required contributors;
-- `max_turns=4`;
-- ordinary default profiles/model policy;
-- fresh Room after pulling the PR #88 merge.
+This run used the approved historical Common Cause implementation specification directly so the coordination topology could be tested without requiring Stage-1 design compatibility.
 
-**Prompt**
+Observed sequence:
 
-> Inspect the current Codex Room source and report three implementation facts. These three checks are independent and all are known in advance: (1) in `codex_room/models.py`, confirm the default value of `work_model_version` for room creation; (2) in `codex_room/__main__.py`, report the default server host and port; (3) in `Start-Codex-Room.cmd`, report the command/path used to launch Codex Room. Use read-only source inspection and perform the known retrieval work in the fewest mechanical retrieval steps practical. Do not involve A or B unless their cognition is materially necessary. Cite the source path for each fact and stop when the three facts are established.
+1. C split work into A implementation and B **artifact-independent verification-matrix design** in parallel.
+2. B completed useful pre-artifact verification work rather than pretending to audit nonexistent code.
+3. A implemented and tested the game.
+4. Only after artifacts existed did C audit the actual engine/tests against B's matrix.
+5. C found a real final-round offer-lifecycle defect and delegated a bounded correction to A.
+6. A inadvertently settled that correction assignment before applying the patch and explicitly asked for reassignment.
+7. Fallback then reached C through a child assignment; C performed substantial tool-heavy correction itself.
+8. A later identified still-missing coverage and delegated more work back to C.
+9. The Room hit `turn_limit` before the remaining coverage/readiness work completed.
 
-**Expected execution shape**
+Interpretation:
 
-1. C receives one root assignment.
-2. C recognizes that the heterogeneous search/read work and bounds are already known.
-3. C uses one `codex-room-cap source bundle` invocation rather than separate source-search/read invocations or registry discovery.
-4. No peer assignment is created.
-5. C returns the three facts with source paths and `COMPLETE` settles the task.
-6. No additional retrieval occurs unless the first bundle reports a concrete unresolved/truncated dependency.
+- **Dependency sequencing: PASS.** C distinguished artifact-independent pre-work from artifact-dependent verification and did not recreate the historical implementation+verification concurrency mistake.
+- **Initial correction delegation: PASS.** C sent the bounded defect correction to a peer.
+- **Fallback allocation under failed/empty delegated work: PARTIAL FAIL for PR #109 wording.** Substantial fallback still landed on C through a peer-created child assignment.
+- **Full readiness: NOT COMPLETE.** The Room stopped at the turn limit; the game was not declared ready for competitive play.
 
-**Evidence to collect**
+Economics through the turn-limit stop:
 
-- Room JSON export;
-- transaction task/assignment state;
-- execution economics and tool/command activity;
-- exact number and kind of source-inspection invocations where telemetry exposes them;
-- final answer and cited paths;
-- any registry list/inspect ceremony, separate predictable retrievals, peers, retries, truncation, or unexplained extra turns.
+- total raw execution tokens: **863,799**;
+- C: **354,530**;
+- A: **485,893**;
+- B: **23,376**;
+- native model tool calls: **13**;
+- cached-input share: approximately **80.8%**.
 
-**Run-level assessment**
+The observed total is **647,657 raw tokens / 42.85% below** the historical successful implementation baseline, but this is **directional evidence only** because the rerun did not finish the requested regression/readiness work. Do not record it as a completed 42.9% benchmark improvement.
 
-- target: one model execution and one source-inspection bundle invocation;
-- acceptable: one additional model/tool continuation only when a concrete returned limitation requires it;
-- no peer cognition expected;
-- no source mutation expected;
-- quality requires all three facts to be correct and traceable to the requested source paths;
-- failure of the bundle itself, unnecessary separate predictable source calls, or unexplained extra model turns is Stage-B evidence to diagnose before a second paid validation.
+### PR #110 — fallback tightening
 
-**Preregistered gate at that checkpoint:** Stage B was not to be considered complete from deterministic tests alone; B-N1 had to be assessed before expanding the Stage-B mechanism or beginning Stage C.
+The controlled rerun exposed two wording loopholes in PR #109:
 
-**Observed result**
+- “consider” another bounded peer assignment was too weak;
+- “C's own coordination assignment” was too narrow because substantial fallback could reach C inside a child assignment.
 
-B-N1 cannot validly answer its intended bundle-adoption question because the preregistered prompt named three exact files and asked only for facts obtainable by direct reads. That is a homogeneous read batch, and current Stage-B guidance explicitly says to use `search-many` / `read-many` directly when one homogeneous batch is sufficient. C therefore did **not** violate the implemented policy by using `read_many` instead of `bundle`.
+PR #110 tightened the protected C rule so that when delegated implementation/correction/investigation fails to produce needed work, **or fallback reaches C because another assignment failed or settled without producing it**, C should normally place substantial tool-heavy execution in a fresh bounded peer assignment rather than perform it itself. The rule applies whether C is in the root coordination assignment or a peer-created child assignment.
 
-The Room nevertheless produced useful negative efficiency evidence:
+Direct C execution remains allowed when work is demonstrably small in expected execution/context cost, urgent, inseparable from integration, or no fresh peer is likely to perform it reliably at lower total cost. A small-looking code/file diff is not itself evidence that model execution will be cheap.
 
-- one v2 task, one C assignment, no joins, and one counted Room turn settled cleanly;
-- no A/B peer cognition, file changes, context compaction, or sub-agent activity;
-- final answer correctly reported all three requested facts and paths;
-- telemetry recorded **7 tool calls**: 5 command executions and 2 deterministic `inspect_source` invocations;
-- one command execution failed;
-- the two source-capability invocations were `sources` and then one successful `read_many` over all three requested files;
-- the `read_many` returned 14,867 bytes with no truncation;
-- execution use was **184,143 total tokens**, including 182,922 input tokens and 150,784 cached-input tokens, an **82.4% cached-input share**.
+Reviewed PR #110 head:
 
-This is not evidence that `bundle` failed; `bundle` was never exercised. It is evidence that even a simple known-file source task can incur unnecessary command/discovery activity and very high replay cost inside one SDK execution.
+`da4e47efb8d6e350503325f7521a2e9e56735bc1`
 
-**Consolidation result:** the B-N1 follow-up diagnosis is complete. The recurring issue is the agent-facing execution boundary: deterministic capability machinery is exposed as a shell/CLI protocol whose discovery, syntax, batching choice, quoting, and telemetry recognition consume model cognition. D-031 moves bounded source-evidence execution planning into CORE. The earlier B-N2 plan is retired; no paid Room should be spent merely to force `bundle` adoption.
+Verified blobs:
 
-See E-098 and E-099.
+- `codex_room/personalities.py`: `6fbe105abc8684173bd05878eac5f46c2c6ece25`;
+- `tests/test_c_structural_coordination.py`: `590a11e2616c7ac69d17c12a756b8b3dee094285`.
 
-#### Stage B.2 — Structured deterministic source evidence execution
-**Work state:** COMPLETE  
-**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-16  
-**Decision:** D-031  
-**Evidence:** E-098, E-099, E-100  
-**Scope:** [CORE]
+PR #110 merged as:
 
-Implemented one bounded version-2 transaction action, `EVIDENCE`, for read-only source evidence.
+`ad9e46310068c07facea34ef0de76456881cd271`
 
-The agent-facing contract expresses atomic semantic needs such as `READ`, `SEARCH`, and `FIND` with logical source, path/query, Room ID where applicable, and bounded result/line limits. It does not expose `bundle`, `read_many`, `search_many`, executable names, shell quoting, registry ceremony, inline-JSON transport, or plan-file mechanics.
+The deterministic regression proves instruction composition and preservation of surrounding coordination policy. It does **not** prove that a fresh C will obey the tightened fallback rule in a real failure path.
 
-CORE must:
+### Next benchmark
 
-1. validate the structured request and source authority;
-2. give the request an exact durable identity under the open assignment;
-3. mechanically choose the existing `inspect_source` primitive or batching plan;
-4. execute read-only retrieval outside model cognition;
-5. retain bounded durable provenance while keeping bulk evidence operational/transient where practical;
-6. requeue/resume the same assignment with normalized evidence;
-7. make restart/replay safe and idempotent;
-8. preserve v1 behavior and the existing CLI/operator compatibility surface.
+Run **only the controlled implementation/fallback benchmark** in a new Room created after PR #110. Do not repeat the design-only Stage 1.
 
-The same consolidation should repair and test the current direct-`source bundle` telemetry-recognition mismatch as a compatibility issue. Arbitrary custom-capability brokerage is explicitly outside this first slice.
+Controls:
 
-**Deterministic acceptance:** schema validation; source confinement/bounds; automatic single/homogeneous/heterogeneous plan selection; equivalent evidence semantics; durable/transient separation; request/result provenance; interruption/restart recovery; v1 compatibility; existing direct CLI compatibility; focused tests; canonical full suite; applicable Windows/browser verification; hosted CI.
-
-#### Stage B.3 — Naturalistic consolidated-interface validation
-**Work state:** COMPLETE — PASS  
-**Reality / evidence:** NATURALISTIC CHECKPOINT PASSED — 2026-09-16  
-**Evidence:** E-101
-
-A fresh C-only v2 Room used `required_contributors=["agent_c"]` and `max_turns=4` on the preregistered three-fact source task. C's first decision requested all three known evidence needs together as semantic FIND + SEARCH + READ. CORE selected one heterogeneous `bundle` mechanically and returned the normalized evidence to the same assignment. C then made one targeted READ of `orchestrator.py` because the SEARCH result established the declaration's line location but did not return its wording. That follow-up was a specific newly resolved dependency, consistent with the Stage-B adaptive boundary.
-
-The task settled correctly after three C executions at **72,271 total execution tokens**, below the <=80k target. There were **zero agent tool/command calls, zero capability failures, zero file changes, zero peer invocations, and zero context compactions**. CORE recorded both evidence requests as consumed under the same assignment with exact request, execution-plan, and durable-result provenance. The final answer correctly identified `codex_room/transaction_evidence.py`, accurately summarized `TRANSACTION_EVIDENCE_INSTRUCTION`, and reported the launcher invocation.
-
-The run therefore satisfies the main Stage-B criterion: planned source retrieval no longer requires the model to learn or operate the CLI/batching transport. The extra model continuation was evidence-dependent cognition, not interface-learning overhead. Stage B is closed.
-
-#### Stage C — Persistent-context / memory economics
-**Work state:** COMPLETE — assignment-scoped context + bounded continuity retrieval validated  
-**Decision:** D-032, D-033  
-**Evidence:** E-102, E-103, E-104, E-105, E-106
-
-B-N1's 82.4% cached-input share and B3's **33.9% aggregate cached-input share** remain relevant motivation. Stage-B consolidation does not itself decide the Stage-C memory/context architecture.
-
-##### Stage C.1 — Assignment-scoped provider context
-**Work state:** COMPLETE  
-**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-16
-
-The first bounded experiment isolates provider-context transport without changing the transaction scheduler or persistent A/B/C identities. An opt-in version-2 Round may set `provider_context_mode="assignment_thread"`. In that mode, CORE gives each logical Assignment one durable provider thread and reuses that exact thread for every continuation of the Assignment. Different Assignments — including successive Assignments owned by the same persistent agent — receive different provider contexts. Existing `persistent_agent_thread` remains the default and version 1 remains unchanged.
-
-The deterministic acceptance gate is complete. Coverage verifies same-Assignment reuse across evidence/dependency continuation, distinct-Assignment isolation, preservation of the permanent agent thread, exact active-turn restart recovery, usage-wall restart continuation on the Assignment thread, export/provenance binding, and compatibility of existing transaction/evidence/model-selection/v1 behavior. The exact PR tree and canonical-main tree both passed the full hosted matrix; E-102 records commits, tree, run IDs, and counts.
-
-**Scope limit:** Stage C.1 does not implement broad cross-Assignment memory retrieval, provider-thread archival/retention, or default activation. D-009 remains the governing direction for later cross-Assignment continuity: index broadly, retrieve narrowly.
-
-##### Stage C.2 — Naturalistic context economics and bounded continuity
-**Work state:** COMPLETE — C-N1 PASS; C-N2 PASS / continuity gap demonstrated
-**Evidence:** E-103, E-104
-
-###### C-N1 — Warmed persistent-history paired context comparison
-**Work state:** COMPLETE — PASS
-
-The preregistered paired diagnostic reused the completed Stage-B3 Room `room_5cbd74add7564749862f37696fa4abd4`. The valid assignment-scoped arm ran first so it could not mutate C's permanent provider thread; the otherwise identical persistent-thread arm ran second. Two earlier preparation-only attempts were stopped/replaced before start and contained no Task, Assignment, turn, or execution, so they are excluded from scoring.
-
-Both valid arms used one C-only version-2 Assignment, no tools, no source evidence, no peers, no retry/restart anomaly, and both correctly returned the 65-minute optimum with a valid schedule and lower-bound proof.
-
-Economics:
-
-- `assignment_thread`: **20,810 input / 21,049 total / 0 cached input**;
-- `persistent_agent_thread`: **27,389 input / 27,573 total / 17,152 cached input**;
-- assignment-scoped input reduction: **6,579 tokens / 24.0%**;
-- assignment-scoped total-token reduction: **6,524 / 23.7%**;
-- persistent-arm cached input: **62.6%** of that execution's input.
-
-The assignment-scoped Assignment bound a separate provider thread `01a0aae2-6899-7e43-ace4-3b7d986166fb`; C's permanent provider thread remained `01a0aaa5-ecba-7313-ac8a-ce0afafa610e`. This exceeds the preregistered >=20% material-improvement threshold without additional cognition or quality loss. C-N1 therefore establishes that inherited provider history can impose material replay cost on a self-contained Assignment.
-
-###### C-N2 — Cross-Assignment continuity control
-**Work state:** COMPLETE — PASS / continuity gap demonstrated
-
-C-N1 did not answer whether a later Assignment that genuinely depended on prior Room knowledge could operate correctly without the permanent provider thread. C-N2 was designed to test only that boundary before any memory/index/summarization implementation.
-
-**Substrate and order**
-
-- reuse the same Room and C profile/model policy;
-- C only, work-model version 2, no overlays, no peers, no tools, no source evidence;
-- first run a `persistent_agent_thread` establishment Round that instructs C to retain the arbitrary continuity token **`ORBIT-7429-CEDAR`** and complete with that exact token;
-- second run an `assignment_thread` recall Round asking for the token from the immediately preceding establishment Round, explicitly instructing C to answer `UNKNOWN` rather than guess if that prior fact is unavailable;
-- third run the identical recall prompt under `persistent_agent_thread`. Because the assignment-scoped middle arm does not mutate C's permanent thread, the permanent-thread control still has the establishment history.
-
-**Exact establishment prompt**
-
-> For a bounded continuity test, retain this exact token as the only fact that matters from this Round: ORBIT-7429-CEDAR. Do not use tools, source evidence, or peers. Complete by returning exactly: ORBIT-7429-CEDAR
-
-**Exact recall prompt**
-
-> Without using tools, source evidence, or peers, report the exact continuity token you were instructed to retain in the immediately preceding C-N2 establishment Round. Do not infer or invent a token. If that prior fact is not available in your supplied context, return exactly: UNKNOWN. Otherwise return only the exact token.
-
-**Evidence and interpretation**
-
-For all three executions record exact Round/Task/Assignment/thread provenance, per-execution token deltas, tool/peer/evidence activity, and final content.
-
-**Observed result — PASS / continuity gap demonstrated**
-
-- establishment, `persistent_agent_thread`: one execution, **28,336 input / 28,402 total**, **26,368 cached input**, returned exactly `ORBIT-7429-CEDAR`;
-- assignment recall, `assignment_thread`: one execution, **20,750 input / 20,797 total**, **17,152 cached input**, returned exactly `UNKNOWN`;
-- persistent recall control, `persistent_agent_thread`: one execution, **29,173 input / 29,211 total**, **27,392 cached input**, returned exactly `ORBIT-7429-CEDAR`;
-- all three executions had zero tools, capabilities, peers, evidence requests, file changes, compactions, retries, or extra model turns;
-- establishment and persistent recall used C's permanent provider thread `01a0aaa5-ecba-7313-ac8a-ce0afafa610e`;
-- assignment recall used distinct Assignment thread `01a0aae8-16ee-7173-af1c-93ab12f7eb03`.
-
-The assignment arm's 17,152 cached input does not imply inherited Room history: despite that cache hit, it lacked the established nonce while the persistent control retained it. The cached material is therefore at least substantially reusable prompt/instruction prefix rather than sufficient cross-Assignment episodic continuity.
-
-C-N2 is a boundary test, not approval for a general memory system. It establishes the specific need for **targeted cross-Assignment retrieval** if assignment-scoped context is to replace indefinite provider-thread inheritance on continuity-dependent work.
-
-##### Stage C.3 — Targeted cross-Assignment retrieval
-**Work state:** COMPLETE — IMPLEMENTED / VERIFIED / NATURALISTIC ACCEPTANCE PASSED
-
-Implement and verify the smallest explicit retrieval path over durable Room history that can satisfy a later Assignment's specific continuity dependency without replaying the entire permanent provider thread. D-033 settles the first interface: transaction action `HISTORY` with bounded `RECENT` and lexical `SEARCH` requests over prior completed Assignment results in the same Room.
-
-Design constraints:
-
-1. retrieval is agent-declared and bounded; no automatic wholesale prior-Round injection;
-2. CORE owns deterministic archive lookup, authorization, bounds, provenance, and replay-safe transaction state;
-3. retrieved material is supplied only to the requesting Assignment and becomes part of its durable provenance;
-4. the first slice should reuse existing durable Room/transaction/event state and deterministic text search/recent-result access before considering embeddings, summarization, or a new general index;
-5. the mechanism must distinguish current authoritative work state from historical context and preserve D-009's **index broadly, retrieve narrowly** direction;
-6. acceptance must include a C-N2 successor test demonstrating nonce recovery through the explicit retrieval path while preserving assignment-scoped provider isolation.
-
-Do not implement broad memory summarization, embedding search, provider-thread archival policy, or default activation as part of this first slice unless the bounded design proves they are necessary.
-
-**Implemented deterministic slice**
-
-PR #99 implemented D-033 without adding a new memory store:
-
-- transaction action `HISTORY` accepts bounded `RECENT` or lexical `SEARCH` requests, with optional agent restriction;
-- CORE selects only non-empty results from **completed Assignments in earlier Rounds of the same Room**;
-- selected exact event IDs are stored in the requesting Assignment's existing `context_event_ids` field, capped at 20 selections;
-- `HISTORY` is nonterminal: settlement atomically requeues the same Assignment, so joins/tasks cannot settle from the retrieval action;
-- the same Assignment provider thread resumes and receives only the selected historical result content under a 24,000-character prompt bound;
-- CORE records a deterministic Room-history audit event with the exact selected event IDs and request;
-- current Task/Join/Evidence state remains separate and authoritative.
-
-E-105 records exact PR/main trees and hosted verification.
-
-###### C-N3 — Retrieval-enabled continuity acceptance
-**Work state:** COMPLETE — PASS
-
-Use the existing C-N2 Room `room_5cbd74add7564749862f37696fa4abd4` and its already-established nonce. No new establishment execution is needed.
-
-**Exact prompt**
-
-> Recover the exact continuity token from the earlier Round titled `C-N2 Establish Continuity Token`. Do not use tools, source evidence, or peers, and do not infer or guess. Use bounded Room-history retrieval to obtain the relevant prior completed result. Return only the exact token after it has been retrieved; if bounded Room history returns no relevant result, return exactly: UNKNOWN.
-
-**Fixed execution conditions**
-
-- C only;
 - work-model version 2;
 - `provider_context_mode="assignment_thread"`;
-- no overlays or private initialization changes;
-- same existing C model/profile policy;
-- no source evidence, custom capabilities, shell/tool use, or peers.
+- starter C;
+- required contributors empty;
+- ordinary current default profiles / protected instructions;
+- empty fresh workspace;
+- no historical Common Cause files preloaded;
+- use the same controlled Common Cause implementation specification used in the prior implementation rerun;
+- do not tell agents the historical failure topology, token totals, or desired remedy;
+- use a modestly higher turn ceiling than 16 (target **20** unless a concrete setup constraint justifies another bounded value);
+- retain `max_consecutive_passes=3` and `inactivity_seconds=1800` unless current runtime constraints require a documented deviation.
 
-**Acceptance**
+Primary questions:
 
-C-N3 passes only if:
+1. When delegated correction fails or settles empty, does substantial fallback move to a fresh capable low-context peer rather than C?
+2. Does artifact-dependent verification occur only after the exact artifact/correction exists?
+3. Does the run complete the requested regression/readiness work rather than stopping at the ceiling?
+4. Is quality preserved?
+5. What are the completed execution count, provider-response count, tool calls, per-agent usage, and total raw execution tokens?
 
-1. one Task and one logical C Assignment are used;
-2. the Assignment's first relevant decision is `HISTORY` and CORE selects at least one prior result event from an earlier Round;
-3. the same Assignment-scoped provider thread is reused for the continuation rather than C's permanent provider thread;
-4. the continuation returns exactly `ORBIT-7429-CEDAR`;
-5. the Assignment's durable `context_event_ids` and deterministic Room-history audit event contain the exact selected prior event ID(s);
-6. there is no source-evidence request, peer invocation, custom capability/tool activity, retry, restart anomaly, or unexplained extra execution.
+Stop after this bounded rerun unless its evidence demonstrates another concrete defect. Do not reopen Stage 1 or broad work-model-v2 design merely because the benchmark exists.
 
-Two model executions are expected: `HISTORY` then `COMPLETE`. A different count is not silently excluded; it must be explained before acceptance.
+## Completed major program state
 
-**Observed result — PASS**
+### I-015 — Task-transaction stabilization redesign
 
-- Round: `round_05c0fe8a0e3e4cdbae9c6f4909a86959`
-- one Task: `task_f049e9ecbc17413fbd8da4f6dc4da173`;
-- one logical C Assignment: `assignment_0ccf880bbb54410c83b4c647509d419d`;
-- assignment-scoped provider context: `01a0ab11-0dfc-7ef2-9f54-45b73197c808`, distinct from C's permanent provider thread;
-- first execution: `HISTORY`, lexical `SEARCH` for `C-N2 Establish Continuity Token`;
-- CORE selected exactly `event_45aff3ef6761486c9783685905c45c24`, the C-N2 establishment result containing `ORBIT-7429-CEDAR`;
-- the Assignment's durable `context_event_ids` contains that exact event ID;
-- second execution: `COMPLETE` with exactly `ORBIT-7429-CEDAR`;
-- exactly two model executions, zero model tool calls, zero capability invocations, zero peers/sub-agents, zero file changes, zero compactions, and no retry/restart anomaly.
+**Work state:** COMPLETE
 
-Economics for the two C-N3 executions were **43,398 input / 20,224 cached input / 43,547 total tokens**. The first HISTORY-declaration execution used 21,198 total tokens; the continuation used 22,349. This is intentionally not treated as evidence that explicit retrieval is cheaper on every continuity-dependent task: C-N2's persistent-thread recall control required only one 29,211-token execution. Stage C establishes the tradeoff boundary—bounded context saves material replay on self-contained work, while explicit continuity adds retrieval cognition when history is genuinely needed. Stage D must evaluate the net viability across ordinary tasks.
+**Reality:** IMPLEMENTED / VERIFIED / PUBLIC DEFAULT / LIVE SMOKE PASSED
 
-C-N3 therefore satisfies the preregistered acceptance without expanding into embeddings, summarization, or a broad index. **Stage C is closed.**
+**Decisions:** D-030 through D-034
 
+**Evidence:** E-092 through E-123
 
-Ordinary-use testing has now demonstrated that the remaining failure class is not adequately described as one bad prompt, one stale event, or one source-inspection footgun. The current runtime mixes intellectual coordination with mechanical work-state bookkeeping by using conversational events plus readable/runnable deliveries as both history and the scheduling substrate. That design has produced recurring variants of prose/action divergence, stale passive context, settlement ambiguity, and continuation amplification.
+The production path is work-model v2 with Assignment-scoped provider context. Stage A established Task/Assignment/Join mechanics; Stage B added structured `EVIDENCE`; Stage C added assignment-scoped context plus bounded `HISTORY`; Stage D passed the ten-task viability gate at 9/10 quality with all coordination/robustness/economic thresholds satisfied; D-034 activated v2 publicly; legacy Rooms were deliberately cleared rather than migrated.
 
-**Design objective:** preserve the permanent A/B/C organization and agent judgment while replacing implicit conversational work state with an explicit, inspectable transaction model.
+PR #108 is a bounded post-close ordinary-use repair for transaction contract/retry bounds. It does not reopen I-015.
 
-Implemented transaction model (originally proposed here):
+### P4 — Deterministic Room/agent capabilities
 
-1. **Task** — one bounded objective being advanced inside a Room/Round. A task owns its current work state, completion condition, and optional budget/context policy. A Round remains the user-visible conversational/lifecycle container; tasks become the work units inside it.
-2. **Assignment** — one explicit unit of cognition assigned to one agent. It carries a task ID, target agent, bounded instruction, causal parent, execution configuration when applicable, selected context references, and a durable state from `queued | running | waiting_join | waiting_evidence | completed | passed | failed | cancelled | waived`. `HISTORY` performs bounded selection/attachment atomically and requeues the same Assignment rather than adding another wait state.
-3. **Join** — an explicit dependency set over assignments. A join records which contributions are required before integration or settlement can proceed. CORE, not prose, determines whether the join is satisfied. Terminal failure/cancellation/waiver states are mechanically visible to join settlement; no automatic assignment-timeout policy is implied by the current implementation.
-4. **Result** — the immutable outcome of an assignment, linked to the exact assignment and execution. Existing decision events and `agent_executions` can remain the durable result/provenance layer; a new standalone result table is not required unless implementation evidence shows one is necessary.
-5. **Integration** — ordinarily another explicit assignment, usually to C, created deterministically when a required join becomes ready. Integration is therefore work, not a heuristic inferred from unread passive peer messages.
-6. **Settlement** — a task-level terminal transition. A task may settle only when its explicit dependencies are resolved and the current integrating/owning assignment chooses a valid terminal action. Agent `READY_TO_FINISH` state should no longer carry task-completion semantics by itself.
+**Work state:** COMPLETE
 
-**Important boundary:** C/A/B continue to decide intellectual questions: whether peers add value, whom to delegate to, how to frame work, what evidence matters, how to interpret disagreement, whether a waiver is justified, and what conclusion to reach. CORE owns only declared mechanics: assignment creation, causal delivery, joins, queue ordering, retries/budgets, context assembly, and whether a requested terminal transition is mechanically valid. CORE must not infer hidden intent from prose such as “I am waiting for A.”
+**Reality:** IMPLEMENTED / VERIFIED end to end
 
-**Structured-output implementation:** current version-2 assignments use `COMPLETE | DELEGATE | EVIDENCE | HISTORY | PASS`. `DELEGATE` carries target/instruction/config and atomically creates child assignments plus their join; `EVIDENCE` declares bounded source needs for deterministic CORE retrieval; `HISTORY` declares bounded prior-Room result lookup and requeues the same Assignment with exact selected event provenance. Version 2 has no separate `invoke_targets` field, eliminating prose/routing divergence. Public/readable events remain audit history and do not become runnable work without an explicit assignment.
+**Decision:** D-022
 
-**Legacy-to-transaction mapping (implemented for opt-in v2):**
+**Evidence:** E-030 through E-040
 
-- preserve `rooms`, `rounds`, persistent A/B/C identities, profiles/overlays, workspaces, custom capability bindings, exports, observer event history, model policy, durable `agent_executions`, recovery/usage-wall machinery, and WebSocket/UI transport;
-- preserve `events` primarily as audit/conversation history and exact provenance;
-- stop using coalesced unread `deliveries` as the authoritative work queue for redesigned tasks; existing deliveries may remain for readable notification/history and legacy Rooms;
-- replace `claim_next_batch()`'s “all pending conversational events through newest runnable trigger” semantics with assignment claiming for transaction-enabled work;
-- replace passive-backlog prompt construction with an assignment envelope plus explicitly selected prerequisite context;
-- replace event-derived multi-peer cohort detection with explicit joins;
-- replace settlement heuristics based on agent status, FINISH boundaries, passive participation, and causal-message reconstruction with task/assignment/join state;
-- retain existing execution durability: an assignment claim should still bind to one exact `agent_execution` and one exact SDK turn before side effects settle.
+CORE capability registry/discovery, standard library, custom authoring/verification/registration, safe invocation, and lineage rollover inheritance are implemented and verified. Personal/CORE promotion remains later work only if demonstrated useful.
 
-**Migration judgment:** this is **not a whole-product rewrite**. The durable product shell and much of the execution/provenance machinery are reusable. It is, however, a deliberate replacement of the scheduling/work-state kernel centered in `db.py` and `orchestrator.py`. Treating it as “just another patch” would understate the change. Legacy Rooms should remain readable/replayable under existing semantics; new transaction semantics should be introduced behind an explicit Room/task version or deliberate migration path rather than silently reinterpret old event history.
+### A3 remediation
 
-**Staged design path — do not collapse these into one implementation:**
+**Work state:** COMPLETE
 
-- **Stage A — coordination transaction kernel — COMPLETE / IMPLEMENTED / VERIFIED (opt-in):** Task/Assignment/Join state, assignment envelopes, deterministic join release, terminal-state validity, and removal of passive backlog as actionable work. Stage A deliberately retained persistent SDK-thread behavior at that stage so coordination reliability could be evaluated independently; Stage C later added the opt-in assignment-scoped alternative.
-- **Stage B — bounded evidence execution — COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINT PASSED:** agents declare bounded source-evidence intent through `EVIDENCE`; CORE chooses and executes the deterministic retrieval mechanics and returns normalized evidence to the same Assignment. Native exploratory/custom capability paths remain available where the structured source path does not apply.
-- **Stage C — durable memory vs active context experiment — COMPLETE / IMPLEMENTED / VERIFIED / NATURALISTIC CHECKPOINTS PASSED:** D-032 bounds opt-in provider context to the logical Assignment; D-033 restores deliberate cross-Assignment continuity through bounded `HISTORY` retrieval over prior completed Room results. C-N1 demonstrated lower replay cost on self-contained work, C-N2 demonstrated the continuity gap, and C-N3 demonstrated explicit recovery. No broad summarizer/index was justified.
-- **Stage D — viability gate — NEXT:** validate and preregister a bounded set of ordinary useful tasks, then judge coordination, economics, quality, and robustness before any default-activation decision. Do not resume adjacent feature development until the gate is resolved.
+**Evidence:** E-065 through E-091
 
-**Stage D viability gate — preregistered protocol (2026-09-16)**
-
-Stage D evaluates the integrated opt-in design already implemented in Stages A-C. It is an **absolute viability gate**, not a paid v1-v2 tournament: repeating every task under v1 would roughly double model spend while earlier evidence already establishes the failure classes that motivated I-015. Version 1 remains the production default during the gate and remains covered by compatibility tests.
-
-All ten naturalistic tasks are preregistered before the first Stage-D model execution. Run them sequentially in one fresh dedicated Stage-D Room so later continuity/history cases can exercise real accumulated Room state. Stop as soon as a hard-stop rule makes a passing final result impossible.
-
-**Fixed naturalistic configuration**
-
-- one fresh Room dedicated to Stage D;
-- every scored Round uses `work_model_version=2`;
-- every scored Round uses `provider_context_mode="assignment_thread"`;
-- starting agent C;
-- ordinary current default profiles and model policy;
-- no participant-private initialization or task/profile overlays;
-- `max_turns=8`;
-- exact execution model/effort and usage must be recorded from execution telemetry;
-- task-specific `required_contributors` is used only where listed below;
-- no prompt is changed after seeing an earlier task result, except for literal insertion of an exact prior result value where the preregistered rubric explicitly requires comparison.
-
-A preparation-only Round with zero Task/model execution may be excluded as operator administration. Once correctly configured model work starts, the result remains part of the gate. A rerun is allowed only for a clearly external invalidation that makes the run uninterpretable; the original artifact remains recorded and the rerun must use identical task wording/configuration.
-
-**Coordination / provenance pass conditions**
-
-Every scored task must satisfy all applicable transaction invariants:
-
-1. no Task settles with a nonterminal Assignment or unreleased Join;
-2. each Join releases at most once and never before all members are terminal;
-3. every model execution is attributable to exactly one v2 Assignment;
-4. no readable/audit event creates runnable work without an explicit Assignment;
-5. required contributors are causally satisfied where declared;
-6. every DELEGATE-created child and every integration resume has exact causal provenance;
-7. in assignment-scoped mode, different Assignments use different provider threads while every continuation of the same logical Assignment reuses that Assignment's exact thread;
-8. `EVIDENCE` and `HISTORY` remain nonterminal and resume the same logical Assignment;
-9. no stale/cancelled work settles after a lifecycle boundary;
-10. no unrequested shell/custom-capability path substitutes for the structured `EVIDENCE`/`HISTORY` path in tasks that explicitly constrain retrieval.
-
-Any deterministic coordination/provenance invariant failure is an immediate Stage-D hard stop.
-
-**Economic scoring**
-
-For each task, total execution tokens are the sum of per-execution usage deltas for all model executions causally attached to that Task. Record input, cached input, output, reasoning output, execution count, model/effort, model tool calls, evidence/history actions, and any retry/usage-wall activity.
-
-Across the ten tasks:
-
-- median total execution tokens must be **<=100,000/task**;
-- p90 total execution tokens uses the nearest-rank definition (the 9th value after sorting ten task totals) and must be **<=200,000/task**;
-- median post-framing model continuations, defined as `max(model_executions - 1, 0)` per task, must be **<=4**;
-- no task may exceed **300,000 total execution tokens**; none of the ten tasks has a preregistered justified escalation;
-- D-N10's first C execution input must be **<=125% of D-N1's first C execution input**, providing a direct long-Room context-isolation check after nine earlier Rounds.
-
-Cached-input share remains recorded as diagnostic evidence but is **not** a Stage-D pass/fail threshold. E-104 showed that cached input can occur on a fresh Assignment thread that lacks the prior episodic fact, and E-106 showed legitimate same-Assignment continuation at 46.6% cached input. The gate therefore measures actual total usage plus direct thread provenance/isolation instead of treating cache percentage as a proxy for unwanted memory replay.
-
-Economic early stop: the second independent task above 200,000 tokens makes the preregistered p90 ceiling unattainable and ends the gate. Any task above 300,000 ends the gate immediately.
-
-**Quality scoring**
-
-Each task receives a binary PASS/FAIL against its preregistered task-specific requirements below. A task fails quality for a material factual/logical error, violation of an explicit constraint, missing required deliverable, unsupported source/history claim, or failure to integrate a required peer contribution. Minor wording/style differences do not fail a task.
-
-Overall quality requires **at least 9 of 10 tasks PASS**. Two quality failures therefore end the gate early. Quality is assessed from the exported result/provenance against the fixed rubric; no additional paid model grader is required. The human principal retains final judgment on any genuinely ambiguous rubric call.
-
-**Robustness coverage**
-
-- truncation / bounded partial evidence: D-N5;
-- stale-history pressure: D-N7;
-- deterministic evidence failure and recovery: D-N8;
-- interruption/restart safety: rely on the exact current code's deterministic restart/recovery coverage already established in E-100, E-102, and E-105 so long as no code affecting those paths changes before/during Stage D. If relevant code changes, rerun the focused restart tests and applicable hosted CI before Stage-D closeout.
-
-This avoids spending paid naturalistic cognition to recreate a failure mode already deterministically covered while still requiring naturalistic evidence for the new integrated failure/truncation/history cases.
-
-### Stage-D attempt 1 observed checkpoint — STOPPED at D-N4
-
-**Date:** 2026-09-16  
-**Work state:** IN PROGRESS — remediation required before a new gate  
-**Reality:** OBSERVED ISSUE  
-**Evidence:** E-107
-
-The first paid Stage-D attempt used one fresh dedicated Room under the exact preregistered v2 + assignment-thread configuration. D-N1 through D-N3 are valid scored results and remain part of the historical gate evidence:
-
-- **D-N1 PASS:** C-only schedule; one execution; 21,625 total execution tokens; exact 9:20 AM grocery start; transaction/thread provenance clean.
-- **D-N2 PASS:** C → B → same C; three executions; 65,365 total execution tokens; one Join released once; distinct B Assignment thread and exact C continuation-thread reuse; quality rubric passed.
-- **D-N3 PASS:** C → differentiated A+B → same C; four executions; 89,400 total execution tokens; one outer Join released once; A built the plan, B audited timing/risk, and the final result correctly used two trips.
-
-**D-N4 FAIL / observed defect:** C attempted the required structured `EVIDENCE` path twice on the same logical Assignment/provider thread. Both provider responses used `path: ""` for CORE search requests. Current `SourceEvidenceRequest.path` requires a non-empty string, so Pydantic decision validation rejected both turns before deterministic evidence execution. The second bounded retry repeated the same invalid shape and the Task closed `transaction_failed`. The Round therefore produced no required source-facts answer and fails the D-N4 quality rubric.
-
-Source inspection of the exact Stage-D code identifies a contract mismatch rather than an external invalidation:
-
-- the provider-facing transaction JSON schema types evidence `path` only as a string and does not encode the runtime non-empty constraint;
-- the underlying CORE source-inspection surface also requires a maintained top-level entry rather than a root-wide `""` or `"."` search, but the transaction EVIDENCE guidance does not state that CORE-specific rule;
-- assignment retry state records the validation diagnostic in `resolution_reason`, but the next assignment prompt does not expose that diagnostic, so the retry lacks actionable repair feedback;
-- the adapter validates the structured decision before extracting/returning usage/activity, so failed decision-validation turns leave durable execution rows without usage/activity telemetry and cannot be scored economically from normal execution facts.
-
-This attempt is **stopped before D-N5** because D-N5 exercises the same structured CORE-search boundary and further paid cognition would test a known defect while failed-turn economics remain incomplete. The D-N4 artifact is not discarded or rewritten as an external invalidation. Version 1 remains the ordinary default.
-
-**Required remediation before another paid Stage-D gate:** align provider/runtime EVIDENCE validation, state the CORE path boundary in the assignment contract, feed exact validation failure information into the one bounded retry without contaminating later continuations, preserve usage/activity/economics for invalid structured decisions, add deterministic regression tests, and obtain applicable deterministic verification on the exact repaired version. A new Stage-D attempt must use a fresh dedicated Room; attempt 1 remains historical evidence.
-
-**Remediation closeout — 2026-09-16:** PR #104 implemented the code-side requirements above and merged to canonical `main` as `79bffbfbbdcdbda535d6e69104e2c826208b0451`. Focused local regression verification passed on the remediation bytes, and the repository-standard `verify-fast.cmd` then passed on exact code-bearing canonical-main commit `668ef98253c5bd1387eefb1b71f99ed38fd8b53c`: **45 Linux focused tests, 118 Windows portability tests, 3 browser tests, 74.7 seconds total, all phase exit codes 0, tracked tree clean**. The remediation is **IMPLEMENTED / VERIFIED / MERGED**. The next Stage-D attempt must start in a fresh dedicated Room at D-N1; attempt 1 remains historical evidence.
-
-**Verification-process follow-up — COMPLETE:** the earlier 1,197-second Windows-first run helped motivate the local-verifier redesign. E-109 records a **75.6-second Fast** reference run and a **316.3-second** broader reference run. No adjacent CI/runner or test-suite profiling work is currently planned; use the established local verifier and return to product development.
-
-### Stage-D attempt 2 final result — COMPLETE / PASS
-
-**Date:** 2026-09-16  
-**Work state:** COMPLETE — preregistered viability gate passed  
-**Reality:** NATURALISTIC VIABILITY GATE PASSED — 9 QUALITY PASSES / 1 QUALITY FAILURE  
-**Evidence:** E-111 through E-120
-
-A fresh dedicated Stage-D Room, `room_c47cba973de44f12bde8ef3aaf80bce1`, completed D-N1 through D-N10 sequentially under the exact preregistered v2 + assignment-thread configuration. The preparation-only opening Round executed no model work and is excluded.
-
-Task results:
-- D-N1 PASS — **21,663** tokens, 0 continuations.
-- D-N2 PASS — **65,468** tokens, 2 continuations.
-- D-N3 PASS — **90,947** tokens, 3 continuations.
-- D-N4 PASS — **84,259** tokens, 2 continuations.
-- D-N5 PASS — **150,592** tokens, 4 continuations.
-- D-N6 **QUALITY FAIL / coordination PASS / economics PASS** — **44,449** tokens, 1 continuation; package drop violated the preserved 1:00 PM deadline.
-- D-N7 PASS — **44,015** tokens, 1 continuation.
-- D-N8 PASS — **182,555** tokens, 6 continuations.
-- D-N9 PASS — **109,411** tokens, 4 continuations.
-- D-N10 PASS — **21,509** tokens, 0 continuations; one C Assignment/execution, no peers/HISTORY/EVIDENCE/tools; all feasible grocery combinations were correct, all-three was correctly rejected at **$125.10**, and **$105.15** was correctly identified as the highest feasible spend.
-
-Aggregate economics:
-- median total: **74,863.5** <= 100k — PASS;
-- nearest-rank p90: **150,592** <= 200k — PASS;
-- median post-framing continuations: **2** <= 4 — PASS;
-- maximum task: **182,555** < 300k — PASS;
-- no task exceeded 200k;
-- D-N10 first-C input: **21,170** versus D-N1 **21,257**, well below the **26,571.25** 125% ceiling — PASS.
-
-Robustness:
-- D-N5 bounded/truncated evidence — PASS;
-- D-N7 stale-history pressure — PASS;
-- D-N8 deterministic evidence failure/recovery — PASS;
-- interruption/restart reliance remains valid because the post-remediation `verify-fast.cmd` exact-tree check covered the focused restart/recovery suites, and comparison from tested code-bearing commit `668ef982...` to Stage-D closeout shows only Project-document changes afterward.
-
-**Final Stage-D decision:** **PASS.** All coordination/provenance invariants, robustness requirements, economics thresholds, the 300k task ceiling, and the >=9/10 quality requirement are satisfied.
-
-**Consequence:** Stage D permits preparation of a **separate default-activation / migration decision**. It does **not** itself change the ordinary version-1 default. Do not perform default activation or Room migration until the human principal makes that separate decision.
-
-#### D-N1 — Solo Saturday schedule
-
-**Required contributors:** `["agent_c"]`  
-**Expected shape:** one C Assignment, one model execution, no peers/tools/evidence/history.
-
-**Exact prompt**
-
-> I have Saturday from 9:00 AM to 3:00 PM. Build a concrete schedule for these items: pharmacy pickup 20 minutes and it must be the first item starting at 9:00 AM; grocery shopping 45 minutes and it must immediately follow the pharmacy pickup; meal prep 60 minutes and it must be after grocery shopping; package drop 15 minutes and it must finish by 1:00 PM; workout 45 minutes; lunch 30 minutes; fixed dentist appointment 11:00-11:30 AM. Assume zero travel time and one person can do only one item at a time. Use C only; do not use peers, tools, source evidence, or Room history. Give the schedule and explicitly state the grocery-shopping start time. Keep the answer concise.
-
-**Quality PASS:** schedule stays within 9:00-3:00, has no overlap, starts pharmacy at 9:00, starts grocery shopping at **9:20 AM**, preserves the dentist slot, finishes package drop by 1:00, places meal prep after grocery shopping, and includes every item.
-
-#### D-N2 — One-peer internet-plan decision
-
-**Required contributors:** `["agent_b"]`  
-**Expected shape:** C → B → same C Assignment; no A/tools/evidence/history.
-
-**Exact prompt**
-
-> Use Agent B as one independent checker; do not involve A unless a concrete unforeseen dependency makes it necessary. Plan North costs $55/month plus $10/month equipment, provides 300 Mbps down / 20 Mbps up, has a 1.2 TB monthly cap, and has no contract. Plan South costs $70/month with equipment included, provides 1 Gbps down / 100 Mbps up, is unlimited, and has a 12-month term with a $150 early-cancellation fee. The household has two adults, uses about 500 GB/month, mainly streams and makes video calls, does no heavy uploading, has a hard $70/month budget, and has a 60% chance of moving in 8 months. Recommend one plan and briefly quantify the cost/risk logic. C should integrate B's check into the final answer.
-
-**Quality PASS:** monthly arithmetic is correct, contract/move risk is addressed quantitatively, the recommendation is consistent with the supplied usage/budget facts, and B's checking contribution is materially reflected in C's final result.
-
-#### D-N3 — Differentiated dual-peer moving-day plan
-
-**Required contributors:** `["agent_a","agent_b"]`  
-**Expected shape:** C → differentiated A+B → same C Assignment; one outer Join released once.
-
-**Exact prompt**
-
-> Use both A and B with meaningfully different assignments. A should build the plan; B should audit timing, bottlenecks, and contingency risk. Moving day runs from 8:00 AM to 2:00 PM. There is one rented van with capacity for at most 12 boxes plus 2 furniture pieces per trip. The old and new homes are 20 minutes apart. Loading plus unloading for each trip takes 30 minutes total. Inventory is 20 boxes plus 3 furniture pieces. The elevator at the new home is reserved only from 9:00 AM to noon. Two adults are available. A final old-home walk-through takes 20 minutes and may begin only after the last load leaves. Produce a feasible plan, the required number of van trips, and identify any risk to the elevator window.
-
-**Quality PASS:** two trips are recognized as sufficient/necessary under the stated capacity, the proposed timing is internally feasible, required unloading can occur within the elevator window or any conflict is correctly identified, the walk-through constraint is respected, and C integrates distinct planning/audit contributions.
-
-#### D-N4 — Structured source facts
-
-**Required contributors:** `["agent_c"]`  
-**Expected shape:** C only; structured `EVIDENCE`; zero shell/custom-capability/model-tool activity.
-
-**Exact prompt**
-
-> Using only structured read-only source evidence and no peers, inspect current CORE and report: (1) all current `TransactionAction` values; (2) the default `work_model_version` and `provider_context_mode` on `CreateRoomRequest`; and (3) the maximum number of `HISTORY` requests allowed in one transaction action and the maximum total requested results. Cite the source path or paths. Do not use shell or custom capability commands.
-
-**Quality PASS:** reports `COMPLETE | DELEGATE | EVIDENCE | HISTORY | PASS`; defaults `work_model_version=1` and `provider_context_mode="persistent_agent_thread"`; HISTORY limits 4 requests and 20 total requested results; source provenance supports the claims.
-
-#### D-N5 — Bounded/truncated evidence recovery
-
-**Required contributors:** `["agent_c"]`  
-**Expected shape:** C only; first structured SEARCH is deliberately tight, followed by targeted structured evidence; zero shell/custom capability use.
-
-**Exact prompt**
-
-> Using structured source evidence only, find where assignment-scoped provider context is implemented. First issue a SEARCH for `assignment_thread` over maintained CORE with `max_matches=3`. Treat any truncation or partial result as a locator, then use only the targeted SEARCH/READ evidence needed to answer: (a) where the mode is validated for work-model v2, and (b) where execution selects or reuses an Assignment context thread. If the first search is not truncated because it finds three or fewer matches, issue one bounded SEARCH for `assignment` with `max_matches=3` solely to exercise the truncation/partial-result path before continuing. Cite source paths. Do not use peers, shell, or custom capabilities.
-
-**Quality PASS:** the bounded partial/truncation condition is actually exercised, the task recovers through targeted structured evidence, the validation and execution/thread-reuse descriptions are source-correct, and provenance shows no shell/custom-capability fallback.
-
-#### D-N6 — Semantic continuity and revision
-
-**Required contributors:** `["agent_c"]`  
-**Expected shape:** C uses `HISTORY` to retrieve D-N1, then completes on the same Assignment thread; no peers/tools/source evidence.
-
-**Exact prompt**
-
-> Retrieve the completed result from the earlier Round titled `D-N1 Solo Saturday Schedule`. Do not use source evidence, tools, or peers. Use bounded Room-history retrieval. Revise the schedule so grocery shopping starts at 12:00 PM. This revision supersedes only D-N1's requirement that grocery shopping immediately follow the pharmacy pickup; preserve every other D-N1 constraint and move only items that must move. Return the revised schedule and state the original grocery-shopping start time you retrieved.
-
-**Quality PASS:** exact D-N1 result provenance is selected; the original grocery start is **9:20 AM**; the revised grocery start is noon; every D-N1 constraint other than the explicitly superseded immediate-follow relation remains satisfied; HISTORY and completion reuse the same logical Assignment/provider thread.
-
-#### D-N7 — Stale-history discrimination
-
-**Required contributors:** `["agent_c"]`  
-**Expected shape:** C-only HISTORY lookup after both D-N1 and D-N6 exist.
-
-**Exact prompt**
-
-> There are now two related Saturday schedules in Room history: the original D-N1 result and the later D-N6 revision. Use bounded Room-history retrieval to answer only this: what grocery-shopping start time did the original `D-N1 Solo Saturday Schedule` result specify? Do not report the D-N6 revised time. Use no peers, tools, or source evidence. Return exactly `ORIGINAL: <time>`.
-
-**Quality PASS:** returns exactly `ORIGINAL: 9:20 AM`, does not substitute the D-N6 noon revision, and durable selected-event provenance includes the intended original result rather than silently relying on provider-thread inheritance.
-
-#### D-N8 — Evidence failure and recovery
-
-**Required contributors:** `["agent_c"]`  
-**Expected shape:** C-only; first EVIDENCE result is an intentional missing-path error; same Task/Assignment recovers through later structured evidence; no shell/custom-capability fallback.
-
-**Exact prompt**
-
-> Find the current source definition of `TransactionAction.HISTORY`. To simulate an ordinary stale-path failure, first use structured READ evidence on maintained CORE path `codex_room/stage_d_missing_file.py`. After that request returns an error, recover within the same task using bounded structured FIND/SEARCH/READ evidence only; do not use shell, custom capabilities, or peers. Report the real source path and the exact enum value.
-
-**Quality PASS:** first evidence request fails in the declared deterministic path without terminating/corrupting the Task; the same logical Assignment remains recoverable; later structured evidence identifies `codex_room/models.py` and `HISTORY = "HISTORY"`; no shell/custom-capability/model-tool workaround occurs.
-
-#### D-N9 — Nested delegation
-
-**Required contributors:** `["agent_a","agent_b"]`  
-**Expected shape:** C → A → B → same A Assignment → same C Assignment; inner and outer Joins each release exactly once.
-
-**Exact prompt**
-
-> C: delegate one planning assignment to A. A's assignment should build a two-stage emergency-preparedness checklist for a 48-hour power outage in a two-person apartment, and A should ask B to audit only safety and omission risks before A finalizes its contribution. C should then integrate the completed A branch. Keep the final checklist to at most 12 items, prioritize the first 6 hours separately from the rest of the outage, and flag any item that depends on local conditions. Do not use web, source evidence, or other tools.
-
-**Quality PASS:** the nested dependency shape is preserved mechanically; B's contribution is an audit rather than duplicate plan generation; A resumes only after B is terminal; C resumes only after A is terminal; final answer has at most 12 items, separates first-six-hour priorities from later actions, incorporates material safety/omission findings, and flags location-dependent guidance.
-
-#### D-N10 — Long-Room self-contained isolation check
-
-**Required contributors:** `["agent_c"]`  
-**Expected shape:** one C Assignment/execution after the earlier Stage-D Room history; no HISTORY/evidence/tools/peers.
-
-**Exact prompt**
-
-> Solve this self-contained decision without using Room history, source evidence, tools, or peers. You have $120 for groceries. Fixed essentials cost $47.50. Three optional bundles cost $26.25, $31.40, and $19.95. Which combinations fit within the budget, and which feasible combination spends the most without exceeding it? Show the arithmetic briefly.
-
-**Quality PASS:** correctly identifies every feasible combination, rejects the all-three combination at $125.10 total, and identifies the $26.25 + $31.40 pair as the highest-spend feasible option with total spend $105.15. Context-isolation economics also require D-N10's first C input to remain within 125% of D-N1's first C input.
-
-**Final Stage-D decision rule**
-
-Stage D passes only if:
-
-- all coordination/provenance invariants hold;
-- all robustness requirements above are satisfied or supported by unchanged exact-version deterministic restart evidence;
-- median/p90/continuation/context-isolation economic thresholds pass;
-- no task exceeds 300,000 tokens;
-- at least 9/10 task-quality rubrics pass.
-
-A PASS permits preparation of a separate default-activation/migration decision; it does **not** itself change the v1 default. A hard-stop failure ends incremental Stage-D patching. Preserve the exact failure evidence and return to architecture-level judgment: either a more fundamental redesign is justified or the present v2 architecture is declared non-viable for default activation.
-
-### Stage A detailed design — implemented transaction kernel (opt-in)
-
-Stage A originally changed **coordination state only** and deliberately retained the persistent SDK-thread model so coordination improvement could be measured independently. The detailed design below is retained as the base transaction-kernel specification, with current extensions from later stages folded into the action/state notes where they affect present behavior: D-031 adds `EVIDENCE` / `waiting_evidence`, D-032 adds opt-in assignment-scoped provider threads, and D-033 adds nonterminal `HISTORY` retrieval. Version 1 and persistent-agent-thread compatibility remain intact.
-
-#### A.1 Minimal persistent schema
-
-Use one explicit work-model version on each Round so legacy history is never reinterpreted:
-
-- add `rounds.work_model_version INTEGER NOT NULL DEFAULT 1`;
-- existing and historical Rounds remain version `1`, using current event/delivery scheduling;
-- transaction-enabled Rounds use version `2`;
-- a single Room may therefore contain both legacy and transaction Rounds without migration ambiguity.
-
-Add three Stage-A tables:
-
-**`tasks`**
-
-- `id TEXT PRIMARY KEY`
-- `room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE`
-- `round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE`
-- `parent_task_id TEXT REFERENCES tasks(id)` — used for a new user follow-up after a previously settled task;
-- `origin_event_id TEXT REFERENCES events(id)` — immutable observer/Round event that created the task;
-- `coordinator_agent_id TEXT NOT NULL REFERENCES agents(id)` — C for ordinary Personal operation;
-- `state TEXT NOT NULL` — initially `active | settled | cancelled | failed`;
-- `required_contributors_json TEXT NOT NULL DEFAULT '[]'` — optional explicit human requirement, stored as agent keys;
-- `created_at TEXT NOT NULL`
-- `updated_at TEXT NOT NULL`
-- `settled_at TEXT`
-- `settlement_event_id TEXT REFERENCES events(id)`
-- `settlement_reason TEXT`
-
-Indexes: `tasks(round_id, state)` and `tasks(room_id, created_at)`.
-
-**`assignments`**
-
-An assignment is a **logical unit of agent work**, not necessarily one model turn. It may pause on a child join and later resume for integration.
-
-- `id TEXT PRIMARY KEY`
-- `task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE`
-- `agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE`
-- `parent_assignment_id TEXT REFERENCES assignments(id)` — causal delegator when one exists;
-- `contribution_join_id TEXT REFERENCES assignment_joins(id)` — join this assignment must eventually satisfy, if any;
-- `origin_event_id TEXT REFERENCES events(id)` — observer/system event that directly caused this assignment, when applicable;
-- `instruction TEXT NOT NULL` — exact bounded work instruction for this logical assignment;
-- `context_event_ids_json TEXT NOT NULL DEFAULT '[]'` — explicit additional Room-event references selected for the assignment; there is no implicit unread backlog;
-- `execution_config_id TEXT` — optional bounded C-selected peer configuration;
-- `state TEXT NOT NULL` — `queued | running | waiting_join | waiting_evidence | completed | passed | failed | cancelled | waived`; `HISTORY` does not add a separate wait state because selection/attachment occurs atomically before the same Assignment is requeued;
-- `result_event_id TEXT REFERENCES events(id)` — terminal substantive result when available;
-- `resolution_reason TEXT` — failure/cancellation/waiver explanation;
-- `created_at TEXT NOT NULL`
-- `updated_at TEXT NOT NULL`
-- `started_at TEXT`
-- `completed_at TEXT`
-
-Indexes: `assignments(agent_id, state, created_at)`, `assignments(task_id, state)`, and `assignments(contribution_join_id, state)`.
-
-**`assignment_joins`**
-
-A join is a mechanical dependency barrier over the assignments whose `contribution_join_id` points to it.
-
-- `id TEXT PRIMARY KEY`
-- `task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE`
-- `parent_assignment_id TEXT REFERENCES assignments(id)` — logical assignment to resume after its delegated children settle; null for an externally created barrier such as independent starts or direct observer-to-peer work;
-- `continuation_agent_id TEXT REFERENCES agents(id)` — used only when no parent assignment exists and CORE must create a fresh integration assignment;
-- `state TEXT NOT NULL` — `pending | ready | released | cancelled`;
-- `released_assignment_id TEXT REFERENCES assignments(id)` — parent assignment when re-queued, or the fresh integration assignment created for an external barrier;
-- `created_at TEXT NOT NULL`
-- `ready_at TEXT`
-- `released_at TEXT`
-
-Indexes: `assignment_joins(task_id, state)`.
-
-No separate JoinMember or Result table is required in Stage A. Join membership is the set of assignments referencing `contribution_join_id`. Exact model results already live durably in `agent_executions.result_json` and the corresponding immutable decision/result events.
-
-Add one nullable provenance column to the existing execution table:
-
-- `agent_executions.assignment_id TEXT REFERENCES assignments(id)`.
-
-Legacy executions leave it null. One logical assignment may have multiple execution rows because an Assignment can resume after a join, source-evidence cycle, bounded history retrieval, usage-wall continuation, or retry.
-
-#### A.2 Assignment state machine
-
-The authoritative assignment transitions are:
-
-- creation → `queued`;
-- deterministic claim → `running`;
-- successful `COMPLETE` decision → `completed`;
-- successful `PASS` decision → `passed`;
-- successful `DELEGATE` decision → `waiting_join`, with one new pending join and child assignments created atomically;
-- all child assignments reach terminal states → join `ready`;
-- join release → parent assignment `queued` again, with the resolved join made explicit in its next assignment envelope, then join `released`;
-- successful `EVIDENCE` decision → `waiting_evidence`; deterministic evidence completion → the same Assignment `queued` again with bounded evidence available to its continuation;
-- successful `HISTORY` decision → CORE atomically selects/attaches bounded prior result-event IDs and returns the same Assignment to `queued` without a separate waiting state;
-- non-retryable execution failure → `failed`;
-- lifecycle stop/new Round → `cancelled`;
-- explicit supported waiver → `waived`.
-
-Terminal assignment states are `completed | passed | failed | cancelled | waived`. A failed/cancelled/waived child is terminal for **join release**, so a dead peer cannot deadlock the Room; the resumed parent receives the degraded status and decides cognitively what it means. Mechanical release is not intellectual acceptance.
-
-A parent assignment that delegates while itself contributing to an outer join remains nonterminal in `waiting_join`. Its outer join cannot become ready until the parent resumes and itself reaches a terminal state. This is the required nested-delegation invariant.
-
-#### A.3 Join state machine and invariants
-
-A join begins `pending`. It becomes `ready` only when **every assignment that references it** is terminal. CORE then performs exactly one release transaction:
-
-- if `parent_assignment_id` is present, change that assignment from `waiting_join` back to `queued` and expose the join/result set in its next envelope;
-- otherwise create one fresh integration assignment for `continuation_agent_id`.
-
-The join then becomes `released` and records `released_assignment_id`.
-
-Required invariants:
-
-- a join cannot release with a nonterminal member;
-- a join releases at most once;
-- a task cannot settle while any assignment or join is nonterminal;
-- an assignment cannot have two simultaneously pending child joins;
-- each model execution is bound to exactly one transaction assignment when `work_model_version=2`;
-- only one execution for a given agent may be active at a time, preserving the current serialized-thread invariant;
-- no readable event can make an agent runnable in version 2 unless an explicit assignment exists.
-
-#### A.4 Structured agent decision contract for transaction work
-
-For current version-2 assignments, MESSAGE/PASS/FINISH plus `invoke_targets` is replaced by the transaction work-state contract:
-
-`action: COMPLETE | DELEGATE | EVIDENCE | HISTORY | PASS`
-
-Stage A introduced `COMPLETE | DELEGATE | PASS`; D-031 and D-033 later extended the same contract with `EVIDENCE` and `HISTORY`.
-
-Common field:
-
-- `message: string` — substantive public result/commentary. Required for COMPLETE; optional for the other actions.
-
-For `DELEGATE` only:
-
-- `delegations: 1..N` records, each containing:
-  - `target: agent_a | agent_b | agent_c`, excluding the current agent;
-  - `instruction: non-empty bounded assignment text`;
-  - optional `config: luna-medium | terra-medium | terra-high | sol-medium`, accepted only when the current agent is C and only for the target in that record.
-
-For `EVIDENCE` only:
-
-- `evidence_requests: 1..16` bounded semantic source requests using `READ | SEARCH | FIND`; CORE owns source authorization, execution-form selection, deterministic retrieval, restartable evidence state, and normalized return to the same Assignment.
-
-For `HISTORY` only:
-
-- `history_requests: 1..4` bounded same-Room prior-result lookups using `RECENT | SEARCH`, with optional agent restriction;
-- each request may ask for at most 10 results, and one action may request/attach at most 20 results overall;
-- CORE selects only prior completed Assignment result events, attaches exact event IDs to `context_event_ids`, records audit provenance, and requeues the same Assignment.
-
-Validation keeps action-specific fields null outside their owning action. `DELEGATE` forbids duplicate targets; C's D-026 differentiation rule remains cognitive/protected-instruction policy, so CORE does not judge semantic quality of peer instructions. Delegation/join creation, evidence-state transitions, and history selection/attachment occur through deterministic transaction settlement rather than prose.
-
-There is deliberately **no separate `invoke_targets` field** in version 2. Delegation records are the peer invocation. There is also no `FINISH` action at the agent-membership level. COMPLETE/PASS terminate the **current assignment**; Task settlement is a separate deterministic transition.
-
-#### A.5 Prompt / assignment envelope
-
-`_delivery_prompt()` and `<unread_room_events>` are not used for version-2 work.
-
-Each model call receives one authoritative assignment envelope containing:
-
-- Room/Round/Task/Assignment IDs;
-- the Round's stored public objective and applicable protected/private overlay material;
-- the assignment's exact `instruction`;
-- explicit `context_event_ids_json` material, including exact bounded prior-result events selected by `HISTORY`, if any;
-- when resuming from a join: the join ID plus each child assignment's terminal status, result event, and failure/cancellation/waiver reason;
-- when resuming from structured source evidence: the bounded normalized evidence result and durable request/provenance state;
-- any explicit human task requirements;
-- a protected statement that this assignment is the current actionable work and that historical context is background rather than authoritative current work state.
-
-Public Room history remains inspectable but is not automatically injected merely because it is unread. Stage A originally retained the persistent SDK thread; Stage C later added opt-in `assignment_thread`, where each logical Assignment owns its provider context while `persistent_agent_thread` remains the default.
-
-#### A.6 Round start and ordinary C→A/B→C flow
-
-For an ordinary new Personal Round:
-
-1. prepare/start Round as today, but set `work_model_version=2`;
-2. record the normal Round/audit events;
-3. create one active Task with C as coordinator;
-4. create one queued root Assignment for C whose instruction is to advance the Round objective;
-5. C claims that assignment and runs one exact SDK turn;
-6. if C chooses DELEGATE to A and B, CORE atomically:
-   - leaves C's logical assignment in `waiting_join`;
-   - creates one pending Join whose parent is C's assignment;
-   - creates A and B child assignments referencing that join;
-   - makes only those assignment rows runnable;
-7. A and B run independently. Their public results are events, but those events do not schedule C;
-8. when both child assignments are terminal, CORE marks the Join ready and re-queues C's same logical assignment exactly once;
-9. C's resume envelope contains the complete A/B result set and any degraded statuses;
-10. C integrates and chooses COMPLETE or PASS;
-11. if no assignment/join remains nonterminal and human-required contributors are satisfied, CORE settles the Task and then closes the Round under the appropriate lifecycle rule.
-
-The current `delegation_cohort_settled` synthetic event may remain temporarily as observer telemetry during migration, but it is no longer the source of truth and is not required to schedule C.
-
-#### A.7 Direct A/B delegation and nested work
-
-D-020's direct peer collaboration remains valid.
-
-Example: C delegates one assignment to A. While doing that work, A decides B's cognition is necessary.
-
-- A emits DELEGATE to B;
-- A's assignment becomes `waiting_join`;
-- B receives a child assignment;
-- C's outer join still sees A as **nonterminal**;
-- B completes/passes/fails;
-- A's child join releases and A's same assignment resumes;
-- only A's eventual COMPLETE/PASS/failed terminal state satisfies C's outer join.
-
-Thus CORE coordinates dependency shape but never decides whether A was right to ask B.
-
-#### A.8 Observer messages and follow-ups
-
-Observer input must be explicit work, never implicit unread backlog.
-
-- while a Task is active, a message targeted to C creates a queued C assignment linked to the observer event;
-- a message targeted to A or B creates that peer assignment plus an external Join whose continuation agent is C, preserving D-020 integration-before-closure mechanically;
-- an `all` observer message creates explicit target assignments rather than readable events that happen to become runnable;
-- if a target already has a running assignment, the new assignment queues behind it; Stage A does not mutate or silently cancel an in-flight model turn;
-- Task settlement is impossible while these explicit follow-up assignments/joins remain open;
-- if the previous Task is already settled and the observer sends new substantive input, create a new active Task with `parent_task_id` pointing to the prior Task rather than reopening and mutating the settled transaction;
-- preparing a genuinely new Round cancels any active Task, assignments, joins, executions, and usage continuations under the existing lifecycle boundary.
-
-Stage A should use deterministic FIFO assignment order per agent. If later evidence shows observer input needs priority over already queued integration work, add a demonstrated priority rule then rather than introducing speculative scheduling policy now.
-
-#### A.9 Explicit human-required contributors
-
-CORE must not parse prose to guess that the human said “use A and B.”
-
-Instead, version-2 Round/task creation should support an optional structured `required_contributors` list. UI/API can expose this as an explicit advanced control when the principal wants mechanical enforcement.
-
-If populated:
-
-- the requirement is stored in `tasks.required_contributors_json`;
-- CORE rejects Task settlement until each named participant has had a causally linked assignment reach a visible terminal state;
-- a failed/cancelled peer attempt counts as a visible attempted contribution for deadlock avoidance but is surfaced to the coordinator as degraded evidence;
-- ordinary free-text prompts without this structured field remain a matter of C's cognitive interpretation.
-
-This preserves the rule that CORE executes declared intent rather than semantically interpreting natural language.
-
-#### A.10 Task settlement
-
-For a version-2 Task, agent membership state is not the completion criterion.
-
-CORE may settle only when:
-
-- there are no `queued | running | waiting_join | waiting_evidence` assignments;
-- there are no `pending | ready` unreleased joins;
-- explicit human required-contributor constraints are satisfied;
-- the coordinator's latest applicable assignment has reached COMPLETE or PASS, or an explicit lifecycle cancellation/failure closes the task.
-
-`AgentStatus.RUNNING/IDLE/USAGE_SUSPENDED/ERROR` remains useful operational state. `READY_TO_FINISH` and `round_agent_state.finish_boundary_sequence` remain for version-1 compatibility but do not govern version-2 Task settlement.
-
-#### A.11 Exact execution / crash-recovery reuse
-
-Preserve the strongest part of the existing kernel:
-
-- claiming a queued assignment and creating its `agent_executions` attempt occur transactionally;
-- SDK thread/turn binding remains durable before Room-side result settlement;
-- `record_execution_result()` remains the write-ahead result boundary;
-- retries create additional exact executions for the same logical assignment;
-- usage-wall continuation remains bound to the exact context thread selected for the Assignment and retains the assignment ID; persistent mode uses the agent's permanent thread, while assignment-scoped mode uses the Assignment's durable `context_thread_id`;
-- stale lifecycle generations cannot settle an assignment after its Task/Round is cancelled.
-
-This is why Stage A is a kernel replacement rather than a whole-runtime rewrite.
-
-#### A.12 Legacy boundary
-
-Do not backfill transaction objects from historical event streams.
-
-- `work_model_version=1`: current `deliveries`, `claim_next_batch()`, passive/readable semantics, FINISH boundaries, and current settlement logic remain unchanged for existing Rounds;
-- `work_model_version=2`: workers call a new assignment-claim path; deliveries, if still emitted for UI/readability compatibility, are non-authoritative and never schedule cognition;
-- exports expose the Round's work-model version plus Task/Assignment/Join objects for version 2;
-- a Room rollover or later new Round may adopt version 2 without mutating earlier version-1 Rounds;
-- legacy code is not deleted until version 2 has passed the viability gate and retained history/export tests.
-
-#### A.13 Deterministic Stage-A acceptance tests before natural-use testing
-
-At minimum, implementation must prove:
-
-1. DELEGATE atomically creates every named child assignment and its join; no independent routing field can contradict it.
-2. A Task cannot settle with an unresolved join.
-3. A join cannot release early and releases exactly once.
-4. C→A/B→C produces exactly one C resume after both peers terminal.
-5. nested C→A→B coordination does not satisfy C's outer join until A itself returns terminal.
-6. a failed/pass/cancelled child releases the join with degraded status instead of deadlocking it.
-7. observer input creates explicit assignments and is never coalesced as passive actionable backlog.
-8. version-2 assignment prompts contain only the task envelope, explicit context references, and resolved dependency results—not arbitrary unread events.
-9. user-required contributors prevent settlement if never assigned.
-10. version-2 settlement does not depend on `READY_TO_FINISH`, passive delivery counts, or causal-message reconstruction.
-11. assignment retry/restart recovery binds every exact SDK turn to the correct logical assignment without overlap.
-12. creating a new Round cancels version-2 transactional work without permitting late stale settlement.
-13. version-1 historical/legacy tests remain byte/behavior compatible except for additive export/schema fields.
-
-Only after these deterministic invariants pass should the exact ordinary-use failure prompts be rerun.
-
-#### A.14 Remaining principal decision
-
-This design deliberately makes one consequential product change: **transaction-enabled work no longer treats public readability as latent runnable work.** History remains public/readable, but cognition occurs only through explicit assignments.
-
-That is compatible with D-027's “invocation is cognition” principle and addresses the observed failure class, but adopting it would supersede the implementation mechanism—not the intent—of parts of D-015 and D-020. It therefore requires an explicit principal design decision before Stage A code work begins.
-
-**Principal adoption — 2026-09-15:** D-030 approves this Stage A design. Implementation is now authorized in bounded slices. The first slice is intentionally opt-in through `work_model_version=2` while legacy version-1 behavior remains the default until the transaction kernel passes deterministic hosted verification; default activation is a later migration step, not assumed by adoption.
-
-
-### A3 audit remediation program
-**Audit work state:** COMPLETE  
-**Remediation work state:** COMPLETE  
-**Evidence:** E-065
-
-A3 found the core execution/coordination architecture structurally healthy enough to preserve while identifying maintenance debt that ordinary production work can miss.
-
-Ordered remediation:
-
-1. **I-007 — Environment and documentation truth drift (COMPLETE):** Python support-floor, README/Architecture/Operations truth, and Development Control context hygiene repaired; see E-066.
-2. **I-008 — Repository branch hygiene (COMPLETE):** merged-branch residue removed and automatic deletion of future merged PR heads enabled; see E-067.
-3. **I-009 — Runtime provenance and maintenance health (COMPLETE):** deterministic runtime/source/model-policy provenance, watchdog degradation/recovery health, and durable execution-level model/effort/usage facts implemented and canonically verified; see E-068.
-4. **P1 follow-up — Model/reasoning-effort and continuation economy (COMPLETE / LIVE VERIFIED / MONITOR):** same-thread selection is live verified; hidden SDK subagents are disabled; E-083–E-086 establish the continuation mechanism and first repair; E-090 records an ordinary-use recurrence in broader source work and the verified PR #77 follow-up. No further dedicated paid benchmarking is planned.
-5. **I-012 — Authorized CORE and cross-Room read inspection (COMPLETE):** the I-010 evidence boundary was repaired and live verified under D-029 / E-078 / E-079.
-6. **I-013 — SDK-internal subagent bypass (COMPLETE):** Codex's ambient multi-agent surface is disabled so production cognition routes through persistent Room A/B/C and its execution-accounting path; see E-080.
-7. **I-014 — Deterministic retrieval economy (COMPLETE):** E-081's original direct/batched retrieval repair remains, and E-090 closes an ordinary-use recurrence by distinguishing triggering versus passive context, hardening direct source retrieval, and correcting execution-level token telemetry.
-8. **I-010 — Persistent-data operational maintenance (COMPLETE):** offline local check/backup/verify/restore implemented and verified; see E-087.
-9. **I-011 — Verification-platform and dependency assurance (COMPLETE):** cross-platform hosted verification, pinned browser tooling, deterministic test synchronization, dependency/advisory review, and the Windows newline portability repair are implemented and canonically verified; see E-088.
-
-Lower-value audit findings remain MONITOR/DEFERRED until evidence shows they are expensive: shareable/redacted exports, explicit non-loopback safeguards, WebSocket overflow resync, formal numbered schema migrations, large-module refactoring, storage optimization, and stronger per-capability isolation.
-
-The remediation program does **not** authorize automatic model routing, large refactors, or broader productization by implication.
-
-### Room-wide invocation economy
-**Work state:** COMPLETE  
-**Follow-up:** MONITOR through ordinary use  
-**Reality:** IMPLEMENTED / LIVE VERIFIED  
-**Decision:** D-027  
-**Evidence:** E-062, E-063, E-064
-
-D-027 generalizes the token-economy rule to every use of `invoke_targets`:
-
-- invocation requests immediate cognition, not visibility;
-- public messages remain readable without waking a peer;
-- use `all` only when every peer genuinely needs to run;
-- if no additional cognition is needed, use `invoke_targets: []` for a public/readable MESSAGE with no runnable peer;
-- a peer completing bounded work for C should normally return to C without waking the other delegated peer;
-- direct A/B collaboration remains allowed when that peer's additional cognition is materially necessary.
-
-PR #55 / E-063 verify the shared protocol and explicit no-wake routing primitive. `invoke_targets: []` publishes a public/readable MESSAGE with no runnable peers; `null` remains the legacy all-peer fanout. No scheduler or UI redesign was required.
-
-E-064 provides the fresh-Room live pass. C differentiated A/B work; A returned with no runnable peer; B targeted only C; neither peer woke the other; one cohort trigger caused one C integration turn; and the earlier E-062 review/reopen cascade did not recur. No further dedicated D-027 test is warranted. Monitor ordinary use for regressions or cases where direct A/B invocation is genuinely useful.
-
-### C peer-allocation economy and temporary cognitive framing
-**Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / LIVE VERIFIED  
-**Decisions:** D-025, D-026  
-**Evidence:** E-059, E-060, E-061, E-062
-
-C retains D-025 authority to assign temporary task-specific working postures, perspectives, scopes, constraints, evidence standards, expected deliverables, or temporary roles/personas to A/B.
-
-E-060 showed that optional differentiation was too permissive: in the first live test C invoked both peers for substantially the same analysis, and A/B produced strongly convergent recommendations.
-
-D-026 therefore adds two protected allocation rules:
-
-- use the fewest peers that can add sufficient value; if one peer is enough, invoke one;
-- if both A and B are invoked in the same delegation, their cognitive responsibilities **must be meaningfully differentiated** along a substantive dimension expected to create complementary value.
-
-Cosmetic role labels and substantially duplicate analyses do not satisfy the rule. Even when independent verification is valuable, C should differentiate the verification method or responsibility rather than duplicating the same assignment.
-
-D-025's identity and judgment guardrails remain: frames are temporary delegation instructions; C cannot dictate conclusions; A/B may challenge the frame or premise and remain epistemic peers.
-
-PR #53 / E-061 verify the protected D-026 rule. No posture registry, new database object, profile mutation, or UI is warranted without evidence that natural-language delegation is insufficient.
-
-E-062 provides that live verification: on a clean household-move objective C invoked both peers with substantively different responsibilities and integrated complementary returns. D-026 is therefore complete.
-
-### C delegation-cohort timing
-**Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / LIVE VERIFIED  
-**Decision:** D-020  
-**Observed Room evidence:** E-052  
-**Instruction repair:** E-053  
-**Deterministic timing implementation:** E-054  
-**Live verification:** E-055
-
-E-055 verifies the exact timing mechanism end to end. A returned first and remained passive to C. B returned later. CORE then created one delegation-cohort-settled trigger, and C consumed both peer returns plus that trigger in one integration turn. The same C FINISH settled both peer MESSAGE boundaries and the Round closed normally.
-
-The demonstrated timing issue is complete. No further timing retest is currently warranted.
-
-### Neutral startup profiles
-**Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / VERIFIED deterministically  
-**Decisions:** D-023, D-024  
-**Evidence:** E-058
-
-The active product direction no longer requires persistent startup personalities.
-
-D-024 requires:
-
-- standard A/B/C default profile bodies are empty and identical;
-- fresh Rooms compose no default `PERSONALITY` section;
-- A/B/C retain persistent identity and shared institutional/peer context;
-- C retains protected organizer/coordination responsibilities as structure, not personality;
-- custom saved profile text and Room-specific overrides remain supported;
-- existing Room snapshots are not rewritten;
-- exact known built-in defaults migrate conservatively to the empty neutral default while non-matching custom text is preserved.
-
-The former personality-calibration effort remains closed. Behavioral recognizability is not an acceptance criterion.
-
-PR #49 and E-058 verify the implementation: fresh standard composition has no default `PERSONALITY` section; E-056 built-ins migrate conservatively to empty defaults; custom profile text remains preserved; and C's protected structural layer remains intact.
-
-D-025 now authorizes an initial semantic form of dynamic cognitive framing through C's protected coordination instructions. A heavier posture registry/data model/UI remains **NOT IMPLEMENTED** and should not be added unless ordinary use demonstrates a need.
-
-## Recently completed work
-
-This section is intentionally compact. Detailed implementation narratives and exact verification belong in the Decision/Evidence registers and Architecture, not in volatile Development Control.
-
-| Work | Current result | Durable pointer |
-|---|---|---|
-| A3 — whole-system housekeeping, efficiency, and operational assurance audit | COMPLETE; core runtime/coordination GOOD, bounded remediation identified | E-065 |
-| D-027 — invocation is cognition, not visibility | COMPLETE / IMPLEMENTED / LIVE VERIFIED; ordinary-use MONITOR | D-027, E-062–E-064 |
-| D-026 — economical differentiated dual-peer delegation | COMPLETE / IMPLEMENTED / LIVE VERIFIED | D-026, E-061–E-062 |
-| D-025 — temporary cognitive framing through C delegation | COMPLETE / IMPLEMENTED | D-025, E-059–E-060 |
-| D-024 — neutral startup cognition | COMPLETE / IMPLEMENTED | D-024, E-058 |
-| D-023 personality-layer program | SUPERSEDED in default-personality objective by D-024; protected replaceable-layer architecture retained | D-023–D-024, E-041–E-057 |
-| D-020 permanent triad / C integration | COMPLETE / IMPLEMENTED / VERIFIED | D-020, E-027, E-029, E-052–E-055 |
-| P4 deterministic Room/agent capabilities | COMPLETE / IMPLEMENTED / VERIFIED end to end, including custom registration/reuse and rollover inheritance | D-022, E-030–E-040 |
-| A2 — Assurance Pass 2 | COMPLETE; no material runtime GAP demonstrated at its baseline | E-028 |
-| P0 selective invocation | COMPLETE / MONITOR | E-017 |
-| Retry / Agent Error observability | COMPLETE | E-018 |
-| P1 operating-efficiency doctrine | COMPLETE as doctrine / MONITOR; new empirical model-effort follow-up is separately PLANNED below | D-005, D-006, D-018, E-065 |
-| P2 persistent-context / compaction economics | COMPLETE / MONITOR | E-019 |
-| P3 usage-wall delayed continuation | COMPLETE / MONITOR | D-017, E-020, E-028 |
-| I-004 README permanent-triad drift | COMPLETE | historical Development Control/Git history; D-020 |
-| I-006 early-triad profile migration | COMPLETE | E-029 |
-
-Personality experiments V3/V4/V5/V6.2/V7 and CG1 remain historical evidence, not current work. Their implementation/evaluation records are E-042 through E-057. The current governing state is neutral startup profiles plus temporary task framing and economical differentiated delegation under D-024 through D-027.
-
-## Ordered next work
-
-### A3 audit-remediation sequence
-**Work state:** COMPLETE  
-**Evidence:** E-065
-
-Current order:
-
-1. I-007 — environment/document truth and context hygiene;
-2. I-008 — merged-branch/repository hygiene;
-3. I-009 — runtime provenance, maintenance-health visibility, and usage instrumentation;
-4. P1 follow-up — COMPLETE / MONITOR through ordinary useful work;
-5. I-010 — COMPLETE / IMPLEMENTED / VERIFIED; see E-087;
-6. I-011 — verification-platform and dependency assurance cleanup — **COMPLETE / IMPLEMENTED / VERIFIED**; see E-088.
-
-Do not collapse this into one large refactor. Each item should close on bounded evidence, and later items should reuse instrumentation established earlier.
-
-### EF-1 — Reproducible dependency/environment setup
-**Work state:** COMPLETE  
-**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-10
-
-Clean pip/venv installation is now constrained by `constraints-test.txt`, which records the known-good application/test dependency set while `pyproject.toml` retains broader supported ranges. The merged repair restored green hosted CI with **129 passed, 2 warnings**. No `uv` migration was needed.
-
-### EF-2 — Canonical full-test command
-**Work state:** COMPLETE  
-**Reality / evidence:** IMPLEMENTED / VERIFIED — 2026-09-10
-
-Canonical routine command: `python -m pytest -q`. Clean-environment verification collected and passed **129 tests**. `test-transcript-stability.ps1` remains a separate specialized browser check.
-
-### EF-3 — Minimal CI
-**Work state:** COMPLETE — historical engineering-foundation milestone  
-**Reality / evidence:** HISTORICALLY VERIFIED; routine implementation later superseded — 2026-09-16
-
-The original minimal GitHub Actions foundation was implemented and verified, then expanded by I-011; E-088 preserves the exact historical hosted evidence. On 2026-09-16 the routine hosted workflows were deliberately removed after repeated pre-runner startup failures made Actions an inefficient verification path. Routine deterministic verification now uses `verify-fast.cmd` and `verify-full.cmd` through `verify-local.ps1`; see amended D-018 and E-109. This process change does not reopen EF-3 or create a new CI workstream.
-
-### P4 — Deterministic Room and agent capabilities
-**Work state:** COMPLETE  
-**Reality / evidence:** IMPLEMENTED / VERIFIED end to end — 2026-09-13
-
-P4.1 through P4.5 are complete: deterministic assertions, registry/discovery, the minimal CORE library, agent-created custom capability registration/verification, and lineage rollover inheritance have all been verified end to end. P4 is closed. Personal/CORE promotion remains later work under D-022 and requires separate explicit prioritization.
-
-### P1 follow-up — Model/reasoning-effort and continuation economy
-**Work state:** COMPLETE / MONITOR  
-**Reality:** IMPLEMENTED / VERIFIED mechanisms; ordinary-use savings MONITOR  
-**Evidence:** E-065, E-068, E-069, E-070, E-071, E-072, E-073, E-074, E-075, E-076, E-077, E-080, E-081, E-082, E-083, E-084, E-085, E-086, E-090  
-**Current gate:** Dedicated paid P1 benchmarking is closed. E-090 demonstrates that ordinary useful work can still expose continuation amplification outside the controlled E-086 fixture; PR #77 closes the demonstrated passive-context, source-retrieval, and telemetry defects deterministically. Continue naturalistic monitoring and reopen only on a concrete recurrence.
-
-The compatibility/default policy remains `gpt-5.6-terra` with `high` reasoning, including C's own turns and any peer invocation for which C supplies no experimental override. E-075 adds a bounded P1 capability: when C explicitly invokes A/B, C may select one of four admitted model/effort configurations for that peer execution. D-028 hard-prohibits Astra execution. A/B cannot directly change their own execution configuration; they may request escalation from C. No automatic router exists. I-009 continues to provide the durable per-execution model, reasoning-effort, and usage evidence.
-
-E-070 established that the former 0.147 runtime exposed Sol, Terra, Luna, and GPT-5.5 through its SDK catalog while the principal's desktop Codex UI visibly exposed Astra. E-071 advanced the canonical SDK/runtime standard to the matched published 0.154.0 pair, verified with 327 tests on exact PR and canonical-main commits. E-072 then live-verified the local 0.154.0 runtime and confirmed the same SDK now exposes `gpt-6-astra`. This dependency upgrade does **not** change production model selection.
-
-The two paid synthetic matrices are complete under E-073/E-074. Routine structured work showed no measured quality advantage for universal Terra/high, but the harder threshold run's only score differences came from an epistemically ambiguous state/evidence answer key and therefore do not support a trustworthy model ranking. More importantly, the principal reported that the 30 dedicated benchmark turns consumed nearly 20% of the five-hour Plus allowance. Continuing synthetic expansion would violate P1's own efficiency objective.
-
-P1's dedicated experimental phase is closed. The retained operating guidance is:
-
-- E-077 already verifies the live same-thread switching mechanics; do not repeat the forced two-configuration commissioning test;
-- E-080 shows that Codex SDK-internal subagents can bypass `invoke_targets` and Room execution accounting when the ambient multi-agent surface is available; exclude such work from P1 allocation conclusions and keep I-013 ahead of further evidence gathering;
-- E-081 shows that repeated deterministic tool continuations can dominate usage even inside one visible Room turn; prefer reducing tool-loop/context amplification before spending more allowance on model-ranking experiments;
-- E-082 provides a read-only local Codex rollout usage extractor, so future useful Desktop-vs-Room comparisons can use cumulative/task-level token counters without asking either system to introspect or commissioning synthetic benchmark turns;
-- E-083 shows that the first matched C-only comparison used 32 Room tool calls versus 11 on Desktop and about 1.92x the reported total tokens despite only about 8% more uncached input and reasoning-output tokens; the dominant penalty was cached-context replay across extra continuations. Its deterministic ground-truth test also falsified C's specific duplicate-insert restart claim, so future correctness reviews should require end-to-end reachability rather than local suspicious-code inference;
-- E-084's fresh blind fixture strengthens the economics finding: Desktop solved the task correctly with 8 tool calls / 279,098 tokens, while the task-only Room attempt used 38 tool calls / 1,805,314 tokens and returned no answer. The Room used 6.47x total tokens, 6.83x cached input, and 3.33x uncached input. C also violated the explicit shared-workspace-only evidence boundary and claimed it was awaiting two peer audits while structured metadata showed zero peer invocations and `invoke_targets: []`;
-- E-085 traces those 39 task provider responses to one C SDK turn with 38 tool calls; Room tool-activity events were post-turn records, not cognition triggers. Fifteen source operations were single reads versus one `read_many`, and the old capability policy imposed registry/separate-command ceremony. PR #70 now prioritizes native one-off workspace work, few/batched tool continuations, sufficient-evidence stopping, and explicit workspace-only boundaries;
-- E-086 provides the one justified post-fix regression: on the same fixture C completed correctly with 3 tool calls, 4 provider responses, 0 failures, and 92,765 tokens. Relative to pre-fix Room, tool calls fell 92.1%, provider responses 89.7%, total tokens 94.9%, and cached input 95.4%. This closes the benchmark loop; ordinary useful work is now the evidence source;
-- E-090 is the resulting ordinary-use evidence: broader source work again reached 22–31 tool/activity calls with roughly million-token cached-context replay, while a passive backlog caused one peer to answer stale work. PR #77 preserves passive cross-reading but labels triggering versus passive context, requires the direct source CLI for normal `inspect_source` work, supports explicit-file search targets, reinforces one `search-many` → one `read-many` retrieval, and reports execution-token deltas from the prior same-thread cumulative usage snapshot;
-- use the E-075 capability naturally in ordinary Rooms rather than creating more paid benchmark Rooms;
-- C should prefer `luna-medium` for routine bounded delegated work and deliberately choose a stronger admitted Terra or Sol configuration only when complexity, uncertainty, risk, or prior verification trouble provides an affirmative reason;
-- Astra is prohibited by D-028 and is not an admissible execution configuration; the runtime must fail closed if an Astra turn is attempted;
-- A/B should request escalation from C when the assigned work appears underpowered rather than silently self-routing;
-- collect the already-persisted model/effort/usage facts and normal verification outcomes from work the principal actually wanted completed;
-- avoid duplicate model calls solely to compare models; use deterministic checks and already-required independent review where they naturally exist;
-- treat E-073/E-074 as evidence that routine bounded tasks do not presently justify universal Terra/high, while preserving uncertainty about the escalation boundary;
-- only decide whether to keep C-discretionary selection, compile stable rules, or build any automatic/dynamic router after representative evidence shows which simpler policy actually earns its cost.
-
-No automatic/dynamic model-routing policy is authorized yet.
+Environment/document truth, repository hygiene, runtime provenance, maintenance health, model-economy investigation, authorized source inspection, SDK-subagent bypass, deterministic retrieval economy, persistent-data maintenance, verification-platform cleanup, and Windows restart QOL were addressed in bounded slices. Continue naturalistic monitoring rather than reopening broad audits.
 
 ## Approved planned development
 
-### Personal daily usage pacing limit
-**Work state:** DEFERRED  
-**Reality:** DECIDED / NOT IMPLEMENTED  
-**Decision:** D-019  
-**Feasibility evidence:** E-026  
-**Readiness constraint:** mixed subscription-allowance / purchased-credit semantics are unresolved. E-026 proves structured rate-limit data exists, but does not establish how mixed usage pools are represented, prioritized, or consumed well enough to enforce the intended pacing policy correctly.
-**Scheduling:** do not begin implementation until this usage-pool model is understood and the pacing semantics are deliberately resolved.
+### D-019 — Personal daily usage pacing
 
-Core approved behavior:
+**Work state:** DEFERRED
 
-- user-configurable daily limit expressed as a percentage of the weekly Codex usage allowance;
-- default daily limit: **1/7 of the weekly allowance (~14.3%)**;
-- use Codex's structured account rate-limit/usage meter as the pacing source;
-- stop initiating new model work after the configured daily allowance has been reached according to the latest available reading;
-- allow already-running work to finish, accepting possible small overshoot;
-- provider enforcement remains authoritative.
+**Reality:** DECIDED / NOT IMPLEMENTED
 
-Implementation details such as warning thresholds, UI presentation, carry-forward semantics, daily-period/time-zone semantics, polling cadence, and exact SDK/app-server integration remain open until implementation design.
+**Evidence:** E-026
 
-Before implementation, resolve at least: whether purchased credits form a distinct consumable pool from the subscription allowance; which pool or combination the daily pacing limit governs; what provider-reported fields can distinguish those pools; and how pacing should behave when one pool is exhausted while another remains available.
+The intended default remains one-seventh of the weekly allowance (~14.3%), using structured provider usage/rate-limit data rather than Room token estimates. Implementation remains blocked until mixed subscription allowance versus purchased-credit semantics are understood well enough to define which pool is paced and how multiple pools interact.
 
-## Maintenance issues
+## Maintenance / monitor items
 
-### I-007 — Environment and documentation truth drift
-**Work state:** COMPLETE  
-**Reality / evidence:** IMPLEMENTED / VERIFIED on canonical `main`  
-**Evidence:** E-065, E-066  
-**Priority:** CLOSED / first A3 remediation item
+### I-003 — Provider-side instruction adoption after same-thread profile rebind
 
-A3 found multiple low-risk truth/maintenance defects:
+**Work state:** MONITOR
 
-- package/README claim Python 3.10+ while current source relies on a newer runtime surface;
-- README incorrectly says the normal launcher sets the desktop Codex runtime and still describes C as a fixed read-only Integrator template;
-- Architecture still contains stale P4.5-in-progress text;
-- maintained register/synthesis freshness headers lag later content;
-- Development Control retains substantial completed experimental narration already owned by durable decision/evidence sources, increasing routine retrieval/context cost;
-- Repository & Operations has not yet been refreshed for major later architecture such as P4 and current routing/profile behavior.
+**Reality:** NEEDS VERIFICATION / current recurrence not demonstrated
 
-Repair completed through PR #57 and canonical-main verification. The owning sources were updated in place rather than adding a new documentation layer; completed experimental detail remains in its Decision/Evidence owners, and Development Control is again a compact volatile control surface.
+Current deterministic evidence verifies the local rebind mechanism and fail-closed identity behavior, but not independent provider-side proof that replacement developer instructions took effect on the resumed same thread. Do not spend a dedicated paid test unless ordinary use makes the uncertainty consequential.
 
-### I-008 — Repository branch hygiene
-**Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / VERIFIED  
-**Priority:** HIGH / second A3 remediation item  
-**Evidence:** E-065, E-067
+### Naturalistic continuation economy
 
-E-067 established and closed the remediation: 56 merged-PR residue branches were verified and deleted, fresh GitHub inspection shows only canonical `main` with zero open PRs, and `delete_branch_on_merge` is enabled. The checked GitHub ruleset path remains unavailable for this private repository on the current account tier; no heavyweight protection workaround was introduced.
+**Work state:** MONITOR
 
-Bounded remediation:
-
-- historical cleanup: COMPLETE — the exact 56-branch merged set from E-067 was deleted and fresh GitHub inspection shows only `main`;
-- future cleanup: COMPLETE — automatic deletion of merged PR head branches is enabled;
-- `main` protection remains a plan/account-capability constraint rather than a reason to invent heavier ceremony.
-
-### I-009 — Runtime provenance and maintenance health
-**Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / VERIFIED / LIVE VERIFIED  
-**Priority:** HIGH / prerequisite for P1 empirical follow-up  
-**Evidence:** E-065, E-068, E-069
-
-The bounded remediation is complete on canonical CORE:
-
-- `/api/health` exposes process-start application/source provenance, Python and installed Codex SDK version, and configured Room model/reasoning effort;
-- the maintenance watchdog exposes `starting` / `healthy` / `degraded` state plus last success/error and cumulative/consecutive unexpected-failure facts instead of silently swallowing arbitrary exceptions;
-- durable `agent_executions` rows retain the execution model and reasoning effort beside the existing SDK usage JSON, providing the empirical input needed for P1;
-- no dashboard, general observability platform, or automatic model-routing policy was introduced.
-
-PR #58 and the exact canonical merge commit are verified under E-068. Canonical-main CI passed **327 tests, 2 warnings**. E-069 then live-verified the local Personal runtime on exact canonical revision `6168c80938c7e9172a86651d3a9953fb66c2e219`: clean source, Python 3.12.10, `openai-codex` 0.147.0, Terra/high policy, and a healthy zero-failure watchdog.
-
-### I-012 — Authorized CORE and cross-Room read inspection
-**Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / VERIFIED / LIVE VERIFIED  
-**Decision:** D-029  
-**Evidence:** E-077, E-078, E-079  
-**Priority:** CLOSED / dependency discovered by the I-010/P1 live trial
-
-The first I-010 adaptive-cognition Room demonstrated a real evidence boundary: agents confined to their current shared workspace could not ground implementation-specific maintenance conclusions in CORE source or prior Room artifacts. D-029/I-012 repaired that boundary through registered CORE capability `inspect_source`.
-
-Verified behavior:
-
-- discover authorized sources, find files, search literal text, and read bounded UTF-8 source text;
-- expose an allowlisted maintained CORE repository/source surface while excluding `data/`, environment-private files, credentials/secrets, virtual environments, Git internals, and arbitrary host paths;
-- expose other Personal Rooms only through `data/rooms/<room_id>/shared`, not private participant state or host database internals;
-- reject traversal plus symlink/reparse escapes and preserve all existing cross-boundary write restrictions.
-
-PR #62 is canonically verified under E-078. E-079 then live-verified the deployed path in a fresh Room: C alone discovered/inspected `inspect_source`, read and searched CORE, inspected another Room's shared workspace, made no writes, and FINISHed `I-012-LIVE-OK`.
-
-The no-write smoke forced C away from the existing `--input-file` fallback after fragile Windows inline-JSON attempts. Successful workaround invocations were exported as generic `command_execution` rather than promoted structured capability telemetry. This is retained as MONITOR, not a completion blocker: functional access succeeded, no raw payload leaked into durable activity, and ordinary operation already has a file-input fallback. Reopen only if normal Rooms repeatedly need wrapper-form invocation or the missing structured telemetry becomes operationally costly.
-
-### I-013 — SDK-internal subagent bypass
-**Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / VERIFIED on canonical `main`; recurrence MONITOR  
-**Priority:** CLOSED / P1 evidence-integrity prerequisite  
-**Evidence:** E-080
-
-The repository-grounded I-010 Room contained one counted C turn and no persistent A/B turns, yet C's final report claimed A at `luna-medium` and B at `terra-medium`. The export instead recorded four SDK `sub_agent_activity` events inside C's turn. Pinned Codex 0.154 source confirms that multi-agent tools default enabled and spawned subagents inherit the parent model by default.
-
-PR #63 closes that bypass by adding app-server overrides `agents.enabled=false` and `features.multi_agent_v2.enabled=false`. Final PR head `830bbfec06d3f90463a4e07c214e780bb7ca3c23` and squash merge `8ed3df777ed24a8192b48e43f652f4736921fe2c` share exact Git tree `b7436a3a3e12616b81f84e59c5650f599776ebf9`; both hosted runs passed **341 tests, 2 warnings**.
-
-Do not count Rooms containing SDK-internal subagent activity as C-selected Room-peer allocation evidence. No dedicated paid model smoke is warranted; simply monitor the next useful Room for absence of `sub_agent_activity` and reopen I-013 only on demonstrated recurrence.
-
-### I-014 — Deterministic retrieval economy
-**Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / VERIFIED on canonical `main`; ordinary-use recurrence MONITOR  
-**Priority:** CLOSED / demonstrated operating-economics remediation  
-**Evidence:** E-081, E-090
-
-E-081 established the original tool-loop/context-amplification defect and PR #64 added direct/batched `inspect_source` retrieval plus execution-economics telemetry. E-086 later showed the broader PR #70 continuation-policy repair could reduce a controlled fixture to 3 tool calls / 4 provider responses / 92,765 tokens.
-
-Ordinary feature testing then demonstrated that the problem was not fully eliminated for broader source work. E-090 records two related defects: a newly invoked peer could receive earlier passive readable messages without the prompt distinguishing them from the runnable trigger, and source investigations could still take 22–31 tool/activity calls with heavy cached-context replay despite `search_many` / `read_many` being available. The same evidence showed the economics status line combined current-execution tool counts with cumulative persistent-thread token totals.
-
-PR #77 closes that bounded recurrence without adding a planner, tool quota, automatic router, schema migration, or broader read authority:
-
-- coalesced prompt events retain passive cross-reading but are explicitly labeled `triggering` versus `passive_context`, with triggering events identified as the current work;
-- `inspect_source` search/search-many accepts an explicit regular file as well as a directory while preserving the existing allowlist, traversal, link/reparse, output, and no-write boundaries;
-- always-loaded guidance uses the direct `codex-room-cap source` surface for normal source inspection, states the relevant search limits, and makes one `search-many` followed by one `read-many` the normal pattern when several lookups are already known, with further retrieval reserved for a specific unresolved dependency;
-- `execution_economics` retains provider-reported cumulative usage in metadata but derives the visible execution token figure and tokens-per-tool-call from the immediately prior durable usage snapshot on the same SDK thread. Missing or non-monotonic counters produce an explicit unavailable/non-monotonic state rather than an invented delta.
-
-Exact PR #77 head `2d898aacecd274962a57cf39b32c983538d403fb` and squash merge `7d930127212b94580c6309032b83d654d032570e` share Git tree `e3a5e382712ac64e23f7abe9e5bc25cf2dfa3a10`. PR run `35023873652` and canonical-main push run `35024443078` both passed **376 tests, 2 warnings** on Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12, plus **3 browser tests** on Windows.
-
-No dedicated paid Room regression is warranted. Continue to use ordinary useful Rooms as the effectiveness monitor.
-
-### I-010 — Persistent-data operational maintenance
-**Work state:** IN PROGRESS  
-**Reality:** OBSERVED ISSUE / repository-grounded candidate specification  
-**Priority:** MEDIUM / ACTIVE after I-014 closure  
-**Evidence:** E-065, E-080
-
-E-080 establishes the actual persistence surface and maintenance gap from current CORE: SQLite plus durable Room workspace and institutional/custom-capability material live beneath the Personal data root, while no bounded integrity/backup/verify/restore maintenance command exists.
-
-The Room's candidate direction is intentionally narrow: a local operator-only maintenance CLI with integrity check, staged backup, deterministic backup verification, and guarded restore. Keep cloud sync, scheduling, retention, dashboards, and agent-callable restore outside I-010.
-
-Before coding, Project-level review should simplify any proposal that is not required by current evidence. In particular, installation UUIDs, formal SQLite `user_version` adoption, and a specific PID-marker scheme are candidate mechanisms rather than settled requirements. Preserve the smallest safety properties needed to prevent live-state replacement, partial publication, corrupt restore, path escape, and silent overwrite of newer/existing state.
-
-
-### I-011 — Verification-platform and dependency assurance
-**Work state:** COMPLETE  
-**Reality:** IMPLEMENTED / VERIFIED  
-**Priority:** CLOSED  
-**Evidence:** E-065, E-088
-
-PR #75 closes the A3 assurance edges with bounded mechanics:
-
-- hosted Python CI covers Ubuntu/Python 3.11, Ubuntu/Python 3.12, and Windows/Python 3.12;
-- the Windows lane also runs the browser transcript suite using pinned `@playwright/test@1.63.0`;
-- the two recorded timing-sensitive orchestration tests now synchronize on explicit state rather than short sleep/delay windows;
-- `.github/workflows/dependency-review.yml` runs pinned `pip-audit==2.10.1` plus an informational outdated-package report on dependency changes, monthly, and on demand; upgrades remain deliberate;
-- the first Windows run exposed `inspect_source` CRLF/LF variance. Returned transient UTF-8 text is now LF-normalized across platforms while raw-file SHA-256 and byte-size evidence continues to describe the original bytes; the version-2 interface/schema remains unchanged.
-
-Final exact PR-head and canonical-main verification passed **370 tests, 2 warnings** on all three Python lanes, **3 browser tests** on Windows, and reported **no known dependency vulnerabilities**. See E-088.
-
-### I-003 — B SDK-thread/profile continuity residue
-**Reality:** OBSERVED ISSUE — historical provider-side residue; current recurrence not demonstrated  
-**Evidence qualifier:** NEEDS VERIFICATION  
-**Priority:** LOW  
-**Fresh evidence:** 2026-09-12 A2 source/test inspection
-
-A2 found that the current implementation repairs only the known stale pair-era A/B default/snapshot hashes in live unmodified Rooms, preserves archived/sealed/custom state, and records the migration once. Adapter/runtime tests show that a targeted profile rebind evicts only the selected cache entry, resumes the same persistent SDK thread ID with the current developer instructions, fails closed if the SDK returns another identity, and quarantines the worker on a failed resume without changing the durable thread ID.
-
-The remaining uncertainty is narrower than the original observation: current deterministic evidence does **not** independently prove that the provider-side persistent thread has actually adopted the replacement developer instructions after same-thread resume. The runtime's own audit event therefore says instruction application “awaits participant verification.” Keep I-003 open as low-priority **NEEDS VERIFICATION** unless A2 later determines that a live provider-side check is worth its model cost.
+E-086 demonstrated that the continuation-economy repair can radically reduce tool-loop replay on a controlled fixture. E-090 showed broader source work can still become expensive. The current `EVIDENCE` interface and assignment-scoped production context further change that cost surface. Continue to record concrete expensive recurrences; do not launch synthetic benchmark matrices.
 
 ## Deferred work
 
-Keep these behind the active A3 remediation sequence unless the human principal changes priorities:
+Keep these deferred unless new evidence or explicit principal direction reprioritizes them:
 
-- archive retrieval/indexing;
-- broader deterministic-tooling expansion;
-- scalability/data-integrity work beyond demonstrated issues;
-- collaboration-quality experiments;
-- provider-neutral implementation;
-- broader productization;
+- archive indexing/embeddings/broad summarization beyond bounded `HISTORY`;
+- automatic/dynamic model routing;
+- broader deterministic-tooling promotion without demonstrated reuse;
+- stronger per-capability OS isolation;
+- shareable/redacted exports;
+- large-module refactors/storage optimization;
+- broader productization/packaging/funding;
 - Enterprise workforce features;
-- packaging/funding preparation;
+- provider-neutral implementation work;
 - nonessential UI refinement.
 
 ## Open questions
 
-No high-priority conceptual question blocks current work. The A3 audit-remediation sequence is closed. P1 should gather only naturalistic useful-work evidence and now includes retrieval/tool-loop economics as well as persistent-Room-peer allocation. I-003 remains low priority and needs provider-side participant verification only if the value justifies a live model check. D-019 remains specifically blocked on understanding and defining mixed subscription-allowance / purchased-credit pacing semantics.
+No high-priority conceptual question blocks the next Common Cause run. The immediate empirical question is narrower: **does the post-PR-#110 fallback rule actually keep substantial failed-delegation fallback off C's accumulated context while preserving quality and exact verification?**
+
+After the bounded implementation/fallback rerun, resume ordinary Codex Room development/use unless its evidence demonstrates another concrete defect or the principal explicitly reprioritizes work.
