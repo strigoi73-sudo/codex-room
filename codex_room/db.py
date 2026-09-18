@@ -226,6 +226,7 @@ class Database:
                     last_activity_at TEXT,
                     work_model_version INTEGER NOT NULL DEFAULT 1,
                     provider_context_mode TEXT NOT NULL DEFAULT 'persistent_agent_thread',
+                    completion_policy TEXT NOT NULL DEFAULT 'auto_settle',
                     required_contributors_json TEXT NOT NULL DEFAULT '[]'
                 );
 
@@ -416,6 +417,12 @@ class Database:
                 "rounds",
                 "provider_context_mode",
                 "TEXT NOT NULL DEFAULT 'persistent_agent_thread'",
+            )
+            await self._ensure_column(
+                db,
+                "rounds",
+                "completion_policy",
+                "TEXT NOT NULL DEFAULT 'auto_settle'",
             )
             await self._ensure_column(db, "rounds", "required_contributors_json", "TEXT NOT NULL DEFAULT '[]'")
             await self._ensure_column(db, "assignments", "context_thread_id", "TEXT")
@@ -895,8 +902,9 @@ class Database:
             await db.execute(
                 """INSERT INTO rounds
                    (id, room_id, title, prompt, created_at, status, starting_agent,
-                    work_model_version, provider_context_mode, required_contributors_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, provider_context_mode, completion_policy,
+                    required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -907,6 +915,7 @@ class Database:
                     request.starting_agent,
                     request.work_model_version,
                     request.provider_context_mode,
+                    request.completion_policy,
                     json.dumps(request.required_contributors),
                 ),
             )
@@ -1780,8 +1789,9 @@ class Database:
                     agent_a_private, agent_b_private, task_overlay,
                     agent_a_overlay, agent_b_overlay,
                     participant_private_json, participant_overlays_json,
-                    work_model_version, provider_context_mode, required_contributors_json)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    work_model_version, provider_context_mode, completion_policy,
+                    required_contributors_json)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     round_id,
                     room_id,
@@ -1799,6 +1809,7 @@ class Database:
                     json.dumps(request.participant_overlays, ensure_ascii=False),
                     request.work_model_version,
                     request.provider_context_mode,
+                    request.completion_policy,
                     json.dumps(request.required_contributors),
                 ),
             )
@@ -3091,6 +3102,7 @@ class Database:
         wake_agent_keys: list[str] = []
         released_join_id: str | None = None
         task_settled = False
+        continuous_resumed = False
         missing_required_contributors: list[str] = []
         evidence_request_id: str | None = None
         history_event_ids: list[str] = []
@@ -3122,6 +3134,7 @@ class Database:
                     "wake_agent_keys": [],
                     "released_join_id": None,
                     "task_settled": False,
+                    "continuous_resumed": False,
                     "turn_limit_hit": False,
                     "decision_applied": False,
                     "evidence_request_id": None,
@@ -3143,7 +3156,7 @@ class Database:
 
             round_budget = await self._fetchone(
                 db,
-                """SELECT ro.turn_count, r.max_turns
+                """SELECT ro.turn_count, ro.completion_policy, r.max_turns
                    FROM rounds ro JOIN rooms r ON r.id=ro.room_id
                    WHERE ro.id=? AND ro.room_id=?""",
                 (round_id, room_id),
@@ -3446,26 +3459,46 @@ class Database:
                         )
                         wake_agent_keys.append(coordinator["agent_key"])
                     elif not missing_required_contributors:
-                        await db.execute(
-                            """UPDATE tasks
-                               SET state='settled', settled_at=?, updated_at=?,
-                                   settlement_event_id=?, settlement_reason=?
-                               WHERE id=? AND state='active'""",
-                            (
-                                now,
-                                now,
-                                result_event_id,
-                                action.lower(),
-                                assignment["task_id"],
-                            ),
-                        )
-                        task_settled = True
+                        if (
+                            round_budget
+                            and round_budget["completion_policy"] == "continuous"
+                            and not turn_limit_hit
+                        ):
+                            cursor = await db.execute(
+                                """UPDATE assignments
+                                   SET state='queued', completed_at=NULL, updated_at=?
+                                   WHERE id=? AND state IN ('completed','passed')""",
+                                (now, assignment_id),
+                            )
+                            if cursor.rowcount != 1:
+                                await db.rollback()
+                                raise RuntimeError(
+                                    "Continuous Round could not resume its coordinator assignment"
+                                )
+                            wake_agent_keys.append(assignment["agent_key"])
+                            continuous_resumed = True
+                        else:
+                            await db.execute(
+                                """UPDATE tasks
+                                   SET state='settled', settled_at=?, updated_at=?,
+                                       settlement_event_id=?, settlement_reason=?
+                                   WHERE id=? AND state='active'""",
+                                (
+                                    now,
+                                    now,
+                                    result_event_id,
+                                    action.lower(),
+                                    assignment["task_id"],
+                                ),
+                            )
+                            task_settled = True
 
             await db.commit()
         return {
             "wake_agent_keys": list(dict.fromkeys(wake_agent_keys)),
             "released_join_id": released_join_id,
             "task_settled": task_settled,
+            "continuous_resumed": continuous_resumed,
             "missing_required_contributors": missing_required_contributors,
             "turn_limit_hit": turn_limit_hit,
             "decision_applied": True,
