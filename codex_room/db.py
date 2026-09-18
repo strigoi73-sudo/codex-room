@@ -2994,7 +2994,7 @@ class Database:
             rows = await db.execute_fetchall(
                 """SELECT j.id AS join_id, x.id AS assignment_id, a.agent_key,
                           x.state, x.result_event_id, x.resolution_reason,
-                          e.content AS result_content
+                          e.source AS result_source, e.content AS result_content
                    FROM assignment_joins j
                    JOIN assignments x ON x.contribution_join_id=j.id
                    JOIN agents a ON a.id=x.agent_id
