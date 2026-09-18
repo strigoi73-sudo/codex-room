@@ -146,7 +146,14 @@ async def test_assignment_context_mode_reuses_one_thread_per_logical_assignment(
     assert c_thread != a_thread
     assert c_thread != permanent_threads["agent_c"]
     assert a_thread != permanent_threads["agent_a"]
-    assert "bounded to the current logical Assignment" in adapter.calls["agent_c"][0]["prompt"]
+    assert (
+        "bounded to the current declared Assignment context lineage"
+        in adapter.calls["agent_c"][0]["prompt"]
+    )
+    assert (
+        "otherwise do not assume unsupplied history from another Assignment"
+        in adapter.calls["agent_c"][0]["prompt"]
+    )
     assert "Bounded peer result." in adapter.calls["agent_c"][1]["prompt"]
 
     exported = await runtime.db.snapshot(room_id, event_limit=None)
