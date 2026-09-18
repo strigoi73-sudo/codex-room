@@ -577,6 +577,21 @@ async def test_persistent_provider_context_mode_remains_default(
     assert exported is not None
     assert exported["active_round"]["provider_context_mode"] == "persistent_agent_thread"
 
+def test_bctx3_retire_context_task_ids_validation_is_bounded() -> None:
+    with pytest.raises(ValidationError, match="cannot contain duplicates"):
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="invalid duplicate retirement",
+            retire_context_task_ids=["task_one", "task_one"],
+        )
+    with pytest.raises(ValidationError, match="at most 8 Task IDs"):
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="too many retirements",
+            retire_context_task_ids=[f"task_{index}" for index in range(9)],
+        )
+
+
 def test_history_request_validation_is_bounded() -> None:
     with pytest.raises(ValidationError, match="SEARCH history retrieval"):
         HistoryRequest(operation="SEARCH", query="")
@@ -592,6 +607,102 @@ def test_history_request_validation_is_bounded() -> None:
                 for _ in range(5)
             ],
         )
+
+
+@pytest.mark.asyncio
+async def test_bctx3_history_recent_can_retrieve_completed_result_from_earlier_task_same_round(
+    context_runtime_factory,
+):
+    token = "SAME-ROUND-A-4711"
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Produce one durable result for Task one.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task one integrated.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.HISTORY,
+                history_requests=[
+                    HistoryRequest(
+                        operation="RECENT",
+                        agent="agent_a",
+                        max_results=1,
+                    )
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task two integrated the retrieved same-Round result.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message=token,
+        )
+    )
+
+    runtime = await context_runtime_factory(adapter, "bctx3-same-round-history.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Retrieve durable results across bounded Tasks in one Round.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=5,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert len(adapter.calls["agent_c"]) == 4
+    retrieved_prompt = adapter.calls["agent_c"][3]["prompt"]
+    assert "<retrieved_room_history>" in retrieved_prompt
+    assert token in retrieved_prompt
+
+    exported = await runtime.db.snapshot(room_id, event_limit=None)
+    assert exported is not None
+    tasks = exported["active_round"]["transaction_state"]["tasks"]
+    assert len(tasks) == 2
+    first_a = next(
+        item
+        for item in tasks[0]["assignments"]
+        if item["agent_key"] == "agent_a"
+    )
+    second_c = next(
+        item
+        for item in tasks[1]["assignments"]
+        if item["agent_key"] == "agent_c"
+    )
+    assert second_c["context_event_ids"] == [first_a["result_event_id"]]
+
+    history_events = [
+        event
+        for event in exported["active_round"]["events"]
+        if event["event_type"] == "tool_activity"
+        and event.get("metadata", {}).get("type") == "deterministic_room_history"
+    ]
+    assert len(history_events) == 1
+    assert history_events[0]["metadata"]["selected_event_ids"] == [
+        first_a["result_event_id"]
+    ]
 
 
 @pytest.mark.asyncio
