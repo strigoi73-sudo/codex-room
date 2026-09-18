@@ -151,7 +151,7 @@ function renderRoom({ replaceTranscript = false } = {}) {
   $("#room-status").className = `status-pill ${room.status}`;
   const round = room.active_round;
   $("#round-summary").textContent = round
-    ? `${round.title || "Untitled round"} · ${round.status} · ${round.turn_count} turns · starter ${round.starting_agent}`
+    ? `${round.title || "Untitled round"} · ${round.status} · ${round.turn_count} turns · starter ${round.starting_agent}${round.completion_policy === "continuous" ? " · continuous" : ""}`
     : "No active round";
   renderAgentStrip(room.agents || []);
   syncParticipantControls(room);
