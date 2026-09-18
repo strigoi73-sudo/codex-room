@@ -47,6 +47,7 @@ class FakeAgentAdapter:
         interrupt_outcomes: dict[str, InterruptOutcome] | None = None,
         failures: dict[str, list[Exception]] | None = None,
         profile_rebind_error: Exception | None = None,
+        archive_failures: int = 0,
         turn_id_namespace: str = "",
     ) -> None:
         self.decisions = {
@@ -64,6 +65,7 @@ class FakeAgentAdapter:
         self.interrupt_outcomes = interrupt_outcomes or {}
         self.failures = {key: deque(values) for key, values in (failures or {}).items()}
         self.profile_rebind_error = profile_rebind_error
+        self.archive_failures_remaining = max(0, int(archive_failures))
         self.turn_id_namespace = turn_id_namespace
         self._call_gates: dict[tuple[str, int], asyncio.Event] = {}
         self._inactive_agents: set[str] = set()
@@ -278,6 +280,9 @@ class FakeAgentAdapter:
         )
 
     async def archive_thread(self, thread_id: str) -> None:
+        if self.archive_failures_remaining > 0:
+            self.archive_failures_remaining -= 1
+            raise RuntimeError("simulated provider archive failure")
         self.archived.append(thread_id)
 
     async def unarchive_thread(self, thread_id: str) -> None:
