@@ -1849,7 +1849,12 @@ class RoomRuntime:
         if round_item.get("task_overlay"):
             context_parts.append(f"Round task overlay:\n{round_item['task_overlay']}")
         if task_status is not None:
-            context_parts.append("<task_coordination_status>")
+            context_parts.append(
+                "<task_coordination_status "
+                f"task_id=\"{task_status['task_id']}\" "
+                f"state=\"{task_status.get('task_state') or ''}\" "
+                f"coordinator=\"{task_status.get('coordinator_agent_key') or ''}\">"
+            )
             for item in task_status["assignments"]:
                 context_parts.append(
                     "<assignment "
@@ -1909,6 +1914,7 @@ class RoomRuntime:
                             f"assignment_id=\"{item['assignment_id']}\" "
                             f"agent=\"{item['agent_key']}\" "
                             f"result_source=\"{item.get('result_source') or item['agent_key']}\" "
+                            f"forwarded_assignment_id=\"{item.get('forwarded_result_assignment_id') or ''}\" "
                             f"state=\"{item['state']}\">"
                         ),
                         item.get("result_content")
