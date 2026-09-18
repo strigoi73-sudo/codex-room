@@ -202,3 +202,51 @@ Execution economics for this final verification Round:
 Coordination note: C announced one independent verifier, but the actual path was C -> A -> B, with A acting as a zero-tool relay before and after B's substantive verification. B remained the independent executor, so this does not undermine the artifact result, but A's relay consumed **45,338** raw execution tokens and did not materially add verification evidence. Treat that as concrete token-economy evidence for future ordinary-use coordination; it does not justify reopening the closed synthetic benchmark series by itself.
 
 **Assessment:** the existing Common Cause artifact is **VERIFIED PLAY-READY** for the intended three-agent competitive exercise. Competitive play remains a separate human authorization; this evidence does not itself start a match.
+
+---
+
+### E-130 — Continuous Round completion policy exact-head verification and merge
+**Date:** 2026-09-18  
+**Kind:** [CORE lifecycle feature / exact-head review / local verification / merge]  
+**Decision:** D-036
+
+PR #113 implemented explicit Round-level `completion_policy` values:
+
+- `auto_settle` — existing/default behavior;
+- `continuous` — keep a standing coordinator objective active across bounded coordinator completions.
+
+Reviewed implementation head:
+
+`24063623160bb7e4eff44e0932fbf1d0be00eb35`
+
+The implementation persists the policy on the Round, exposes the choice in Room creation/New Round UI, requeues the same completed/passed coordinator Assignment at the ordinary settlement boundary in continuous mode, preserves its assignment-scoped provider context, and emits `continuous_round_resumed`. Child Assignments still complete normally.
+
+Exact-diff review found and corrected one pre-merge prompt defect: the first continuous-mode prompt wording told every Assignment that CORE would return control to “this same coordinator Assignment,” which was false for delegated A/B child Assignments. The corrected wording explicitly states that child Assignments complete normally and must stay within their own scope. Because review validity attaches to exact bytes, the earlier four-test pass on predecessor head `e3548759ffecdef123d8cd9aee51573d16b9f125` was not used as verification of the corrected head.
+
+Focused verification on the corrected head:
+
+- continuous coordinator requeue through hard turn limit — PASS;
+- continuous PASS does not settle the Task — PASS;
+- continuous delegated child completes normally and preserves scope — PASS;
+- dual-delegation regression — PASS;
+- assignment-thread evidence-resume continuity regression — PASS;
+- aggregate: **5 passed**.
+
+Broader local verification on the same exact head produced:
+
+- `git diff --check` — PASS;
+- full Python suite — **428 passed, 1 failed**;
+- the one failure was `test_rollover_http_endpoint_leaves_successor_preparing`, a rollover quiescence timing test unchanged from canonical `main` and outside the PR #113 diff;
+- specialized browser/transcript stability — **3 passed**;
+- exact local/remote feature-head agreement remained intact and the tracked working tree was clean.
+
+The single rollover failure was investigated rather than treated as a continuous-Round regression. The test decides apparent quiescence from persisted execution state, while `rollover()` separately rejects still-active in-memory worker-slot/adapter state, creating a narrow scheduling window. The same unchanged rollover test then passed **3 consecutive focused reruns** on the exact feature head (6.04s, 5.46s, 8.33s). No product code was changed for that unrelated transient.
+
+GitHub attached no status checks or PR-triggered workflow runs to the exact head. PR #113 was marked ready and merged with the head SHA pinned. Canonical merge commit:
+
+`aa3c98dd81303bfd2cb5798c73dec1be2f13dcda`
+
+Canonical `main` was then confirmed to point to that merge commit.
+
+**Assessment:** D-036 is **IMPLEMENTED / EXACT-HEAD REVIEWED / VERIFIED TO SUFFICIENT LOCAL EVIDENCE / MERGED**. The remaining acceptance step is naturalistic runtime validation after the local installation is updated/restarted: run a Round with prompt exactly `Stay busy.`, select **Keep objective active**, use a deliberately high turn ceiling, and observe repeated coordinator return to the same standing objective until human stop or a hard boundary. That naturalistic run remains pending and is not implied by this entry.
+
