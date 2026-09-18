@@ -650,6 +650,104 @@ async def test_continuous_round_child_assignment_completes_normally_and_preserve
 
 
 @pytest.mark.asyncio
+async def test_continuous_successor_task_preserves_required_contributors_and_keeps_workers_task_local(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Contribute to bounded task one.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated bounded task one.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Contribute to bounded task two.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated bounded task two at the hard limit.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A contribution for task one.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A contribution for task two.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "continuous-required.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Stay busy.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            required_contributors=["agent_a"],
+            max_turns=6,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id", (room_id,)
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(tasks) == 2
+    assert all(row["state"] == "settled" for row in tasks)
+    assert tasks[1]["parent_task_id"] == tasks[0]["id"]
+    assert all(row["required_contributors_json"] == '["agent_a"]' for row in tasks)
+
+    c_assignments = [row for row in assignments if row["agent_key"] == "agent_c"]
+    a_assignments = [row for row in assignments if row["agent_key"] == "agent_a"]
+    assert len(c_assignments) == 2
+    assert len(a_assignments) == 2
+    assert [row["task_id"] for row in c_assignments] == [row["id"] for row in tasks]
+    assert [row["task_id"] for row in a_assignments] == [row["id"] for row in tasks]
+    assert c_assignments[0]["context_thread_id"] == c_assignments[1]["context_thread_id"]
+    assert a_assignments[0]["context_thread_id"] != a_assignments[1]["context_thread_id"]
+    assert len([item for item in adapter.context_starts if item[0] == "agent_c"]) == 1
+    assert len([item for item in adapter.context_starts if item[0] == "agent_a"]) == 2
+
+
+@pytest.mark.asyncio
 async def test_transaction_turn_limit_stops_before_released_parent_can_run_again(
     transaction_runtime_factory,
 ):
