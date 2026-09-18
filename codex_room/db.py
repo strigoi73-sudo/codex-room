@@ -309,8 +309,31 @@ class Database:
                     consumed_at TEXT
                 );
 
+                CREATE TABLE IF NOT EXISTS coordinator_context_refreshes (
+                    id TEXT PRIMARY KEY,
+                    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                    round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+                    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+                    assignment_id TEXT NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
+                    source_batch_id TEXT NOT NULL REFERENCES agent_executions(batch_id),
+                    request_event_id TEXT NOT NULL REFERENCES events(id),
+                    checkpoint_text TEXT NOT NULL,
+                    old_context_thread_id TEXT NOT NULL,
+                    new_context_thread_id TEXT,
+                    state TEXT NOT NULL,
+                    error TEXT,
+                    created_at TEXT NOT NULL,
+                    activated_at TEXT,
+                    completed_at TEXT,
+                    checkpoint_consumed_at TEXT
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_assignment_evidence_assignment_state
                     ON assignment_evidence(assignment_id, state, created_at);
+                CREATE INDEX IF NOT EXISTS idx_coordinator_refresh_state
+                    ON coordinator_context_refreshes(state, created_at);
+                CREATE INDEX IF NOT EXISTS idx_coordinator_refresh_assignment
+                    ON coordinator_context_refreshes(assignment_id, created_at);
 
                 CREATE INDEX IF NOT EXISTS idx_tasks_round_state
                     ON tasks(round_id, state);
@@ -2360,10 +2383,18 @@ class Database:
                    ORDER BY e.created_at, e.id""",
                 (round_id,),
             )
+            refresh_rows = await db.execute_fetchall(
+                """SELECT c.*
+                   FROM coordinator_context_refreshes c
+                   WHERE c.round_id=?
+                   ORDER BY c.created_at, c.id""",
+                (round_id,),
+            )
         tasks: list[dict[str, Any]] = []
         assignments_by_task: dict[str, list[dict[str, Any]]] = {}
         joins_by_task: dict[str, list[dict[str, Any]]] = {}
         evidence_by_assignment: dict[str, list[dict[str, Any]]] = {}
+        refreshes_by_assignment: dict[str, list[dict[str, Any]]] = {}
         for row in evidence_rows:
             item = dict(row)
             item["request"] = json.loads(item.pop("request_json"))
@@ -2377,12 +2408,16 @@ class Database:
             )
             item.pop("transient_result_json", None)
             evidence_by_assignment.setdefault(item["assignment_id"], []).append(item)
+        for row in refresh_rows:
+            item = dict(row)
+            refreshes_by_assignment.setdefault(item["assignment_id"], []).append(item)
         for row in assignment_rows:
             item = dict(row)
             item["context_event_ids"] = json.loads(
                 item.pop("context_event_ids_json", "[]") or "[]"
             )
             item["evidence"] = evidence_by_assignment.get(item["id"], [])
+            item["context_refreshes"] = refreshes_by_assignment.get(item["id"], [])
             assignments_by_task.setdefault(item["task_id"], []).append(item)
         for row in join_rows:
             item = dict(row)
@@ -3109,6 +3144,277 @@ class Database:
             "joins_truncated": len(join_rows) > limit,
         }
 
+    async def get_pending_coordinator_checkpoint(
+        self, assignment_id: str, context_thread_id: str | None
+    ) -> dict[str, Any] | None:
+        """Return the unconsumed checkpoint for the assignment's newly activated C context."""
+        if context_thread_id is None:
+            return None
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                """SELECT * FROM coordinator_context_refreshes
+                   WHERE assignment_id=? AND new_context_thread_id=?
+                     AND state='completed' AND checkpoint_consumed_at IS NULL
+                   ORDER BY completed_at DESC, created_at DESC, id DESC LIMIT 1""",
+                (assignment_id, context_thread_id),
+            )
+        return dict(row) if row is not None else None
+
+    async def get_pending_coordinator_context_refreshes(
+        self, room_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Return durable refresh handoffs that still need provider-side reconciliation."""
+        params: list[Any] = []
+        room_clause = ""
+        if room_id is not None:
+            room_clause = " AND c.room_id=?"
+            params.append(room_id)
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                f"""SELECT c.*, a.agent_key, x.state AS assignment_state,
+                           x.context_thread_id AS assignment_context_thread_id,
+                           r.status AS room_status
+                    FROM coordinator_context_refreshes c
+                    JOIN assignments x ON x.id=c.assignment_id
+                    JOIN agents a ON a.id=x.agent_id
+                    JOIN rooms r ON r.id=c.room_id
+                    WHERE c.state IN ('preparing','archive_pending')
+                      {room_clause}
+                    ORDER BY c.created_at, c.id
+                    LIMIT 128""",
+                tuple(params),
+            )
+        return [dict(row) for row in rows]
+
+    async def get_coordinator_context_refresh(
+        self, refresh_id: str
+    ) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                """SELECT c.*, a.agent_key, x.state AS assignment_state,
+                          x.context_thread_id AS assignment_context_thread_id,
+                          r.status AS room_status
+                   FROM coordinator_context_refreshes c
+                   JOIN assignments x ON x.id=c.assignment_id
+                   JOIN agents a ON a.id=x.agent_id
+                   JOIN rooms r ON r.id=c.room_id
+                   WHERE c.id=?""",
+                (refresh_id,),
+            )
+        return dict(row) if row is not None else None
+
+    async def record_coordinator_context_refresh_error(
+        self, refresh_id: str, error: str
+    ) -> None:
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE coordinator_context_refreshes
+                   SET error=?
+                   WHERE id=? AND state IN ('preparing','archive_pending')""",
+                (error[:4000], refresh_id),
+            )
+            await db.commit()
+
+    async def activate_coordinator_context_refresh(
+        self, refresh_id: str, new_context_thread_id: str
+    ) -> dict[str, Any]:
+        """Atomically switch one refreshing coordinator Assignment to its new provider context."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            row = await self._fetchone(
+                db,
+                """SELECT c.*, x.state AS assignment_state,
+                          x.context_thread_id AS assignment_context_thread_id
+                   FROM coordinator_context_refreshes c
+                   JOIN assignments x ON x.id=c.assignment_id
+                   WHERE c.id=?""",
+                (refresh_id,),
+            )
+            if row is None:
+                await db.rollback()
+                raise RuntimeError("Coordinator context refresh is missing")
+            if row["state"] == "archive_pending":
+                if row["new_context_thread_id"] != new_context_thread_id:
+                    await db.rollback()
+                    raise RuntimeError(
+                        "Coordinator refresh already bound a different new context"
+                    )
+                await db.commit()
+                return dict(row)
+            if (
+                row["state"] != "preparing"
+                or row["assignment_state"] != "refreshing"
+                or row["assignment_context_thread_id"] != row["old_context_thread_id"]
+            ):
+                await db.rollback()
+                raise RuntimeError(
+                    "Coordinator refresh lost its exact old-context assignment state"
+                )
+            cursor = await db.execute(
+                """UPDATE assignments SET context_thread_id=?, updated_at=?
+                   WHERE id=? AND state='refreshing' AND context_thread_id=?""",
+                (
+                    new_context_thread_id,
+                    now,
+                    row["assignment_id"],
+                    row["old_context_thread_id"],
+                ),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError(
+                    "Coordinator refresh could not bind the fresh provider context"
+                )
+            cursor = await db.execute(
+                """UPDATE coordinator_context_refreshes
+                   SET new_context_thread_id=?, state='archive_pending',
+                       activated_at=?, error=NULL
+                   WHERE id=? AND state='preparing'""",
+                (new_context_thread_id, now, refresh_id),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError(
+                    "Coordinator refresh lost its preparing handoff state"
+                )
+            await db.commit()
+            refreshed = dict(row)
+            refreshed["new_context_thread_id"] = new_context_thread_id
+            refreshed["state"] = "archive_pending"
+            refreshed["activated_at"] = now
+            return refreshed
+
+    async def complete_coordinator_context_refresh(
+        self, refresh_id: str
+    ) -> dict[str, Any]:
+        """Finalize one refresh after the old provider context has been archived."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            row = await self._fetchone(
+                db,
+                """SELECT c.*, x.state AS assignment_state,
+                          x.context_thread_id AS assignment_context_thread_id,
+                          a.agent_key
+                   FROM coordinator_context_refreshes c
+                   JOIN assignments x ON x.id=c.assignment_id
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE c.id=?""",
+                (refresh_id,),
+            )
+            if row is None:
+                await db.rollback()
+                raise RuntimeError("Coordinator context refresh is missing")
+            if row["state"] == "completed":
+                await db.commit()
+                return dict(row)
+            if (
+                row["state"] != "archive_pending"
+                or row["assignment_state"] != "refreshing"
+                or row["new_context_thread_id"] is None
+                or row["assignment_context_thread_id"] != row["new_context_thread_id"]
+            ):
+                await db.rollback()
+                raise RuntimeError(
+                    "Coordinator refresh cannot finalize outside exact archive-pending state"
+                )
+            cursor = await db.execute(
+                """UPDATE assignments SET state='queued', updated_at=?
+                   WHERE id=? AND state='refreshing' AND context_thread_id=?""",
+                (
+                    now,
+                    row["assignment_id"],
+                    row["new_context_thread_id"],
+                ),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError(
+                    "Coordinator refresh could not release the refreshed Assignment"
+                )
+            cursor = await db.execute(
+                """UPDATE coordinator_context_refreshes
+                   SET state='completed', completed_at=?, error=NULL
+                   WHERE id=? AND state='archive_pending'""",
+                (now, refresh_id),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError(
+                    "Coordinator refresh lost its archive-pending state"
+                )
+            await db.commit()
+            completed = dict(row)
+            completed["state"] = "completed"
+            completed["completed_at"] = now
+            return completed
+
+    async def fail_coordinator_context_refresh(
+        self, refresh_id: str, error: str
+    ) -> dict[str, Any]:
+        """Fail one pre-activation refresh back to the exact old coordinator context."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            row = await self._fetchone(
+                db,
+                """SELECT c.*, x.state AS assignment_state,
+                          x.context_thread_id AS assignment_context_thread_id,
+                          a.agent_key
+                   FROM coordinator_context_refreshes c
+                   JOIN assignments x ON x.id=c.assignment_id
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE c.id=?""",
+                (refresh_id,),
+            )
+            if row is None:
+                await db.rollback()
+                raise RuntimeError("Coordinator context refresh is missing")
+            if row["state"] != "preparing":
+                await db.rollback()
+                raise RuntimeError(
+                    "Only a pre-activation coordinator refresh can fall back to old context"
+                )
+            if (
+                row["assignment_state"] != "refreshing"
+                or row["assignment_context_thread_id"] != row["old_context_thread_id"]
+            ):
+                await db.rollback()
+                raise RuntimeError(
+                    "Coordinator refresh fallback lost the exact old context"
+                )
+            cursor = await db.execute(
+                """UPDATE assignments SET state='queued', updated_at=?,
+                       resolution_reason=?
+                   WHERE id=? AND state='refreshing' AND context_thread_id=?""",
+                (
+                    now,
+                    error[:4000],
+                    row["assignment_id"],
+                    row["old_context_thread_id"],
+                ),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise RuntimeError(
+                    "Coordinator refresh fallback could not release the old context"
+                )
+            await db.execute(
+                """UPDATE coordinator_context_refreshes
+                   SET state='failed', completed_at=?, error=?
+                   WHERE id=? AND state='preparing'""",
+                (now, error[:4000], refresh_id),
+            )
+            await db.commit()
+            failed = dict(row)
+            failed["state"] = "failed"
+            failed["completed_at"] = now
+            failed["error"] = error[:4000]
+            return failed
+
     async def get_worker_context_grace_status(
         self, room_id: str, round_id: str
     ) -> list[dict[str, Any]]:
@@ -3532,6 +3838,7 @@ class Database:
         delegations: list[dict[str, Any]],
         delegation_return_mode: str | None = None,
         retire_worker_context_task_ids: list[str] | None = None,
+        coordinator_checkpoint: str | None = None,
         evidence_requests: list[dict[str, Any]] | None = None,
         history_requests: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
@@ -3549,6 +3856,7 @@ class Database:
         history_event_ids: list[str] = []
         continuous_successor_task_id: str | None = None
         continuous_successor_assignment_id: str | None = None
+        coordinator_refresh_id: str | None = None
         worker_context_grace_staged_assignment_ids: list[str] = []
         worker_context_retirement_assignment_ids: list[str] = []
         async with self.connect() as db:
@@ -3588,6 +3896,7 @@ class Database:
                     "continuous_successor_assignment_id": None,
                     "released_join_ids": [],
                     "direct_returned_assignment_ids": [],
+                    "coordinator_refresh_id": None,
                     "worker_context_grace_staged_assignment_ids": [],
                     "worker_context_retirement_assignment_ids": [],
                 }
@@ -3810,6 +4119,86 @@ class Database:
                     await db.rollback()
                     raise RuntimeError("Room-history retrieval lost its running assignment")
                 wake_agent_keys.append(assignment["agent_key"])
+            elif action == "REFRESH":
+                checkpoint = (coordinator_checkpoint or "").strip()
+                if not checkpoint:
+                    await db.rollback()
+                    raise ValueError("REFRESH requires a non-empty coordinator checkpoint")
+                task_for_refresh = await self._fetchone(
+                    db,
+                    "SELECT * FROM tasks WHERE id=? AND state='active'",
+                    (assignment["task_id"],),
+                )
+                if (
+                    assignment["agent_key"] != "agent_c"
+                    or task_for_refresh is None
+                    or task_for_refresh["coordinator_agent_id"] != assignment["agent_id"]
+                    or assignment["parent_assignment_id"] is not None
+                    or assignment["contribution_join_id"] is not None
+                ):
+                    await db.rollback()
+                    raise ValueError(
+                        "REFRESH is valid only for Agent C's root coordinator Assignment"
+                    )
+                if (
+                    round_budget is None
+                    or round_budget["provider_context_mode"] != "assignment_thread"
+                    or assignment["context_thread_id"] is None
+                ):
+                    await db.rollback()
+                    raise ValueError(
+                        "REFRESH requires an assignment-thread coordinator context"
+                    )
+                if turn_limit_hit:
+                    cursor = await db.execute(
+                        """UPDATE assignments
+                           SET state='queued', result_event_id=?, updated_at=?
+                           WHERE id=? AND state='running'""",
+                        (result_event_id, now, assignment_id),
+                    )
+                    if cursor.rowcount != 1:
+                        await db.rollback()
+                        raise RuntimeError(
+                            "Coordinator refresh at turn limit lost its running Assignment"
+                        )
+                else:
+                    coordinator_refresh_id = new_id("refresh")
+                    await db.execute(
+                        """INSERT INTO coordinator_context_refreshes
+                           (id, room_id, round_id, task_id, assignment_id,
+                            source_batch_id, request_event_id, checkpoint_text,
+                            old_context_thread_id, state, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'preparing', ?)""",
+                        (
+                            coordinator_refresh_id,
+                            room_id,
+                            round_id,
+                            assignment["task_id"],
+                            assignment_id,
+                            batch_id,
+                            result_event_id,
+                            checkpoint,
+                            assignment["context_thread_id"],
+                            now,
+                        ),
+                    )
+                    cursor = await db.execute(
+                        """UPDATE assignments
+                           SET state='refreshing', result_event_id=?, updated_at=?
+                           WHERE id=? AND state='running'
+                             AND context_thread_id=?""",
+                        (
+                            result_event_id,
+                            now,
+                            assignment_id,
+                            assignment["context_thread_id"],
+                        ),
+                    )
+                    if cursor.rowcount != 1:
+                        await db.rollback()
+                        raise RuntimeError(
+                            "Coordinator refresh lost its running Assignment"
+                        )
             else:
                 state = "completed" if action == "COMPLETE" else "passed"
                 await db.execute(
@@ -3829,7 +4218,7 @@ class Database:
                 raise RuntimeError("Transaction decision settlement lost its compare-and-set")
 
             contribution_join_id = assignment["contribution_join_id"]
-            if action not in {"DELEGATE", "EVIDENCE", "HISTORY"} and contribution_join_id:
+            if action not in {"DELEGATE", "EVIDENCE", "HISTORY", "REFRESH"} and contribution_join_id:
                 pending_join_ids = [contribution_join_id]
                 propagated_result_event_id = result_event_id
                 while pending_join_ids:
@@ -4006,11 +4395,12 @@ class Database:
                     )
                 )
 
-            if action not in {"DELEGATE", "EVIDENCE", "HISTORY"}:
+            if action not in {"DELEGATE", "EVIDENCE", "HISTORY", "REFRESH"}:
                 open_assignment = await self._fetchone(
                     db,
                     """SELECT 1 FROM assignments
-                       WHERE task_id=? AND state IN ('queued','running','waiting_join','waiting_evidence')
+                       WHERE task_id=? AND state IN
+                         ('queued','running','waiting_join','waiting_evidence','refreshing')
                        LIMIT 1""",
                     (assignment["task_id"],),
                 )
@@ -4182,6 +4572,7 @@ class Database:
             "history_event_ids": history_event_ids,
             "continuous_successor_task_id": continuous_successor_task_id,
             "continuous_successor_assignment_id": continuous_successor_assignment_id,
+            "coordinator_refresh_id": coordinator_refresh_id,
             "worker_context_grace_staged_assignment_ids": (
                 worker_context_grace_staged_assignment_ids
             ),
@@ -4379,7 +4770,7 @@ class Database:
                     JOIN agents a ON a.id=x.agent_id
                     WHERE t.room_id=? AND a.agent_key=?
                       AND t.state='active'
-                      AND x.state IN ('queued','running','waiting_join','waiting_evidence')
+                      AND x.state IN ('queued','running','waiting_join','waiting_evidence','refreshing')
                       {round_clause}
                     LIMIT 1""",
                 tuple(params),
@@ -4427,7 +4818,9 @@ class Database:
                 f"""UPDATE assignments
                     SET state='cancelled', updated_at=?, completed_at=?,
                         resolution_reason='room_lifecycle_change'
-                    WHERE state IN ('queued','running','waiting_join','waiting_evidence'){assignment_clause}""",
+                    WHERE state IN
+                      ('queued','running','waiting_join','waiting_evidence','refreshing')
+                      {assignment_clause}""",
                 assignment_params,
             )
             join_clause = (
@@ -4455,6 +4848,14 @@ class Database:
                        WHERE t.room_id=?
                          AND (? IS NULL OR t.round_id=?)
                      )""",
+                (now, room_id, round_id, round_id),
+            )
+            await db.execute(
+                """UPDATE coordinator_context_refreshes
+                   SET state='cancelled', completed_at=?,
+                       error='room_lifecycle_change'
+                   WHERE room_id=? AND (? IS NULL OR round_id=?)
+                     AND state IN ('preparing','archive_pending')""",
                 (now, room_id, round_id, round_id),
             )
             await db.commit()
@@ -5051,6 +5452,14 @@ class Database:
             if cursor.rowcount != 1:
                 await db.rollback()
                 return False
+            if row["assignment_id"] is not None:
+                await db.execute(
+                    """UPDATE coordinator_context_refreshes
+                       SET checkpoint_consumed_at=?
+                       WHERE assignment_id=? AND new_context_thread_id=?
+                         AND state='completed' AND checkpoint_consumed_at IS NULL""",
+                    (now, row["assignment_id"], thread_id),
+                )
             await db.commit()
         return True
 

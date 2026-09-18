@@ -49,6 +49,52 @@ def _usage_wall(when: str) -> AgentTurnTerminalError:
     )
 
 
+class RefreshStartFailureAdapter(FakeAgentAdapter):
+    async def start_context_thread(self, agent, cwd, *, label: str) -> str:
+        if label.startswith("coordinator refresh "):
+            raise RuntimeError("simulated coordinator refresh start failure")
+        return await super().start_context_thread(agent, cwd, label=label)
+
+
+class RefreshDuplicateThreadAdapter(FakeAgentAdapter):
+    async def start_context_thread(self, agent, cwd, *, label: str) -> str:
+        if label.startswith("coordinator refresh "):
+            return self.context_starts[0][1]
+        return await super().start_context_thread(agent, cwd, label=label)
+
+
+class RefreshArchiveOnceFailureAdapter(FakeAgentAdapter):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._refresh_archive_failed = False
+
+    async def archive_thread(self, thread_id: str) -> None:
+        if not self._refresh_archive_failed:
+            self._refresh_archive_failed = True
+            raise RuntimeError("simulated old coordinator archive failure")
+        await super().archive_thread(thread_id)
+
+
+def test_bctx4_refresh_decision_requires_bounded_checkpoint() -> None:
+    with pytest.raises(
+        ValidationError,
+        match="REFRESH requires a non-empty coordinator checkpoint",
+    ):
+        TransactionDecision(action=TransactionAction.REFRESH)
+
+    with pytest.raises(ValidationError, match="checkpoint is valid only for REFRESH"):
+        TransactionDecision(
+            action=TransactionAction.PASS,
+            checkpoint="This checkpoint is invalid for PASS.",
+        )
+
+    with pytest.raises(ValidationError):
+        TransactionDecision(
+            action=TransactionAction.REFRESH,
+            checkpoint="x" * 12_001,
+        )
+
+
 def test_assignment_context_mode_requires_transaction_work_model() -> None:
     with pytest.raises(ValidationError, match="requires work_model_version=2"):
         CreateRoomRequest(
@@ -794,6 +840,410 @@ async def test_assignment_context_history_recent_recovers_prior_round_result_wit
     ]
     assert len(history_events) == 1
     assert history_events[0]["metadata"]["selected_event_ids"] == [first_result_event_id]
+
+
+@pytest.mark.asyncio
+async def test_bctx4_refresh_hands_off_checkpoint_once_and_preserves_successor_task_continuity(
+    context_runtime_factory,
+):
+    checkpoint = (
+        "Keep the standing objective active. The unresolved judgment is whether the next "
+        "bounded activity should deepen the current line or open a new causally linked task."
+    )
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.REFRESH,
+                message="OLD_CONTEXT_ONLY_MARKER_SHOULD_NOT_REPLAY",
+                checkpoint=checkpoint,
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task one completed after the fresh coordinator handoff.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task two completed at the configured hard boundary.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "bctx4-refresh-success.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise deliberate coordinator context refresh.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=3,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert len(adapter.calls["agent_c"]) == 3
+    old_thread = adapter.calls["agent_c"][0]["thread_id"]
+    new_thread = adapter.calls["agent_c"][1]["thread_id"]
+    assert old_thread != new_thread
+    assert adapter.calls["agent_c"][2]["thread_id"] == new_thread
+    assert len([item for item in adapter.context_starts if item[0] == "agent_c"]) == 2
+    assert old_thread in adapter.archived
+    assert new_thread not in adapter.archived
+
+    refreshed_prompt = adapter.calls["agent_c"][1]["prompt"]
+    assert "<coordinator_continuity_checkpoint " in refreshed_prompt
+    assert checkpoint in refreshed_prompt
+    assert "<task_coordination_status>" in refreshed_prompt
+    assert "deterministic Room/Round/Task/Assignment/Join/Evidence/grace state" in refreshed_prompt
+    assert "OLD_CONTEXT_ONLY_MARKER_SHOULD_NOT_REPLAY" not in refreshed_prompt
+
+    successor_prompt = adapter.calls["agent_c"][2]["prompt"]
+    assert "<coordinator_continuity_checkpoint " not in successor_prompt
+    assert "<task_coordination_status>" in successor_prompt
+
+    async with runtime.db.connect() as db:
+        refresh_rows = await db.execute_fetchall(
+            "SELECT * FROM coordinator_context_refreshes ORDER BY created_at, id"
+        )
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(refresh_rows) == 1
+    refresh = refresh_rows[0]
+    assert refresh["state"] == "completed"
+    assert refresh["checkpoint_text"] == checkpoint
+    assert refresh["old_context_thread_id"] == old_thread
+    assert refresh["new_context_thread_id"] == new_thread
+    assert refresh["activated_at"] is not None
+    assert refresh["completed_at"] is not None
+    assert refresh["checkpoint_consumed_at"] is not None
+
+    c_assignments = [row for row in assignments if row["agent_key"] == "agent_c"]
+    assert len(tasks) == 2
+    assert len(c_assignments) == 2
+    assert c_assignments[0]["context_thread_id"] == new_thread
+    assert c_assignments[1]["context_thread_id"] == new_thread
+
+    events = await runtime.db.get_events(room_id)
+    refreshed_events = [
+        event
+        for event in events
+        if event["event_type"] == "coordinator_context_refreshed"
+    ]
+    assert len(refreshed_events) == 1
+    assert refreshed_events[0]["metadata"]["old_context_thread_id"] == old_thread
+    assert refreshed_events[0]["metadata"]["new_context_thread_id"] == new_thread
+
+    exported = await runtime.db.snapshot(room_id, event_limit=None)
+    assert exported is not None
+    exported_assignments = [
+        assignment
+        for task in exported["rounds"][0]["transaction_state"]["tasks"]
+        for assignment in task["assignments"]
+        if assignment["agent_key"] == "agent_c"
+    ]
+    exported_refreshes = [
+        item
+        for assignment in exported_assignments
+        for item in assignment["context_refreshes"]
+    ]
+    assert len(exported_refreshes) == 1
+    assert exported_refreshes[0]["checkpoint_text"] == checkpoint
+    assert exported_refreshes[0]["old_context_thread_id"] == old_thread
+    assert exported_refreshes[0]["new_context_thread_id"] == new_thread
+
+
+@pytest.mark.asyncio
+async def test_bctx4_refresh_rejects_non_distinct_provider_context(
+    context_runtime_factory,
+):
+    adapter = RefreshDuplicateThreadAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []}
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.REFRESH,
+                checkpoint="The new C context must be distinct from this old context.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Stayed on the exact old context after duplicate refresh refusal.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "bctx4-refresh-duplicate.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise distinct-thread enforcement during coordinator refresh.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    old_thread = adapter.calls["agent_c"][0]["thread_id"]
+    assert adapter.calls["agent_c"][1]["thread_id"] == old_thread
+    assert old_thread not in adapter.archived
+    assert "did not return a distinct thread ID" in adapter.calls["agent_c"][1]["prompt"]
+
+    async with runtime.db.connect() as db:
+        row = await runtime.db._fetchone(
+            db,
+            """SELECT * FROM coordinator_context_refreshes
+               ORDER BY created_at DESC, id DESC LIMIT 1""",
+            (),
+        )
+    assert row is not None
+    assert row["state"] == "failed"
+    assert row["new_context_thread_id"] is None
+    assert "did not return a distinct thread ID" in row["error"]
+
+
+@pytest.mark.asyncio
+async def test_bctx4_refresh_start_failure_falls_back_to_exact_old_context(
+    context_runtime_factory,
+):
+    adapter = RefreshStartFailureAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []}
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.REFRESH,
+                checkpoint="Preserve this bounded C checkpoint if refresh succeeds.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Continue safely on the old coordinator context after refresh failure.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "bctx4-refresh-start-failure.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise pre-activation refresh failure.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    old_thread = adapter.calls["agent_c"][0]["thread_id"]
+    assert adapter.calls["agent_c"][1]["thread_id"] == old_thread
+    assert old_thread not in adapter.archived
+    assert "Fresh coordinator context creation failed" in adapter.calls["agent_c"][1]["prompt"]
+
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            "SELECT * FROM coordinator_context_refreshes ORDER BY created_at, id"
+        )
+    assert len(rows) == 1
+    refresh = rows[0]
+    assert refresh["state"] == "failed"
+    assert refresh["old_context_thread_id"] == old_thread
+    assert refresh["new_context_thread_id"] is None
+    assert "simulated coordinator refresh start failure" in refresh["error"]
+
+    events = await runtime.db.get_events(room_id)
+    assert any(
+        event["event_type"] == "coordinator_context_refresh_failed"
+        for event in events
+    )
+
+
+@pytest.mark.asyncio
+async def test_bctx4_archive_pending_refresh_recovers_after_restart_before_c_runs_new_context(
+    context_runtime_factory,
+):
+    first_adapter = RefreshArchiveOnceFailureAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []}
+    )
+    first_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.REFRESH,
+            checkpoint="Resume from this checkpoint only after the old C context is retired.",
+        )
+    )
+
+    first = await context_runtime_factory(
+        first_adapter, "bctx4-refresh-restart.db"
+    )
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Exercise restart-safe fail-closed coordinator refresh.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def archive_pending() -> bool:
+        async with first.db.connect() as db:
+            row = await first.db._fetchone(
+                db,
+                """SELECT * FROM coordinator_context_refreshes
+                   ORDER BY created_at DESC, id DESC LIMIT 1""",
+                (),
+            )
+        return bool(row and row["state"] == "archive_pending")
+
+    await wait_until(archive_pending)
+
+    async with first.db.connect() as db:
+        refresh = await first.db._fetchone(
+            db,
+            """SELECT * FROM coordinator_context_refreshes
+               ORDER BY created_at DESC, id DESC LIMIT 1""",
+            (),
+        )
+        assignment = await first.db._fetchone(
+            db,
+            "SELECT * FROM assignments WHERE id=?",
+            (refresh["assignment_id"],),
+        )
+
+    assert refresh is not None
+    assert assignment is not None
+    old_thread = refresh["old_context_thread_id"]
+    new_thread = refresh["new_context_thread_id"]
+    assert new_thread
+    assert old_thread != new_thread
+    assert assignment["state"] == "refreshing"
+    assert assignment["context_thread_id"] == new_thread
+    assert len(first_adapter.calls["agent_c"]) == 1
+    assert old_thread not in first_adapter.archived
+
+    await first.close()
+
+    second_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []}
+    )
+    second_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Recovered on the new C context after old-context archival.",
+        )
+    )
+    second = await context_runtime_factory(
+        second_adapter, "bctx4-refresh-restart.db"
+    )
+
+    await wait_until(lambda: _finished(second, room_id))
+
+    assert old_thread in second_adapter.archived
+    assert len(second_adapter.context_starts) == 0
+    assert len(second_adapter.calls["agent_c"]) == 1
+    assert second_adapter.calls["agent_c"][0]["thread_id"] == new_thread
+    assert "<coordinator_continuity_checkpoint " in second_adapter.calls["agent_c"][0]["prompt"]
+    assert (
+        "Resume from this checkpoint only after the old C context is retired."
+        in second_adapter.calls["agent_c"][0]["prompt"]
+    )
+
+    async with second.db.connect() as db:
+        recovered_refresh = await second.db._fetchone(
+            db,
+            "SELECT * FROM coordinator_context_refreshes WHERE id=?",
+            (refresh["id"],),
+        )
+        recovered_assignment = await second.db._fetchone(
+            db,
+            "SELECT * FROM assignments WHERE id=?",
+            (refresh["assignment_id"],),
+        )
+
+    assert recovered_refresh is not None
+    assert recovered_refresh["state"] == "completed"
+    assert recovered_refresh["checkpoint_consumed_at"] is not None
+    assert recovered_assignment is not None
+    assert recovered_assignment["state"] == "completed"
+    assert recovered_assignment["context_thread_id"] == new_thread
+
+
+@pytest.mark.asyncio
+async def test_bctx4_stop_cancels_archive_pending_refresh_without_running_new_context(
+    context_runtime_factory,
+):
+    adapter = RefreshArchiveOnceFailureAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []}
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.REFRESH,
+            checkpoint="This checkpoint must not become runnable after human Stop.",
+        )
+    )
+
+    runtime = await context_runtime_factory(adapter, "bctx4-refresh-stop.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise human Stop during a fail-closed coordinator refresh.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def archive_pending() -> bool:
+        async with runtime.db.connect() as db:
+            row = await runtime.db._fetchone(
+                db,
+                """SELECT * FROM coordinator_context_refreshes
+                   ORDER BY created_at DESC, id DESC LIMIT 1""",
+                (),
+            )
+        return bool(row and row["state"] == "archive_pending")
+
+    await wait_until(archive_pending)
+    assert len(adapter.calls["agent_c"]) == 1
+
+    await runtime.stop(room_id, "Stop during pending coordinator refresh.")
+
+    room = await runtime.db.get_room(room_id)
+    assert room is not None
+    assert room["status"] == RoomStatus.STOPPED
+
+    async with runtime.db.connect() as db:
+        refresh = await runtime.db._fetchone(
+            db,
+            """SELECT * FROM coordinator_context_refreshes
+               ORDER BY created_at DESC, id DESC LIMIT 1""",
+            (),
+        )
+        assignment = await runtime.db._fetchone(
+            db,
+            "SELECT * FROM assignments WHERE id=?",
+            (refresh["assignment_id"],),
+        )
+
+    assert refresh is not None
+    assert refresh["state"] == "cancelled"
+    assert refresh["error"] == "room_lifecycle_change"
+    assert assignment is not None
+    assert assignment["state"] == "cancelled"
+    assert len(adapter.calls["agent_c"]) == 1
 
 
 @pytest.mark.asyncio
