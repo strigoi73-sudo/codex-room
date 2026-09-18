@@ -3116,15 +3116,267 @@ class Database:
             "joins_truncated": len(join_rows) > limit,
         }
 
+    async def _worker_context_rows_for_task(
+        self,
+        db: aiosqlite.Connection,
+        task_id: str,
+    ) -> list[dict[str, Any]]:
+        """Return latest unretired worker-owned provider contexts still owned by one Task."""
+        rows = await db.execute_fetchall(
+            """SELECT x.id AS assignment_id, x.context_thread_id, a.agent_key
+               FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE x.task_id=?
+                 AND x.agent_id<>t.coordinator_agent_id
+                 AND x.context_thread_id IS NOT NULL
+                 AND x.context_retired_at IS NULL
+                 AND x.state IN ('completed','passed','failed','waived')
+                 AND NOT EXISTS (
+                     SELECT 1 FROM assignments newer
+                     WHERE newer.agent_id=x.agent_id
+                       AND newer.context_thread_id=x.context_thread_id
+                       AND (
+                           newer.created_at>x.created_at
+                           OR (
+                               newer.created_at=x.created_at
+                               AND newer.id>x.id
+                           )
+                       )
+                 )
+               ORDER BY x.created_at, x.id""",
+            (task_id,),
+        )
+        return [dict(row) for row in rows]
+
+    async def _task_is_ancestor(
+        self,
+        db: aiosqlite.Connection,
+        ancestor_task_id: str,
+        descendant_task_id: str,
+    ) -> bool:
+        row = await self._fetchone(
+            db,
+            """WITH RECURSIVE lineage(id, parent_task_id) AS (
+                   SELECT id, parent_task_id FROM tasks WHERE id=?
+                   UNION ALL
+                   SELECT t.id, t.parent_task_id
+                   FROM tasks t JOIN lineage l ON t.id=l.parent_task_id
+               )
+               SELECT 1 FROM lineage WHERE id=? LIMIT 1""",
+            (descendant_task_id, ancestor_task_id),
+        )
+        return row is not None
+
+    async def _retire_worker_context_task(
+        self,
+        db: aiosqlite.Connection,
+        task_id: str,
+        *,
+        reason: str,
+        now: str,
+    ) -> list[dict[str, Any]]:
+        contexts = await self._worker_context_rows_for_task(db, task_id)
+        await db.execute(
+            """UPDATE tasks
+               SET worker_context_grace_remaining=0,
+                   worker_context_grace_retired_at=COALESCE(
+                       worker_context_grace_retired_at, ?
+                   ),
+                   worker_context_grace_retirement_reason=COALESCE(
+                       worker_context_grace_retirement_reason, ?
+                   ),
+                   updated_at=?
+               WHERE id=?""",
+            (now, reason, now, task_id),
+        )
+        for item in contexts:
+            await db.execute(
+                """UPDATE assignments
+                   SET context_retired_at=COALESCE(context_retired_at, ?),
+                       updated_at=?
+                   WHERE id=? AND context_thread_id=?""",
+                (
+                    now,
+                    now,
+                    item["assignment_id"],
+                    item["context_thread_id"],
+                ),
+            )
+            item["task_id"] = task_id
+            item["reason"] = reason
+        return contexts
+
+    async def _advance_worker_context_grace(
+        self,
+        db: aiosqlite.Connection,
+        round_id: str,
+        current_task_id: str,
+        *,
+        now: str,
+    ) -> list[dict[str, Any]]:
+        """Consume one post-Task C execution from every still-eligible ancestor grace window."""
+        rows = await db.execute_fetchall(
+            """SELECT id, worker_context_grace_remaining
+               FROM tasks
+               WHERE round_id=? AND state='settled'
+                 AND id<>?
+                 AND worker_context_grace_remaining>0
+                 AND worker_context_grace_retired_at IS NULL
+               ORDER BY settled_at, created_at, id""",
+            (round_id, current_task_id),
+        )
+        retired: list[dict[str, Any]] = []
+        for row in rows:
+            if not await self._task_is_ancestor(db, row["id"], current_task_id):
+                continue
+            remaining = max(0, int(row["worker_context_grace_remaining"]) - 1)
+            if remaining:
+                await db.execute(
+                    """UPDATE tasks
+                       SET worker_context_grace_remaining=?, updated_at=?
+                       WHERE id=? AND worker_context_grace_remaining>0
+                         AND worker_context_grace_retired_at IS NULL""",
+                    (remaining, now, row["id"]),
+                )
+            else:
+                retired.extend(
+                    await self._retire_worker_context_task(
+                        db,
+                        row["id"],
+                        reason="grace_expired",
+                        now=now,
+                    )
+                )
+        return retired
+
+    async def get_worker_context_grace_status(
+        self,
+        round_id: str,
+        current_task_id: str,
+        *,
+        max_tasks: int = 16,
+    ) -> list[dict[str, Any]]:
+        """Return bounded status-only grace eligibility for coordinator context."""
+        limit = max(1, min(int(max_tasks), 32))
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT id AS task_id, settled_at,
+                          worker_context_grace_remaining
+                   FROM tasks
+                   WHERE round_id=? AND state='settled'
+                     AND worker_context_grace_remaining>0
+                     AND worker_context_grace_retired_at IS NULL
+                   ORDER BY settled_at DESC, created_at DESC, id DESC
+                   LIMIT ?""",
+                (round_id, limit + 1),
+            )
+            result: list[dict[str, Any]] = []
+            for row in rows:
+                if not await self._task_is_ancestor(
+                    db, row["task_id"], current_task_id
+                ):
+                    continue
+                contexts = await self._worker_context_rows_for_task(
+                    db, row["task_id"]
+                )
+                result.append(
+                    {
+                        "task_id": row["task_id"],
+                        "settled_at": row["settled_at"],
+                        "remaining_c_executions": int(
+                            row["worker_context_grace_remaining"]
+                        ),
+                        "contexts": contexts,
+                    }
+                )
+                if len(result) >= limit:
+                    break
+        return result
+
+    async def get_pending_worker_context_archives(
+        self,
+        room_id: str | None = None,
+    ) -> list[dict[str, Any]]:
+        params: list[Any] = []
+        room_clause = ""
+        if room_id is not None:
+            room_clause = " AND t.room_id=?"
+            params.append(room_id)
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                f"""SELECT x.id AS assignment_id, x.context_thread_id,
+                           t.id AS task_id, t.room_id, t.round_id, a.agent_key
+                    FROM assignments x
+                    JOIN tasks t ON t.id=x.task_id
+                    JOIN agents a ON a.id=x.agent_id
+                    WHERE x.context_retired_at IS NOT NULL
+                      AND x.context_archive_confirmed_at IS NULL
+                      AND x.context_thread_id IS NOT NULL
+                      {room_clause}
+                    ORDER BY x.context_retired_at, x.id""",
+                tuple(params),
+            )
+        return [dict(row) for row in rows]
+
+    async def confirm_worker_context_archived(
+        self,
+        assignment_id: str,
+        thread_id: str,
+    ) -> bool:
+        now = utc_now()
+        async with self.connect() as db:
+            cursor = await db.execute(
+                """UPDATE assignments
+                   SET context_archive_confirmed_at=?, updated_at=?
+                   WHERE id=? AND context_thread_id=?
+                     AND context_retired_at IS NOT NULL
+                     AND context_archive_confirmed_at IS NULL""",
+                (now, now, assignment_id, thread_id),
+            )
+            await db.commit()
+        return cursor.rowcount == 1
+
+    async def retire_round_worker_contexts(
+        self,
+        room_id: str,
+        round_id: str,
+        *,
+        reason: str,
+    ) -> list[dict[str, Any]]:
+        """Durably retire every remaining worker context owned by one closed/stopped Round."""
+        now = utc_now()
+        retired: list[dict[str, Any]] = []
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            rows = await db.execute_fetchall(
+                """SELECT id FROM tasks
+                   WHERE room_id=? AND round_id=?
+                   ORDER BY created_at, id""",
+                (room_id, round_id),
+            )
+            for row in rows:
+                retired.extend(
+                    await self._retire_worker_context_task(
+                        db,
+                        row["id"],
+                        reason=reason,
+                        now=now,
+                    )
+                )
+            await db.commit()
+        return retired
+
     async def _select_room_history_event_ids(
         self,
         db: aiosqlite.Connection,
         room_id: str,
         round_id: str,
+        current_task_id: str,
         requests: list[dict[str, Any]],
         existing_event_ids: list[str],
     ) -> tuple[list[str], list[str]]:
-        """Select bounded prior-Round terminal result events for one Assignment."""
+        """Select bounded completed result events from earlier Tasks/Rounds in this Room."""
         current_round = await self._fetchone(
             db,
             "SELECT created_at FROM rounds WHERE id=? AND room_id=?",
@@ -3141,10 +3393,18 @@ class Database:
             if len(combined) >= 20:
                 break
             operation = request["operation"]
-            params: list[Any] = [room_id, current_round["created_at"]]
+            params: list[Any] = [
+                room_id,
+                current_round["created_at"],
+                round_id,
+                current_task_id,
+            ]
             filters = [
                 "t.room_id=?",
-                "ro.created_at < ?",
+                (
+                    "(ro.created_at < ? OR "
+                    "(ro.id=? AND t.state='settled' AND t.id<>?))"
+                ),
                 "x.state='completed'",
                 "e.content IS NOT NULL",
                 "TRIM(e.content)<>''",
