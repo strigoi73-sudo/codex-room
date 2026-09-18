@@ -281,6 +281,10 @@ class Database:
                     execution_config_id TEXT,
                     context_thread_id TEXT,
                     context_parent_assignment_id TEXT REFERENCES assignments(id),
+                    context_grace_remaining INTEGER NOT NULL DEFAULT 0,
+                    context_grace_state TEXT NOT NULL DEFAULT 'none',
+                    context_grace_continued_by_assignment_id TEXT REFERENCES assignments(id),
+                    context_archived_at TEXT,
                     state TEXT NOT NULL,
                     result_event_id TEXT REFERENCES events(id),
                     resolution_reason TEXT,
@@ -433,6 +437,30 @@ class Database:
                 "assignments",
                 "context_parent_assignment_id",
                 "TEXT REFERENCES assignments(id)",
+            )
+            await self._ensure_column(
+                db,
+                "assignments",
+                "context_grace_remaining",
+                "INTEGER NOT NULL DEFAULT 0",
+            )
+            await self._ensure_column(
+                db,
+                "assignments",
+                "context_grace_state",
+                "TEXT NOT NULL DEFAULT 'none'",
+            )
+            await self._ensure_column(
+                db,
+                "assignments",
+                "context_grace_continued_by_assignment_id",
+                "TEXT REFERENCES assignments(id)",
+            )
+            await self._ensure_column(
+                db,
+                "assignments",
+                "context_archived_at",
+                "TEXT",
             )
             await self._ensure_column(
                 db,
@@ -3081,22 +3109,224 @@ class Database:
             "joins_truncated": len(join_rows) > limit,
         }
 
+    async def get_worker_context_grace_status(
+        self, room_id: str, round_id: str
+    ) -> list[dict[str, Any]]:
+        """Return bounded eligible worker-context grace state for coordinator use."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT x.id AS assignment_id, x.task_id, a.agent_key,
+                          x.context_thread_id, x.context_grace_remaining,
+                          x.context_grace_state
+                   FROM assignments x
+                   JOIN tasks t ON t.id=x.task_id
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE t.room_id=? AND t.round_id=?
+                     AND x.context_thread_id IS NOT NULL
+                     AND x.context_grace_state='eligible'
+                   ORDER BY t.settled_at DESC, x.completed_at DESC, x.id DESC
+                   LIMIT 32""",
+                (room_id, round_id),
+            )
+        return [dict(row) for row in rows]
+
+    async def get_pending_worker_context_retirements(
+        self, room_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Return durable provider-context retirements that still require adapter archival."""
+        params: list[Any] = []
+        room_filter = ""
+        if room_id is not None:
+            room_filter = " AND t.room_id=?"
+            params.append(room_id)
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                f"""SELECT x.id AS assignment_id, x.task_id, x.context_thread_id,
+                           a.agent_key, t.room_id
+                    FROM assignments x
+                    JOIN tasks t ON t.id=x.task_id
+                    JOIN agents a ON a.id=x.agent_id
+                    WHERE x.context_grace_state='retire_pending'
+                      AND x.context_thread_id IS NOT NULL
+                      AND x.context_archived_at IS NULL
+                      {room_filter}
+                    ORDER BY x.updated_at, x.id
+                    LIMIT 128""",
+                tuple(params),
+            )
+        return [dict(row) for row in rows]
+
+    async def retire_round_worker_context_grace(
+        self, room_id: str, round_id: str
+    ) -> list[str]:
+        """Close all remaining worker-context grace when a Round terminates."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE assignments
+                   SET context_grace_remaining=0,
+                       context_grace_state='retire_pending',
+                       updated_at=?
+                   WHERE id IN (
+                       SELECT x.id FROM assignments x
+                       JOIN tasks t ON t.id=x.task_id
+                       WHERE t.room_id=? AND t.round_id=?
+                         AND x.context_grace_state='eligible'
+                   )""",
+                (now, room_id, round_id),
+            )
+            rows = await db.execute_fetchall(
+                """SELECT x.id FROM assignments x
+                   JOIN tasks t ON t.id=x.task_id
+                   WHERE t.room_id=? AND t.round_id=?
+                     AND x.context_grace_state='retire_pending'
+                     AND x.context_archived_at IS NULL""",
+                (room_id, round_id),
+            )
+            await db.commit()
+        return [row["id"] for row in rows]
+
+    async def mark_worker_context_archived(
+        self, assignment_id: str, context_thread_id: str
+    ) -> bool:
+        """Mark one pending worker provider context retired after adapter archival succeeds."""
+        now = utc_now()
+        async with self.connect() as db:
+            cursor = await db.execute(
+                """UPDATE assignments
+                   SET context_grace_state='retired', context_archived_at=?, updated_at=?
+                   WHERE id=? AND context_thread_id=?
+                     AND context_grace_state='retire_pending'
+                     AND context_archived_at IS NULL""",
+                (now, now, assignment_id, context_thread_id),
+            )
+            await db.commit()
+        return cursor.rowcount == 1
+
+    async def _stage_task_worker_context_grace(
+        self,
+        db: aiosqlite.Connection,
+        *,
+        task_id: str,
+        coordinator_agent_id: str,
+        keep_grace: bool,
+        now: str,
+    ) -> list[str]:
+        """Stage the latest worker-owned context threads from one settled Task."""
+        rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               WHERE x.task_id=? AND x.agent_id<>?
+                 AND x.context_thread_id IS NOT NULL
+                 AND x.state IN ('completed','passed','failed','waived')
+               ORDER BY x.created_at DESC, x.id DESC""",
+            (task_id, coordinator_agent_id),
+        )
+        seen_threads: set[str] = set()
+        staged_ids: list[str] = []
+        for row in rows:
+            thread_id = row["context_thread_id"]
+            if not thread_id or thread_id in seen_threads:
+                continue
+            seen_threads.add(thread_id)
+            state = "eligible" if keep_grace else "retire_pending"
+            remaining = 2 if keep_grace else 0
+            await db.execute(
+                """UPDATE assignments
+                   SET context_grace_remaining=?, context_grace_state=?,
+                       context_grace_continued_by_assignment_id=NULL,
+                       context_archived_at=NULL, updated_at=?
+                   WHERE id=?""",
+                (remaining, state, now, row["id"]),
+            )
+            staged_ids.append(row["id"])
+        return staged_ids
+
+    async def _advance_worker_context_grace(
+        self,
+        db: aiosqlite.Connection,
+        *,
+        room_id: str,
+        round_id: str,
+        current_task_id: str,
+        retire_task_ids: list[str],
+        now: str,
+    ) -> list[str]:
+        """Consume one post-Task C execution and/or explicitly close prior Task grace."""
+        if retire_task_ids:
+            placeholders = ",".join("?" for _ in retire_task_ids)
+            rows = await db.execute_fetchall(
+                f"""SELECT id FROM tasks
+                    WHERE id IN ({placeholders}) AND room_id=? AND round_id=?
+                      AND state='settled'""",
+                tuple(retire_task_ids) + (room_id, round_id),
+            )
+            valid = {row["id"] for row in rows}
+            if valid != set(retire_task_ids):
+                raise ValueError(
+                    "retire_worker_context_task_ids must name settled Tasks in the current Round"
+                )
+            await db.execute(
+                f"""UPDATE assignments
+                    SET context_grace_remaining=0,
+                        context_grace_state='retire_pending',
+                        updated_at=?
+                    WHERE task_id IN ({placeholders})
+                      AND context_grace_state='eligible'""",
+                (now, *retire_task_ids),
+            )
+
+        rows = await db.execute_fetchall(
+            """SELECT x.id, x.context_grace_remaining
+               FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=? AND t.round_id=? AND x.task_id<>?
+                 AND x.context_grace_state='eligible'""",
+            (room_id, round_id, current_task_id),
+        )
+        for row in rows:
+            remaining = max(0, int(row["context_grace_remaining"]) - 1)
+            state = "eligible" if remaining > 0 else "retire_pending"
+            await db.execute(
+                """UPDATE assignments
+                   SET context_grace_remaining=?, context_grace_state=?, updated_at=?
+                   WHERE id=? AND context_grace_state='eligible'""",
+                (remaining, state, now, row["id"]),
+            )
+        pending = await db.execute_fetchall(
+            """SELECT x.id
+               FROM assignments x JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=? AND t.round_id=?
+                 AND x.context_grace_state='retire_pending'
+                 AND x.context_archived_at IS NULL""",
+            (room_id, round_id),
+        )
+        return [row["id"] for row in pending]
+
     async def _select_room_history_event_ids(
         self,
         db: aiosqlite.Connection,
         room_id: str,
         round_id: str,
+        current_task_id: str,
         requests: list[dict[str, Any]],
         existing_event_ids: list[str],
     ) -> tuple[list[str], list[str]]:
-        """Select bounded prior-Round terminal result events for one Assignment."""
+        """Select bounded completed results from earlier Tasks/Rounds in this Room."""
         current_round = await self._fetchone(
             db,
             "SELECT created_at FROM rounds WHERE id=? AND room_id=?",
             (round_id, room_id),
         )
-        if current_round is None:
-            raise RuntimeError("Current Round is missing during Room-history retrieval")
+        current_task = await self._fetchone(
+            db,
+            """SELECT created_at FROM tasks
+               WHERE id=? AND round_id=? AND room_id=?""",
+            (current_task_id, round_id, room_id),
+        )
+        if current_round is None or current_task is None:
+            raise RuntimeError(
+                "Current Round/Task is missing during Room-history retrieval"
+            )
 
         combined = list(dict.fromkeys(existing_event_ids))[:20]
         seen = set(combined)
@@ -3106,10 +3336,16 @@ class Database:
             if len(combined) >= 20:
                 break
             operation = request["operation"]
-            params: list[Any] = [room_id, current_round["created_at"]]
+            params: list[Any] = [
+                room_id,
+                round_id,
+                current_task["created_at"],
+                current_round["created_at"],
+            ]
             filters = [
                 "t.room_id=?",
-                "ro.created_at < ?",
+                """((ro.id=? AND t.state='settled' AND t.created_at < ?)
+                    OR ro.created_at < ?)""",
                 "x.state='completed'",
                 "e.content IS NOT NULL",
                 "TRIM(e.content)<>''",
@@ -3163,32 +3399,76 @@ class Database:
         coordinator_agent_id: str,
         provider_context_mode: str,
         context_source_id: str | None,
-    ) -> tuple[str | None, str | None]:
-        """Validate one explicit same-Task worker context lineage request."""
+    ) -> tuple[str | None, str | None, bool]:
+        """Validate explicit same-Task or grace-bounded predecessor worker context lineage."""
         if context_source_id is None:
-            return None, None
+            return None, None, False
         if provider_context_mode != "assignment_thread":
             raise ValueError(
                 "Explicit Assignment context lineage requires assignment_thread mode"
             )
         if target_agent_id == coordinator_agent_id:
             raise ValueError("Worker context lineage cannot target the Task coordinator")
+
+        target_task = await self._fetchone(
+            db,
+            "SELECT * FROM tasks WHERE id=? AND state='active'",
+            (task_id,),
+        )
         source = await self._fetchone(
             db,
             "SELECT * FROM assignments WHERE id=?",
             (context_source_id,),
         )
         if (
-            source is None
-            or source["task_id"] != task_id
+            target_task is None
+            or source is None
             or source["agent_id"] != target_agent_id
             or source["state"] not in ("completed", "passed", "failed", "waived")
             or source["context_thread_id"] is None
         ):
             raise ValueError(
-                "Context source must be a terminal Assignment for the same "
-                "worker in the same Task with a bound provider context"
+                "Context source must be an eligible terminal Assignment for the same "
+                "worker with a bound provider context"
             )
+
+        cross_task_grace = source["task_id"] != task_id
+        if cross_task_grace:
+            source_task = await self._fetchone(
+                db,
+                "SELECT * FROM tasks WHERE id=?",
+                (source["task_id"],),
+            )
+            if (
+                source_task is None
+                or source_task["room_id"] != target_task["room_id"]
+                or source_task["round_id"] != target_task["round_id"]
+                or source_task["state"] != "settled"
+                or source["context_grace_state"] != "eligible"
+                or int(source["context_grace_remaining"] or 0) <= 0
+            ):
+                raise ValueError(
+                    "Cross-Task worker context continuation requires an eligible "
+                    "grace source from a settled predecessor Task in the same Round"
+                )
+            ancestor = await self._fetchone(
+                db,
+                """WITH RECURSIVE lineage(id, parent_task_id) AS (
+                       SELECT id, parent_task_id FROM tasks WHERE id=?
+                       UNION ALL
+                       SELECT t.id, t.parent_task_id
+                       FROM tasks t JOIN lineage l ON t.id=l.parent_task_id
+                   )
+                   SELECT 1 AS ok FROM lineage WHERE id=? LIMIT 1""",
+                (task_id, source["task_id"]),
+            )
+            if ancestor is None:
+                raise ValueError(
+                    "Cross-Task worker context source must be in the current Task lineage"
+                )
+        elif source["task_id"] != task_id:
+            raise ValueError("Worker context source belongs to another Task")
+
         latest_owner = await self._fetchone(
             db,
             """SELECT id FROM assignments
@@ -3201,7 +3481,7 @@ class Database:
                 "Context source is stale; reuse must continue from the latest "
                 "Assignment owning that provider context"
             )
-        return source["id"], source["context_thread_id"]
+        return source["id"], source["context_thread_id"], cross_task_grace
 
     async def validate_transaction_delegation_context(
         self,
@@ -3251,6 +3531,7 @@ class Database:
         result_event_id: str,
         delegations: list[dict[str, Any]],
         delegation_return_mode: str | None = None,
+        retire_worker_context_task_ids: list[str] | None = None,
         evidence_requests: list[dict[str, Any]] | None = None,
         history_requests: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
@@ -3268,6 +3549,8 @@ class Database:
         history_event_ids: list[str] = []
         continuous_successor_task_id: str | None = None
         continuous_successor_assignment_id: str | None = None
+        worker_context_grace_staged_assignment_ids: list[str] = []
+        worker_context_retirement_assignment_ids: list[str] = []
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             execution = await self._fetchone(
@@ -3305,6 +3588,8 @@ class Database:
                     "continuous_successor_assignment_id": None,
                     "released_join_ids": [],
                     "direct_returned_assignment_ids": [],
+                    "worker_context_grace_staged_assignment_ids": [],
+                    "worker_context_retirement_assignment_ids": [],
                 }
             if assignment["state"] != "running":
                 await db.rollback()
@@ -3404,6 +3689,7 @@ class Database:
                         (
                             context_parent_assignment_id,
                             context_thread_id,
+                            cross_task_grace,
                         ) = await self._resolve_assignment_context_lineage(
                             db,
                             task_id=assignment["task_id"],
@@ -3447,6 +3733,26 @@ class Database:
                             now,
                         ),
                     )
+                    if cross_task_grace and context_parent_assignment_id is not None:
+                        cursor = await db.execute(
+                            """UPDATE assignments
+                               SET context_grace_remaining=0,
+                                   context_grace_state='continued',
+                                   context_grace_continued_by_assignment_id=?,
+                                   updated_at=?
+                               WHERE id=? AND context_grace_state='eligible'
+                                 AND context_grace_remaining>0""",
+                            (
+                                child_id,
+                                now,
+                                context_parent_assignment_id,
+                            ),
+                        )
+                        if cursor.rowcount != 1:
+                            await db.rollback()
+                            raise ValueError(
+                                "Worker context grace was consumed before continuation settled"
+                            )
                     wake_agent_keys.append(target_key)
             elif action == "EVIDENCE":
                 if not evidence_requests:
@@ -3483,6 +3789,7 @@ class Database:
                         db,
                         room_id,
                         round_id,
+                        assignment["task_id"],
                         history_requests,
                         existing_context_ids,
                     )
@@ -3681,6 +3988,24 @@ class Database:
                     released_join_id = candidate_join_id
                     released_join_ids.append(candidate_join_id)
 
+            retire_task_ids = list(retire_worker_context_task_ids or [])
+            if retire_task_ids and assignment["agent_key"] != "agent_c":
+                await db.rollback()
+                raise ValueError(
+                    "Only Agent C may explicitly retire prior Task worker contexts"
+                )
+            if assignment["agent_key"] == "agent_c":
+                worker_context_retirement_assignment_ids = (
+                    await self._advance_worker_context_grace(
+                        db,
+                        room_id=room_id,
+                        round_id=round_id,
+                        current_task_id=assignment["task_id"],
+                        retire_task_ids=retire_task_ids,
+                        now=now,
+                    )
+                )
+
             if action not in {"DELEGATE", "EVIDENCE", "HISTORY"}:
                 open_assignment = await self._fetchone(
                     db,
@@ -3774,6 +4099,15 @@ class Database:
                             ),
                         )
                         task_settled = True
+                        worker_context_grace_staged_assignment_ids = (
+                            await self._stage_task_worker_context_grace(
+                                db,
+                                task_id=assignment["task_id"],
+                                coordinator_agent_id=task["coordinator_agent_id"],
+                                keep_grace=continuous_round and not turn_limit_hit,
+                                now=now,
+                            )
+                        )
                         if continuous_round and not turn_limit_hit:
                             continuous_successor_task_id = new_id("task")
                             continuous_successor_assignment_id = new_id("assignment")
@@ -3848,6 +4182,12 @@ class Database:
             "history_event_ids": history_event_ids,
             "continuous_successor_task_id": continuous_successor_task_id,
             "continuous_successor_assignment_id": continuous_successor_assignment_id,
+            "worker_context_grace_staged_assignment_ids": (
+                worker_context_grace_staged_assignment_ids
+            ),
+            "worker_context_retirement_assignment_ids": (
+                worker_context_retirement_assignment_ids
+            ),
         }
 
     async def fail_transaction_assignment(

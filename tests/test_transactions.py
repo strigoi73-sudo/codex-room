@@ -1273,6 +1273,230 @@ async def test_continuous_successor_task_preserves_required_contributors_and_kee
 
 
 @pytest.mark.asyncio
+async def test_bctx3_worker_grace_cross_task_continuation_expiry_and_explicit_retirement(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {3, 5, 6}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Produce A's bounded contribution.",
+                        "config": None,
+                    },
+                    {
+                        "target": "agent_b",
+                        "instruction": "Produce B's bounded contribution.",
+                        "config": None,
+                    },
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task one integrated.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A task-one result.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A task-two continuation result.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_b"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="B task-one result.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "bctx3-grace.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise bounded worker context grace.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=9,
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 3)
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+        worker_rows = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key IN ('agent_a','agent_b')
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(tasks) == 2
+    task_one = tasks[0]
+    task_two = tasks[1]
+    assert task_one["state"] == "settled"
+    assert task_two["state"] == "active"
+
+    a_one = next(
+        row
+        for row in worker_rows
+        if row["agent_key"] == "agent_a" and row["task_id"] == task_one["id"]
+    )
+    b_one = next(
+        row
+        for row in worker_rows
+        if row["agent_key"] == "agent_b" and row["task_id"] == task_one["id"]
+    )
+    assert a_one["context_grace_state"] == "eligible"
+    assert a_one["context_grace_remaining"] == 2
+    assert b_one["context_grace_state"] == "eligible"
+    assert b_one["context_grace_remaining"] == 2
+
+    c_three_prompt = adapter.calls["agent_c"][2]["prompt"]
+    assert "<worker_context_grace>" in c_three_prompt
+    assert a_one["id"] in c_three_prompt
+    assert b_one["id"] in c_three_prompt
+    assert 'remaining_c_executions="2"' in c_three_prompt
+
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": (
+                            "Continue A's causally continuous work using the grace-eligible "
+                            "provider context."
+                        ),
+                        "config": None,
+                        "context_from_assignment_id": a_one["id"],
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task two integrated.",
+            ),
+        ]
+    )
+    adapter.release_call("agent_c", 3)
+
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 5)
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+        worker_rows = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key IN ('agent_a','agent_b')
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(tasks) == 3
+    task_two = tasks[1]
+    task_three = tasks[2]
+    assert task_two["state"] == "settled"
+    assert task_three["state"] == "active"
+
+    a_one = next(row for row in worker_rows if row["id"] == a_one["id"])
+    b_one = next(row for row in worker_rows if row["id"] == b_one["id"])
+    a_two = next(
+        row
+        for row in worker_rows
+        if row["agent_key"] == "agent_a" and row["task_id"] == task_two["id"]
+    )
+
+    assert a_one["context_grace_state"] == "continued"
+    assert a_one["context_grace_remaining"] == 0
+    assert a_one["context_grace_continued_by_assignment_id"] == a_two["id"]
+    assert a_two["context_parent_assignment_id"] == a_one["id"]
+    assert a_two["context_thread_id"] == a_one["context_thread_id"]
+
+    # B was not continued. The first and second subsequent C executions consumed
+    # its two-turn grace, so CORE retired the provider thread.
+    assert b_one["context_grace_state"] == "retired"
+    assert b_one["context_grace_remaining"] == 0
+    assert b_one["context_archived_at"] is not None
+    assert b_one["context_thread_id"] in adapter.archived
+
+    # A's continued context belongs to Task two now and receives a fresh grace
+    # window when Task two settles.
+    assert a_two["context_grace_state"] == "eligible"
+    assert a_two["context_grace_remaining"] == 2
+    assert a_two["context_thread_id"] not in adapter.archived
+
+    c_five_prompt = adapter.calls["agent_c"][4]["prompt"]
+    assert a_two["id"] in c_five_prompt
+    assert b_one["id"] not in c_five_prompt
+
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Task three closes the remaining prior worker objective.",
+            retire_worker_context_task_ids=[task_two["id"]],
+        )
+    )
+    adapter.release_call("agent_c", 5)
+
+    # C's fifth execution is only the first post-Task-two execution. The explicit
+    # close signal should retire A's Task-two context immediately rather than wait
+    # for the automatic two-execution expiry.
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 6)
+
+    async with runtime.db.connect() as db:
+        cursor = await db.execute(
+            "SELECT * FROM assignments WHERE id=?",
+            (a_two["id"],),
+        )
+        a_two_final = await cursor.fetchone()
+
+    assert a_two_final is not None
+    assert a_two_final["context_grace_state"] == "retired"
+    assert a_two_final["context_grace_remaining"] == 0
+    assert a_two_final["context_archived_at"] is not None
+    assert a_two_final["context_thread_id"] in adapter.archived
+
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Finish the test Round at its configured hard boundary.",
+        )
+    )
+    adapter.release_call("agent_c", 6)
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+
+@pytest.mark.asyncio
 async def test_transaction_turn_limit_stops_before_released_parent_can_run_again(
     transaction_runtime_factory,
 ):

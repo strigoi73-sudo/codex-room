@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 
 import pytest
 from pydantic import ValidationError
@@ -577,6 +578,120 @@ async def test_persistent_provider_context_mode_remains_default(
     assert exported is not None
     assert exported["active_round"]["provider_context_mode"] == "persistent_agent_thread"
 
+@pytest.mark.asyncio
+async def test_bctx3_pending_worker_context_retirement_recovers_after_restart(
+    context_runtime_factory,
+):
+    first_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {3}},
+    )
+    first_adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Produce one worker context to retire later.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task one complete.",
+            ),
+        ]
+    )
+    first_adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Worker context established.",
+        )
+    )
+
+    first = await context_runtime_factory(first_adapter, "bctx3-retirement-restart.db")
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Exercise restart-safe worker context retirement.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=20,
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(lambda: len(first_adapter.calls["agent_c"]) == 3)
+
+    async with first.db.connect() as db:
+        row = await first.db._fetchone(
+            db,
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id LIMIT 1""",
+            (room_id,),
+        )
+    assert row is not None
+    assignment_id = row["id"]
+    context_thread_id = row["context_thread_id"]
+    assert context_thread_id
+    assert row["context_grace_state"] == "eligible"
+
+    # Simulate a process loss after retirement was committed durably but before
+    # the provider archive call/acknowledgement completed.
+    async with first.db.connect() as db:
+        await db.execute(
+            """UPDATE assignments
+               SET context_grace_remaining=0, context_grace_state='retire_pending'
+               WHERE id=?""",
+            (assignment_id,),
+        )
+        await db.commit()
+    await first.db.set_room_status(room_id, RoomStatus.PAUSED)
+    await first.close()
+
+    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second = await context_runtime_factory(
+        second_adapter, "bctx3-retirement-restart.db"
+    )
+
+    assert context_thread_id in second_adapter.archived
+    async with second.db.connect() as db:
+        retired = await second.db._fetchone(
+            db,
+            "SELECT * FROM assignments WHERE id=?",
+            (assignment_id,),
+        )
+    assert retired is not None
+    assert retired["context_grace_state"] == "retired"
+    assert retired["context_archived_at"] is not None
+
+
+def test_bctx3_worker_context_retirement_signal_is_bounded() -> None:
+    with pytest.raises(
+        ValidationError,
+        match="retire_worker_context_task_ids accepts at most 8 Task IDs",
+    ):
+        TransactionDecision(
+            action=TransactionAction.PASS,
+            retire_worker_context_task_ids=[
+                f"task_{index}" for index in range(9)
+            ],
+        )
+    with pytest.raises(
+        ValidationError,
+        match="retire_worker_context_task_ids cannot contain duplicates",
+    ):
+        TransactionDecision(
+            action=TransactionAction.PASS,
+            retire_worker_context_task_ids=["task_one", "task_one"],
+        )
+
+
 def test_history_request_validation_is_bounded() -> None:
     with pytest.raises(ValidationError, match="SEARCH history retrieval"):
         HistoryRequest(operation="SEARCH", query="")
@@ -679,6 +794,103 @@ async def test_assignment_context_history_recent_recovers_prior_round_result_wit
     ]
     assert len(history_events) == 1
     assert history_events[0]["metadata"]["selected_event_ids"] == [first_result_event_id]
+
+
+@pytest.mark.asyncio
+async def test_bctx3_history_recent_recovers_completed_prior_task_in_same_round(
+    context_runtime_factory,
+):
+    token = "SAME-ROUND-6317"
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message=token,
+            ),
+            TransactionDecision(
+                action=TransactionAction.HISTORY,
+                history_requests=[
+                    HistoryRequest(
+                        operation="RECENT",
+                        agent="agent_c",
+                        max_results=1,
+                    )
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Recovered the same-Round prior Task result.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "bctx3-same-round-history.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Use bounded same-Round history across successor Tasks.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=3,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert len(adapter.calls["agent_c"]) == 3
+    assert "<retrieved_room_history>" not in adapter.calls["agent_c"][1]["prompt"]
+    assert "<retrieved_room_history>" in adapter.calls["agent_c"][2]["prompt"]
+    assert token in adapter.calls["agent_c"][2]["prompt"]
+    assert "earlier completed Tasks in this Round" in adapter.calls["agent_c"][1]["prompt"]
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(tasks) == 2
+    assert all(row["state"] == "settled" for row in tasks)
+    first_c = next(
+        row
+        for row in assignments
+        if row["agent_key"] == "agent_c" and row["task_id"] == tasks[0]["id"]
+    )
+    second_c = next(
+        row
+        for row in assignments
+        if row["agent_key"] == "agent_c" and row["task_id"] == tasks[1]["id"]
+    )
+    assert first_c["state"] == "completed"
+    assert second_c["state"] == "completed"
+    assert first_c["result_event_id"] in json.loads(
+        second_c["context_event_ids_json"] or "[]"
+    )
+
+    events = await runtime.db.get_events(room_id)
+    history_events = [
+        event
+        for event in events
+        if event["event_type"] == "tool_activity"
+        and event.get("metadata", {}).get("type") == "deterministic_room_history"
+    ]
+    assert len(history_events) == 1
+    assert history_events[0]["metadata"]["selected_event_ids"] == [
+        first_c["result_event_id"]
+    ]
 
 
 @pytest.mark.asyncio

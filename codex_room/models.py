@@ -138,6 +138,7 @@ class TransactionDecision(BaseModel):
     message: str = ""
     delegations: list[DelegationRequest] | None = None
     delegation_return_mode: Literal["parent", "coordinator"] | None = None
+    retire_worker_context_task_ids: list[str] | None = None
     evidence_requests: list[SourceEvidenceRequest] | None = None
     history_requests: list[HistoryRequest] | None = None
 
@@ -163,6 +164,23 @@ class TransactionDecision(BaseModel):
             raise ValueError("delegations is valid only for DELEGATE")
         if self.action != TransactionAction.DELEGATE and self.delegation_return_mode is not None:
             raise ValueError("delegation_return_mode is valid only for DELEGATE")
+        if self.retire_worker_context_task_ids is not None:
+            cleaned = [item.strip() for item in self.retire_worker_context_task_ids]
+            if any(not item for item in cleaned):
+                raise ValueError("retire_worker_context_task_ids cannot contain empty IDs")
+            if any(len(item) > 200 for item in cleaned):
+                raise ValueError(
+                    "retire_worker_context_task_ids entries are limited to 200 characters"
+                )
+            if len(cleaned) > 8:
+                raise ValueError(
+                    "retire_worker_context_task_ids accepts at most 8 Task IDs"
+                )
+            if len(cleaned) != len(set(cleaned)):
+                raise ValueError(
+                    "retire_worker_context_task_ids cannot contain duplicates"
+                )
+            self.retire_worker_context_task_ids = cleaned
         if self.action == TransactionAction.EVIDENCE:
             if not self.evidence_requests:
                 raise ValueError("EVIDENCE requires at least one source evidence request")
@@ -322,6 +340,21 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
         "delegation_return_mode": {
             "anyOf": [
                 {"type": "string", "enum": ["parent", "coordinator"]},
+                {"type": "null"},
+            ]
+        },
+        "retire_worker_context_task_ids": {
+            "anyOf": [
+                {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                    },
+                    "uniqueItems": True,
+                },
                 {"type": "null"},
             ]
         },
@@ -561,6 +594,7 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
         "message",
         "delegations",
         "delegation_return_mode",
+        "retire_worker_context_task_ids",
         "evidence_requests",
         "history_requests",
     ],
