@@ -140,6 +140,7 @@ class TransactionDecision(BaseModel):
     delegation_return_mode: Literal["parent", "coordinator"] | None = None
     evidence_requests: list[SourceEvidenceRequest] | None = None
     history_requests: list[HistoryRequest] | None = None
+    retire_context_task_ids: list[str] | None = None
 
     @model_validator(mode="after")
     def validate_transaction_decision(self) -> "TransactionDecision":
@@ -177,6 +178,17 @@ class TransactionDecision(BaseModel):
                 raise ValueError("HISTORY accepts at most 4 Room-history requests")
         elif self.history_requests is not None:
             raise ValueError("history_requests is valid only for HISTORY")
+        if self.retire_context_task_ids is not None:
+            cleaned = [item.strip() for item in self.retire_context_task_ids]
+            if not cleaned or any(not item for item in cleaned):
+                raise ValueError("retire_context_task_ids requires non-empty Task IDs")
+            if len(cleaned) > 8:
+                raise ValueError("retire_context_task_ids accepts at most 8 Task IDs")
+            if len(cleaned) != len(set(cleaned)):
+                raise ValueError("retire_context_task_ids cannot contain duplicates")
+            if any(len(item) > 200 for item in cleaned):
+                raise ValueError("retire_context_task_ids Task IDs are too long")
+            self.retire_context_task_ids = cleaned
         return self
 
 
@@ -481,6 +493,22 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                 {"type": "null"},
             ]
         },
+        "retire_context_task_ids": {
+            "anyOf": [
+                {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 200,
+                    },
+                    "uniqueItems": True,
+                },
+                {"type": "null"},
+            ]
+        },
         "history_requests": {
             "anyOf": [
                 {
@@ -563,6 +591,7 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
         "delegation_return_mode",
         "evidence_requests",
         "history_requests",
+        "retire_context_task_ids",
     ],
     "additionalProperties": False,
 }
