@@ -3174,6 +3174,36 @@ class Database:
             )
         return [dict(row) for row in rows]
 
+    async def get_coordinator_context_refresh(
+        self, refresh_id: str
+    ) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            row = await self._fetchone(
+                db,
+                """SELECT c.*, a.agent_key, x.state AS assignment_state,
+                          x.context_thread_id AS assignment_context_thread_id,
+                          r.status AS room_status
+                   FROM coordinator_context_refreshes c
+                   JOIN assignments x ON x.id=c.assignment_id
+                   JOIN agents a ON a.id=x.agent_id
+                   JOIN rooms r ON r.id=c.room_id
+                   WHERE c.id=?""",
+                (refresh_id,),
+            )
+        return dict(row) if row is not None else None
+
+    async def record_coordinator_context_refresh_error(
+        self, refresh_id: str, error: str
+    ) -> None:
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE coordinator_context_refreshes
+                   SET error=?
+                   WHERE id=? AND state IN ('preparing','archive_pending')""",
+                (error[:4000], refresh_id),
+            )
+            await db.commit()
+
     async def activate_coordinator_context_refresh(
         self, refresh_id: str, new_context_thread_id: str
     ) -> dict[str, Any]:
