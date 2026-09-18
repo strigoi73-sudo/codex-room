@@ -3154,6 +3154,93 @@ class Database:
 
         return combined, newly_selected
 
+    async def _resolve_assignment_context_lineage(
+        self,
+        db: aiosqlite.Connection,
+        *,
+        task_id: str,
+        target_agent_id: str,
+        coordinator_agent_id: str,
+        provider_context_mode: str,
+        context_source_id: str | None,
+    ) -> tuple[str | None, str | None]:
+        """Validate one explicit same-Task worker context lineage request."""
+        if context_source_id is None:
+            return None, None
+        if provider_context_mode != "assignment_thread":
+            raise ValueError(
+                "Explicit Assignment context lineage requires assignment_thread mode"
+            )
+        if target_agent_id == coordinator_agent_id:
+            raise ValueError("Worker context lineage cannot target the Task coordinator")
+        source = await self._fetchone(
+            db,
+            "SELECT * FROM assignments WHERE id=?",
+            (context_source_id,),
+        )
+        if (
+            source is None
+            or source["task_id"] != task_id
+            or source["agent_id"] != target_agent_id
+            or source["state"] not in ("completed", "passed", "failed", "waived")
+            or source["context_thread_id"] is None
+        ):
+            raise ValueError(
+                "Context source must be a terminal Assignment for the same "
+                "worker in the same Task with a bound provider context"
+            )
+        latest_owner = await self._fetchone(
+            db,
+            """SELECT id FROM assignments
+               WHERE agent_id=? AND context_thread_id=?
+               ORDER BY created_at DESC, id DESC LIMIT 1""",
+            (target_agent_id, source["context_thread_id"]),
+        )
+        if latest_owner is None or latest_owner["id"] != source["id"]:
+            raise ValueError(
+                "Context source is stale; reuse must continue from the latest "
+                "Assignment owning that provider context"
+            )
+        return source["id"], source["context_thread_id"]
+
+    async def validate_transaction_delegation_context(
+        self,
+        room_id: str,
+        task_id: str,
+        provider_context_mode: str,
+        delegations: list[dict[str, Any]],
+    ) -> None:
+        """Preflight explicit lineage so agent mistakes use bounded retry handling."""
+        if not any(item.get("context_from_assignment_id") for item in delegations):
+            return
+        async with self.connect() as db:
+            task = await self._fetchone(
+                db,
+                "SELECT * FROM tasks WHERE id=? AND room_id=? AND state='active'",
+                (task_id, room_id),
+            )
+            if task is None:
+                raise ValueError("Delegation Task is missing or no longer active")
+            for item in delegations:
+                source_id = item.get("context_from_assignment_id")
+                if source_id is None:
+                    continue
+                target = await self._fetchone(
+                    db,
+                    "SELECT id FROM agents WHERE room_id=? AND agent_key=?",
+                    (room_id, item["target"]),
+                )
+                if target is None:
+                    raise ValueError("Context lineage target is unavailable")
+                await self._resolve_assignment_context_lineage(
+                    db,
+                    task_id=task_id,
+                    target_agent_id=target["id"],
+                    coordinator_agent_id=task["coordinator_agent_id"],
+                    provider_context_mode=provider_context_mode,
+                    context_source_id=source_id,
+                )
+
     async def settle_transaction_decision(
         self,
         room_id: str,
@@ -3313,60 +3400,29 @@ class Database:
                         await db.rollback()
                         raise ValueError("Delegation execution config is unsupported")
 
-                    context_parent_assignment_id: str | None = None
-                    context_thread_id: str | None = None
-                    context_source_id = item.get("context_from_assignment_id")
-                    if context_source_id is not None:
-                        if (
-                            round_budget is None
-                            or round_budget["provider_context_mode"]
-                            != "assignment_thread"
-                        ):
-                            await db.rollback()
-                            raise ValueError(
-                                "Explicit Assignment context lineage requires assignment_thread mode"
-                            )
-                        if target["id"] == task_for_delegation["coordinator_agent_id"]:
-                            await db.rollback()
-                            raise ValueError(
-                                "Worker context lineage cannot target the Task coordinator"
-                            )
-                        source = await self._fetchone(
+                    try:
+                        (
+                            context_parent_assignment_id,
+                            context_thread_id,
+                        ) = await self._resolve_assignment_context_lineage(
                             db,
-                            """SELECT x.*, a.agent_key
-                               FROM assignments x
-                               JOIN agents a ON a.id=x.agent_id
-                               WHERE x.id=?""",
-                            (context_source_id,),
+                            task_id=assignment["task_id"],
+                            target_agent_id=target["id"],
+                            coordinator_agent_id=task_for_delegation[
+                                "coordinator_agent_id"
+                            ],
+                            provider_context_mode=(
+                                round_budget["provider_context_mode"]
+                                if round_budget is not None
+                                else ""
+                            ),
+                            context_source_id=item.get(
+                                "context_from_assignment_id"
+                            ),
                         )
-                        if (
-                            source is None
-                            or source["task_id"] != assignment["task_id"]
-                            or source["agent_id"] != target["id"]
-                            or source["state"] not in
-                                ("completed", "passed", "failed", "waived")
-                            or source["context_thread_id"] is None
-                        ):
-                            await db.rollback()
-                            raise ValueError(
-                                "Context source must be a completed, passed, or waived Assignment "
-                                "for the same worker in the same Task with a bound provider context"
-                            )
-                        latest_owner = await self._fetchone(
-                            db,
-                            """SELECT id, state FROM assignments
-                               WHERE agent_id=? AND context_thread_id=?
-                               ORDER BY created_at DESC, id DESC LIMIT 1""",
-                            (target["id"], source["context_thread_id"]),
-                        )
-                        if latest_owner is None or latest_owner["id"] != source["id"]:
-                            await db.rollback()
-                            raise ValueError(
-                                "Context source is stale; reuse must continue from the latest "
-                                "Assignment owning that provider context"
-                            )
-                        context_parent_assignment_id = source["id"]
-                        context_thread_id = source["context_thread_id"]
+                    except ValueError:
+                        await db.rollback()
+                        raise
 
                     child_id = new_id("assignment")
                     await db.execute(
