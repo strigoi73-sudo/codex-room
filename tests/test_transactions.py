@@ -645,7 +645,7 @@ async def test_transaction_explicit_worker_context_lineage_reuses_thread_and_c_g
     await wait_until(lambda: len(adapter.calls["agent_c"]) == 2)
 
     async with runtime.db.connect() as db:
-        first_a = await db.execute_fetchone(
+        cursor = await db.execute(
             """SELECT x.* FROM assignments x
                JOIN tasks t ON t.id=x.task_id
                JOIN agents a ON a.id=x.agent_id
@@ -653,6 +653,7 @@ async def test_transaction_explicit_worker_context_lineage_reuses_thread_and_c_g
                ORDER BY x.created_at, x.id LIMIT 1""",
             (room_id,),
         )
+        first_a = await cursor.fetchone()
     assert first_a is not None
     assert first_a["state"] == "completed"
     assert first_a["context_thread_id"] is not None
