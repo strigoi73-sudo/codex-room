@@ -1108,6 +1108,70 @@ async def test_bctx4_archive_pending_refresh_recovers_after_restart_before_c_run
 
 
 @pytest.mark.asyncio
+async def test_bctx4_stop_cancels_archive_pending_refresh_without_running_new_context(
+    context_runtime_factory,
+):
+    adapter = RefreshArchiveOnceFailureAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []}
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.REFRESH,
+            checkpoint="This checkpoint must not become runnable after human Stop.",
+        )
+    )
+
+    runtime = await context_runtime_factory(adapter, "bctx4-refresh-stop.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise human Stop during a fail-closed coordinator refresh.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def archive_pending() -> bool:
+        async with runtime.db.connect() as db:
+            row = await runtime.db._fetchone(
+                db,
+                """SELECT * FROM coordinator_context_refreshes
+                   ORDER BY created_at DESC, id DESC LIMIT 1""",
+                (),
+            )
+        return bool(row and row["state"] == "archive_pending")
+
+    await wait_until(archive_pending)
+    assert len(adapter.calls["agent_c"]) == 1
+
+    await runtime.stop(room_id, "Stop during pending coordinator refresh.")
+
+    room = await runtime.db.get_room(room_id)
+    assert room is not None
+    assert room["status"] == RoomStatus.STOPPED
+
+    async with runtime.db.connect() as db:
+        refresh = await runtime.db._fetchone(
+            db,
+            """SELECT * FROM coordinator_context_refreshes
+               ORDER BY created_at DESC, id DESC LIMIT 1""",
+            (),
+        )
+        assignment = await runtime.db._fetchone(
+            db,
+            "SELECT * FROM assignments WHERE id=?",
+            (refresh["assignment_id"],),
+        )
+
+    assert refresh is not None
+    assert refresh["state"] == "cancelled"
+    assert refresh["error"] == "room_lifecycle_change"
+    assert assignment is not None
+    assert assignment["state"] == "cancelled"
+    assert len(adapter.calls["agent_c"]) == 1
+
+
+@pytest.mark.asyncio
 async def test_bctx3_history_recent_recovers_completed_prior_task_in_same_round(
     context_runtime_factory,
 ):
