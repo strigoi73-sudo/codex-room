@@ -848,6 +848,7 @@ async def test_bctx4_refresh_hands_off_checkpoint_once_and_preserves_successor_t
         [
             TransactionDecision(
                 action=TransactionAction.REFRESH,
+                message="OLD_CONTEXT_ONLY_MARKER_SHOULD_NOT_REPLAY",
                 checkpoint=checkpoint,
             ),
             TransactionDecision(
@@ -893,6 +894,7 @@ async def test_bctx4_refresh_hands_off_checkpoint_once_and_preserves_successor_t
     assert checkpoint in refreshed_prompt
     assert "<task_coordination_status>" in refreshed_prompt
     assert "deterministic Room/Round/Task/Assignment/Join/Evidence/grace state" in refreshed_prompt
+    assert "OLD_CONTEXT_ONLY_MARKER_SHOULD_NOT_REPLAY" not in refreshed_prompt
 
     successor_prompt = adapter.calls["agent_c"][2]["prompt"]
     assert "<coordinator_continuity_checkpoint " not in successor_prompt
