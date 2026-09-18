@@ -3112,7 +3112,7 @@ class Database:
     async def get_worker_context_grace_status(
         self, room_id: str, round_id: str
     ) -> list[dict[str, Any]]:
-        """Return bounded eligible/pending worker-context grace state for coordinator use."""
+        """Return bounded eligible worker-context grace state for coordinator use."""
         async with self.connect() as db:
             rows = await db.execute_fetchall(
                 """SELECT x.id AS assignment_id, x.task_id, a.agent_key,
@@ -3155,6 +3155,36 @@ class Database:
                 tuple(params),
             )
         return [dict(row) for row in rows]
+
+    async def retire_round_worker_context_grace(
+        self, room_id: str, round_id: str
+    ) -> list[str]:
+        """Close all remaining worker-context grace when a Round terminates."""
+        now = utc_now()
+        async with self.connect() as db:
+            await db.execute(
+                """UPDATE assignments
+                   SET context_grace_remaining=0,
+                       context_grace_state='retire_pending',
+                       updated_at=?
+                   WHERE id IN (
+                       SELECT x.id FROM assignments x
+                       JOIN tasks t ON t.id=x.task_id
+                       WHERE t.room_id=? AND t.round_id=?
+                         AND x.context_grace_state='eligible'
+                   )""",
+                (now, room_id, round_id),
+            )
+            rows = await db.execute_fetchall(
+                """SELECT x.id FROM assignments x
+                   JOIN tasks t ON t.id=x.task_id
+                   WHERE t.room_id=? AND t.round_id=?
+                     AND x.context_grace_state='retire_pending'
+                     AND x.context_archived_at IS NULL""",
+                (room_id, round_id),
+            )
+            await db.commit()
+        return [row["id"] for row in rows]
 
     async def mark_worker_context_archived(
         self, assignment_id: str, context_thread_id: str
