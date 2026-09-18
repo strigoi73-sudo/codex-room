@@ -596,9 +596,12 @@ async def test_explicit_worker_context_lineage_recovers_exact_active_turn_after_
             (room_id,),
         )
     assert len(a_rows) == 2
-    assert a_rows[1]["context_parent_assignment_id"] == first_a_id
-    assert a_rows[1]["context_thread_id"] == worker_thread
-    assert a_rows[1]["state"] == "completed"
+    continued_rows = [row for row in a_rows if row["id"] != first_a_id]
+    assert len(continued_rows) == 1
+    continued = continued_rows[0]
+    assert continued["context_parent_assignment_id"] == first_a_id
+    assert continued["context_thread_id"] == worker_thread
+    assert continued["state"] == "completed"
 
 
 @pytest.mark.asyncio
@@ -845,6 +848,164 @@ async def test_assignment_context_history_recent_recovers_prior_round_result_wit
     ]
     assert len(history_events) == 1
     assert history_events[0]["metadata"]["selected_event_ids"] == [first_result_event_id]
+
+
+def test_bctx4_coordinator_context_economics_advisory_levels() -> None:
+    consider = RoomRuntime._coordinator_context_economics(
+        [
+            {
+                "task_id": "task_one",
+                "task_state": "settled",
+                "usage": {
+                    "input_tokens": 20_000,
+                    "cached_input_tokens": 0,
+                    "total_tokens": 20_100,
+                },
+            },
+            {
+                "task_id": "task_two",
+                "task_state": "active",
+                "usage": {
+                    "input_tokens": 90_000,
+                    "cached_input_tokens": 50_000,
+                    "total_tokens": 90_200,
+                },
+            },
+        ]
+    )
+    assert consider["baseline_input_tokens"] == 20_000
+    assert consider["last_execution_input_tokens"] == 70_000
+    assert consider["input_growth_from_baseline"] == 50_000
+    assert consider["guidance_level"] == "consider"
+    assert consider["settled_tasks_on_context"] == 1
+
+    strongly_prefer = RoomRuntime._coordinator_context_economics(
+        [
+            {
+                "task_id": "task_one",
+                "task_state": "settled",
+                "usage": {"input_tokens": 20_000, "total_tokens": 20_100},
+            },
+            {
+                "task_id": "task_two",
+                "task_state": "settled",
+                "usage": {"input_tokens": 120_000, "total_tokens": 120_200},
+            },
+        ]
+    )
+    assert strongly_prefer["last_execution_input_tokens"] == 100_000
+    assert strongly_prefer["guidance_level"] == "strongly_prefer"
+    assert strongly_prefer["settled_tasks_on_context"] == 2
+
+
+@pytest.mark.asyncio
+async def test_bctx4_coordinator_context_economics_warns_and_resets_after_refresh(
+    context_runtime_factory,
+):
+    checkpoint = (
+        "Two bounded activities are complete. Continue the standing objective from a fresh "
+        "coordinator context and choose the next useful activity from current deterministic state."
+    )
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        usages={
+            "agent_c": [
+                {
+                    "input_tokens": 20_000,
+                    "cached_input_tokens": 0,
+                    "total_tokens": 20_100,
+                },
+                {
+                    "input_tokens": 120_000,
+                    "cached_input_tokens": 60_000,
+                    "total_tokens": 120_200,
+                },
+                {
+                    "input_tokens": 150_000,
+                    "cached_input_tokens": 80_000,
+                    "total_tokens": 150_300,
+                },
+                {
+                    "input_tokens": 18_000,
+                    "cached_input_tokens": 0,
+                    "total_tokens": 18_100,
+                },
+            ]
+        },
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task one completed.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task two completed.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.REFRESH,
+                checkpoint=checkpoint,
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Fresh coordinator context resumed correctly.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "bctx4-refresh-economics.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise coordinator refresh economics.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=4,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert len(adapter.calls["agent_c"]) == 4
+    first_prompt, second_prompt, third_prompt, refreshed_prompt = [
+        call["prompt"] for call in adapter.calls["agent_c"]
+    ]
+
+    assert "<coordinator_context_economics>" in first_prompt
+    assert "refresh_guidance_level: baseline_pending" in first_prompt
+    assert "last_completed_execution_input_tokens: unavailable" in first_prompt
+
+    assert "baseline_first_execution_input_tokens: 20000" in second_prompt
+    assert "last_completed_execution_input_tokens: 20000" in second_prompt
+    assert "refresh_guidance_level: normal" in second_prompt
+    assert 'executions="1"' in second_prompt
+    assert 'settled_tasks="1"' in second_prompt
+
+    assert "baseline_first_execution_input_tokens: 20000" in third_prompt
+    assert "last_completed_execution_input_tokens: 100000" in third_prompt
+    assert "input_growth_from_baseline: 80000" in third_prompt
+    assert "refresh_guidance_level: strongly_prefer" in third_prompt
+    assert "advisory_consider_input_tokens: 64000" in third_prompt
+    assert "advisory_strongly_prefer_input_tokens: 96000" in third_prompt
+    assert "CORE never auto-refreshes" in third_prompt
+    assert 'executions="2"' in third_prompt
+    assert 'settled_tasks="2"' in third_prompt
+
+    old_thread = adapter.calls["agent_c"][2]["thread_id"]
+    fresh_thread = adapter.calls["agent_c"][3]["thread_id"]
+    assert fresh_thread != old_thread
+    assert "<coordinator_continuity_checkpoint " in refreshed_prompt
+    assert checkpoint in refreshed_prompt
+    assert f'thread_id="{fresh_thread}"' in refreshed_prompt
+    assert "refresh_guidance_level: baseline_pending" in refreshed_prompt
+    assert "last_completed_execution_input_tokens: unavailable" in refreshed_prompt
+    assert 'executions="0"' in refreshed_prompt
 
 
 @pytest.mark.asyncio

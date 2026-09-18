@@ -112,6 +112,8 @@ class LiveHub:
 class RoomRuntime:
     CONTEXT_COMPACTION_RATIO = 0.30
     CONTEXT_COMPACTION_MIN_GROWTH_TOKENS = 25_000
+    COORDINATOR_REFRESH_CONSIDER_INPUT_TOKENS = 64_000
+    COORDINATOR_REFRESH_PREFER_INPUT_TOKENS = 96_000
     STOP_RETIRE_TIMEOUT_SECONDS = 2.0
     LONG_RUNNING_SECONDS = 60.0
     AGENT_TURN_TIMEOUT_SECONDS = 600.0
@@ -2020,6 +2022,9 @@ class RoomRuntime:
         if round_item is None:
             raise RuntimeError(f"Round {batch['round_id']} is missing")
         assignment = batch["assignment"]
+        provider_context_mode = round_item.get(
+            "provider_context_mode", "persistent_agent_thread"
+        )
         dependencies = await self.db.get_assignment_dependency_results(
             assignment["id"]
         )
@@ -2045,6 +2050,23 @@ class RoomRuntime:
             if agent["agent_key"] == "agent_c"
             else None
         )
+        is_root_coordinator = bool(
+            agent["agent_key"] == "agent_c"
+            and task_status is not None
+            and task_status.get("coordinator_agent_key") == "agent_c"
+            and assignment.get("parent_assignment_id") is None
+            and assignment.get("contribution_join_id") is None
+            and provider_context_mode == "assignment_thread"
+            and assignment.get("context_thread_id")
+        )
+        coordinator_context_economics = None
+        if is_root_coordinator:
+            context_usage_history = await self.db.get_provider_context_usage_history(
+                agent["id"], batch["round_id"], assignment["context_thread_id"]
+            )
+            coordinator_context_economics = self._coordinator_context_economics(
+                context_usage_history
+            )
         evidence_results = await self.db.get_assignment_evidence_results(
             assignment["id"]
         )
@@ -2091,6 +2113,12 @@ class RoomRuntime:
                         "as authoritative; do not infer unsupplied old transcript content."
                     ),
                 ]
+            )
+        if coordinator_context_economics is not None:
+            context_parts.extend(
+                self._coordinator_context_economics_prompt(
+                    assignment["context_thread_id"], coordinator_context_economics
+                )
             )
         if assignment.get("context_parent_assignment_id"):
             context_parts.append(
@@ -2291,9 +2319,6 @@ class RoomRuntime:
                 "assignment. Interpret it directly; request more evidence only for a specific "
                 "unresolved dependency."
             )
-        provider_context_mode = round_item.get(
-            "provider_context_mode", "persistent_agent_thread"
-        )
         context_boundary = (
             "This provider context is bounded to the current declared Assignment context lineage. "
             "A context_parent_assignment_id above means CORE explicitly continued a terminal "
@@ -2328,11 +2353,16 @@ class RoomRuntime:
                     "whose worker context should be retired early because you have deliberately moved past "
                     "or closed that objective; only C may use it. REFRESH is C-only and nonterminal: "
                     "use it only from the root coordinator Assignment when a deliberate fresh provider "
-                    "context is materially useful. Put the bounded continuity handoff in checkpoint "
-                    "(maximum 12,000 characters), describing unresolved reasoning, current strategy, "
-                    "important judgments, and near-term intent without replaying the old transcript. "
-                    "CORE supplies current organizational state separately and performs the fail-closed "
-                    "provider-context handoff. No automatic refresh threshold is implied. "
+                    "context is materially useful. CORE supplies exact-thread coordinator context economics "
+                    "to eligible C turns. Treat the 64,000-input-token range as an advisory point to actively "
+                    "consider refresh at the next clean bounded Task boundary, and the 96,000-input-token "
+                    "range as an advisory point to strongly prefer refresh unless a concrete continuity or "
+                    "integration reason makes immediate refresh materially unsafe or lossy. These are judgment "
+                    "guides, not automatic triggers: CORE never refreshes solely because a number was crossed. "
+                    "Put the bounded continuity handoff in checkpoint (maximum 12,000 characters), describing "
+                    "unresolved reasoning, current strategy, important judgments, and near-term intent without "
+                    "replaying the old transcript. CORE supplies current organizational state separately and "
+                    "performs the fail-closed provider-context handoff. "
                     "delegation_return_mode is null or "
                     "'parent' for normal parent resumption. Set it to 'coordinator' only with exactly "
                     "one child when that child will hold the finished result and this Assignment has no "
@@ -2672,7 +2702,6 @@ class RoomRuntime:
                     generation,
                 )
             else:
-                prompt = await self._assignment_prompt(batch, agent)
                 provider_context_mode = batch.get(
                     "provider_context_mode", "persistent_agent_thread"
                 )
@@ -2698,6 +2727,10 @@ class RoomRuntime:
                         batch["assignment"]["context_thread_id"] = context_thread_id
                 else:
                     context_thread_id = agent["thread_id"]
+
+                # Compose only after assignment-thread binding so C's first prompt can
+                # report exact-thread coordinator economics truthfully.
+                prompt = await self._assignment_prompt(batch, agent)
 
                 if batch.get("usage_continuation"):
                     await self.adapter.prepare_usage_continuation(
@@ -3730,6 +3763,149 @@ class RoomRuntime:
             if isinstance(usage_total.get(key), (int, float))
             and not isinstance(usage_total.get(key), bool)
         }
+
+    @classmethod
+    def _coordinator_context_economics(
+        cls, history: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        snapshots = [cls._usage_token_fields(item.get("usage")) for item in history]
+        baseline_input_tokens: int | float | None = None
+        last_execution_input_tokens: int | float | None = None
+        last_execution_cached_input_tokens: int | float | None = None
+        cumulative_input_tokens: int | float | None = None
+
+        if snapshots and "input_tokens" in snapshots[0]:
+            baseline_input_tokens = snapshots[0]["input_tokens"]
+        if snapshots and "input_tokens" in snapshots[-1]:
+            cumulative_input_tokens = snapshots[-1]["input_tokens"]
+            if len(snapshots) == 1:
+                last_execution_input_tokens = snapshots[-1]["input_tokens"]
+                last_execution_cached_input_tokens = snapshots[-1].get(
+                    "cached_input_tokens"
+                )
+            else:
+                previous = snapshots[-2]
+                current = snapshots[-1]
+                comparable = {"input_tokens"}.issubset(previous) and (
+                    current["input_tokens"] >= previous["input_tokens"]
+                )
+                if comparable:
+                    last_execution_input_tokens = (
+                        current["input_tokens"] - previous["input_tokens"]
+                    )
+                if (
+                    "cached_input_tokens" in previous
+                    and "cached_input_tokens" in current
+                    and current["cached_input_tokens"] >= previous["cached_input_tokens"]
+                ):
+                    last_execution_cached_input_tokens = (
+                        current["cached_input_tokens"] - previous["cached_input_tokens"]
+                    )
+
+        input_growth_from_baseline = (
+            last_execution_input_tokens - baseline_input_tokens
+            if last_execution_input_tokens is not None
+            and baseline_input_tokens is not None
+            else None
+        )
+        if last_execution_input_tokens is None:
+            guidance_level = "baseline_pending" if not history else "insufficient_data"
+        elif last_execution_input_tokens >= cls.COORDINATOR_REFRESH_PREFER_INPUT_TOKENS:
+            guidance_level = "strongly_prefer"
+        elif last_execution_input_tokens >= cls.COORDINATOR_REFRESH_CONSIDER_INPUT_TOKENS:
+            guidance_level = "consider"
+        else:
+            guidance_level = "normal"
+
+        task_ids = {item.get("task_id") for item in history if item.get("task_id")}
+        settled_task_ids = {
+            item.get("task_id")
+            for item in history
+            if item.get("task_id") and item.get("task_state") == "settled"
+        }
+        return {
+            "executions_on_context": len(history),
+            "tasks_seen_on_context": len(task_ids),
+            "settled_tasks_on_context": len(settled_task_ids),
+            "baseline_input_tokens": baseline_input_tokens,
+            "last_execution_input_tokens": last_execution_input_tokens,
+            "last_execution_cached_input_tokens": last_execution_cached_input_tokens,
+            "cumulative_input_tokens": cumulative_input_tokens,
+            "input_growth_from_baseline": input_growth_from_baseline,
+            "guidance_level": guidance_level,
+        }
+
+    @classmethod
+    def _coordinator_context_economics_prompt(
+        cls, context_thread_id: str, economics: dict[str, Any]
+    ) -> list[str]:
+        def render(value: Any) -> str:
+            if value is None:
+                return "unavailable"
+            if isinstance(value, float) and value.is_integer():
+                return str(int(value))
+            return str(value)
+
+        level = economics["guidance_level"]
+        if level == "strongly_prefer":
+            guidance = (
+                "The last completed coordinator execution crossed the strong-preference range. "
+                "At the next clean bounded Task boundary, strongly prefer REFRESH unless a concrete "
+                "continuity or integration reason makes immediate refresh materially unsafe or lossy."
+            )
+        elif level == "consider":
+            guidance = (
+                "The last completed coordinator execution crossed the consideration range. "
+                "At the next clean bounded Task boundary, actively consider REFRESH when a bounded "
+                "checkpoint can preserve the unresolved state faithfully."
+            )
+        elif level == "normal":
+            guidance = (
+                "The last completed coordinator execution remains below the advisory consideration "
+                "range. Do not refresh solely because a Task boundary exists."
+            )
+        elif level == "baseline_pending":
+            guidance = (
+                "This provider context has no completed execution telemetry yet. Establish a baseline "
+                "before making a token-economics refresh judgment."
+            )
+        else:
+            guidance = (
+                "Recorded provider usage is insufficient or non-monotonic for a reliable latest-load "
+                "comparison. Use qualitative continuity judgment rather than inventing a token estimate."
+            )
+
+        return [
+            "<coordinator_context_economics>",
+            (
+                f"<context thread_id=\"{context_thread_id}\" "
+                f"executions=\"{economics['executions_on_context']}\" "
+                f"tasks_seen=\"{economics['tasks_seen_on_context']}\" "
+                f"settled_tasks=\"{economics['settled_tasks_on_context']}\" />"
+            ),
+            "baseline_first_execution_input_tokens: "
+            + render(economics["baseline_input_tokens"]),
+            "last_completed_execution_input_tokens: "
+            + render(economics["last_execution_input_tokens"]),
+            "last_completed_execution_cached_input_tokens: "
+            + render(economics["last_execution_cached_input_tokens"]),
+            "provider_reported_cumulative_input_tokens: "
+            + render(economics["cumulative_input_tokens"]),
+            "input_growth_from_baseline: "
+            + render(economics["input_growth_from_baseline"]),
+            f"refresh_guidance_level: {level}",
+            f"advisory_consider_input_tokens: {cls.COORDINATOR_REFRESH_CONSIDER_INPUT_TOKENS}",
+            f"advisory_strongly_prefer_input_tokens: {cls.COORDINATOR_REFRESH_PREFER_INPUT_TOKENS}",
+            guidance,
+            (
+                "These figures are deterministic telemetry from completed executions on this exact "
+                "provider thread. The input-load figure is not a claimed context-window occupancy "
+                "percentage. The advisory ranges guide C's judgment only; CORE never auto-refreshes. "
+                "Prefer refresh at a clean Task boundary and do not interrupt delicate integration merely "
+                "to satisfy a number. After REFRESH, the distinct new provider thread establishes a new baseline."
+            ),
+            "</coordinator_context_economics>",
+        ]
 
     @classmethod
     def _execution_economics(
