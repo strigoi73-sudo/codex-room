@@ -1798,6 +1798,21 @@ class RoomRuntime:
             f"Round objective:\n{round_item['prompt']}",
             f"Current assignment:\n{assignment['instruction']}",
         ]
+        if round_item.get("completion_policy", "auto_settle") == "continuous":
+            context_parts.extend(
+                [
+                    "<continuous_round>",
+                    (
+                        "This Round has a standing continuous objective. COMPLETE or PASS ends "
+                        "only the bounded activity represented by the current execution; it does "
+                        "not finish the Round. CORE will return control to this same coordinator "
+                        "Assignment while the Round remains active. Continue following the Round "
+                        "objective until the human stops the Room or a hard runtime boundary "
+                        "prevents further work."
+                    ),
+                    "</continuous_round>",
+                ]
+            )
         retry_feedback = batch.get("retry_feedback")
         if retry_feedback:
             context_parts.extend(
@@ -2726,6 +2741,24 @@ class RoomRuntime:
                     round_id=batch["round_id"],
                 )
                 self._publish_event(released)
+
+            if settlement.get("continuous_resumed"):
+                resumed = await self.db.create_event(
+                    room_id,
+                    "continuous_round_resumed",
+                    "room",
+                    "observer",
+                    "Continuous Round kept the standing coordinator objective active after a bounded activity completed.",
+                    related_event_id=result_event["id"],
+                    metadata={
+                        "task_id": batch["task_id"],
+                        "assignment_id": batch["assignment_id"],
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(resumed)
 
             await self.ensure_workers(room_id)
             for target in settlement["wake_agent_keys"]:
