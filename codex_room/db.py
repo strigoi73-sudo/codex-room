@@ -3280,6 +3280,8 @@ class Database:
                 contexts = await self._worker_context_rows_for_task(
                     db, row["task_id"]
                 )
+                if not contexts:
+                    continue
                 result.append(
                     {
                         "task_id": row["task_id"],
