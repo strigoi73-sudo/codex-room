@@ -80,6 +80,7 @@ class DelegationRequest(BaseModel):
     target: Literal["agent_a", "agent_b", "agent_c"]
     instruction: str = Field(min_length=1, max_length=50_000)
     config: ExecutionConfigId | None = None
+    context_from_assignment_id: str | None = None
 
 
 class SourceEvidenceRequest(BaseModel):
@@ -134,6 +135,7 @@ class TransactionDecision(BaseModel):
     action: TransactionAction
     message: str = ""
     delegations: list[DelegationRequest] | None = None
+    delegation_return_mode: Literal["parent", "coordinator"] | None = None
     evidence_requests: list[SourceEvidenceRequest] | None = None
     history_requests: list[HistoryRequest] | None = None
 
@@ -148,8 +150,17 @@ class TransactionDecision(BaseModel):
             targets = [item.target for item in self.delegations]
             if len(targets) != len(set(targets)):
                 raise ValueError("delegations cannot contain duplicate targets")
+            if (
+                self.delegation_return_mode == "coordinator"
+                and len(self.delegations) != 1
+            ):
+                raise ValueError(
+                    "coordinator delegation return requires exactly one child assignment"
+                )
         elif self.delegations is not None:
             raise ValueError("delegations is valid only for DELEGATE")
+        if self.action != TransactionAction.DELEGATE and self.delegation_return_mode is not None:
+            raise ValueError("delegation_return_mode is valid only for DELEGATE")
         if self.action == TransactionAction.EVIDENCE:
             if not self.evidence_requests:
                 raise ValueError("EVIDENCE requires at least one source evidence request")
@@ -287,11 +298,25 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                     {"type": "null"},
                                 ]
                             },
+                            "context_from_assignment_id": {
+                                "anyOf": [{"type": "string"}, {"type": "null"}]
+                            },
                         },
-                        "required": ["target", "instruction", "config"],
+                        "required": [
+                            "target",
+                            "instruction",
+                            "config",
+                            "context_from_assignment_id",
+                        ],
                         "additionalProperties": False,
                     },
                 },
+                {"type": "null"},
+            ]
+        },
+        "delegation_return_mode": {
+            "anyOf": [
+                {"type": "string", "enum": ["parent", "coordinator"]},
                 {"type": "null"},
             ]
         },
@@ -530,6 +555,7 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
         "action",
         "message",
         "delegations",
+        "delegation_return_mode",
         "evidence_requests",
         "history_requests",
     ],
