@@ -3501,6 +3501,7 @@ class Database:
         result_event_id: str,
         delegations: list[dict[str, Any]],
         delegation_return_mode: str | None = None,
+        retire_worker_context_task_ids: list[str] | None = None,
         evidence_requests: list[dict[str, Any]] | None = None,
         history_requests: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
@@ -3518,6 +3519,8 @@ class Database:
         history_event_ids: list[str] = []
         continuous_successor_task_id: str | None = None
         continuous_successor_assignment_id: str | None = None
+        worker_context_grace_staged_assignment_ids: list[str] = []
+        worker_context_retirement_assignment_ids: list[str] = []
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             execution = await self._fetchone(
@@ -3555,6 +3558,8 @@ class Database:
                     "continuous_successor_assignment_id": None,
                     "released_join_ids": [],
                     "direct_returned_assignment_ids": [],
+                    "worker_context_grace_staged_assignment_ids": [],
+                    "worker_context_retirement_assignment_ids": [],
                 }
             if assignment["state"] != "running":
                 await db.rollback()
@@ -3654,6 +3659,7 @@ class Database:
                         (
                             context_parent_assignment_id,
                             context_thread_id,
+                            cross_task_grace,
                         ) = await self._resolve_assignment_context_lineage(
                             db,
                             task_id=assignment["task_id"],
@@ -3697,6 +3703,26 @@ class Database:
                             now,
                         ),
                     )
+                    if cross_task_grace and context_parent_assignment_id is not None:
+                        cursor = await db.execute(
+                            """UPDATE assignments
+                               SET context_grace_remaining=0,
+                                   context_grace_state='continued',
+                                   context_grace_continued_by_assignment_id=?,
+                                   updated_at=?
+                               WHERE id=? AND context_grace_state='eligible'
+                                 AND context_grace_remaining>0""",
+                            (
+                                child_id,
+                                now,
+                                context_parent_assignment_id,
+                            ),
+                        )
+                        if cursor.rowcount != 1:
+                            await db.rollback()
+                            raise ValueError(
+                                "Worker context grace was consumed before continuation settled"
+                            )
                     wake_agent_keys.append(target_key)
             elif action == "EVIDENCE":
                 if not evidence_requests:
@@ -3733,6 +3759,7 @@ class Database:
                         db,
                         room_id,
                         round_id,
+                        assignment["task_id"],
                         history_requests,
                         existing_context_ids,
                     )
@@ -3931,6 +3958,24 @@ class Database:
                     released_join_id = candidate_join_id
                     released_join_ids.append(candidate_join_id)
 
+            retire_task_ids = list(retire_worker_context_task_ids or [])
+            if retire_task_ids and assignment["agent_key"] != "agent_c":
+                await db.rollback()
+                raise ValueError(
+                    "Only Agent C may explicitly retire prior Task worker contexts"
+                )
+            if assignment["agent_key"] == "agent_c":
+                worker_context_retirement_assignment_ids = (
+                    await self._advance_worker_context_grace(
+                        db,
+                        room_id=room_id,
+                        round_id=round_id,
+                        current_task_id=assignment["task_id"],
+                        retire_task_ids=retire_task_ids,
+                        now=now,
+                    )
+                )
+
             if action not in {"DELEGATE", "EVIDENCE", "HISTORY"}:
                 open_assignment = await self._fetchone(
                     db,
@@ -4024,6 +4069,15 @@ class Database:
                             ),
                         )
                         task_settled = True
+                        worker_context_grace_staged_assignment_ids = (
+                            await self._stage_task_worker_context_grace(
+                                db,
+                                task_id=assignment["task_id"],
+                                coordinator_agent_id=task["coordinator_agent_id"],
+                                keep_grace=continuous_round and not turn_limit_hit,
+                                now=now,
+                            )
+                        )
                         if continuous_round and not turn_limit_hit:
                             continuous_successor_task_id = new_id("task")
                             continuous_successor_assignment_id = new_id("assignment")
@@ -4098,6 +4152,12 @@ class Database:
             "history_event_ids": history_event_ids,
             "continuous_successor_task_id": continuous_successor_task_id,
             "continuous_successor_assignment_id": continuous_successor_assignment_id,
+            "worker_context_grace_staged_assignment_ids": (
+                worker_context_grace_staged_assignment_ids
+            ),
+            "worker_context_retirement_assignment_ids": (
+                worker_context_retirement_assignment_ids
+            ),
         }
 
     async def fail_transaction_assignment(
