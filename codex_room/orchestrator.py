@@ -263,6 +263,7 @@ class RoomRuntime:
         await self.db.initialize()
         await self.db.recover_interrupted_work()
         self.auth_info = await self.adapter.initialize()
+        await self._archive_pending_worker_contexts()
         await self._recover_rollovers()
         await self._recover_transaction_evidence()
         rooms = await self.db.list_rooms(include_archived=False)
@@ -272,6 +273,27 @@ class RoomRuntime:
                 if all(agent.get("thread_id") for agent in agents):
                     await self.ensure_workers(room["id"])
         self._watchdog = asyncio.create_task(self._watchdog_loop(), name="room-watchdog")
+
+    async def _archive_pending_worker_contexts(
+        self, room_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Best-effort provider cleanup for durably retired Assignment contexts."""
+        outcomes: list[dict[str, Any]] = []
+        for item in await self.db.get_pending_worker_context_archives(room_id):
+            outcome = dict(item)
+            try:
+                await self.adapter.archive_thread(item["context_thread_id"])
+            except Exception as exc:
+                outcome["archived"] = False
+                outcome["error"] = str(exc)[:500]
+            else:
+                confirmed = await self.db.confirm_worker_context_archived(
+                    item["assignment_id"], item["context_thread_id"]
+                )
+                outcome["archived"] = bool(confirmed)
+                outcome["error"] = None if confirmed else "archive confirmation was stale"
+            outcomes.append(outcome)
+        return outcomes
 
     async def close(self) -> None:
         self._shutdown.set()
@@ -1775,6 +1797,13 @@ class RoomRuntime:
             if agent["agent_key"] == "agent_c"
             else None
         )
+        worker_context_grace = (
+            await self.db.get_worker_context_grace_status(
+                batch["round_id"], batch["task_id"]
+            )
+            if agent["agent_key"] == "agent_c"
+            else []
+        )
         evidence_results = await self.db.get_assignment_evidence_results(
             assignment["id"]
         )
@@ -1884,6 +1913,29 @@ class RoomRuntime:
                 "The Task coordination block is status-only authoritative work state. "
                 "It intentionally omits worker result text, transcript, and tool chatter."
             )
+        if worker_context_grace:
+            context_parts.append("<worker_context_grace>")
+            for item in worker_context_grace:
+                context_parts.append(
+                    "<settled_task "
+                    f"id=\"{item['task_id']}\" "
+                    f"remaining_c_executions=\"{item['remaining_c_executions']}\">"
+                )
+                for worker in item["contexts"]:
+                    context_parts.append(
+                        "<worker_context "
+                        f"assignment_id=\"{worker['assignment_id']}\" "
+                        f"agent=\"{worker['agent_key']}\" />"
+                    )
+                context_parts.append("</settled_task>")
+            context_parts.append("</worker_context_grace>")
+            context_parts.append(
+                "These are explicit grace-eligible worker contexts from settled ancestor Tasks. "
+                "Use context_from_assignment_id only when continuing that same objective-local "
+                "worker context is materially useful. To close a completed objective early, Agent C "
+                "may list its settled Task ID in retire_context_task_ids; otherwise CORE retires "
+                "remaining eligible contexts after two subsequent C executions."
+            )
         if siblings:
             context_parts.append("<declared_sibling_assignments>")
             for item in siblings:
@@ -1989,8 +2041,9 @@ class RoomRuntime:
         context_boundary = (
             "This provider context is bounded to the current declared Assignment context lineage. "
             "A context_parent_assignment_id above means CORE explicitly continued a terminal "
-            "same-Task worker context; otherwise do not assume unsupplied history from another "
-            "Assignment or earlier Round. Durable Room, Task, dependency, and evidence state "
+            "worker context from this Task or from a still-grace-eligible settled ancestor Task; "
+            "otherwise do not assume unsupplied history from another Assignment or earlier Round. "
+            "Durable Room, Task, dependency, and evidence state "
             "supplied above remains authoritative."
             if provider_context_mode == "assignment_thread"
             else
@@ -2014,20 +2067,24 @@ class RoomRuntime:
                     "more distinct peer delegations, each with target, bounded instruction, optional "
                     "config, and optional context_from_assignment_id. Use context_from_assignment_id "
                     "only to deliberately continue the target worker's latest terminal provider context "
-                    "inside this same Task; otherwise leave it null. delegation_return_mode is null or "
+                    "inside this Task or from a grace-eligible settled ancestor Task shown above; "
+                    "otherwise leave it null. delegation_return_mode is null or "
                     "'parent' for normal parent resumption. Set it to 'coordinator' only with exactly "
                     "one child when that child will hold the finished result and this Assignment has no "
                     "material integration work left; CORE will mechanically bypass the relay turn and "
                     "return the exact child result toward the Task coordinator. EVIDENCE pauses this "
                     "same assignment and must include 1-16 "
                     "bounded READ, SEARCH, or FIND source-evidence requests. HISTORY immediately "
-                    "selects bounded completed results from earlier Rounds in this Room and resumes "
-                    "this same assignment with those exact events supplied as historical context. "
+                    "selects bounded completed results from earlier settled Tasks in this Round or "
+                    "earlier Rounds in this Room and resumes this same assignment with those exact "
+                    "events supplied as historical context. "
                     "PASS ends this assignment without substantive output. Do not announce that you "
                     "are waiting for a peer unless you actually use DELEGATE to create that work. "
                     "delegations and delegation_return_mode must be null outside DELEGATE, "
                     "evidence_requests must be null outside EVIDENCE, and history_requests must be "
-                    "null outside HISTORY."
+                    "null outside HISTORY. retire_context_task_ids is optional for Agent C on any "
+                    "action and must otherwise be null; use it only to explicitly retire grace-eligible "
+                    "settled Task worker contexts that are no longer useful."
                 ),
                 self._transaction_execution_config_prompt(agent["agent_key"]),
             ]
