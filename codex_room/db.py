@@ -3485,13 +3485,25 @@ class Database:
                         if continuous_round and not turn_limit_hit:
                             continuous_successor_task_id = new_id("task")
                             continuous_successor_assignment_id = new_id("assignment")
-                            inherited_context_thread_id = (
-                                assignment["context_thread_id"]
-                                if round_budget
+                            assignment_context_mode = bool(
+                                round_budget
                                 and round_budget["provider_context_mode"]
                                 == "assignment_thread"
+                            )
+                            inherited_context_thread_id = (
+                                assignment["context_thread_id"]
+                                if assignment_context_mode
                                 else None
                             )
+                            if (
+                                assignment_context_mode
+                                and inherited_context_thread_id is None
+                            ):
+                                await db.rollback()
+                                raise RuntimeError(
+                                    "Continuous successor Task cannot preserve a missing "
+                                    "coordinator Assignment context thread"
+                                )
                             await db.execute(
                                 """INSERT INTO tasks
                                    (id, room_id, round_id, parent_task_id, origin_event_id,
