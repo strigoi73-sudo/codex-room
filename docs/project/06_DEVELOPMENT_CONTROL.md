@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, I-015, and the full D-037 bounded-context program are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. **BCTX-1 through BCTX-4 are implemented and exact-head verified**: continuous work is Task-bounded, worker continuity is explicit and objective-local, bounded HISTORY can recover settled same-Round results, worker contexts have bounded grace/retirement, and C can deliberately refresh its long-lived provider context through a fail-closed checkpoint handoff.
-- **What just changed?** PR #124 added C-only `REFRESH`: a bounded checkpoint is carried into a distinct fresh C context for its first turn while current deterministic organizational state is rebuilt separately from SQLite. Old-context archival gates activation; pre-activation failure falls back to the exact old context; archive-pending recovery is restart-safe; no automatic refresh threshold was added.
-- **Verification state:** **BCTX-4 is IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Exact head `fdb21c60dd9f03c82111014a3987f0f783124e7c` passed the complete transaction/context suites (**44 passed**) and `verify-fast.cmd` (**60 Linux focused + 118 Windows focused + 3 browser tests**), with tracked source clean and HEAD unchanged. PR #124 merged those verified implementation bytes as `e9669a05255beb3cce73f80cc491601f99db5219`. No GitHub-hosted workflow run was attached at closeout time; exact-head local verification is the executable evidence. See E-135.
+- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, I-015, and the full D-037 bounded-context program are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. **BCTX-1 through BCTX-4 are implemented and exact-head verified**, and the post-BCTX coordinator-refresh economics refinement is also implemented and exact-head verified. C now receives deterministic exact-thread economics so it can judge when to use the already-existing fail-closed `REFRESH` mechanism.
+- **What just changed?** A post-BCTX naturalistic `Stay busy.` run completed 59 turns without a single C `REFRESH` while C's completed-execution input load climbed into the 100K+ range and C accounted for roughly 74% of raw execution-token deltas. PR #127 addresses that demonstrated adoption/economics problem without adding an automatic refresh trigger: eligible C root turns receive exact-thread usage telemetry plus advisory guidance at roughly 64K/96K last-execution input-token ranges. See E-137 and E-138.
+- **Verification state:** **PR #127 is IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED; LIVE NATURALISTIC EFFECTIVENESS PENDING.** Exact head `03bb1a898e8d2f0e5d69f6cf28cbef0a9ddb828d` passed 4 focused correction/economics tests, the complete transaction/context suites (**47 passed**), and `verify-fast.cmd` (**63 Linux focused + 118 Windows focused + 3 browser tests**) with tracked source clean and HEAD unchanged. PR #127 squash-merged those exact verified bytes as `3db7442ee8181f3aca23626d98d77e996fe2bb9e`; post-merge blob comparison confirmed byte identity for all three changed files. No GitHub-hosted workflow run was attached. See E-138.
 - **What is blocked?** D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** Stop at the completed BCTX boundary. No follow-on CORE implementation slice is automatically authorized. Use ordinary work and bounded naturalistic observation to learn whether the assembled context architecture exposes a demonstrated problem; any new CORE work should follow fresh evidence or explicit principal reprioritization.
-- **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no guessed automatic coordinator-refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
+- **What is next?** Update/restart the local runtime on canonical `main`, then perform one bounded naturalistic revalidation of coordinator refresh adoption. The question is whether C now actually chooses `REFRESH` before its exact-thread execution load again grows into the previously observed 100K+ range. Do not turn this into another open-ended benchmark series.
+- **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
 
@@ -25,7 +25,7 @@
 
 **Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED — BCTX-1 through BCTX-4
 
-**Current production state:** D-037 is implemented through BCTX-4. Continuous mode settles bounded Tasks and preserves deliberate C continuity across successor Tasks. A/B continuity is explicit rather than identity-based: inside a Task it follows causal Assignment lineage, and across a bounded Task boundary it requires an eligible predecessor grace source. Grace lasts through the next two successful C executions unless C closes it earlier, expires into durable provider-thread retirement, survives restart, and is retired at terminal Round boundaries while Pause preserves it. Bounded HISTORY can recover earlier settled same-Round results without replacing current transaction authority. C receives compact authoritative Task/Assignment/Join/grace state without automatic worker transcript replay and may deliberately issue `REFRESH` with a bounded checkpoint to move to a distinct fresh provider context through a fail-closed, restart-safe handoff. No automatic refresh threshold is implemented.
+**Current production state:** D-037 is implemented through BCTX-4 plus the evidence-driven refresh-economics refinement. Continuous mode settles bounded Tasks and preserves deliberate C continuity across successor Tasks. A/B continuity is explicit rather than identity-based: inside a Task it follows causal Assignment lineage, and across a bounded Task boundary it requires an eligible predecessor grace source. Grace lasts through the next two successful C executions unless C closes it earlier, expires into durable provider-thread retirement, survives restart, and is retired at terminal Round boundaries while Pause preserves it. Bounded HISTORY can recover earlier settled same-Round results without replacing current transaction authority. C receives compact authoritative Task/Assignment/Join/grace state without automatic worker transcript replay and may deliberately issue `REFRESH` with a bounded checkpoint to move to a distinct fresh provider context through a fail-closed, restart-safe handoff. Eligible root-coordinator turns also receive exact-thread economics. Approximately 64K/96K last-completed-execution input-token ranges are advisory judgment guides; CORE does not auto-refresh when either range is crossed.
 
 The program reuses the existing work-model-v2 transaction substrate. **Task is the bounded objective/activity. Assignment remains declared agent work. Join remains dependency/return state. Round remains the human-facing lifecycle/standing objective.** No new maintained Objective entity or broad v2 redesign is authorized.
 
@@ -136,9 +136,9 @@ Verification on the exact implementation head: complete transaction/context suit
 
 **Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED
 
-**Evidence:** E-135
+**Evidence:** E-135 through E-138
 
-**Implementation:** PR #124; exact locally verified head `fdb21c60dd9f03c82111014a3987f0f783124e7c`; canonical merge `e9669a05255beb3cce73f80cc491601f99db5219`.
+**Implementation:** PR #124 established the fail-closed refresh mechanism; exact locally verified head `fdb21c60dd9f03c82111014a3987f0f783124e7c`; canonical merge `e9669a05255beb3cce73f80cc491601f99db5219`. PR #127 adds exact-thread coordinator economics and advisory refresh guidance; exact locally verified head `03bb1a898e8d2f0e5d69f6cf28cbef0a9ddb828d`; canonical squash merge `3db7442ee8181f3aca23626d98d77e996fe2bb9e`.
 
 **Goal:** give long-lived C coordination a deliberate context-reset mechanism without losing organizational continuity or replaying the full old transcript.
 
@@ -157,7 +157,9 @@ Implemented behavior:
 
 Verification on the exact implementation head: complete transaction/context suites **44/44 passed**; repository-standard fast verifier passed **60 Linux focused + 118 Windows focused + 3 browser tests** with tracked source clean and HEAD unchanged. One untracked local `data/` path remained outside tracked-source verification. No GitHub-hosted workflow run was attached at closeout time.
 
-**Stop condition:** satisfied. The four-slice BCTX program is complete. Further memory/index work, automatic refresh heuristics, or adjacent transaction redesign remain deferred until ordinary use demonstrates a concrete need.
+**Post-completion refinement:** E-137 demonstrated a concrete adoption/economics issue rather than a broken refresh handoff: C never invoked `REFRESH` during a 59-turn continuous run while its exact-thread execution load grew sharply. PR #127 adds deterministic self-telemetry and advisory guidance while preserving C's judgment. The initial ranges are approximately 64K to actively consider refresh and 96K to strongly prefer it at the next clean Task boundary unless continuity/integration warrants deferral. They are not context-window occupancy claims and are not automatic triggers. Exact-head verification is complete; one bounded live naturalistic revalidation remains **PLANNED** to establish whether the guidance changes C's behavior in ordinary execution.
+
+**Stop condition:** the four-slice BCTX program remains complete. The PR #127 refinement fixes the demonstrated information/adoption gap without reopening BCTX or authorizing broader memory/index work, automatic refresh control, or adjacent transaction redesign.
 
 #### Program-wide constraints and verification policy
 
@@ -184,9 +186,9 @@ The dedicated acceptance is complete. In Room `room_579eb5236cd246d6a1000ea3fea7
 
 The human paused the Room at 42 turns. The Round and root Task remained active, with six child Assignments completed, one child still running, six released Joins, and one pending Join. This is the intended behavior: the standing objective remained active, bounded child work retained ordinary lifecycle semantics, and human pause suspended further queued work without falsely settling the transaction.
 
-The run consumed 1,882,148 raw execution-token deltas in approximately 506 seconds. That is useful stress-test economics evidence, but the prompt was deliberately literal and open-ended with a high turn ceiling. Do not infer a new CORE defect or launch an optimization phase from this cost alone.
+The run consumed 1,882,148 raw execution-token deltas in approximately 506 seconds. That is useful stress-test economics evidence, but the prompt was deliberately literal and open-ended with a high turn ceiling. The later E-137 run is a separate post-BCTX observation: it exposed a coordinator-refresh adoption/economics issue because C had the refresh mechanism available but lacked actionable exact-thread self-telemetry.
 
-No further dedicated continuous-Round acceptance run is required unless ordinary use exposes a concrete recurrence or new failure mode.
+No further dedicated **lifecycle** acceptance run is required. The one planned post-PR-#127 naturalistic revalidation is specifically about refresh adoption/economics, not whether continuous Round lifecycle works.
 
 ### Common Cause competitive-play authorization and ordinary-use monitoring
 

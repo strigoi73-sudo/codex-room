@@ -588,6 +588,7 @@ This decision changes Round lifecycle semantics only. It does not change A/B/C e
 
 ### D-037 — Task is the bounded objective; provider context follows deliberate objective continuity
 **Date:** 2026-09-18  
+**Amended:** 2026-09-18 — coordinator refresh economics guidance after naturalistic adoption evidence  
 **Status:** ACTIVE
 
 The principal approves the bounded-context architecture synthesized after the naturalistic continuous-Round acceptance and subsequent CORE mapping.
@@ -604,7 +605,7 @@ Settled architecture:
 - **Coordinator awareness:** C should receive compact authoritative Task/Assignment/Join status sufficient for coordination without automatic replay of worker transcripts or intermediate tool chatter.
 - **Worker-context grace:** after a Task completes, its worker contexts remain eligible for deliberate continuation for **two subsequent C turns**, ending sooner if C explicitly moves past that objective. After the grace expires, those worker contexts should be retired so unrelated later work starts clean.
 - **Historical continuity:** bounded `HISTORY` retrieval should be able to recover relevant completed Task results from earlier Tasks in the same Round as well as prior Rounds, while retaining explicit bounds, same-Room authority, and exact event provenance. Current Task/Assignment/Join/Evidence state remains authoritative.
-- **C checkpoint/refresh:** coordinator refresh is a separate lifecycle mechanism. A refresh should preserve a free-form C continuity checkpoint plus deterministic current organizational state, start a fresh C provider context, and avoid wholesale transcript replay. Exact triggers/thresholds remain implementation design until that slice is reached.
+- **C checkpoint/refresh:** coordinator refresh is a separate lifecycle mechanism. A refresh preserves a free-form C continuity checkpoint plus deterministic current organizational state, starts a fresh C provider context, and avoids wholesale transcript replay. After ordinary naturalistic use showed that C did not refresh even as its coordinator execution input load rose above 100K tokens, the principal approved deterministic self-telemetry plus advisory refresh guidance. Eligible root-coordinator turns receive exact-thread completed-execution economics. A last completed coordinator execution at roughly **64K input tokens** is an advisory point to actively consider `REFRESH` at the next clean bounded Task boundary; roughly **96K input tokens** is an advisory point to strongly prefer `REFRESH` unless a concrete continuity/integration reason justifies deferral. These ranges guide C's judgment only: they are not context-window occupancy claims and CORE must not auto-refresh solely because a numeric range is crossed. A successful refresh establishes a new provider-thread baseline.
 - **Memory horizons:** worker active context, coordinator continuity context, and durable deterministic transaction/evidence state are distinct horizons. Persistent A/B/C identity remains application-level organizational state.
 
 This decision **amends D-032**: Assignment remains the default first bounded provider-context unit, while explicit same-objective/coordinator continuity may carry one provider context across multiple Assignments or successor Tasks when that continuity is deliberate and bounded.
