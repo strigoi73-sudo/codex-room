@@ -3140,6 +3140,7 @@ class Database:
         action: str,
         result_event_id: str,
         delegations: list[dict[str, Any]],
+        delegation_return_mode: str | None = None,
         evidence_requests: list[dict[str, Any]] | None = None,
         history_requests: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
@@ -3148,6 +3149,8 @@ class Database:
         terminal_states = ("completed", "passed", "failed", "cancelled", "waived")
         wake_agent_keys: list[str] = []
         released_join_id: str | None = None
+        released_join_ids: list[str] = []
+        direct_returned_assignment_ids: list[str] = []
         task_settled = False
         continuous_resumed = False
         missing_required_contributors: list[str] = []
@@ -3190,6 +3193,8 @@ class Database:
                     "history_event_ids": [],
                     "continuous_successor_task_id": None,
                     "continuous_successor_assignment_id": None,
+                    "released_join_ids": [],
+                    "direct_returned_assignment_ids": [],
                 }
             if assignment["state"] != "running":
                 await db.rollback()
@@ -3229,12 +3234,35 @@ class Database:
                 if not delegations:
                     await db.rollback()
                     raise ValueError("DELEGATE requires child assignments")
+                return_mode = delegation_return_mode or "parent"
+                if return_mode not in {"parent", "coordinator"}:
+                    await db.rollback()
+                    raise ValueError("Delegation return mode is unsupported")
+                if return_mode == "coordinator" and len(delegations) != 1:
+                    await db.rollback()
+                    raise ValueError(
+                        "Coordinator direct return requires exactly one child assignment"
+                    )
+                task_for_delegation = await self._fetchone(
+                    db,
+                    "SELECT * FROM tasks WHERE id=? AND state='active'",
+                    (assignment["task_id"],),
+                )
+                if task_for_delegation is None:
+                    await db.rollback()
+                    raise RuntimeError("Delegation task is missing or no longer active")
                 join_id = new_id("join")
                 await db.execute(
                     """INSERT INTO assignment_joins
-                       (id, task_id, parent_assignment_id, state, created_at)
-                       VALUES (?, ?, ?, 'pending', ?)""",
-                    (join_id, assignment["task_id"], assignment_id, now),
+                       (id, task_id, parent_assignment_id, return_mode, state, created_at)
+                       VALUES (?, ?, ?, ?, 'pending', ?)""",
+                    (
+                        join_id,
+                        assignment["task_id"],
+                        assignment_id,
+                        return_mode,
+                        now,
+                    ),
                 )
                 await db.execute(
                     """UPDATE assignments
@@ -3261,13 +3289,70 @@ class Database:
                     if config_id is not None and config_id not in EXECUTION_CONFIGS:
                         await db.rollback()
                         raise ValueError("Delegation execution config is unsupported")
+
+                    context_parent_assignment_id: str | None = None
+                    context_thread_id: str | None = None
+                    context_source_id = item.get("context_from_assignment_id")
+                    if context_source_id is not None:
+                        if (
+                            round_budget is None
+                            or round_budget["provider_context_mode"]
+                            != "assignment_thread"
+                        ):
+                            await db.rollback()
+                            raise ValueError(
+                                "Explicit Assignment context lineage requires assignment_thread mode"
+                            )
+                        if target["id"] == task_for_delegation["coordinator_agent_id"]:
+                            await db.rollback()
+                            raise ValueError(
+                                "Worker context lineage cannot target the Task coordinator"
+                            )
+                        source = await self._fetchone(
+                            db,
+                            """SELECT x.*, a.agent_key
+                               FROM assignments x
+                               JOIN agents a ON a.id=x.agent_id
+                               WHERE x.id=?""",
+                            (context_source_id,),
+                        )
+                        if (
+                            source is None
+                            or source["task_id"] != assignment["task_id"]
+                            or source["agent_id"] != target["id"]
+                            or source["state"] not in
+                                ("completed", "passed", "failed", "waived")
+                            or source["context_thread_id"] is None
+                        ):
+                            await db.rollback()
+                            raise ValueError(
+                                "Context source must be a terminal Assignment for the same "
+                                "worker in the same Task with a bound provider context"
+                            )
+                        latest_owner = await self._fetchone(
+                            db,
+                            """SELECT id, state FROM assignments
+                               WHERE agent_id=? AND context_thread_id=?
+                               ORDER BY created_at DESC, id DESC LIMIT 1""",
+                            (target["id"], source["context_thread_id"]),
+                        )
+                        if latest_owner is None or latest_owner["id"] != source["id"]:
+                            await db.rollback()
+                            raise ValueError(
+                                "Context source is stale; reuse must continue from the latest "
+                                "Assignment owning that provider context"
+                            )
+                        context_parent_assignment_id = source["id"]
+                        context_thread_id = source["context_thread_id"]
+
                     child_id = new_id("assignment")
                     await db.execute(
                         """INSERT INTO assignments
                            (id, task_id, agent_id, parent_assignment_id,
                             contribution_join_id, origin_event_id, instruction,
-                            execution_config_id, state, created_at, updated_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?)""",
+                            execution_config_id, context_thread_id,
+                            context_parent_assignment_id, state, created_at, updated_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?)""",
                         (
                             child_id,
                             assignment["task_id"],
@@ -3277,6 +3362,8 @@ class Database:
                             result_event_id,
                             item["instruction"],
                             config_id,
+                            context_thread_id,
+                            context_parent_assignment_id,
                             now,
                             now,
                         ),
