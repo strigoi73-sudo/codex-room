@@ -3795,6 +3795,7 @@ class Database:
         delegations: list[dict[str, Any]],
         delegation_return_mode: str | None = None,
         retire_worker_context_task_ids: list[str] | None = None,
+        coordinator_checkpoint: str | None = None,
         evidence_requests: list[dict[str, Any]] | None = None,
         history_requests: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
@@ -3812,6 +3813,7 @@ class Database:
         history_event_ids: list[str] = []
         continuous_successor_task_id: str | None = None
         continuous_successor_assignment_id: str | None = None
+        coordinator_refresh_id: str | None = None
         worker_context_grace_staged_assignment_ids: list[str] = []
         worker_context_retirement_assignment_ids: list[str] = []
         async with self.connect() as db:
@@ -3851,6 +3853,7 @@ class Database:
                     "continuous_successor_assignment_id": None,
                     "released_join_ids": [],
                     "direct_returned_assignment_ids": [],
+                    "coordinator_refresh_id": None,
                     "worker_context_grace_staged_assignment_ids": [],
                     "worker_context_retirement_assignment_ids": [],
                 }
@@ -4073,6 +4076,86 @@ class Database:
                     await db.rollback()
                     raise RuntimeError("Room-history retrieval lost its running assignment")
                 wake_agent_keys.append(assignment["agent_key"])
+            elif action == "REFRESH":
+                checkpoint = (coordinator_checkpoint or "").strip()
+                if not checkpoint:
+                    await db.rollback()
+                    raise ValueError("REFRESH requires a non-empty coordinator checkpoint")
+                task_for_refresh = await self._fetchone(
+                    db,
+                    "SELECT * FROM tasks WHERE id=? AND state='active'",
+                    (assignment["task_id"],),
+                )
+                if (
+                    assignment["agent_key"] != "agent_c"
+                    or task_for_refresh is None
+                    or task_for_refresh["coordinator_agent_id"] != assignment["agent_id"]
+                    or assignment["parent_assignment_id"] is not None
+                    or assignment["contribution_join_id"] is not None
+                ):
+                    await db.rollback()
+                    raise ValueError(
+                        "REFRESH is valid only for Agent C's root coordinator Assignment"
+                    )
+                if (
+                    round_budget is None
+                    or round_budget["provider_context_mode"] != "assignment_thread"
+                    or assignment["context_thread_id"] is None
+                ):
+                    await db.rollback()
+                    raise ValueError(
+                        "REFRESH requires an assignment-thread coordinator context"
+                    )
+                if turn_limit_hit:
+                    cursor = await db.execute(
+                        """UPDATE assignments
+                           SET state='queued', result_event_id=?, updated_at=?
+                           WHERE id=? AND state='running'""",
+                        (result_event_id, now, assignment_id),
+                    )
+                    if cursor.rowcount != 1:
+                        await db.rollback()
+                        raise RuntimeError(
+                            "Coordinator refresh at turn limit lost its running Assignment"
+                        )
+                else:
+                    coordinator_refresh_id = new_id("refresh")
+                    await db.execute(
+                        """INSERT INTO coordinator_context_refreshes
+                           (id, room_id, round_id, task_id, assignment_id,
+                            source_batch_id, request_event_id, checkpoint_text,
+                            old_context_thread_id, state, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'preparing', ?)""",
+                        (
+                            coordinator_refresh_id,
+                            room_id,
+                            round_id,
+                            assignment["task_id"],
+                            assignment_id,
+                            batch_id,
+                            result_event_id,
+                            checkpoint,
+                            assignment["context_thread_id"],
+                            now,
+                        ),
+                    )
+                    cursor = await db.execute(
+                        """UPDATE assignments
+                           SET state='refreshing', result_event_id=?, updated_at=?
+                           WHERE id=? AND state='running'
+                             AND context_thread_id=?""",
+                        (
+                            result_event_id,
+                            now,
+                            assignment_id,
+                            assignment["context_thread_id"],
+                        ),
+                    )
+                    if cursor.rowcount != 1:
+                        await db.rollback()
+                        raise RuntimeError(
+                            "Coordinator refresh lost its running Assignment"
+                        )
             else:
                 state = "completed" if action == "COMPLETE" else "passed"
                 await db.execute(
@@ -4092,7 +4175,7 @@ class Database:
                 raise RuntimeError("Transaction decision settlement lost its compare-and-set")
 
             contribution_join_id = assignment["contribution_join_id"]
-            if action not in {"DELEGATE", "EVIDENCE", "HISTORY"} and contribution_join_id:
+            if action not in {"DELEGATE", "EVIDENCE", "HISTORY", "REFRESH"} and contribution_join_id:
                 pending_join_ids = [contribution_join_id]
                 propagated_result_event_id = result_event_id
                 while pending_join_ids:
@@ -4269,11 +4352,12 @@ class Database:
                     )
                 )
 
-            if action not in {"DELEGATE", "EVIDENCE", "HISTORY"}:
+            if action not in {"DELEGATE", "EVIDENCE", "HISTORY", "REFRESH"}:
                 open_assignment = await self._fetchone(
                     db,
                     """SELECT 1 FROM assignments
-                       WHERE task_id=? AND state IN ('queued','running','waiting_join','waiting_evidence')
+                       WHERE task_id=? AND state IN
+                         ('queued','running','waiting_join','waiting_evidence','refreshing')
                        LIMIT 1""",
                     (assignment["task_id"],),
                 )
@@ -4445,6 +4529,7 @@ class Database:
             "history_event_ids": history_event_ids,
             "continuous_successor_task_id": continuous_successor_task_id,
             "continuous_successor_assignment_id": continuous_successor_assignment_id,
+            "coordinator_refresh_id": coordinator_refresh_id,
             "worker_context_grace_staged_assignment_ids": (
                 worker_context_grace_staged_assignment_ids
             ),
@@ -4642,7 +4727,7 @@ class Database:
                     JOIN agents a ON a.id=x.agent_id
                     WHERE t.room_id=? AND a.agent_key=?
                       AND t.state='active'
-                      AND x.state IN ('queued','running','waiting_join','waiting_evidence')
+                      AND x.state IN ('queued','running','waiting_join','waiting_evidence','refreshing')
                       {round_clause}
                     LIMIT 1""",
                 tuple(params),
@@ -4690,7 +4775,9 @@ class Database:
                 f"""UPDATE assignments
                     SET state='cancelled', updated_at=?, completed_at=?,
                         resolution_reason='room_lifecycle_change'
-                    WHERE state IN ('queued','running','waiting_join','waiting_evidence'){assignment_clause}""",
+                    WHERE state IN
+                      ('queued','running','waiting_join','waiting_evidence','refreshing')
+                      {assignment_clause}""",
                 assignment_params,
             )
             join_clause = (
