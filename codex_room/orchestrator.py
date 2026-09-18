@@ -178,13 +178,14 @@ class RoomRuntime:
     )
     TRANSACTION_HISTORY_INSTRUCTION = (
         "<room_history>\n"
-        "When this assignment needs a specific fact or result from an earlier Round in this "
-        "same Room and that history is not already supplied, declare the bounded need with "
+        "When this assignment needs a specific fact or result from an earlier completed Task "
+        "in this Round or from an earlier Round in this same Room, and that history is not already "
+        "supplied, declare the bounded need with "
         "transaction action HISTORY. Use RECENT for a temporal dependency or SEARCH with one "
         "specific lexical query when you know the relevant concept; optionally restrict the "
         "request to one agent and request only as many results as are likely necessary. Each "
         "HISTORY request may ask for 1-10 results, with at most 4 requests in one action. CORE "
-        "selects only durable completed Assignment results from earlier Rounds and returns the "
+        "selects only durable completed Assignment results from eligible earlier Tasks/Rounds and returns the "
         "exact bounded result events to this same assignment. Do not use HISTORY to recover "
         "current Task/Join/Evidence state already supplied in the assignment envelope, to read "
         "source files, or for broad catch-up. Ask again only when the returned history leaves a "
@@ -2612,10 +2613,6 @@ class RoomRuntime:
                     raise ValueError(
                         "Only Agent C may select a peer execution configuration"
                     )
-            if retire_worker_context_task_ids and agent_key != "agent_c":
-                raise ValueError(
-                    "Only Agent C may explicitly retire prior Task worker contexts"
-                )
             runnable_targets = [item["target"] for item in delegations]
         except ValueError as exc:
             await self._handle_assignment_failure(
