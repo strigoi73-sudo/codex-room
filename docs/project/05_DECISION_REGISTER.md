@@ -557,3 +557,27 @@ Adoption boundary: the refined protected C structural instructions apply to **fr
 Behavioral compliance remains an evidence question. Exact instruction regression/PR verification proves composition, not that a fresh C will obey the policy in every task. The next naturalistic evidence step is the controlled fresh-Room Common Cause rerun described in Development Control.
 
 **Principle:** **Parallelize independence; sequence dependencies; put substantial fallback where capable cognition has the least unnecessary accumulated context.**
+
+### D-036 — Round completion policy separates bounded activity settlement from standing objectives
+**Date:** 2026-09-18  
+**Status:** ACTIVE
+
+Codex Room needs an explicit lifecycle distinction between an ordinary Round that should finish when its work settles and a standing Round objective that should remain active until the human or a hard runtime boundary stops it.
+
+Settled boundary:
+
+- every Round has an explicit `completion_policy`;
+- `auto_settle` is the default and preserves ordinary transaction behavior: when the coordinator completes/passes, no transaction work remains, required contributors are satisfied, and no other settlement blocker applies, the Task may settle and the Round may close normally;
+- `continuous` is an explicit per-Round policy for standing objectives such as `Stay busy.`;
+- in `continuous` mode, child Assignments still complete normally and remain bounded by their own instructions;
+- when the task coordinator reaches the ordinary settlement boundary with no open Assignments/Joins and no missing required contributor, CORE requeues that same coordinator Assignment instead of settling the Task, provided the hard turn limit has not fired;
+- reusing the same coordinator Assignment preserves its assignment-scoped provider `context_thread_id`; CORE does not create a fresh coordinator Assignment for every bounded activity;
+- `COMPLETE` or `PASS` therefore ends the coordinator's current bounded activity but does not by itself terminate a continuous Round;
+- the Round objective remains authoritative on each resumed coordinator execution; CORE should not reinterpret a standing objective as “enough has been done” merely because one bounded activity finished;
+- manual human stop, the hard Round turn limit, and genuine runtime boundaries remain valid termination mechanisms;
+- continuous behavior is not a global default and does not change ordinary `auto_settle` Rounds.
+
+This decision changes Round lifecycle semantics only. It does not change A/B/C epistemic status, delegation authority, child-assignment scope, or the public work-model-v2 transaction structure.
+
+**Principle:** **Bounded activity can finish without finishing a standing objective; continuity must be explicit, mechanical, and still bounded by human/runtime stop conditions.**
+
