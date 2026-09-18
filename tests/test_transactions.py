@@ -410,7 +410,7 @@ async def test_transaction_stop_cancels_open_task_assignments_and_join(
 
 
 @pytest.mark.asyncio
-async def test_continuous_round_requeues_same_coordinator_assignment_until_turn_limit(
+async def test_continuous_round_settles_bounded_tasks_and_reuses_coordinator_context_until_turn_limit(
     transaction_runtime_factory,
 ):
     adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
@@ -468,24 +468,44 @@ async def test_continuous_round_requeues_same_coordinator_assignment_until_turn_
 
     async with runtime.db.connect() as db:
         tasks = await db.execute_fetchall(
-            "SELECT * FROM tasks WHERE room_id=?", (room_id,)
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id", (room_id,)
         )
         assignments = await db.execute_fetchall(
             """SELECT x.*, a.agent_key FROM assignments x
                JOIN tasks t ON t.id=x.task_id
                JOIN agents a ON a.id=x.agent_id
-               WHERE t.room_id=?""",
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
             (room_id,),
         )
-    assert len(tasks) == 1
-    assert tasks[0]["state"] == "cancelled"
+
+    assert len(tasks) == 3
+    assert all(row["state"] == "settled" for row in tasks)
+    assert tasks[0]["parent_task_id"] is None
+    assert tasks[1]["parent_task_id"] == tasks[0]["id"]
+    assert tasks[2]["parent_task_id"] == tasks[1]["id"]
+
     c_assignments = [row for row in assignments if row["agent_key"] == "agent_c"]
-    assert len(c_assignments) == 1
-    assert c_assignments[0]["context_thread_id"] == next(iter(context_threads))
+    assert len(c_assignments) == 3
+    assert all(row["state"] == "completed" for row in c_assignments)
+    assert {row["context_thread_id"] for row in c_assignments} == context_threads
+    assert [row["task_id"] for row in c_assignments] == [row["id"] for row in tasks]
+
+    assert [event["metadata"]["task_id"] for event in resumed] == [
+        tasks[0]["id"],
+        tasks[1]["id"],
+    ]
+    assert [event["metadata"]["successor_task_id"] for event in resumed] == [
+        tasks[1]["id"],
+        tasks[2]["id"],
+    ]
+    assert [event["metadata"]["successor_assignment_id"] for event in resumed] == [
+        c_assignments[1]["id"],
+        c_assignments[2]["id"],
+    ]
 
 
 @pytest.mark.asyncio
-async def test_continuous_round_pass_does_not_settle_task(
+async def test_continuous_round_pass_settles_task_and_creates_successor_without_closing_round(
     transaction_runtime_factory,
 ):
     adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
@@ -511,12 +531,37 @@ async def test_continuous_round_pass_does_not_settle_task(
     assert adapter.calls["agent_c"][0]["thread_id"] == adapter.calls["agent_c"][1]["thread_id"]
     events = await runtime.db.get_events(room_id)
     assert sum(event["event_type"] == "agent_pass" for event in events) == 2
-    assert sum(event["event_type"] == "continuous_round_resumed" for event in events) == 1
+    resumed = [
+        event for event in events if event["event_type"] == "continuous_round_resumed"
+    ]
+    assert len(resumed) == 1
     assert not any(
         event["event_type"] == "discussion_closed"
         and event.get("metadata", {}).get("reason") == "transaction_settled"
         for event in events
     )
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id", (room_id,)
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(tasks) == 2
+    assert all(row["state"] == "settled" for row in tasks)
+    assert tasks[1]["parent_task_id"] == tasks[0]["id"]
+    c_assignments = [row for row in assignments if row["agent_key"] == "agent_c"]
+    assert len(c_assignments) == 2
+    assert all(row["state"] == "passed" for row in c_assignments)
+    assert len({row["context_thread_id"] for row in c_assignments}) == 1
+    assert resumed[0]["metadata"]["successor_task_id"] == tasks[1]["id"]
+    assert resumed[0]["metadata"]["successor_assignment_id"] == c_assignments[1]["id"]
 
 
 @pytest.mark.asyncio
@@ -576,10 +621,13 @@ async def test_continuous_round_child_assignment_completes_normally_and_preserve
     child_prompt = adapter.calls["agent_a"][0]["prompt"]
     assert "<continuous_round>" in child_prompt
     assert "Child Assignments still complete normally." in child_prompt
-    assert "Stay within your current Assignment and its scope." in child_prompt
-    assert "this same coordinator Assignment" not in child_prompt
+    assert "Stay within your current Assignment" in child_prompt
+    assert "requeues that coordinator Assignment" not in child_prompt
 
     async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id", (room_id,)
+        )
         assignments = await db.execute_fetchall(
             """SELECT x.*, a.agent_key FROM assignments x
                JOIN tasks t ON t.id=x.task_id
@@ -587,9 +635,116 @@ async def test_continuous_round_child_assignment_completes_normally_and_preserve
                WHERE t.room_id=? ORDER BY x.created_at, x.id""",
             (room_id,),
         )
+
+    assert len(tasks) == 2
+    assert all(row["state"] == "settled" for row in tasks)
+    assert tasks[1]["parent_task_id"] == tasks[0]["id"]
     a_assignments = [row for row in assignments if row["agent_key"] == "agent_a"]
     assert len(a_assignments) == 1
     assert a_assignments[0]["state"] == "completed"
+    c_assignments = [row for row in assignments if row["agent_key"] == "agent_c"]
+    assert len(c_assignments) == 2
+    assert c_assignments[0]["task_id"] == tasks[0]["id"]
+    assert c_assignments[1]["task_id"] == tasks[1]["id"]
+    assert c_assignments[0]["context_thread_id"] == c_assignments[1]["context_thread_id"]
+
+
+@pytest.mark.asyncio
+async def test_continuous_successor_task_preserves_required_contributors_and_keeps_workers_task_local(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Contribute to bounded task one.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated bounded task one.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Contribute to bounded task two.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated bounded task two at the hard limit.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A contribution for task one.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A contribution for task two.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "continuous-required.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Stay busy.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            required_contributors=["agent_a"],
+            max_turns=6,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id", (room_id,)
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(tasks) == 2
+    assert all(row["state"] == "settled" for row in tasks)
+    assert tasks[1]["parent_task_id"] == tasks[0]["id"]
+    assert all(row["required_contributors_json"] == '["agent_a"]' for row in tasks)
+
+    c_assignments = [row for row in assignments if row["agent_key"] == "agent_c"]
+    a_assignments = [row for row in assignments if row["agent_key"] == "agent_a"]
+    assert len(c_assignments) == 2
+    assert len(a_assignments) == 2
+    assert [row["task_id"] for row in c_assignments] == [row["id"] for row in tasks]
+    assert [row["task_id"] for row in a_assignments] == [row["id"] for row in tasks]
+    assert c_assignments[0]["context_thread_id"] == c_assignments[1]["context_thread_id"]
+    assert a_assignments[0]["context_thread_id"] != a_assignments[1]["context_thread_id"]
+    assert len([item for item in adapter.context_starts if item[0] == "agent_c"]) == 1
+    assert len([item for item in adapter.context_starts if item[0] == "agent_a"]) == 2
 
 
 @pytest.mark.asyncio
