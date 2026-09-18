@@ -5401,6 +5401,14 @@ class Database:
             if cursor.rowcount != 1:
                 await db.rollback()
                 return False
+            if row["assignment_id"] is not None:
+                await db.execute(
+                    """UPDATE coordinator_context_refreshes
+                       SET checkpoint_consumed_at=?
+                       WHERE assignment_id=? AND new_context_thread_id=?
+                         AND state='completed' AND checkpoint_consumed_at IS NULL""",
+                    (now, row["assignment_id"], thread_id),
+                )
             await db.commit()
         return True
 
