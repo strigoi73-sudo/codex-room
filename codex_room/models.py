@@ -46,6 +46,7 @@ class TransactionAction(StrEnum):
     DELEGATE = "DELEGATE"
     EVIDENCE = "EVIDENCE"
     HISTORY = "HISTORY"
+    REFRESH = "REFRESH"
     PASS = "PASS"
 
 
@@ -136,6 +137,7 @@ class HistoryRequest(BaseModel):
 class TransactionDecision(BaseModel):
     action: TransactionAction
     message: str = ""
+    checkpoint: str | None = Field(default=None, max_length=12_000)
     delegations: list[DelegationRequest] | None = None
     delegation_return_mode: Literal["parent", "coordinator"] | None = None
     retire_worker_context_task_ids: list[str] | None = None
@@ -147,6 +149,12 @@ class TransactionDecision(BaseModel):
         self.message = self.message.strip()
         if self.action == TransactionAction.COMPLETE and not self.message:
             raise ValueError("COMPLETE requires non-empty message text")
+        if self.action == TransactionAction.REFRESH:
+            if self.checkpoint is None or not self.checkpoint.strip():
+                raise ValueError("REFRESH requires a non-empty coordinator checkpoint")
+            self.checkpoint = self.checkpoint.strip()
+        elif self.checkpoint is not None:
+            raise ValueError("checkpoint is valid only for REFRESH")
         if self.action == TransactionAction.DELEGATE:
             if not self.delegations:
                 raise ValueError("DELEGATE requires at least one delegation")
@@ -284,9 +292,15 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
     "properties": {
         "action": {
             "type": "string",
-            "enum": ["COMPLETE", "DELEGATE", "EVIDENCE", "HISTORY", "PASS"],
+            "enum": ["COMPLETE", "DELEGATE", "EVIDENCE", "HISTORY", "REFRESH", "PASS"],
         },
         "message": {"type": "string"},
+        "checkpoint": {
+            "anyOf": [
+                {"type": "string", "minLength": 1, "maxLength": 12000},
+                {"type": "null"},
+            ]
+        },
         "delegations": {
             "anyOf": [
                 {
@@ -592,6 +606,7 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
     "required": [
         "action",
         "message",
+        "checkpoint",
         "delegations",
         "delegation_return_mode",
         "retire_worker_context_task_ids",
