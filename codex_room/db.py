@@ -253,7 +253,10 @@ class Database:
                     updated_at TEXT NOT NULL,
                     settled_at TEXT,
                     settlement_event_id TEXT REFERENCES events(id),
-                    settlement_reason TEXT
+                    settlement_reason TEXT,
+                    worker_context_grace_remaining INTEGER NOT NULL DEFAULT 0,
+                    worker_context_grace_retired_at TEXT,
+                    worker_context_grace_retirement_reason TEXT
                 );
 
                 CREATE TABLE IF NOT EXISTS assignment_joins (
@@ -281,6 +284,8 @@ class Database:
                     execution_config_id TEXT,
                     context_thread_id TEXT,
                     context_parent_assignment_id TEXT REFERENCES assignments(id),
+                    context_retired_at TEXT,
+                    context_archive_confirmed_at TEXT,
                     state TEXT NOT NULL,
                     result_event_id TEXT REFERENCES events(id),
                     resolution_reason TEXT,
@@ -439,6 +444,36 @@ class Database:
                 "assignment_joins",
                 "return_mode",
                 "TEXT NOT NULL DEFAULT 'parent'",
+            )
+            await self._ensure_column(
+                db,
+                "tasks",
+                "worker_context_grace_remaining",
+                "INTEGER NOT NULL DEFAULT 0",
+            )
+            await self._ensure_column(
+                db,
+                "tasks",
+                "worker_context_grace_retired_at",
+                "TEXT",
+            )
+            await self._ensure_column(
+                db,
+                "tasks",
+                "worker_context_grace_retirement_reason",
+                "TEXT",
+            )
+            await self._ensure_column(
+                db,
+                "assignments",
+                "context_retired_at",
+                "TEXT",
+            )
+            await self._ensure_column(
+                db,
+                "assignments",
+                "context_archive_confirmed_at",
+                "TEXT",
             )
             await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
             await self._ensure_column(
