@@ -1118,6 +1118,9 @@ class RoomRuntime:
         async with self._lifecycle_locks[room_id]:
             await self.db.cancel_pending_deliveries(room_id, room["discussion_id"])
             await self.db.cancel_transaction_work(room_id, room["discussion_id"])
+            await self.db.retire_round_worker_context_grace(
+                room_id, room["discussion_id"]
+            )
             await self.db.stop_active_round(room_id, reason)
             for agent in agents:
                 slot = self._worker_slots.get((room_id, agent["agent_key"]))
@@ -1129,7 +1132,8 @@ class RoomRuntime:
                 if agent["status"] != AgentStatus.FINISHED and retired:
                     await self.db.set_agent_status(agent["id"], AgentStatus.IDLE)
             await self._system_event(room_id, "room_stopped", reason)
-            await self.publish_state(room_id)
+        await self._retire_pending_worker_contexts(room_id)
+        await self.publish_state(room_id)
 
     async def new_topic(self, room_id: str, request: NewTopicRequest) -> dict[str, Any]:
         prepared = await self.prepare_round(
@@ -2895,6 +2899,10 @@ class RoomRuntime:
                 )
                 self._publish_event(continued)
 
+            if settlement["turn_limit_hit"]:
+                await self.db.retire_round_worker_context_grace(
+                    room_id, batch["round_id"]
+                )
             await self._retire_pending_worker_contexts(room_id)
 
             if settlement["turn_limit_hit"]:
