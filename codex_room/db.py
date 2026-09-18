@@ -3277,17 +3277,26 @@ class Database:
         db: aiosqlite.Connection,
         room_id: str,
         round_id: str,
+        current_task_id: str,
         requests: list[dict[str, Any]],
         existing_event_ids: list[str],
     ) -> tuple[list[str], list[str]]:
-        """Select bounded prior-Round terminal result events for one Assignment."""
+        """Select bounded completed results from earlier Tasks/Rounds in this Room."""
         current_round = await self._fetchone(
             db,
             "SELECT created_at FROM rounds WHERE id=? AND room_id=?",
             (round_id, room_id),
         )
-        if current_round is None:
-            raise RuntimeError("Current Round is missing during Room-history retrieval")
+        current_task = await self._fetchone(
+            db,
+            """SELECT created_at FROM tasks
+               WHERE id=? AND round_id=? AND room_id=?""",
+            (current_task_id, round_id, room_id),
+        )
+        if current_round is None or current_task is None:
+            raise RuntimeError(
+                "Current Round/Task is missing during Room-history retrieval"
+            )
 
         combined = list(dict.fromkeys(existing_event_ids))[:20]
         seen = set(combined)
@@ -3297,10 +3306,16 @@ class Database:
             if len(combined) >= 20:
                 break
             operation = request["operation"]
-            params: list[Any] = [room_id, current_round["created_at"]]
+            params: list[Any] = [
+                room_id,
+                round_id,
+                current_task["created_at"],
+                current_round["created_at"],
+            ]
             filters = [
                 "t.room_id=?",
-                "ro.created_at < ?",
+                """((ro.id=? AND t.state='settled' AND t.created_at < ?)
+                    OR ro.created_at < ?)""",
                 "x.state='completed'",
                 "e.content IS NOT NULL",
                 "TRIM(e.content)<>''",
@@ -3354,32 +3369,76 @@ class Database:
         coordinator_agent_id: str,
         provider_context_mode: str,
         context_source_id: str | None,
-    ) -> tuple[str | None, str | None]:
-        """Validate one explicit same-Task worker context lineage request."""
+    ) -> tuple[str | None, str | None, bool]:
+        """Validate explicit same-Task or grace-bounded predecessor worker context lineage."""
         if context_source_id is None:
-            return None, None
+            return None, None, False
         if provider_context_mode != "assignment_thread":
             raise ValueError(
                 "Explicit Assignment context lineage requires assignment_thread mode"
             )
         if target_agent_id == coordinator_agent_id:
             raise ValueError("Worker context lineage cannot target the Task coordinator")
+
+        target_task = await self._fetchone(
+            db,
+            "SELECT * FROM tasks WHERE id=? AND state='active'",
+            (task_id,),
+        )
         source = await self._fetchone(
             db,
             "SELECT * FROM assignments WHERE id=?",
             (context_source_id,),
         )
         if (
-            source is None
-            or source["task_id"] != task_id
+            target_task is None
+            or source is None
             or source["agent_id"] != target_agent_id
             or source["state"] not in ("completed", "passed", "failed", "waived")
             or source["context_thread_id"] is None
         ):
             raise ValueError(
-                "Context source must be a terminal Assignment for the same "
-                "worker in the same Task with a bound provider context"
+                "Context source must be an eligible terminal Assignment for the same "
+                "worker with a bound provider context"
             )
+
+        cross_task_grace = source["task_id"] != task_id
+        if cross_task_grace:
+            source_task = await self._fetchone(
+                db,
+                "SELECT * FROM tasks WHERE id=?",
+                (source["task_id"],),
+            )
+            if (
+                source_task is None
+                or source_task["room_id"] != target_task["room_id"]
+                or source_task["round_id"] != target_task["round_id"]
+                or source_task["state"] != "settled"
+                or source["context_grace_state"] != "eligible"
+                or int(source["context_grace_remaining"] or 0) <= 0
+            ):
+                raise ValueError(
+                    "Cross-Task worker context continuation requires an eligible "
+                    "grace source from a settled predecessor Task in the same Round"
+                )
+            ancestor = await self._fetchone(
+                db,
+                """WITH RECURSIVE lineage(id, parent_task_id) AS (
+                       SELECT id, parent_task_id FROM tasks WHERE id=?
+                       UNION ALL
+                       SELECT t.id, t.parent_task_id
+                       FROM tasks t JOIN lineage l ON t.id=l.parent_task_id
+                   )
+                   SELECT 1 AS ok FROM lineage WHERE id=? LIMIT 1""",
+                (task_id, source["task_id"]),
+            )
+            if ancestor is None:
+                raise ValueError(
+                    "Cross-Task worker context source must be in the current Task lineage"
+                )
+        elif source["task_id"] != task_id:
+            raise ValueError("Worker context source belongs to another Task")
+
         latest_owner = await self._fetchone(
             db,
             """SELECT id FROM assignments
@@ -3392,7 +3451,7 @@ class Database:
                 "Context source is stale; reuse must continue from the latest "
                 "Assignment owning that provider context"
             )
-        return source["id"], source["context_thread_id"]
+        return source["id"], source["context_thread_id"], cross_task_grace
 
     async def validate_transaction_delegation_context(
         self,
