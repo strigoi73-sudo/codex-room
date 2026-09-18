@@ -56,6 +56,13 @@ class RefreshStartFailureAdapter(FakeAgentAdapter):
         return await super().start_context_thread(agent, cwd, label=label)
 
 
+class RefreshDuplicateThreadAdapter(FakeAgentAdapter):
+    async def start_context_thread(self, agent, cwd, *, label: str) -> str:
+        if label.startswith("coordinator refresh "):
+            return self.context_starts[0][1]
+        return await super().start_context_thread(agent, cwd, label=label)
+
+
 class RefreshArchiveOnceFailureAdapter(FakeAgentAdapter):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -959,6 +966,56 @@ async def test_bctx4_refresh_hands_off_checkpoint_once_and_preserves_successor_t
     assert exported_refreshes[0]["checkpoint_text"] == checkpoint
     assert exported_refreshes[0]["old_context_thread_id"] == old_thread
     assert exported_refreshes[0]["new_context_thread_id"] == new_thread
+
+
+@pytest.mark.asyncio
+async def test_bctx4_refresh_rejects_non_distinct_provider_context(
+    context_runtime_factory,
+):
+    adapter = RefreshDuplicateThreadAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []}
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.REFRESH,
+                checkpoint="The new C context must be distinct from this old context.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Stayed on the exact old context after duplicate refresh refusal.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "bctx4-refresh-duplicate.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise distinct-thread enforcement during coordinator refresh.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    old_thread = adapter.calls["agent_c"][0]["thread_id"]
+    assert adapter.calls["agent_c"][1]["thread_id"] == old_thread
+    assert old_thread not in adapter.archived
+    assert "did not return a distinct thread ID" in adapter.calls["agent_c"][1]["prompt"]
+
+    async with runtime.db.connect() as db:
+        row = await runtime.db._fetchone(
+            db,
+            """SELECT * FROM coordinator_context_refreshes
+               ORDER BY created_at DESC, id DESC LIMIT 1""",
+            (),
+        )
+    assert row is not None
+    assert row["state"] == "failed"
+    assert row["new_context_thread_id"] is None
+    assert "did not return a distinct thread ID" in row["error"]
 
 
 @pytest.mark.asyncio
