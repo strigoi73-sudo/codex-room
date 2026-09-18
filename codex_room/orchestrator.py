@@ -263,6 +263,7 @@ class RoomRuntime:
         await self.db.initialize()
         await self.db.recover_interrupted_work()
         self.auth_info = await self.adapter.initialize()
+        await self._retire_pending_worker_contexts()
         await self._recover_rollovers()
         await self._recover_transaction_evidence()
         rooms = await self.db.list_rooms(include_archived=False)
@@ -1757,6 +1758,54 @@ class RoomRuntime:
             await self.ensure_workers(room_id)
             self.wake(room_id, completed["agent_key"])
 
+    async def _retire_pending_worker_contexts(
+        self, room_id: str | None = None
+    ) -> None:
+        """Archive durable pending worker contexts; failed archives remain retryable."""
+        pending = await self.db.get_pending_worker_context_retirements(room_id)
+        for item in pending:
+            try:
+                await self.adapter.archive_thread(item["context_thread_id"])
+            except Exception as exc:
+                if item.get("room_id"):
+                    event = await self.db.create_event(
+                        item["room_id"],
+                        "worker_context_retirement_failed",
+                        "room",
+                        "observer",
+                        "Worker provider context retirement remains pending after archive failure.",
+                        status="error",
+                        metadata={
+                            "assignment_id": item["assignment_id"],
+                            "task_id": item["task_id"],
+                            "agent_key": item["agent_key"],
+                            "context_thread_id": item["context_thread_id"],
+                            "error": str(exc)[:500],
+                            "work_model_version": 2,
+                        },
+                    )
+                    self._publish_event(event)
+                continue
+            marked = await self.db.mark_worker_context_archived(
+                item["assignment_id"], item["context_thread_id"]
+            )
+            if marked and item.get("room_id"):
+                event = await self.db.create_event(
+                    item["room_id"],
+                    "worker_context_retired",
+                    "room",
+                    "observer",
+                    "Worker provider context retired after its bounded continuation window ended.",
+                    metadata={
+                        "assignment_id": item["assignment_id"],
+                        "task_id": item["task_id"],
+                        "agent_key": item["agent_key"],
+                        "context_thread_id": item["context_thread_id"],
+                        "work_model_version": 2,
+                    },
+                )
+                self._publish_event(event)
+
     async def _assignment_prompt(
         self, batch: dict[str, Any], agent: dict[str, Any]
     ) -> str:
@@ -1774,6 +1823,13 @@ class RoomRuntime:
             await self.db.get_task_coordination_status(batch["task_id"])
             if agent["agent_key"] == "agent_c"
             else None
+        )
+        worker_context_grace = (
+            await self.db.get_worker_context_grace_status(
+                batch["room_id"], batch["round_id"]
+            )
+            if agent["agent_key"] == "agent_c"
+            else []
         )
         evidence_results = await self.db.get_assignment_evidence_results(
             assignment["id"]
@@ -1884,6 +1940,25 @@ class RoomRuntime:
                 "The Task coordination block is status-only authoritative work state. "
                 "It intentionally omits worker result text, transcript, and tool chatter."
             )
+        if worker_context_grace:
+            context_parts.append("<worker_context_grace>")
+            for item in worker_context_grace:
+                context_parts.append(
+                    "<context "
+                    f"task_id=\"{item['task_id']}\" "
+                    f"assignment_id=\"{item['assignment_id']}\" "
+                    f"agent=\"{item['agent_key']}\" "
+                    f"state=\"{item['context_grace_state']}\" "
+                    f"remaining_c_executions=\"{item['context_grace_remaining']}\" />"
+                )
+            context_parts.append("</worker_context_grace>")
+            context_parts.append(
+                "Eligible worker contexts above may be deliberately continued only when "
+                "the new work remains causally continuous with that completed Task/objective. "
+                "Use context_from_assignment_id with the exact listed Assignment ID. "
+                "If you deliberately move past or close a completed objective before grace "
+                "expires, list its Task ID in retire_worker_context_task_ids."
+            )
         if siblings:
             context_parts.append("<declared_sibling_assignments>")
             for item in siblings:
@@ -1989,8 +2064,9 @@ class RoomRuntime:
         context_boundary = (
             "This provider context is bounded to the current declared Assignment context lineage. "
             "A context_parent_assignment_id above means CORE explicitly continued a terminal "
-            "same-Task worker context; otherwise do not assume unsupplied history from another "
-            "Assignment or earlier Round. Durable Room, Task, dependency, and evidence state "
+            "worker context through valid same-Task lineage or an eligible predecessor-Task "
+            "grace window; otherwise do not assume unsupplied history from another Assignment "
+            "or earlier Round. Durable Room, Task, dependency, and evidence state "
             "supplied above remains authoritative."
             if provider_context_mode == "assignment_thread"
             else
@@ -2013,19 +2089,24 @@ class RoomRuntime:
                     "substantive message. DELEGATE pauses this assignment and must include one or "
                     "more distinct peer delegations, each with target, bounded instruction, optional "
                     "config, and optional context_from_assignment_id. Use context_from_assignment_id "
-                    "only to deliberately continue the target worker's latest terminal provider context "
-                    "inside this same Task; otherwise leave it null. delegation_return_mode is null or "
+                    "only to deliberately continue the target worker's latest eligible provider context "
+                    "inside this same Task or from a listed grace-eligible predecessor Task; otherwise "
+                    "leave it null. retire_worker_context_task_ids may list up to 8 settled prior Task IDs "
+                    "whose worker context should be retired early because you have deliberately moved past "
+                    "or closed that objective; only C may use it. delegation_return_mode is null or "
                     "'parent' for normal parent resumption. Set it to 'coordinator' only with exactly "
                     "one child when that child will hold the finished result and this Assignment has no "
                     "material integration work left; CORE will mechanically bypass the relay turn and "
                     "return the exact child result toward the Task coordinator. EVIDENCE pauses this "
                     "same assignment and must include 1-16 "
                     "bounded READ, SEARCH, or FIND source-evidence requests. HISTORY immediately "
-                    "selects bounded completed results from earlier Rounds in this Room and resumes "
+                    "selects bounded completed results from earlier completed Tasks in this Round "
+                    "and from earlier Rounds in this Room, then resumes "
                     "this same assignment with those exact events supplied as historical context. "
                     "PASS ends this assignment without substantive output. Do not announce that you "
                     "are waiting for a peer unless you actually use DELEGATE to create that work. "
-                    "delegations and delegation_return_mode must be null outside DELEGATE, "
+                    "delegations and delegation_return_mode must be null outside DELEGATE. "
+                    "retire_worker_context_task_ids is independent of action but is valid only for C. "
                     "evidence_requests must be null outside EVIDENCE, and history_requests must be "
                     "null outside HISTORY."
                 ),
@@ -2521,6 +2602,9 @@ class RoomRuntime:
                 item.model_dump(mode="json")
                 for item in (decision.history_requests or [])
             ]
+            retire_worker_context_task_ids = list(
+                decision.retire_worker_context_task_ids or []
+            )
             for item in delegations:
                 if item["target"] == agent_key or item["target"] not in participants:
                     raise ValueError("Transaction delegation must target an available peer")
@@ -2528,6 +2612,10 @@ class RoomRuntime:
                     raise ValueError(
                         "Only Agent C may select a peer execution configuration"
                     )
+            if retire_worker_context_task_ids and agent_key != "agent_c":
+                raise ValueError(
+                    "Only Agent C may explicitly retire prior Task worker contexts"
+                )
             runnable_targets = [item["target"] for item in delegations]
         except ValueError as exc:
             await self._handle_assignment_failure(
@@ -2722,6 +2810,9 @@ class RoomRuntime:
                     "transaction_action": decision.action,
                     "delegations": delegations or None,
                     "delegation_return_mode": decision.delegation_return_mode,
+                    "retire_worker_context_task_ids": (
+                        retire_worker_context_task_ids or None
+                    ),
                     "evidence_requests": evidence_requests or None,
                     "history_requests": history_requests or None,
                     "work_model_version": 2,
@@ -2743,6 +2834,7 @@ class RoomRuntime:
                     result_event["id"],
                     delegations,
                     decision.delegation_return_mode,
+                    retire_worker_context_task_ids,
                     evidence_requests,
                     history_requests,
                 )
@@ -2805,6 +2897,8 @@ class RoomRuntime:
                     round_id=batch["round_id"],
                 )
                 self._publish_event(continued)
+
+            await self._retire_pending_worker_contexts(room_id)
 
             if settlement["turn_limit_hit"]:
                 await self.db.cancel_transaction_work(room_id, batch["round_id"])
