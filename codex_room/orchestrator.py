@@ -1159,7 +1159,8 @@ class RoomRuntime:
             await self._system_event(room_id, "room_stopped", reason)
             await self.publish_state(room_id)
         if retired_worker_contexts:
-            await self._archive_pending_worker_contexts(room_id)
+            async with self._lifecycle_locks[room_id]:
+                await self._archive_pending_worker_contexts(room_id)
 
     async def new_topic(self, room_id: str, request: NewTopicRequest) -> dict[str, Any]:
         prepared = await self.prepare_round(
@@ -2092,8 +2093,9 @@ class RoomRuntime:
                     "are waiting for a peer unless you actually use DELEGATE to create that work. "
                     "delegations and delegation_return_mode must be null outside DELEGATE, "
                     "evidence_requests must be null outside EVIDENCE, and history_requests must be "
-                    "null outside HISTORY. retire_context_task_ids is optional for Agent C on any "
-                    "action and must otherwise be null; use it only to explicitly retire grace-eligible "
+                    "null outside HISTORY. retire_context_task_ids must be null unless Agent C "
+                    "deliberately closes grace-eligible completed-objective worker context; use it only "
+                    "to explicitly retire grace-eligible "
                     "settled Task worker contexts that are no longer useful."
                 ),
                 self._transaction_execution_config_prompt(agent["agent_key"]),
@@ -4981,7 +4983,8 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
     async def _watchdog_tick(self) -> None:
         now = datetime.now(UTC)
         for room in await self.db.list_rooms(include_archived=False):
-            await self._archive_pending_worker_contexts(room["id"])
+            async with self._lifecycle_locks[room["id"]]:
+                await self._archive_pending_worker_contexts(room["id"])
             if room["status"] != RoomStatus.RUNNING:
                 continue
             # Reconcile only from structural proof: a completed/missing worker
