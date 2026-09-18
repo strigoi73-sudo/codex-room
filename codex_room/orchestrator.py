@@ -264,6 +264,7 @@ class RoomRuntime:
         await self.db.initialize()
         await self.db.recover_interrupted_work()
         self.auth_info = await self.adapter.initialize()
+        await self._recover_coordinator_context_refreshes()
         await self._retire_pending_worker_contexts()
         await self._recover_rollovers()
         await self._recover_transaction_evidence()
@@ -1763,6 +1764,175 @@ class RoomRuntime:
             await self.ensure_workers(room_id)
             self.wake(room_id, completed["agent_key"])
 
+    async def _execute_coordinator_context_refresh(
+        self,
+        refresh_id: str,
+        agent: dict[str, Any],
+        *,
+        recovery: bool = False,
+    ) -> str | None:
+        """Advance one fail-closed coordinator context handoff."""
+        item = await self.db.get_coordinator_context_refresh(refresh_id)
+        if item is None or item["state"] not in {"preparing", "archive_pending"}:
+            return None
+        room_id = item["room_id"]
+        new_context_thread_id = item.get("new_context_thread_id")
+
+        if item["state"] == "preparing":
+            try:
+                new_context_thread_id = await self.adapter.start_context_thread(
+                    agent,
+                    self.workspace(room_id),
+                    label=f"coordinator refresh {refresh_id}",
+                )
+            except Exception as exc:
+                failed = await self.db.fail_coordinator_context_refresh(
+                    refresh_id,
+                    f"Fresh coordinator context creation failed: {exc}",
+                )
+                event = await self.db.create_event(
+                    room_id,
+                    "coordinator_context_refresh_failed",
+                    "room",
+                    "observer",
+                    "Coordinator context refresh failed before activation; C remains on the exact old provider context.",
+                    status="error",
+                    related_event_id=item["request_event_id"],
+                    metadata={
+                        "refresh_id": refresh_id,
+                        "assignment_id": item["assignment_id"],
+                        "task_id": item["task_id"],
+                        "old_context_thread_id": item["old_context_thread_id"],
+                        "error": str(exc)[:500],
+                        "recovery": recovery,
+                        "work_model_version": 2,
+                    },
+                    discussion_id=item["round_id"],
+                    round_id=item["round_id"],
+                )
+                self._publish_event(event)
+                return failed["agent_key"]
+
+            try:
+                item = await self.db.activate_coordinator_context_refresh(
+                    refresh_id, new_context_thread_id
+                )
+            except Exception as exc:
+                cleanup_error: str | None = None
+                try:
+                    await self.adapter.archive_thread(new_context_thread_id)
+                except Exception as cleanup_exc:
+                    cleanup_error = str(cleanup_exc)[:500]
+                failed = await self.db.fail_coordinator_context_refresh(
+                    refresh_id,
+                    f"Fresh coordinator context activation failed: {exc}",
+                )
+                event = await self.db.create_event(
+                    room_id,
+                    "coordinator_context_refresh_failed",
+                    "room",
+                    "observer",
+                    "Coordinator context refresh failed before activation; C remains on the exact old provider context.",
+                    status="error",
+                    related_event_id=item["request_event_id"],
+                    metadata={
+                        "refresh_id": refresh_id,
+                        "assignment_id": item["assignment_id"],
+                        "task_id": item["task_id"],
+                        "old_context_thread_id": item["old_context_thread_id"],
+                        "unbound_new_context_thread_id": new_context_thread_id,
+                        "new_context_cleanup_error": cleanup_error,
+                        "error": str(exc)[:500],
+                        "recovery": recovery,
+                        "work_model_version": 2,
+                    },
+                    discussion_id=item["round_id"],
+                    round_id=item["round_id"],
+                )
+                self._publish_event(event)
+                return failed["agent_key"]
+
+        # Activation switches durable Assignment ownership to the new context but
+        # deliberately leaves the Assignment non-runnable until old-context archive
+        # succeeds. A crash here is recovered from archive_pending state.
+        current = await self.db.get_coordinator_context_refresh(refresh_id)
+        if current is None or current["state"] != "archive_pending":
+            return None
+        try:
+            await self.adapter.archive_thread(current["old_context_thread_id"])
+        except Exception as exc:
+            await self.db.record_coordinator_context_refresh_error(
+                refresh_id, f"Old coordinator context archival failed: {exc}"
+            )
+            if not recovery:
+                event = await self.db.create_event(
+                    room_id,
+                    "coordinator_context_refresh_pending",
+                    "room",
+                    "observer",
+                    "Coordinator context refresh remains fail-closed while old provider-context archival is pending.",
+                    status="error",
+                    related_event_id=current["request_event_id"],
+                    metadata={
+                        "refresh_id": refresh_id,
+                        "assignment_id": current["assignment_id"],
+                        "task_id": current["task_id"],
+                        "old_context_thread_id": current["old_context_thread_id"],
+                        "new_context_thread_id": current["new_context_thread_id"],
+                        "error": str(exc)[:500],
+                        "work_model_version": 2,
+                    },
+                    discussion_id=current["round_id"],
+                    round_id=current["round_id"],
+                )
+                self._publish_event(event)
+            return None
+
+        completed = await self.db.complete_coordinator_context_refresh(refresh_id)
+        event = await self.db.create_event(
+            room_id,
+            "coordinator_context_refreshed",
+            "room",
+            "observer",
+            "Coordinator provider context refreshed from a bounded continuity checkpoint.",
+            related_event_id=completed["request_event_id"],
+            metadata={
+                "refresh_id": refresh_id,
+                "assignment_id": completed["assignment_id"],
+                "task_id": completed["task_id"],
+                "source_batch_id": completed["source_batch_id"],
+                "old_context_thread_id": completed["old_context_thread_id"],
+                "new_context_thread_id": completed["new_context_thread_id"],
+                "checkpoint_chars": len(completed["checkpoint_text"]),
+                "recovery": recovery,
+                "work_model_version": 2,
+            },
+            discussion_id=completed["round_id"],
+            round_id=completed["round_id"],
+        )
+        self._publish_event(event)
+        return completed["agent_key"]
+
+    async def _recover_coordinator_context_refreshes(
+        self, room_id: str | None = None
+    ) -> None:
+        """Resume durable C refresh handoffs after archive/start interruptions."""
+        pending = await self.db.get_pending_coordinator_context_refreshes(room_id)
+        for item in pending:
+            if item.get("room_status") != RoomStatus.RUNNING:
+                continue
+            agent = await self.db.get_agent(item["room_id"], item["agent_key"])
+            if agent is None:
+                await self.db.record_coordinator_context_refresh_error(
+                    item["id"], "Coordinator agent is unavailable during refresh recovery"
+                )
+                continue
+            wake_key = await self._execute_coordinator_context_refresh(
+                item["id"], agent, recovery=True
+            )
+            if wake_key:
+                self.wake(item["room_id"], wake_key)
+
     async def _retire_pending_worker_contexts(
         self, room_id: str | None = None
     ) -> None:
@@ -1836,6 +2006,13 @@ class RoomRuntime:
             if agent["agent_key"] == "agent_c"
             else []
         )
+        coordinator_checkpoint = (
+            await self.db.get_pending_coordinator_checkpoint(
+                assignment["id"], assignment.get("context_thread_id")
+            )
+            if agent["agent_key"] == "agent_c"
+            else None
+        )
         evidence_results = await self.db.get_assignment_evidence_results(
             assignment["id"]
         )
@@ -1864,6 +2041,25 @@ class RoomRuntime:
             f"Round objective:\n{round_item['prompt']}",
             f"Current assignment:\n{assignment['instruction']}",
         ]
+        if coordinator_checkpoint is not None:
+            context_parts.extend(
+                [
+                    (
+                        "<coordinator_continuity_checkpoint "
+                        f"refresh_id=\"{coordinator_checkpoint['id']}\" "
+                        f"old_context_thread_id=\"{coordinator_checkpoint['old_context_thread_id']}\" "
+                        f"new_context_thread_id=\"{coordinator_checkpoint['new_context_thread_id']}\">"
+                    ),
+                    coordinator_checkpoint["checkpoint_text"],
+                    "</coordinator_continuity_checkpoint>",
+                    (
+                        "The checkpoint above is C's bounded free-form continuity handoff from "
+                        "the retired provider context. Treat current deterministic Room/Round/Task/"
+                        "Assignment/Join/Evidence/grace state supplied separately in this prompt "
+                        "as authoritative; do not infer unsupplied old transcript content."
+                    ),
+                ]
+            )
         if assignment.get("context_parent_assignment_id"):
             context_parts.append(
                 "Provider context lineage explicitly continues from Assignment ID: "
@@ -2090,7 +2286,7 @@ class RoomRuntime:
                 self.TRANSACTION_CAPABILITY_INSTRUCTION,
                 (
                     "Return the transaction structured decision only. action must be COMPLETE, "
-                    "DELEGATE, EVIDENCE, HISTORY, or PASS. COMPLETE ends this assignment with a "
+                    "DELEGATE, EVIDENCE, HISTORY, REFRESH, or PASS. COMPLETE ends this assignment with a "
                     "substantive message. DELEGATE pauses this assignment and must include one or "
                     "more distinct peer delegations, each with target, bounded instruction, optional "
                     "config, and optional context_from_assignment_id. Use context_from_assignment_id "
@@ -2098,7 +2294,14 @@ class RoomRuntime:
                     "inside this same Task or from a listed grace-eligible predecessor Task; otherwise "
                     "leave it null. retire_worker_context_task_ids may list up to 8 settled prior Task IDs "
                     "whose worker context should be retired early because you have deliberately moved past "
-                    "or closed that objective; only C may use it. delegation_return_mode is null or "
+                    "or closed that objective; only C may use it. REFRESH is C-only and nonterminal: "
+                    "use it only from the root coordinator Assignment when a deliberate fresh provider "
+                    "context is materially useful. Put the bounded continuity handoff in checkpoint "
+                    "(maximum 12,000 characters), describing unresolved reasoning, current strategy, "
+                    "important judgments, and near-term intent without replaying the old transcript. "
+                    "CORE supplies current organizational state separately and performs the fail-closed "
+                    "provider-context handoff. No automatic refresh threshold is implied. "
+                    "delegation_return_mode is null or "
                     "'parent' for normal parent resumption. Set it to 'coordinator' only with exactly "
                     "one child when that child will hold the finished result and this Assignment has no "
                     "material integration work left; CORE will mechanically bypass the relay turn and "
@@ -2111,6 +2314,7 @@ class RoomRuntime:
                     "PASS ends this assignment without substantive output. Do not announce that you "
                     "are waiting for a peer unless you actually use DELEGATE to create that work. "
                     "delegations and delegation_return_mode must be null outside DELEGATE. "
+                    "checkpoint must be non-null only for REFRESH and null for every other action. "
                     "retire_worker_context_task_ids is independent of action but is valid only for C. "
                     "evidence_requests must be null outside EVIDENCE, and history_requests must be "
                     "null outside HISTORY."
@@ -2780,9 +2984,15 @@ class RoomRuntime:
             event_type = (
                 "agent_pass"
                 if decision.action == TransactionAction.PASS
+                else "coordinator_context_refresh_requested"
+                if decision.action == TransactionAction.REFRESH
                 else "agent_message"
             )
-            content = decision.message
+            content = (
+                "Agent C requested a bounded coordinator provider-context refresh."
+                if decision.action == TransactionAction.REFRESH
+                else decision.message
+            )
             if decision.action == TransactionAction.DELEGATE and not content:
                 content = "Delegated explicit transaction assignments to: " + ", ".join(
                     runnable_targets
@@ -2801,7 +3011,13 @@ class RoomRuntime:
                 room_id,
                 event_type,
                 agent_key,
-                "all" if decision.action != TransactionAction.PASS else "room",
+                (
+                    "observer"
+                    if decision.action == TransactionAction.REFRESH
+                    else "all"
+                    if decision.action != TransactionAction.PASS
+                    else "room"
+                ),
                 content,
                 related_event_id=batch["assignment"].get("origin_event_id"),
                 metadata={
@@ -2809,6 +3025,11 @@ class RoomRuntime:
                     "assignment_id": batch["assignment_id"],
                     "batch_id": batch["batch_id"],
                     "transaction_action": decision.action,
+                    "checkpoint_chars": (
+                        len(decision.checkpoint or "")
+                        if decision.action == TransactionAction.REFRESH
+                        else None
+                    ),
                     "delegations": delegations or None,
                     "delegation_return_mode": decision.delegation_return_mode,
                     "retire_worker_context_task_ids": (
@@ -2836,6 +3057,7 @@ class RoomRuntime:
                     delegations,
                     decision.delegation_return_mode,
                     retire_worker_context_task_ids,
+                    decision.checkpoint,
                     evidence_requests,
                     history_requests,
                 )
@@ -2898,6 +3120,17 @@ class RoomRuntime:
                     round_id=batch["round_id"],
                 )
                 self._publish_event(continued)
+
+            refresh_id = settlement.get("coordinator_refresh_id")
+            if refresh_id:
+                wake_key = await self._execute_coordinator_context_refresh(
+                    refresh_id, agent
+                )
+                if wake_key:
+                    self.wake(room_id, wake_key)
+                await self._retire_pending_worker_contexts(room_id)
+                await self.publish_state(room_id)
+                return
 
             if settlement["turn_limit_hit"]:
                 await self.db.retire_round_worker_context_grace(
@@ -4949,6 +5182,8 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
         for room in await self.db.list_rooms(include_archived=False):
             if room["status"] != RoomStatus.RUNNING:
                 continue
+            async with self._lifecycle_locks[room["id"]]:
+                await self._recover_coordinator_context_refreshes(room["id"])
             # Reconcile only from structural proof: a completed/missing worker
             # cannot still own an SDK await. Age by itself never replaces work.
             await self.ensure_workers(room["id"])
