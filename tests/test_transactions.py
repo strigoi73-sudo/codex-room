@@ -1045,6 +1045,7 @@ async def test_bctx3_grace_allows_explicit_worker_context_continuation_into_succ
     await wait_until(stopped)
 
     assert len(adapter.calls["agent_a"]) == 2
+    assert 'remaining_c_executions="1"' in adapter.calls["agent_c"][3]["prompt"]
     assert adapter.calls["agent_a"][0]["thread_id"] == worker_thread
     assert adapter.calls["agent_a"][1]["thread_id"] == worker_thread
     assert len([item for item in adapter.context_starts if item[0] == "agent_a"]) == 1
