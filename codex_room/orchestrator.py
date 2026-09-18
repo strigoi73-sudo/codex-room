@@ -1807,9 +1807,11 @@ class RoomRuntime:
                         "only the bounded activity represented by your current Assignment; it does "
                         "not by itself finish the Round. Child Assignments still complete normally. "
                         "When the task coordinator reaches the ordinary settlement boundary and no "
-                        "hard runtime boundary has fired, CORE requeues that coordinator Assignment. "
-                        "Stay within your current Assignment and its scope. The human stopping the "
-                        "Room or a hard runtime boundary ends the continuous loop."
+                        "hard runtime boundary has fired, CORE settles the current bounded Task and "
+                        "queues a coordinator Assignment in a successor Task while preserving the "
+                        "coordinator provider-context lineage. Stay within your current Assignment "
+                        "and its scope. The human stopping the Room or a hard runtime boundary ends "
+                        "the continuous loop."
                     ),
                     "</continuous_round>",
                 ]
@@ -2749,11 +2751,17 @@ class RoomRuntime:
                     "continuous_round_resumed",
                     "room",
                     "observer",
-                    "Continuous Round kept the standing coordinator objective active after a bounded activity completed.",
+                    "Continuous Round settled one bounded Task and queued a successor Task while keeping the standing objective active.",
                     related_event_id=result_event["id"],
                     metadata={
                         "task_id": batch["task_id"],
                         "assignment_id": batch["assignment_id"],
+                        "successor_task_id": settlement[
+                            "continuous_successor_task_id"
+                        ],
+                        "successor_assignment_id": settlement[
+                            "continuous_successor_assignment_id"
+                        ],
                         "work_model_version": 2,
                     },
                     discussion_id=batch["round_id"],
@@ -2764,7 +2772,11 @@ class RoomRuntime:
             await self.ensure_workers(room_id)
             for target in settlement["wake_agent_keys"]:
                 self.wake(room_id, target)
-            if settlement["task_settled"] and current["status"] == RoomStatus.RUNNING:
+            if (
+                settlement["task_settled"]
+                and not settlement.get("continuous_resumed")
+                and current["status"] == RoomStatus.RUNNING
+            ):
                 await self._close_discussion(
                     room_id,
                     batch["round_id"],
