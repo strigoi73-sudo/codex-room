@@ -370,7 +370,7 @@ async def test_transaction_explicit_same_task_worker_context_lineage_reuses_thre
     )
 
     async with runtime.db.connect() as db:
-        first_a = await db.execute_fetchone(
+        cursor = await db.execute(
             """SELECT x.* FROM assignments x
                JOIN tasks t ON t.id=x.task_id
                JOIN agents a ON a.id=x.agent_id
@@ -378,6 +378,7 @@ async def test_transaction_explicit_same_task_worker_context_lineage_reuses_thre
                ORDER BY x.created_at, x.id LIMIT 1""",
             (room_id,),
         )
+        first_a = await cursor.fetchone()
     assert first_a is not None
     first_a_id = first_a["id"]
     first_a_thread = first_a["context_thread_id"]
