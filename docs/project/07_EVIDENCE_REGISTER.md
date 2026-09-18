@@ -4786,3 +4786,143 @@ No GitHub-hosted workflow run was attached to the merge commit at closeout time,
 
 **Assessment:** BCTX-4 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. **BCTX-1 through BCTX-4 are complete; the D-037 bounded-context program is COMPLETE.**
 
+
+
+### E-136 — Transaction output-schema provider compatibility defect reproduced, repaired, exact-head verified, and merged
+**Date:** 2026-09-18
+**Kind:** [CORE provider-boundary defect / exact-head repair verification / canonical merge]
+**Decision:** D-037
+**Related work:** BCTX-4 post-close ordinary-use repair
+
+A fresh post-BCTX recreation of the historical continuous `Stay busy.` exercise failed before C completed any transaction turn. The Room was configured correctly for work-model v2, `provider_context_mode="assignment_thread"`, C starter, and continuous completion, but the provider rejected the transaction response schema with HTTP 400 / `invalid_json_schema` because `retire_worker_context_task_ids` contained JSON-Schema keyword `uniqueItems`, which that response-format boundary did not permit.
+
+The failure was a real CORE/provider-contract defect rather than a Room configuration error. CORE's Pydantic/runtime validator already enforced retirement-ID uniqueness independently, so removing the unsupported provider-schema keyword did not weaken accepted transaction semantics.
+
+Repair PR #126 changed exactly:
+
+- `codex_room/models.py` — removed provider-facing `"uniqueItems": True`;
+- `tests/test_assignment_context.py` — added a regression asserting that the provider transaction schema contains no `uniqueItems`.
+
+Exact repair head verified locally by the principal:
+
+`9ccdbbef1faf6961c2bf51f16e9c9a47dd0f87ce`
+
+Canonical base:
+
+`c5612c9b4630e198e3eae66d02b01154c5422ec9`
+
+Verification on the exact head:
+
+- direct transaction-schema compatibility check — PASS;
+- focused repair tests — **2 passed** in approximately **0.45 s**;
+- repository-standard `verify-fast.cmd`:
+  - Linux Python 3.12 focused core — **61 passed**, 2 warnings;
+  - Windows focused portability — **118 passed**;
+  - browser transcript stability — **3 passed**;
+  - overall result — **PASS** in approximately **88 s**;
+- final HEAD remained exact;
+- tracked tree remained clean;
+- one untracked local `data/` path remained outside tracked-source verification.
+
+PR #126 squash-merged the exact verified implementation bytes as:
+
+`2295d749c98e70bfe0ce490d23aba7a52b506067`
+
+Post-merge blob comparison confirmed byte identity for both changed files between the verified head and canonical merge. No GitHub-hosted workflow run was attached.
+
+**Assessment:** the provider-schema compatibility defect is **RESOLVED / IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Live provider-boundary revalidation was then supplied by E-137's successful 59-turn Room execution.
+
+### E-137 — Post-BCTX naturalistic run exposed missing coordinator refresh adoption/economics signal
+**Date:** 2026-09-18
+**Kind:** [ROOM naturalistic observation / coordinator context economics / BCTX-4 adoption evidence]
+**Decision:** D-037
+
+After E-136 repaired the provider response-schema boundary, a fresh replacement Room reran the standing objective under the assembled BCTX stack:
+
+- Room: `room_a7012ca175104f9aa52c1a640d262cca`;
+- Round: `round_b6cce4d1c0874ce2bbbc7a0d853d63f0`;
+- prompt: exactly `Stay busy.`;
+- starter: C;
+- work model: v2;
+- provider context: `assignment_thread`;
+- completion policy: `continuous`;
+- hard turn ceiling: 500;
+- shared workspace: 17 files copied from the failed predecessor Room and SHA-256 verified file-for-file before start.
+
+The human paused the run after **59 turns** and approximately **10 minutes 36 seconds**. The Room remained operational: approximately **15 bounded Tasks** had settled and a successor activity had already begun. BCTX-1 through BCTX-3 behavior was exercised naturally, including repeated bounded Task progression, explicit worker-context continuation where useful, and worker-context retirement.
+
+The important BCTX-4 observation was negative adoption evidence:
+
+- C issued **zero `REFRESH` actions**;
+- the export contained **zero coordinator context-refresh records**;
+- C remained on the same coordinator provider-context lineage across the observed successor Tasks;
+- C's completed-execution input load climbed from roughly **20,923** on the first execution to roughly **117,832** on the final observed execution;
+- total raw execution-token deltas were approximately **3.605 million**;
+- C accounted for approximately **2.663 million**, about **74%** of the total;
+- A accounted for approximately **153K** and B approximately **790K**.
+
+Relative to the earlier E-131 continuous acceptance, this run used approximately 92% more raw execution-token deltas for 59 versus 42 turns, with substantially higher tokens per turn. The principal's subscription meter moved from **100% to 86%** on the 5-hour allowance and **47% to 45%** on the 7-day allowance during the run; the ChatGPT session context meter itself remained unchanged during that comparison.
+
+This evidence does **not** show that BCTX-4's fail-closed refresh mechanism is broken. It shows that merely exposing `REFRESH` with qualitative wording such as “when materially useful” did not give C enough actionable self-knowledge to recognize escalating coordinator-context cost.
+
+**Assessment:** BCTX-1 through BCTX-3 receive further naturalistic support. BCTX-4 remains mechanically verified, but this run demonstrated an **OBSERVED ISSUE** in refresh adoption/economics information: C did not naturally choose refresh despite sharply increasing exact-thread execution load. The bounded response was to expose deterministic self-telemetry and advisory judgment guidance, not to add an automatic refresh trigger. See E-138.
+
+### E-138 — Coordinator exact-thread economics and advisory refresh guidance implemented, exact-head verified, and merged
+**Date:** 2026-09-18
+**Kind:** [CORE evidence-driven refinement / exact-head deterministic verification / canonical merge]
+**Decision:** D-037
+**Related evidence:** E-137
+
+PR #127 addresses E-137's demonstrated information/adoption gap while preserving the BCTX-4 authority boundary: C still decides whether to refresh; CORE supplies facts and performs the safe handoff.
+
+Implemented behavior:
+
+- eligible C root-coordinator turns in production `assignment_thread` mode receive deterministic telemetry for the exact provider context thread;
+- telemetry includes executions carried, Tasks seen/settled on that thread, first-execution input baseline, last completed execution input/cached-input load, provider-reported cumulative input tokens, and input-load growth from baseline;
+- telemetry is explicitly labeled as completed-execution load, **not** as a context-window occupancy percentage;
+- approximately **64,000 last-completed-execution input tokens** is an advisory point to actively consider `REFRESH` at the next clean bounded Task boundary;
+- approximately **96,000** is an advisory point to strongly prefer `REFRESH` unless a concrete continuity or integration reason makes immediate refresh materially unsafe or lossy;
+- the ranges are judgment guides only. CORE does not auto-refresh because either number is crossed;
+- prompt construction now occurs after initial assignment-thread binding so the very first eligible C turn can truthfully report `baseline_pending` for the exact provider thread;
+- after a successful BCTX-4 refresh, the distinct new provider thread naturally establishes a fresh telemetry baseline.
+
+Exact implementation head verified locally by the principal:
+
+`03bb1a898e8d2f0e5d69f6cf28cbef0a9ddb828d`
+
+Canonical base:
+
+`2295d749c98e70bfe0ce490d23aba7a52b506067`
+
+Exact change surface:
+
+- `codex_room/db.py`;
+- `codex_room/orchestrator.py`;
+- `tests/test_assignment_context.py`.
+
+Verification history was deliberately fail-fast and evidence-preserving:
+
+1. The first predecessor head exposed that the economics block was absent from C's first prompt because prompt composition preceded initial assignment-thread binding. That ordering was corrected.
+2. A later Linux fast-verifier run exposed an existing nondeterministic test assumption in the worker-lineage restart regression: two Assignments can share millisecond-resolution `created_at`, while random UUID IDs do not encode causal order. The test was hardened to identify the continued Assignment by identity rather than row position; no production lineage behavior changed for that correction.
+3. Final exact-head verification then passed completely.
+
+Final verification on exact head `03bb1a898e8d2f0e5d69f6cf28cbef0a9ddb828d`:
+
+- focused correction/economics selection — **4 passed** in approximately **19.59 s**;
+- complete transaction/context suites — **47 passed** in approximately **337.05 s**;
+- repository-standard `verify-fast.cmd`:
+  - Linux Python 3.12 focused core — **63 passed**, 2 warnings;
+  - Windows focused portability — **118 passed**;
+  - browser transcript stability — **3 passed**;
+  - total verifier result — **PASS** in approximately **85 s**;
+- final HEAD remained exact;
+- tracked tree remained clean;
+- one untracked local `data/` path remained outside tracked-source verification.
+
+PR #127 squash-merged the exact verified bytes to canonical `main` as:
+
+`3db7442ee8181f3aca23626d98d77e996fe2bb9e`
+
+Post-merge GitHub inspection confirmed canonical `main` at that commit and exact blob identity between the verified head and merged bytes for all three changed files. No GitHub-hosted status checks or workflow runs were attached, so the executable evidence is the exact-head local verification above.
+
+**Assessment:** the coordinator economics/guidance refinement is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Its **live naturalistic effectiveness remains unverified** until a bounded ordinary run establishes whether C now chooses `REFRESH` before exact-thread execution load again grows into the previously observed 100K+ range. This pending behavioral check does not reopen the completed BCTX program or authorize an automatic refresh controller.
