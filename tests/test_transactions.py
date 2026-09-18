@@ -935,6 +935,362 @@ async def test_transaction_stop_cancels_open_task_assignments_and_join(
 
 
 @pytest.mark.asyncio
+async def test_bctx3_grace_allows_explicit_worker_context_continuation_into_successor_task(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {3}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Develop the first bounded objective.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task one integrated.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A task-one result.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A successor continuation result.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "bctx3-grace-reuse.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Continue objective-local worker context when useful.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=6,
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(
+        lambda: len(adapter.completed_calls["agent_a"]) == 1
+        and len(adapter.calls["agent_c"]) == 3
+    )
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+        a_rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(tasks) == 2
+    assert tasks[0]["state"] == "settled"
+    assert tasks[0]["worker_context_grace_remaining"] == 2
+    assert len(a_rows) == 1
+    first_a_id = a_rows[0]["id"]
+    worker_thread = a_rows[0]["context_thread_id"]
+    assert worker_thread
+    grace_prompt = adapter.calls["agent_c"][2]["prompt"]
+    assert "<worker_context_grace>" in grace_prompt
+    assert f'id="{tasks[0]["id"]}"' in grace_prompt
+    assert 'remaining_c_executions="2"' in grace_prompt
+    assert f'assignment_id="{first_a_id}"' in grace_prompt
+
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Continue the same objective-local line of work.",
+                        "config": None,
+                        "context_from_assignment_id": first_a_id,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task two integrated.",
+            ),
+        ]
+    )
+    adapter.release_call("agent_c", 3)
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert len(adapter.calls["agent_a"]) == 2
+    assert adapter.calls["agent_a"][0]["thread_id"] == worker_thread
+    assert adapter.calls["agent_a"][1]["thread_id"] == worker_thread
+    assert len([item for item in adapter.context_starts if item[0] == "agent_a"]) == 1
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+        a_rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(a_rows) == 2
+    assert a_rows[1]["task_id"] == tasks[1]["id"]
+    assert a_rows[1]["context_parent_assignment_id"] == first_a_id
+    assert a_rows[1]["context_thread_id"] == worker_thread
+    assert tasks[0]["worker_context_grace_remaining"] == 0
+    assert worker_thread in adapter.archived
+
+
+@pytest.mark.asyncio
+async def test_bctx3_grace_expires_after_two_c_executions_and_restart_finishes_archive(
+    transaction_runtime_factory,
+):
+    first_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        archive_failures=1,
+    )
+    first_adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Create worker context for the first Task.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task one complete.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task two complete without reusing prior worker context.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task three complete after the second C grace execution.",
+            ),
+        ]
+    )
+    first_adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="A first-task result.",
+        )
+    )
+
+    first = await transaction_runtime_factory(first_adapter, "bctx3-grace-restart.db")
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Expire unused worker context after two C executions.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=5,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await first.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert 'remaining_c_executions="2"' in first_adapter.calls["agent_c"][2]["prompt"]
+    assert 'remaining_c_executions="1"' in first_adapter.calls["agent_c"][3]["prompt"]
+
+    async with first.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+        a_row = await first.db._fetchone(
+            db,
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id LIMIT 1""",
+            (room_id,),
+        )
+
+    assert a_row is not None
+    worker_thread = a_row["context_thread_id"]
+    assert worker_thread
+    assert tasks[0]["worker_context_grace_remaining"] == 0
+    assert tasks[0]["worker_context_grace_retirement_reason"] == "grace_expired"
+    assert a_row["context_retired_at"] is not None
+    assert a_row["context_archive_confirmed_at"] is None
+    assert worker_thread not in first_adapter.archived
+    await first.close()
+
+    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second = await transaction_runtime_factory(
+        second_adapter, "bctx3-grace-restart.db"
+    )
+
+    assert second_adapter.archived == [worker_thread]
+    pending = await second.db.get_pending_worker_context_archives(room_id)
+    assert pending == []
+    async with second.db.connect() as db:
+        recovered = await second.db._fetchone(
+            db,
+            "SELECT * FROM assignments WHERE id=?",
+            (a_row["id"],),
+        )
+    assert recovered is not None
+    assert recovered["context_archive_confirmed_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_bctx3_coordinator_can_retire_grace_context_early(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {3}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Create one worker context that C will later close.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Task one complete.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="A completed the first Task.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "bctx3-early-retire.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Explicitly close completed objective-local worker context.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=4,
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(
+        lambda: len(adapter.completed_calls["agent_a"]) == 1
+        and len(adapter.calls["agent_c"]) == 3
+    )
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+        a_row = await runtime.db._fetchone(
+            db,
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id LIMIT 1""",
+            (room_id,),
+        )
+
+    assert len(tasks) == 2
+    first_task_id = tasks[0]["id"]
+    assert tasks[0]["worker_context_grace_remaining"] == 2
+    assert a_row is not None
+    worker_thread = a_row["context_thread_id"]
+    assert worker_thread
+
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="The prior bounded objective is closed; move on.",
+            retire_context_task_ids=[first_task_id],
+        )
+    )
+    adapter.release_call("agent_c", 3)
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    async with runtime.db.connect() as db:
+        first_task = await runtime.db._fetchone(
+            db, "SELECT * FROM tasks WHERE id=?", (first_task_id,)
+        )
+        retired_a = await runtime.db._fetchone(
+            db, "SELECT * FROM assignments WHERE id=?", (a_row["id"],)
+        )
+
+    assert first_task is not None
+    assert first_task["worker_context_grace_remaining"] == 0
+    assert (
+        first_task["worker_context_grace_retirement_reason"]
+        == "coordinator_closed_objective"
+    )
+    assert retired_a is not None
+    assert retired_a["context_retired_at"] is not None
+    assert retired_a["context_archive_confirmed_at"] is not None
+    assert worker_thread in adapter.archived
+    events = await runtime.db.get_events(room_id)
+    retire_events = [
+        event for event in events if event["event_type"] == "worker_context_retired"
+    ]
+    assert retire_events
+    assert first_task_id in (
+        retire_events[-1]["metadata"].get("retire_context_task_ids") or []
+    )
+
+
+@pytest.mark.asyncio
 async def test_continuous_round_settles_bounded_tasks_and_reuses_coordinator_context_until_turn_limit(
     transaction_runtime_factory,
 ):
