@@ -3459,7 +3459,7 @@ class Database:
         provider_context_mode: str,
         context_source_id: str | None,
     ) -> tuple[str | None, str | None]:
-        """Validate one explicit same-Task worker context lineage request."""
+        """Validate explicit same-Task or grace-eligible ancestor worker context lineage."""
         if context_source_id is None:
             return None, None
         if provider_context_mode != "assignment_thread":
@@ -3468,22 +3468,52 @@ class Database:
             )
         if target_agent_id == coordinator_agent_id:
             raise ValueError("Worker context lineage cannot target the Task coordinator")
+
+        target_task = await self._fetchone(
+            db,
+            "SELECT * FROM tasks WHERE id=? AND state='active'",
+            (task_id,),
+        )
         source = await self._fetchone(
             db,
-            "SELECT * FROM assignments WHERE id=?",
+            """SELECT x.*, t.round_id AS source_round_id,
+                      t.state AS source_task_state,
+                      t.worker_context_grace_remaining,
+                      t.worker_context_grace_retired_at
+               FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               WHERE x.id=?""",
             (context_source_id,),
         )
         if (
-            source is None
-            or source["task_id"] != task_id
+            target_task is None
+            or source is None
             or source["agent_id"] != target_agent_id
             or source["state"] not in ("completed", "passed", "failed", "waived")
             or source["context_thread_id"] is None
+            or source["context_retired_at"] is not None
         ):
             raise ValueError(
-                "Context source must be a terminal Assignment for the same "
-                "worker in the same Task with a bound provider context"
+                "Context source must be an eligible terminal Assignment for the same "
+                "worker with a live provider context"
             )
+
+        same_task = source["task_id"] == task_id
+        grace_eligible_ancestor = False
+        if not same_task:
+            grace_eligible_ancestor = bool(
+                source["source_round_id"] == target_task["round_id"]
+                and source["source_task_state"] == "settled"
+                and int(source["worker_context_grace_remaining"] or 0) > 0
+                and source["worker_context_grace_retired_at"] is None
+                and await self._task_is_ancestor(db, source["task_id"], task_id)
+            )
+        if not same_task and not grace_eligible_ancestor:
+            raise ValueError(
+                "Context source must belong to this Task or to a grace-eligible "
+                "settled ancestor Task in the same Round"
+            )
+
         latest_owner = await self._fetchone(
             db,
             """SELECT id FROM assignments
