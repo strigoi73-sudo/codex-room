@@ -3459,24 +3459,25 @@ class Database:
                         )
                         wake_agent_keys.append(coordinator["agent_key"])
                     elif not missing_required_contributors:
-                        if (
+                        continuous_round = bool(
                             round_budget
                             and round_budget["completion_policy"] == "continuous"
-                            and not turn_limit_hit
-                        ):
-                            cursor = await db.execute(
-                                """UPDATE assignments
-                                   SET state='queued', completed_at=NULL, updated_at=?
-                                   WHERE id=? AND state IN ('completed','passed')""",
-                                (now, assignment_id),
-                            )
-                            if cursor.rowcount != 1:
-                                await db.rollback()
-                                raise RuntimeError(
-                                    "Continuous Round could not resume its coordinator assignment"
+                        )
+                        if continuous_round:
+                            if not turn_limit_hit:
+                                cursor = await db.execute(
+                                    """UPDATE assignments
+                                       SET state='queued', completed_at=NULL, updated_at=?
+                                       WHERE id=? AND state IN ('completed','passed')""",
+                                    (now, assignment_id),
                                 )
-                            wake_agent_keys.append(assignment["agent_key"])
-                            continuous_resumed = True
+                                if cursor.rowcount != 1:
+                                    await db.rollback()
+                                    raise RuntimeError(
+                                        "Continuous Round could not resume its coordinator assignment"
+                                    )
+                                wake_agent_keys.append(assignment["agent_key"])
+                                continuous_resumed = True
                         else:
                             await db.execute(
                                 """UPDATE tasks
