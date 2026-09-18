@@ -61,6 +61,39 @@ def test_assignment_context_mode_requires_transaction_work_model() -> None:
         )
 
 
+def test_bctx2_transaction_decision_rejects_ambiguous_direct_return() -> None:
+    with pytest.raises(
+        ValidationError,
+        match="coordinator delegation return requires exactly one child assignment",
+    ):
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegation_return_mode="coordinator",
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "A",
+                    "config": None,
+                },
+                {
+                    "target": "agent_b",
+                    "instruction": "B",
+                    "config": None,
+                },
+            ],
+        )
+
+    with pytest.raises(
+        ValidationError,
+        match="delegation_return_mode is valid only for DELEGATE",
+    ):
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="invalid routing metadata",
+            delegation_return_mode="coordinator",
+        )
+
+
 @pytest.mark.asyncio
 async def test_assignment_context_mode_reuses_one_thread_per_logical_assignment(
     context_runtime_factory,
@@ -367,6 +400,146 @@ async def test_assignment_context_exact_active_turn_recovers_by_recorded_thread(
     assert recovered["thread_id"] == context_thread
     assert recovered["turn_id"] == turn_id
     assert second_adapter.context_starts == []
+
+
+@pytest.mark.asyncio
+async def test_explicit_worker_context_lineage_recovers_exact_active_turn_after_restart(
+    context_runtime_factory,
+):
+    first_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {2}, "agent_a": {2}},
+    )
+    first_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "Complete worker pass one.",
+                    "config": None,
+                }
+            ],
+        )
+    )
+    first_adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Worker pass one complete.",
+        )
+    )
+
+    first = await context_runtime_factory(first_adapter, "worker-lineage-restart.db")
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Recover explicit worker context lineage.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(
+        lambda: len(first_adapter.completed_calls["agent_a"]) == 1
+        and len(first_adapter.calls["agent_c"]) == 2
+    )
+    async with first.db.connect() as db:
+        first_a = await first.db._fetchone(
+            db,
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id LIMIT 1""",
+            (room_id,),
+        )
+    assert first_a is not None
+    first_a_id = first_a["id"]
+    worker_thread = first_a["context_thread_id"]
+    assert worker_thread
+
+    first_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "Continue worker pass one using the explicit prior context.",
+                    "config": None,
+                    "context_from_assignment_id": first_a_id,
+                }
+            ],
+        )
+    )
+    first_adapter.release_call("agent_c", 2)
+    await wait_until(lambda: len(first_adapter.calls["agent_a"]) == 2)
+
+    async def second_a_active() -> bool:
+        async with first.db.connect() as db:
+            row = await first.db._fetchone(
+                db,
+                """SELECT x.id AS assignment_id, x.context_parent_assignment_id,
+                          x.context_thread_id, e.state AS execution_state,
+                          e.sdk_thread_id, e.sdk_turn_id
+                   FROM assignments x
+                   JOIN tasks t ON t.id=x.task_id
+                   JOIN agents a ON a.id=x.agent_id
+                   JOIN agent_executions e ON e.assignment_id=x.id
+                   WHERE t.room_id=? AND a.agent_key='agent_a'
+                     AND x.id<>?
+                   ORDER BY e.created_at DESC LIMIT 1""",
+                (room_id, first_a_id),
+            )
+        return bool(
+            row
+            and row["execution_state"] == "active"
+            and row["context_parent_assignment_id"] == first_a_id
+            and row["context_thread_id"] == worker_thread
+            and row["sdk_thread_id"] == worker_thread
+            and row["sdk_turn_id"]
+        )
+
+    await wait_until(second_a_active)
+    await first.close()
+
+    second_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        turn_id_namespace="lineage_restart",
+    )
+    second_adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Recovered continued worker pass.",
+        )
+    )
+    second_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Integrated recovered worker continuation.",
+        )
+    )
+    second = await context_runtime_factory(second_adapter, "worker-lineage-restart.db")
+    await wait_until(lambda: _finished(second, room_id))
+
+    assert len(second_adapter.calls["agent_a"]) == 1
+    recovered = second_adapter.calls["agent_a"][0]
+    assert recovered["recovered"] is True
+    assert recovered["thread_id"] == worker_thread
+    assert second_adapter.context_starts == []
+
+    async with second.db.connect() as db:
+        a_rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+    assert len(a_rows) == 2
+    assert a_rows[1]["context_parent_assignment_id"] == first_a_id
+    assert a_rows[1]["context_thread_id"] == worker_thread
+    assert a_rows[1]["state"] == "completed"
 
 
 @pytest.mark.asyncio
