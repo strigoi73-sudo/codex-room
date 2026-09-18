@@ -1,7 +1,7 @@
 # Codex Room — Evidence Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-16  
+**Last updated:** 2026-09-18  
 **Scope:** Compact empirical record supporting important project claims.  
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
@@ -4668,3 +4668,56 @@ Post-merge inspection confirmed canonical `main` at that merge commit.
 **Assessment:** BCTX-2 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. This evidence does not claim BCTX-3 worker-context grace/retirement or same-Round HISTORY, or BCTX-4 coordinator checkpoint/refresh, are implemented.
 
 **Namespace note:** E-133 follows E-132. The older canonical Evidence Register body gap for reserved/cited E-125 through E-131 remains separate maintenance and is not repaired by this closeout.
+
+
+### E-134 — BCTX-3 worker-context grace/retirement and same-Round bounded HISTORY implemented, exact-head locally verified, and merged
+**Date:** 2026-09-18
+**Kind:** [CORE implementation + focused deterministic verification + repository-standard fast verification + canonical merge]
+**Decision:** D-037
+**Work item:** BCTX-3
+
+BCTX-3 extends the assignment-thread bounded-context lifecycle without introducing embeddings, broad transcript summaries, a new memory database, or BCTX-4 coordinator refresh mechanics.
+
+Exact implementation head verified locally by the principal:
+
+`ed44f87f7648f88aca8096109a221cd00339d563`
+
+Implementation behavior on that head:
+
+- when a bounded Task settles inside an active continuous Round, CORE stages the latest worker-owned provider contexts from that Task as grace-eligible for deliberate continuation;
+- grace is bounded to the next **two successful C executions** after Task settlement and is represented durably on Assignment state so restart does not reset the window;
+- C receives bounded status-only grace metadata identifying the settled Task, source Assignment, worker, and remaining C executions; worker transcript/result text is not injected by grace eligibility;
+- cross-Task worker continuation remains explicit: C must supply the eligible source Assignment ID through `context_from_assignment_id`, the source must be the same worker's latest owner of that provider thread, the source Task must be settled in the same Round, and the source Task must lie in the current Task's lineage;
+- successful cross-Task continuation consumes the predecessor grace source and records the successor Assignment as its continuation provenance;
+- C may explicitly retire grace early by naming settled prior Task IDs when it deliberately moves past/closes those objectives;
+- automatic grace expiry and explicit closure move the provider context to durable retirement-pending state; CORE archives the provider thread and records retirement after successful archive acknowledgement;
+- pending retirement survives restart: initialization drains durable retirement-pending contexts and completes provider archival before ordinary Room recovery;
+- terminal Round boundaries retire any remaining eligible worker contexts, while Pause preserves them;
+- bounded `HISTORY` now selects durable completed Assignment results from earlier settled Tasks in the same Round as well as earlier Rounds in the same Room;
+- same-Round HISTORY excludes the current Task and retains the existing global context/result bounds, exact selected-event provenance, and the rule that current Task/Assignment/Join/Evidence state remains authoritative rather than historical.
+
+The principal verified the exact head from a clean tracked working tree. Focused transaction/context verification:
+
+`python -m pytest -q tests/test_transactions.py tests/test_assignment_context.py`
+
+Result:
+
+- **38 passed** in 219.81 seconds.
+
+Repository-standard fast verification on the same exact head:
+
+- Linux Python 3.12 focused core: **54 passed**, 2 warnings;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **3 passed**;
+- total verifier result: **PASS** in 106.5 seconds;
+- final HEAD remained exactly `ed44f87f7648f88aca8096109a221cd00339d563`;
+- tracked tree remained clean;
+- one untracked local `data/` path was present and explicitly outside tracked source verification.
+
+PR #122 merged that exact verified head to canonical `main` as merge commit:
+
+`25fcf4db370aa81e2cc0aa05bf1bd143c1bc8d1e`
+
+Post-merge inspection confirmed canonical `main` at that merge commit. No GitHub-hosted workflow run was attached to the merge commit, so this entry relies on the exact-head local verification above rather than claiming hosted CI verification.
+
+**Assessment:** BCTX-3 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. This evidence does not claim BCTX-4 coordinator checkpoint/refresh is implemented.
