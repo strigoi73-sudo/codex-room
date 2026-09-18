@@ -1770,6 +1770,11 @@ class RoomRuntime:
         siblings = await self.db.get_assignment_sibling_context(
             assignment["id"]
         )
+        task_status = (
+            await self.db.get_task_coordination_status(batch["task_id"])
+            if agent["agent_key"] == "agent_c"
+            else None
+        )
         evidence_results = await self.db.get_assignment_evidence_results(
             assignment["id"]
         )
@@ -1798,6 +1803,11 @@ class RoomRuntime:
             f"Round objective:\n{round_item['prompt']}",
             f"Current assignment:\n{assignment['instruction']}",
         ]
+        if assignment.get("context_parent_assignment_id"):
+            context_parts.append(
+                "Provider context lineage explicitly continues from Assignment ID: "
+                + str(assignment["context_parent_assignment_id"])
+            )
         if round_item.get("completion_policy", "auto_settle") == "continuous":
             context_parts.extend(
                 [
@@ -1838,6 +1848,36 @@ class RoomRuntime:
             context_parts.append(f"Temporary overlay for you:\n{overlay}")
         if round_item.get("task_overlay"):
             context_parts.append(f"Round task overlay:\n{round_item['task_overlay']}")
+        if task_status is not None:
+            context_parts.append("<task_coordination_status>")
+            for item in task_status["assignments"]:
+                context_parts.append(
+                    "<assignment "
+                    f"id=\"{item['assignment_id']}\" "
+                    f"agent=\"{item['agent_key']}\" "
+                    f"state=\"{item['state']}\" "
+                    f"parent=\"{item.get('parent_assignment_id') or ''}\" "
+                    f"join=\"{item.get('contribution_join_id') or ''}\" "
+                    f"context_from=\"{item.get('context_parent_assignment_id') or ''}\" />"
+                )
+            if task_status["assignments_truncated"]:
+                context_parts.append("[Additional Assignment status rows omitted by CORE bound.]")
+            for item in task_status["joins"]:
+                context_parts.append(
+                    "<join "
+                    f"id=\"{item['join_id']}\" "
+                    f"state=\"{item['state']}\" "
+                    f"parent=\"{item.get('parent_assignment_id') or ''}\" "
+                    f"return_mode=\"{item.get('return_mode') or 'parent'}\" "
+                    f"released_assignment=\"{item.get('released_assignment_id') or ''}\" />"
+                )
+            if task_status["joins_truncated"]:
+                context_parts.append("[Additional Join status rows omitted by CORE bound.]")
+            context_parts.append("</task_coordination_status>")
+            context_parts.append(
+                "The Task coordination block is status-only authoritative work state. "
+                "It intentionally omits worker result text, transcript, and tool chatter."
+            )
         if siblings:
             context_parts.append("<declared_sibling_assignments>")
             for item in siblings:
@@ -1868,6 +1908,7 @@ class RoomRuntime:
                             f"<dependency join_id=\"{item['join_id']}\" "
                             f"assignment_id=\"{item['assignment_id']}\" "
                             f"agent=\"{item['agent_key']}\" "
+                            f"result_source=\"{item.get('result_source') or item['agent_key']}\" "
                             f"state=\"{item['state']}\">"
                         ),
                         item.get("result_content")
@@ -1939,9 +1980,11 @@ class RoomRuntime:
             "provider_context_mode", "persistent_agent_thread"
         )
         context_boundary = (
-            "This provider context is bounded to the current logical Assignment. Durable Room, "
-            "Task, dependency, and evidence state supplied above is authoritative continuity; "
-            "do not assume unsupplied history from another Assignment or earlier Round."
+            "This provider context is bounded to the current declared Assignment context lineage. "
+            "A context_parent_assignment_id above means CORE explicitly continued a terminal "
+            "same-Task worker context; otherwise do not assume unsupplied history from another "
+            "Assignment or earlier Round. Durable Room, Task, dependency, and evidence state "
+            "supplied above remains authoritative."
             if provider_context_mode == "assignment_thread"
             else
             "Earlier persistent-thread history is background only; do not treat an older "
@@ -1961,15 +2004,23 @@ class RoomRuntime:
                     "Return the transaction structured decision only. action must be COMPLETE, "
                     "DELEGATE, EVIDENCE, HISTORY, or PASS. COMPLETE ends this assignment with a "
                     "substantive message. DELEGATE pauses this assignment and must include one or "
-                    "more distinct peer delegations, each with target, bounded instruction, and "
-                    "optional config. EVIDENCE pauses this same assignment and must include 1-16 "
+                    "more distinct peer delegations, each with target, bounded instruction, optional "
+                    "config, and optional context_from_assignment_id. Use context_from_assignment_id "
+                    "only to deliberately continue the target worker's latest terminal provider context "
+                    "inside this same Task; otherwise leave it null. delegation_return_mode is null or "
+                    "'parent' for normal parent resumption. Set it to 'coordinator' only with exactly "
+                    "one child when that child will hold the finished result and this Assignment has no "
+                    "material integration work left; CORE will mechanically bypass the relay turn and "
+                    "return the exact child result toward the Task coordinator. EVIDENCE pauses this "
+                    "same assignment and must include 1-16 "
                     "bounded READ, SEARCH, or FIND source-evidence requests. HISTORY immediately "
                     "selects bounded completed results from earlier Rounds in this Room and resumes "
                     "this same assignment with those exact events supplied as historical context. "
                     "PASS ends this assignment without substantive output. Do not announce that you "
                     "are waiting for a peer unless you actually use DELEGATE to create that work. "
-                    "delegations must be null outside DELEGATE, evidence_requests must be null "
-                    "outside EVIDENCE, and history_requests must be null outside HISTORY."
+                    "delegations and delegation_return_mode must be null outside DELEGATE, "
+                    "evidence_requests must be null outside EVIDENCE, and history_requests must be "
+                    "null outside HISTORY."
                 ),
                 self._transaction_execution_config_prompt(agent["agent_key"]),
             ]
@@ -2618,6 +2669,7 @@ class RoomRuntime:
                     "batch_id": batch["batch_id"],
                     "transaction_action": decision.action,
                     "delegations": delegations or None,
+                    "delegation_return_mode": decision.delegation_return_mode,
                     "evidence_requests": evidence_requests or None,
                     "history_requests": history_requests or None,
                     "work_model_version": 2,
@@ -2637,6 +2689,7 @@ class RoomRuntime:
                 decision.action,
                 result_event["id"],
                 delegations,
+                decision.delegation_return_mode,
                 evidence_requests,
                 history_requests,
             )
@@ -2726,7 +2779,10 @@ class RoomRuntime:
                 )
                 self._publish_event(required_event)
 
-            if settlement["released_join_id"]:
+            released_join_ids = settlement.get("released_join_ids") or (
+                [settlement["released_join_id"]] if settlement["released_join_id"] else []
+            )
+            for released_join_id in released_join_ids:
                 released = await self.db.create_event(
                     room_id,
                     "assignment_join_released",
@@ -2736,7 +2792,7 @@ class RoomRuntime:
                     "the dependent assignment was released exactly once.",
                     related_event_id=result_event["id"],
                     metadata={
-                        "join_id": settlement["released_join_id"],
+                        "join_id": released_join_id,
                         "task_id": batch["task_id"],
                         "work_model_version": 2,
                     },
@@ -2744,6 +2800,29 @@ class RoomRuntime:
                     round_id=batch["round_id"],
                 )
                 self._publish_event(released)
+
+            if settlement.get("direct_returned_assignment_ids"):
+                direct_return = await self.db.create_event(
+                    room_id,
+                    "assignment_direct_return",
+                    "room",
+                    "observer",
+                    "CORE returned an exact child result toward the Task coordinator without "
+                    "invoking an intermediate relay Assignment.",
+                    related_event_id=result_event["id"],
+                    metadata={
+                        "task_id": batch["task_id"],
+                        "source_assignment_id": batch["assignment_id"],
+                        "waived_relay_assignment_ids": settlement[
+                            "direct_returned_assignment_ids"
+                        ],
+                        "released_join_ids": released_join_ids,
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(direct_return)
 
             if settlement.get("continuous_resumed"):
                 resumed = await self.db.create_event(
