@@ -4544,3 +4544,63 @@ The next evidence step is therefore a controlled **fresh-Room Common Cause rerun
 The refinement applies prospectively to freshly composed Rooms. Existing Room snapshots are not retroactively rewritten. Rollover successors continue to inherit predecessor instructions unless later deliberately changed.
 
 **Assessment:** Common Cause exposed a concrete expensive coordination problem; D-035's structural remediation is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Naturalistic behavioral/economic verification remains **IN PROGRESS** through the fresh-Room rerun.
+
+### E-132 — BCTX-1 Task-bounded continuous lifecycle implemented, exact-head locally verified, and merged
+**Date:** 2026-09-18
+**Kind:** [CORE implementation + focused deterministic verification + repository-standard fast verification + canonical merge]
+**Decision:** D-037
+**Work item:** BCTX-1
+
+BCTX-1 changes the continuous-Round settlement boundary without adding a new persistent Objective entity. Existing v2 Task is now the bounded objective/activity unit for continuous work.
+
+Exact implementation head verified locally by the principal:
+
+`6871f8e45e76c783e9709b2a7feead561939a779`
+
+Implementation behavior on that head:
+
+- coordinator `COMPLETE`/`PASS` at an ordinary continuous settlement boundary settles the current Task;
+- when the Round remains active and the hard turn limit has not fired, CORE creates one successor Task in the same Round linked through `parent_task_id`;
+- the successor Task preserves `required_contributors_json`;
+- CORE creates a new successor C Assignment and explicitly carries the predecessor C Assignment's exact `context_thread_id` in `assignment_thread` mode;
+- assignment-thread successor creation fails closed if the coordinator context lineage is unexpectedly missing;
+- `continuous_round_resumed` records predecessor Task/Assignment plus successor Task/Assignment IDs;
+- hard turn-limit settlement creates no successor;
+- child Assignments remain bounded normally;
+- A/B context remains Task-local in this slice; cross-Task worker context is deliberately fresh;
+- `auto_settle` semantics are unchanged.
+
+The principal verified the exact head from a clean tracked working tree. Focused BCTX-1 transaction selection:
+
+`python -m pytest -q tests/test_transactions.py -k "continuous"`
+
+Result:
+
+- **4 passed**
+- **13 deselected**
+- runtime approximately **24.12 s**
+
+Repository-standard `verify-fast.cmd` on the same exact head:
+
+- Linux Python 3.12 focused core: **49 passed**, 2 warnings;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **3 passed**;
+- dependency check: synchronized;
+- total verifier time: approximately **79.4 s**;
+- overall result: **PASS**.
+
+Post-verification state:
+
+- final HEAD remained exactly `6871f8e45e76c783e9709b2a7feead561939a779`;
+- tracked tree remained clean;
+- one untracked local `data/` path was present and was explicitly outside tracked source verification.
+
+PR #117 merged that exact verified head to canonical `main` as merge commit:
+
+`46ee194f791cd6e2cf2a823c98e1e74a98814c7c`
+
+Post-merge inspection confirmed canonical `main` at that merge commit and confirmed the verified implementation head as its second parent.
+
+**Assessment:** BCTX-1 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. This evidence does not claim BCTX-2 worker-context reuse/direct-result routing/status, BCTX-3 grace/same-Round HISTORY, or BCTX-4 coordinator checkpoint/refresh are implemented.
+
+**Namespace note:** canonical Development Control/Architecture already reserve and cite E-125 through E-131, while the current Evidence Register body ends at E-124 before this entry. E-132 is used deliberately to avoid colliding with those pre-existing reserved references. Repair of that older documentation gap is separate maintenance.

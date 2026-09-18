@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. D-037 now records the approved bounded-context architecture: existing v2 Task is the bounded objective, while provider context may follow explicit objective/coordinator continuity.
-- **What just changed?** The post-E-131 context-economics review and direct CORE mapping showed that continuous mode currently preserves the standing Round by requeueing the same Task/coordinator Assignment, nested delegation can purchase relay-only model turns, `HISTORY` searches only earlier Rounds, and assignment-thread mode bypasses the old compaction path. D-037 preserves the successful standing-objective behavior while changing the intended context/lifecycle architecture.
-- **Verification state:** Current D-036 continuous behavior remains **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY SUPPORTED** for the existing same-Task/same-Assignment mechanism. D-037 is **DECIDED / NOT IMPLEMENTED**. Do not describe the bounded-context target as current behavior until exact-version implementation evidence exists.
-- **What is blocked?** BCTX implementation is not conceptually blocked. D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** **BCTX-1 — Task-bounded continuous lifecycle and coordinator continuity** is the next CORE implementation slice after this documentation checkpoint is merged. Implement slices in order unless fresh evidence justifies a deliberate change.
-- **What are we deliberately not doing?** No runtime implementation before the BCTX plan/decision documentation is canonical; no new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no new synthetic token benchmark after every BCTX slice; no adjacent maintenance investigation without a demonstrated problem.
+- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. D-037 governs the bounded-context program. **BCTX-1 is complete**: continuous Rounds now settle each bounded activity as its own Task and create a successor Task/Coordinator Assignment while preserving C's provider-context lineage.
+- **What just changed?** PR #117 replaced continuous same-Task/same-Assignment requeue with Task-bounded successor creation. The successor Task preserves existing Task lineage and required-contributor contract; the successor C Assignment is new durable work but inherits the exact prior C `context_thread_id` in assignment-thread mode. Hard turn-limit settlement creates no successor.
+- **Verification state:** **BCTX-1 is IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Exact head `6871f8e45e76c783e9709b2a7feead561939a779` passed the focused continuous transaction selection (**4 passed, 13 deselected**) and `verify-fast.cmd` (**49 Linux focused + 118 Windows focused + 3 browser tests**), with tracked tree clean and HEAD unchanged. PR #117 merged as `46ee194f791cd6e2cf2a823c98e1e74a98814c7c`. See E-132.
+- **What is blocked?** BCTX-2 is not conceptually blocked. D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
+- **What is next?** **BCTX-2 — objective-local worker context, direct result return, and compact coordinator status** is the next CORE implementation slice. Implement only that slice unless fresh evidence justifies a deliberate plan change.
+- **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no new synthetic token benchmark after every BCTX slice; no BCTX-3 grace/HISTORY changes or BCTX-4 coordinator refresh work inside BCTX-2; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
 
@@ -21,11 +21,11 @@
 
 **Decision:** D-037
 
-**Overall work state:** PLANNED — implementation has not started
+**Overall work state:** IN PROGRESS — BCTX-1 complete; BCTX-2 next
 
-**Reality:** DECIDED / NOT IMPLEMENTED
+**Reality:** PARTIALLY IMPLEMENTED — BCTX-1 implemented; BCTX-2 through BCTX-4 not implemented
 
-**Current production discrepancy:** D-036's existing continuous behavior is still implemented by keeping one Task and requeueing the same root coordinator Assignment. That behavior remains the verified production truth until BCTX-1 lands. D-037 changes the intended architecture; it does not retroactively change the current runtime.
+**Current production state:** D-037's Task-bounded continuous lifecycle is now implemented through BCTX-1. Continuous mode settles the completed Task, creates a causally linked successor Task when the Round remains active, and creates a fresh successor coordinator Assignment carrying C's existing assignment-thread provider context. A/B objective-local context reuse, direct-result return, worker grace/same-Round HISTORY, and C checkpoint/refresh remain later slices.
 
 The program reuses the existing work-model-v2 transaction substrate. **Task is the bounded objective/activity. Assignment remains declared agent work. Join remains dependency/return state. Round remains the human-facing lifecycle/standing objective.** No new maintained Objective entity or broad v2 redesign is authorized.
 
@@ -39,9 +39,13 @@ Implementation order and stop boundaries follow.
 
 #### BCTX-1 — Task-bounded continuous lifecycle and coordinator continuity
 
-**Work state:** PLANNED — NEXT
+**Work state:** COMPLETE
 
-**Reality:** DECIDED / NOT IMPLEMENTED
+**Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED
+
+**Evidence:** E-132
+
+**Implementation:** PR #117; exact locally verified head `6871f8e45e76c783e9709b2a7feead561939a779`; canonical merge `46ee194f791cd6e2cf2a823c98e1e74a98814c7c`.
 
 **Goal:** make each bounded coordinator activity in a continuous Round settle as its own Task while preserving the standing Round and C's useful continuity.
 
@@ -74,7 +78,7 @@ Verification:
 
 #### BCTX-2 — objective-local worker context, direct result return, and compact coordinator status
 
-**Work state:** PLANNED — after BCTX-1
+**Work state:** PLANNED — NEXT
 
 **Reality:** DECIDED / NOT IMPLEMENTED
 
