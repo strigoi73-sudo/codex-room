@@ -322,6 +322,97 @@ async def test_transaction_nested_direct_return_bypasses_relay_parent(
 
 
 @pytest.mark.asyncio
+async def test_transaction_direct_return_child_failure_resumes_parent_for_recovery(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        failures={
+            "agent_b": [
+                RuntimeError("first verifier failure"),
+                RuntimeError("terminal verifier failure"),
+            ]
+        },
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Own the result and recover if the verifier fails.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="C integrated A's degraded recovery.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegation_return_mode="coordinator",
+                delegations=[
+                    {
+                        "target": "agent_b",
+                        "instruction": "Return directly only if you produce the finished result.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A recovered after B failed.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "direct-return-failure.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Direct return failure fallback", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_b"]) == 2
+    assert len(adapter.calls["agent_a"]) == 2
+    assert len(adapter.calls["agent_c"]) == 2
+    assert "terminal verifier failure" in adapter.calls["agent_a"][1]["prompt"]
+    assert "A recovered after B failed." in adapter.calls["agent_c"][1]["prompt"]
+
+    events = await runtime.db.get_events(room_id)
+    assert not any(
+        event["event_type"] == "assignment_direct_return" for event in events
+    )
+
+    async with runtime.db.connect() as db:
+        joins = await db.execute_fetchall(
+            """SELECT j.* FROM assignment_joins j
+               JOIN tasks t ON t.id=j.task_id WHERE t.room_id=?
+               ORDER BY j.created_at, j.id""",
+            (room_id,),
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+    assert len(joins) == 2
+    assert all(row["state"] == "released" for row in joins)
+    a_assignment = next(row for row in assignments if row["agent_key"] == "agent_a")
+    b_assignment = next(row for row in assignments if row["agent_key"] == "agent_b")
+    assert a_assignment["state"] == "completed"
+    assert b_assignment["state"] == "failed"
+
+
+@pytest.mark.asyncio
 async def test_transaction_explicit_same_task_worker_context_lineage_reuses_thread(
     transaction_runtime_factory,
 ):
