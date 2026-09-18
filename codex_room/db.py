@@ -3169,7 +3169,8 @@ class Database:
                     JOIN rooms r ON r.id=c.room_id
                     WHERE c.state IN ('preparing','archive_pending')
                       {room_clause}
-                    ORDER BY c.created_at, c.id""",
+                    ORDER BY c.created_at, c.id
+                    LIMIT 128""",
                 tuple(params),
             )
         return [dict(row) for row in rows]
@@ -4835,6 +4836,14 @@ class Database:
                        WHERE t.room_id=?
                          AND (? IS NULL OR t.round_id=?)
                      )""",
+                (now, room_id, round_id, round_id),
+            )
+            await db.execute(
+                """UPDATE coordinator_context_refreshes
+                   SET state='cancelled', completed_at=?,
+                       error='room_lifecycle_change'
+                   WHERE room_id=? AND (? IS NULL OR round_id=?)
+                     AND state IN ('preparing','archive_pending')""",
                 (now, room_id, round_id, round_id),
             )
             await db.commit()
