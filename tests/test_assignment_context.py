@@ -596,9 +596,12 @@ async def test_explicit_worker_context_lineage_recovers_exact_active_turn_after_
             (room_id,),
         )
     assert len(a_rows) == 2
-    assert a_rows[1]["context_parent_assignment_id"] == first_a_id
-    assert a_rows[1]["context_thread_id"] == worker_thread
-    assert a_rows[1]["state"] == "completed"
+    continued_rows = [row for row in a_rows if row["id"] != first_a_id]
+    assert len(continued_rows) == 1
+    continued = continued_rows[0]
+    assert continued["context_parent_assignment_id"] == first_a_id
+    assert continued["context_thread_id"] == worker_thread
+    assert continued["state"] == "completed"
 
 
 @pytest.mark.asyncio
