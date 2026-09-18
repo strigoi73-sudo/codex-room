@@ -17,6 +17,7 @@ from codex_room.models import (
     SourceEvidenceRequest,
     TransactionAction,
     TransactionDecision,
+    TRANSACTION_DECISION_SCHEMA,
 )
 from codex_room.orchestrator import RoomRuntime
 
@@ -73,6 +74,10 @@ class RefreshArchiveOnceFailureAdapter(FakeAgentAdapter):
             self._refresh_archive_failed = True
             raise RuntimeError("simulated old coordinator archive failure")
         await super().archive_thread(thread_id)
+
+
+def test_transaction_provider_schema_omits_unsupported_unique_items() -> None:
+    assert "uniqueItems" not in json.dumps(TRANSACTION_DECISION_SCHEMA)
 
 
 def test_bctx4_refresh_decision_requires_bounded_checkpoint() -> None:
