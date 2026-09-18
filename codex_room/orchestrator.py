@@ -2578,6 +2578,11 @@ class RoomRuntime:
                 item.model_dump(mode="json")
                 for item in (decision.history_requests or [])
             ]
+            retire_context_task_ids = decision.retire_context_task_ids or []
+            if retire_context_task_ids and agent_key != "agent_c":
+                raise ValueError(
+                    "Only Agent C may explicitly retire prior worker contexts"
+                )
             for item in delegations:
                 if item["target"] == agent_key or item["target"] not in participants:
                     raise ValueError("Transaction delegation must target an available peer")
@@ -2781,6 +2786,7 @@ class RoomRuntime:
                     "delegation_return_mode": decision.delegation_return_mode,
                     "evidence_requests": evidence_requests or None,
                     "history_requests": history_requests or None,
+                    "retire_context_task_ids": retire_context_task_ids or None,
                     "work_model_version": 2,
                 },
                 discussion_id=batch["round_id"],
@@ -2802,6 +2808,7 @@ class RoomRuntime:
                     decision.delegation_return_mode,
                     evidence_requests,
                     history_requests,
+                    retire_context_task_ids,
                 )
             except ValueError as exc:
                 await self._handle_assignment_failure_locked(
@@ -2812,6 +2819,58 @@ class RoomRuntime:
                 )
                 await self.publish_state(room_id)
                 return
+            if settlement.get("worker_context_grace_started_task_id"):
+                grace_event = await self.db.create_event(
+                    room_id,
+                    "worker_context_grace_started",
+                    "room",
+                    "observer",
+                    "Worker provider contexts from the settled Task remain explicitly eligible "
+                    "for two subsequent coordinator executions.",
+                    related_event_id=result_event["id"],
+                    metadata={
+                        "task_id": settlement["worker_context_grace_started_task_id"],
+                        "remaining_c_executions": 2,
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(grace_event)
+
+            retired_contexts = settlement.get("retired_worker_contexts") or []
+            archive_outcomes = (
+                await self._archive_pending_worker_contexts(room_id)
+                if retired_contexts
+                else []
+            )
+            if retired_contexts or retire_context_task_ids:
+                retired_assignment_ids = {
+                    item["assignment_id"] for item in retired_contexts
+                }
+                retirement_event = await self.db.create_event(
+                    room_id,
+                    "worker_context_retired",
+                    "room",
+                    "observer",
+                    "CORE retired objective-local worker provider context after grace expiry "
+                    "or explicit coordinator closure.",
+                    related_event_id=result_event["id"],
+                    metadata={
+                        "retire_context_task_ids": retire_context_task_ids or None,
+                        "retired_contexts": retired_contexts,
+                        "archive_outcomes": [
+                            item
+                            for item in archive_outcomes
+                            if item["assignment_id"] in retired_assignment_ids
+                        ],
+                        "work_model_version": 2,
+                    },
+                    discussion_id=batch["round_id"],
+                    round_id=batch["round_id"],
+                )
+                self._publish_event(retirement_event)
+
             if decision.action == TransactionAction.HISTORY:
                 history_event = await self.db.create_event(
                     room_id,
