@@ -7,7 +7,7 @@
 ## Operator summary
 
 - **Where are we?** Engineering Foundation, A2, P4, A3 remediation, I-015, and the full D-037 bounded-context program are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. **BCTX-1 through BCTX-4 are implemented and exact-head verified**, and the post-BCTX coordinator-refresh economics refinement is also implemented and exact-head verified. C now receives deterministic exact-thread economics so it can judge when to use the already-existing fail-closed `REFRESH` mechanism.
-- **What just changed?** A post-BCTX naturalistic `Stay busy.` run completed 59 turns without a single C `REFRESH` while C's completed-execution input load climbed into the 100K+ range and C accounted for roughly 74% of raw execution-token deltas. PR #127 addresses that demonstrated adoption/economics problem without adding an automatic refresh trigger: eligible C root turns receive exact-thread usage telemetry plus advisory guidance at roughly 64K/96K last-execution input-token ranges. See E-136 and E-137.
+- **What just changed?** A post-BCTX naturalistic `Stay busy.` run completed 59 turns without a single C `REFRESH` while C's completed-execution input load climbed into the 100K+ range and C accounted for roughly 74% of raw execution-token deltas. PR #127 addresses that demonstrated adoption/economics problem without adding an automatic refresh trigger: eligible C root turns receive exact-thread usage telemetry plus advisory guidance at roughly 64K/96K last-execution input-token ranges. See E-137 and E-138.
 - **Verification state:** **PR #127 is IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED; LIVE NATURALISTIC EFFECTIVENESS PENDING.** Exact head `03bb1a898e8d2f0e5d69f6cf28cbef0a9ddb828d` passed 4 focused correction/economics tests, the complete transaction/context suites (**47 passed**), and `verify-fast.cmd` (**63 Linux focused + 118 Windows focused + 3 browser tests**) with tracked source clean and HEAD unchanged. PR #127 squash-merged those exact verified bytes as `3db7442ee8181f3aca23626d98d77e996fe2bb9e`; post-merge blob comparison confirmed byte identity for all three changed files. No GitHub-hosted workflow run was attached. See E-137.
 - **What is blocked?** D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
 - **What is next?** Update/restart the local runtime on canonical `main`, then perform one bounded naturalistic revalidation of coordinator refresh adoption. The question is whether C now actually chooses `REFRESH` before its exact-thread execution load again grows into the previously observed 100K+ range. Do not turn this into another open-ended benchmark series.
@@ -136,7 +136,7 @@ Verification on the exact implementation head: complete transaction/context suit
 
 **Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED
 
-**Evidence:** E-135, E-136, E-137
+**Evidence:** E-135 through E-138
 
 **Implementation:** PR #124 established the fail-closed refresh mechanism; exact locally verified head `fdb21c60dd9f03c82111014a3987f0f783124e7c`; canonical merge `e9669a05255beb3cce73f80cc491601f99db5219`. PR #127 adds exact-thread coordinator economics and advisory refresh guidance; exact locally verified head `03bb1a898e8d2f0e5d69f6cf28cbef0a9ddb828d`; canonical squash merge `3db7442ee8181f3aca23626d98d77e996fe2bb9e`.
 
