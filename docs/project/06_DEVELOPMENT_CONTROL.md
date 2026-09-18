@@ -6,14 +6,148 @@
 
 ## Operator summary
 
-- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. PR #113 is merged on canonical `main` and adds explicit Round-level `completion_policy` values: default `auto_settle` and opt-in `continuous`.
-- **What just changed?** The naturalistic `Stay busy.` acceptance run completed. At 42/500 turns, the Room had crossed four coordinator settlement boundaries and CORE had resumed the same root C Assignment after each one; C had already entered a fifth bounded activity when the human paused the Room. Child Assignments continued to complete normally. See D-036 / E-130 / E-131.
-- **Verification state:** D-036 continuous Round behavior is **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY SUPPORTED**. E-130 records deterministic verification/merge evidence; E-131 records four successful same-Assignment naturalistic resumptions under the literal `Stay busy.` objective. The run was intentionally expensive—1,882,148 raw execution-token deltas across 42 executions in about 8.4 minutes—so treat cost as stress-test evidence rather than a normal baseline.
-- **What is blocked?** No high-priority CORE blocker is known. D-019 daily usage pacing remains deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** No further dedicated continuous-Round work is required absent a demonstrated failure. Common Cause competitive play remains available when the principal explicitly authorizes it; otherwise continue ordinary-use monitoring and wait for a concrete next objective.
-- **What are we deliberately not doing?** No further implementation or dedicated testing of continuous mode absent a demonstrated failure; no new optimization project solely because the literal stress test was expensive; no further synthetic Common Cause benchmark; no retroactive rewrite of failed historical Room transactions; no fourth persistent agent; no broad v2 redesign; no new memory/index architecture; no personality calibration; no automatic model router; no adjacent maintenance investigation without a demonstrated problem.
+- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. D-037 now records the approved bounded-context architecture: existing v2 Task is the bounded objective, while provider context may follow explicit objective/coordinator continuity.
+- **What just changed?** The post-E-131 context-economics review and direct CORE mapping showed that continuous mode currently preserves the standing Round by requeueing the same Task/coordinator Assignment, nested delegation can purchase relay-only model turns, `HISTORY` searches only earlier Rounds, and assignment-thread mode bypasses the old compaction path. D-037 preserves the successful standing-objective behavior while changing the intended context/lifecycle architecture.
+- **Verification state:** Current D-036 continuous behavior remains **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY SUPPORTED** for the existing same-Task/same-Assignment mechanism. D-037 is **DECIDED / NOT IMPLEMENTED**. Do not describe the bounded-context target as current behavior until exact-version implementation evidence exists.
+- **What is blocked?** BCTX implementation is not conceptually blocked. D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
+- **What is next?** **BCTX-1 — Task-bounded continuous lifecycle and coordinator continuity** is the next CORE implementation slice after this documentation checkpoint is merged. Implement slices in order unless fresh evidence justifies a deliberate change.
+- **What are we deliberately not doing?** No runtime implementation before the BCTX plan/decision documentation is canonical; no new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no new synthetic token benchmark after every BCTX slice; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
+
+### BCTX — bounded-context architecture program
+
+**Scope:** [CORE]
+
+**Decision:** D-037
+
+**Overall work state:** PLANNED — implementation has not started
+
+**Reality:** DECIDED / NOT IMPLEMENTED
+
+**Current production discrepancy:** D-036's existing continuous behavior is still implemented by keeping one Task and requeueing the same root coordinator Assignment. That behavior remains the verified production truth until BCTX-1 lands. D-037 changes the intended architecture; it does not retroactively change the current runtime.
+
+The program reuses the existing work-model-v2 transaction substrate. **Task is the bounded objective/activity. Assignment remains declared agent work. Join remains dependency/return state. Round remains the human-facing lifecycle/standing objective.** No new maintained Objective entity or broad v2 redesign is authorized.
+
+The approved memory/context horizons are:
+
+1. **Worker active context** — A/B context retained only across explicitly causally continuous work for the current bounded Task, including useful implementation/verification/repair/re-verification loops.
+2. **Coordinator continuity context** — C may carry materially longer context across successor Tasks in one continuing Round, with a later deliberate checkpoint/refresh boundary.
+3. **Durable deterministic state** — Round/Task/Assignment/Join/Evidence/history/provenance remains authoritative outside provider transcript state.
+
+Implementation order and stop boundaries follow.
+
+#### BCTX-1 — Task-bounded continuous lifecycle and coordinator continuity
+
+**Work state:** PLANNED — NEXT
+
+**Reality:** DECIDED / NOT IMPLEMENTED
+
+**Goal:** make each bounded coordinator activity in a continuous Round settle as its own Task while preserving the standing Round and C's useful continuity.
+
+Required behavior:
+
+- when the coordinator reaches the ordinary Task settlement boundary in a `continuous` Round with no open Assignments/Joins and no missing required contributor, settle the current Task instead of requeueing its terminal coordinator Assignment;
+- if the hard turn limit or another terminal runtime boundary has fired, do not create successor work;
+- otherwise create one successor Task in the same Round, linked through existing Task lineage (`parent_task_id` or the smallest equivalent existing mechanism);
+- create the successor coordinator Assignment as fresh durable work while explicitly carrying the prior coordinator provider-context lineage forward;
+- preserve the same standing Round objective and required-contributor contract;
+- child Assignments remain bounded and settle normally;
+- `auto_settle` Round behavior remains unchanged;
+- human Stop/Pause/Resume, usage-wall continuation, exact-turn recovery, serialized execution, stale-result protection, and transaction settlement invariants remain intact;
+- record enough event/provenance state to inspect each bounded Task transition deterministically.
+
+BCTX-1 explicitly does **not** add worker context reuse, relay bypass, worker grace, same-Round HISTORY expansion, or C checkpointing.
+
+Verification:
+
+- focused transaction tests proving multiple settled successor Tasks inside one active continuous Round;
+- exact C context-thread continuity across successor Tasks;
+- no successor Task after hard turn limit/terminal stop;
+- child Assignment scope remains bounded;
+- existing `auto_settle` behavior unchanged;
+- restart/recovery coverage at the Task-transition boundary where warranted;
+- repository-standard `verify-fast.cmd` / `verify-local.ps1` verification on the exact implementation bytes;
+- inspect exact diff before merge.
+
+**Stop condition:** BCTX-1 ends when Task-bounded continuous lifecycle is exact-version verified. Do not absorb BCTX-2 mechanics merely because adjacent code is convenient to edit.
+
+#### BCTX-2 — objective-local worker context, direct result return, and compact coordinator status
+
+**Work state:** PLANNED — after BCTX-1
+
+**Reality:** DECIDED / NOT IMPLEMENTED
+
+**Goal:** preserve useful A/B local cognition inside one bounded Task while removing unnecessary relay cognition and keeping C informed through compact authoritative state.
+
+Required behavior:
+
+- allow a later Assignment to reuse a worker provider context only through an **explicit causal context lineage** inside the same Task; common agent identity or common Task membership alone is insufficient when branches could be independent;
+- preserve useful worker context through implementation → verification → repair → re-verification where the work deliberately continues the same objective;
+- unrelated/new Tasks start A/B context fresh by default;
+- add an explicit structured transaction mechanism allowing a child that holds the finished required result to return directly to the Task coordinator when the intermediate parent has no material intellectual work left;
+- CORE must close/waive/resolve obsolete intermediate relay work mechanically and preserve exact provenance; relay bypass must never be inferred from prose;
+- keep ordinary nested parent-resume behavior available when the parent genuinely has integration/correction work;
+- provide C a compact deterministic Task/Assignment/Join status view sufficient to understand active ownership, dependency state, and completed/failed work without replaying worker transcript/tool chatter.
+
+Verification should include ordinary nested delegation, direct-return delegation, parent-required integration, failure/degraded paths, parallel independent branches, restart/recovery, and exact provider-thread lineage checks.
+
+**Stop condition:** BCTX-2 ends when objective-local continuity and direct return are verified without weakening transaction settlement or purchasing redundant model turns.
+
+#### BCTX-3 — worker-context grace/retirement and same-Round bounded HISTORY
+
+**Work state:** PLANNED — after BCTX-2
+
+**Reality:** DECIDED / NOT IMPLEMENTED
+
+**Goal:** keep just-completed worker context briefly available for legitimate follow-up while preventing unrelated future work from inheriting it.
+
+Required behavior:
+
+- after a Task completes, worker provider contexts associated with that Task remain eligible for deliberate continuation through the next **two C executions**;
+- the grace ends earlier when C explicitly moves past/closes the completed objective;
+- grace eligibility does not automatically invoke a worker or inject its transcript into another Assignment;
+- after grace expiry, retire/archive the eligible worker provider contexts so unrelated later Tasks start clean;
+- continuation during grace must be explicitly tied to the completed Task/objective and preserve provenance;
+- extend bounded `HISTORY` selection so a current Assignment may retrieve completed result events from earlier completed Tasks in the **same Round** as well as earlier Rounds;
+- retain existing same-Room authority, result-count/context bounds, exact selected-event provenance, and the rule that current transaction state comes from Task/Assignment/Join/Evidence state rather than HISTORY.
+
+The exact durable representation for grace counters should use the smallest existing state extension that is restart-safe and deterministic.
+
+**Stop condition:** BCTX-3 ends when grace/retirement and same-Round retrieval are verified; do not introduce embeddings, broad summaries, or a new memory database.
+
+#### BCTX-4 — coordinator checkpoint and refresh
+
+**Work state:** PLANNED — after BCTX-3
+
+**Reality:** DECIDED / NOT IMPLEMENTED
+
+**Goal:** give long-lived C coordination a deliberate context-reset mechanism without losing organizational continuity or replaying the full old transcript.
+
+Required behavior:
+
+- C can produce a bounded free-form continuity checkpoint describing unresolved reasoning, current strategy, important judgments, and near-term intent;
+- CORE supplies deterministic current organizational state separately from that free-form checkpoint;
+- a fresh C provider context starts from the checkpoint plus deterministic state and current Round/Task authority;
+- the old coordinator provider context is retired after successful handoff;
+- exact checkpoint source, old/new context identities, and handoff provenance are durable and inspectable;
+- failure during refresh must fail closed without leaving two independently runnable coordinator contexts;
+- exact automatic triggers/thresholds are implementation-design questions for BCTX-4 and must be justified by evidence rather than guessed in advance.
+
+Verification should cover successful refresh, failure rollback/fail-closed behavior, restart boundaries, post-refresh Task continuity, and absence of wholesale transcript replay.
+
+**Stop condition:** BCTX-4 ends when coordinator refresh is safe and evidenced. Further memory/index work remains deferred unless ordinary use demonstrates a concrete need.
+
+#### Program-wide constraints and verification policy
+
+- Preserve A/B/C as epistemic peers; C coordinates without superior judgment.
+- Preserve work-model-v2 Task/Assignment/Join authority, selective cognition, exact execution provenance, serialized per-agent execution, restart recovery, stale-result protection, usage-wall safety, and human stop authority.
+- Prefer schema reuse. Add state only where an existing owner cannot represent the required lifecycle safely.
+- Review validity attaches to exact bytes/version.
+- Use focused deterministic tests during each slice and the repository-standard fast verifier before completion. Escalate to broader/manual verification when the changed risk surface warrants it.
+- One bounded naturalistic exercise after the assembled behavior is available may be useful. Do not buy a large synthetic `Stay busy.` benchmark after every slice.
+- Record implementation/test evidence in the Evidence Register only after it exists. Update Architecture & Current State only after implementation is evidenced.
+- If implementation reveals that a settled D-037 semantic cannot be achieved safely with the planned mechanism, stop and update the decision/plan deliberately before substituting a different architecture.
 
 ### Continuous Round naturalistic acceptance
 

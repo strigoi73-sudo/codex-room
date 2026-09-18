@@ -1,7 +1,7 @@
 # Codex Room — Decision Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-17  
+**Last updated:** 2026-09-18  
 **Scope:** Settled architectural, governance, product-direction, and development-order decisions.  
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
@@ -465,6 +465,7 @@ This decision extends D-030's transaction principle into deterministic evidence 
 
 ### D-032 — Provider context is transport; Assignment is the first bounded context unit
 **Date:** 2026-09-16  
+**Amended:** 2026-09-18 by D-037  
 **Status:** ACTIVE
 
 I-015 Stage C should test provider-context economy without redefining the persistent A/B/C organization or weakening the explicit transaction model.
@@ -487,6 +488,7 @@ This decision extends D-030 by separating **persistent organizational identity**
 
 ### D-033 — Cross-Assignment continuity uses explicit bounded Room-history retrieval
 **Date:** 2026-09-16  
+**Amended:** 2026-09-18 by D-037  
 **Status:** ACTIVE
 
 Stage C.2 established that Assignment-bounded provider context materially reduces inherited replay cost but does not itself carry needed episodic continuity from earlier Rounds. The first continuity mechanism should therefore retrieve prior durable Room results explicitly rather than restore a forever-growing provider thread.
@@ -560,6 +562,7 @@ Behavioral compliance remains an evidence question. Exact instruction regression
 
 ### D-036 — Round completion policy separates bounded activity settlement from standing objectives
 **Date:** 2026-09-18  
+**Amended:** 2026-09-18 by D-037  
 **Status:** ACTIVE
 
 Codex Room needs an explicit lifecycle distinction between an ordinary Round that should finish when its work settles and a standing Round objective that should remain active until the human or a hard runtime boundary stops it.
@@ -581,3 +584,35 @@ This decision changes Round lifecycle semantics only. It does not change A/B/C e
 
 **Principle:** **Bounded activity can finish without finishing a standing objective; continuity must be explicit, mechanical, and still bounded by human/runtime stop conditions.**
 
+
+
+### D-037 — Task is the bounded objective; provider context follows deliberate objective continuity
+**Date:** 2026-09-18  
+**Status:** ACTIVE
+
+The principal approves the bounded-context architecture synthesized after the naturalistic continuous-Round acceptance and subsequent CORE mapping.
+
+The existing work-model-v2 **Task** is the bounded objective/activity unit. No new persistent Objective entity is authorized. A Round may contain one or more causally linked Tasks; Assignment remains the declared unit of agent work inside a Task, and Join remains the dependency/return mechanism.
+
+Settled architecture:
+
+- **Round scope:** the Round carries the human-facing objective/lifecycle. An ordinary `auto_settle` Round may still close when its bounded Task settles. A `continuous` Round keeps the standing Round objective active across multiple bounded Tasks until human stop, hard turn limit, or another genuine runtime boundary.
+- **Task scope:** each bounded activity/objective has its own Task. In continuous mode, when the coordinator reaches the ordinary settlement boundary with no open Assignments/Joins and no missing required contributor, that Task should settle. If the Round remains active, CORE should create a successor Task linked through existing Task lineage instead of reopening the settled Task.
+- **Coordinator continuity:** successor Tasks in one continuing Round may deliberately carry C's provider-context lineage forward so C retains organizational continuity across bounded objectives. This continuity must be explicit and provenance-preserving; it does not make the provider thread the authoritative work state. A later deliberate C checkpoint/refresh may end that lineage and start a fresh C context.
+- **Worker objective-local continuity:** A/B provider context should be retained only for useful causally continuous work inside the same bounded Task, including implementation/verification/repair/re-verification loops. A new unrelated Task starts fresh worker context by default. Different Assignments therefore may share provider context only through an explicit same-objective context lineage; mere common agent identity is insufficient.
+- **Direct result return:** nested delegation must support an explicit structured way for a child that now holds the required finished result to return it directly to the Task coordinator when the intermediate parent has no material intellectual work left. CORE must not infer relay bypass from prose. The mechanism must preserve settlement validity, provenance, and parent/Join terminal state.
+- **Coordinator awareness:** C should receive compact authoritative Task/Assignment/Join status sufficient for coordination without automatic replay of worker transcripts or intermediate tool chatter.
+- **Worker-context grace:** after a Task completes, its worker contexts remain eligible for deliberate continuation for **two subsequent C turns**, ending sooner if C explicitly moves past that objective. After the grace expires, those worker contexts should be retired so unrelated later work starts clean.
+- **Historical continuity:** bounded `HISTORY` retrieval should be able to recover relevant completed Task results from earlier Tasks in the same Round as well as prior Rounds, while retaining explicit bounds, same-Room authority, and exact event provenance. Current Task/Assignment/Join/Evidence state remains authoritative.
+- **C checkpoint/refresh:** coordinator refresh is a separate lifecycle mechanism. A refresh should preserve a free-form C continuity checkpoint plus deterministic current organizational state, start a fresh C provider context, and avoid wholesale transcript replay. Exact triggers/thresholds remain implementation design until that slice is reached.
+- **Memory horizons:** worker active context, coordinator continuity context, and durable deterministic transaction/evidence state are distinct horizons. Persistent A/B/C identity remains application-level organizational state.
+
+This decision **amends D-032**: Assignment remains the default first bounded provider-context unit, while explicit same-objective/coordinator continuity may carry one provider context across multiple Assignments or successor Tasks when that continuity is deliberate and bounded.
+
+This decision **amends D-033**: bounded history retrieval remains explicit and provenance-preserving, and its eligible completed-result domain may include earlier completed Tasks in the same Round as well as earlier Rounds.
+
+This decision **amends D-036**: the standing-objective distinction and explicit `continuous` policy remain active, but continuous mode should no longer preserve continuity by indefinitely requeueing the same Task/coordinator Assignment. The intended successor mechanism is bounded Task settlement followed by a successor Task while the Round remains active.
+
+Implementation should proceed in bounded slices. **BCTX-1** establishes Task-bounded continuous lifecycle and coordinator context continuity first. Later slices may add objective-local worker context/direct result return, worker grace plus same-Round history, and C checkpoint/refresh. Do not collapse these into a broad transaction rewrite.
+
+**Principle:** **Bound the objective in durable Task state; carry provider context only across continuity that the work actually needs.**
