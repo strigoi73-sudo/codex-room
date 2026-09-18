@@ -3578,6 +3578,7 @@ class Database:
         delegation_return_mode: str | None = None,
         evidence_requests: list[dict[str, Any]] | None = None,
         history_requests: list[dict[str, Any]] | None = None,
+        retire_context_task_ids: list[str] | None = None,
     ) -> dict[str, Any]:
         """Atomically settle one assignment decision and release any satisfied join."""
         now = utc_now()
@@ -3593,6 +3594,8 @@ class Database:
         history_event_ids: list[str] = []
         continuous_successor_task_id: str | None = None
         continuous_successor_assignment_id: str | None = None
+        retired_worker_contexts: list[dict[str, Any]] = []
+        worker_context_grace_started_task_id: str | None = None
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             execution = await self._fetchone(
@@ -3630,6 +3633,8 @@ class Database:
                     "continuous_successor_assignment_id": None,
                     "released_join_ids": [],
                     "direct_returned_assignment_ids": [],
+                    "retired_worker_contexts": [],
+                    "worker_context_grace_started_task_id": None,
                 }
             if assignment["state"] != "running":
                 await db.rollback()
@@ -3657,6 +3662,53 @@ class Database:
                 round_budget
                 and int(round_budget["turn_count"]) >= int(round_budget["max_turns"])
             )
+            current_task = await self._fetchone(
+                db,
+                "SELECT * FROM tasks WHERE id=? AND room_id=? AND round_id=?",
+                (assignment["task_id"], room_id, round_id),
+            )
+            if current_task is None:
+                await db.rollback()
+                raise RuntimeError("Transaction Assignment has no current Task")
+            coordinator_execution = (
+                current_task["coordinator_agent_id"] == assignment["agent_id"]
+            )
+
+            if retire_context_task_ids:
+                if not coordinator_execution:
+                    await db.rollback()
+                    raise ValueError(
+                        "Only the Task coordinator may retire prior worker contexts"
+                    )
+                for retire_task_id in retire_context_task_ids:
+                    retire_task = await self._fetchone(
+                        db,
+                        """SELECT * FROM tasks
+                           WHERE id=? AND room_id=? AND round_id=?""",
+                        (retire_task_id, room_id, round_id),
+                    )
+                    if (
+                        retire_task is None
+                        or retire_task["state"] != "settled"
+                        or int(retire_task["worker_context_grace_remaining"] or 0) <= 0
+                        or retire_task["worker_context_grace_retired_at"] is not None
+                        or not await self._task_is_ancestor(
+                            db, retire_task_id, assignment["task_id"]
+                        )
+                    ):
+                        await db.rollback()
+                        raise ValueError(
+                            "Worker-context retirement requires a grace-eligible "
+                            "settled ancestor Task in the current Round"
+                        )
+                    retired_worker_contexts.extend(
+                        await self._retire_worker_context_task(
+                            db,
+                            retire_task_id,
+                            reason="coordinator_closed_objective",
+                            now=now,
+                        )
+                    )
 
             await db.execute(
                 """UPDATE assignment_evidence
@@ -3808,6 +3860,7 @@ class Database:
                         db,
                         room_id,
                         round_id,
+                        assignment["task_id"],
                         history_requests,
                         existing_context_ids,
                     )
@@ -3845,6 +3898,16 @@ class Database:
             if cursor.rowcount != 1:
                 await db.rollback()
                 raise RuntimeError("Transaction decision settlement lost its compare-and-set")
+
+            if coordinator_execution:
+                retired_worker_contexts.extend(
+                    await self._advance_worker_context_grace(
+                        db,
+                        round_id,
+                        assignment["task_id"],
+                        now=now,
+                    )
+                )
 
             contribution_join_id = assignment["contribution_join_id"]
             if action not in {"DELEGATE", "EVIDENCE", "HISTORY"} and contribution_join_id:
@@ -4100,6 +4163,22 @@ class Database:
                         )
                         task_settled = True
                         if continuous_round and not turn_limit_hit:
+                            worker_contexts = await self._worker_context_rows_for_task(
+                                db, assignment["task_id"]
+                            )
+                            if worker_contexts:
+                                await db.execute(
+                                    """UPDATE tasks
+                                       SET worker_context_grace_remaining=2,
+                                           worker_context_grace_retired_at=NULL,
+                                           worker_context_grace_retirement_reason=NULL,
+                                           updated_at=?
+                                       WHERE id=?""",
+                                    (now, assignment["task_id"]),
+                                )
+                                worker_context_grace_started_task_id = assignment[
+                                    "task_id"
+                                ]
                             continuous_successor_task_id = new_id("task")
                             continuous_successor_assignment_id = new_id("assignment")
                             assignment_context_mode = bool(
@@ -4157,6 +4236,25 @@ class Database:
                             )
                             wake_agent_keys.append(assignment["agent_key"])
                             continuous_resumed = True
+                        else:
+                            rows = await db.execute_fetchall(
+                                """SELECT id FROM tasks
+                                   WHERE round_id=? AND state='settled'
+                                   ORDER BY created_at, id""",
+                                (round_id,),
+                            )
+                            terminal_reason = (
+                                "turn_limit" if turn_limit_hit else "round_settled"
+                            )
+                            for row in rows:
+                                retired_worker_contexts.extend(
+                                    await self._retire_worker_context_task(
+                                        db,
+                                        row["id"],
+                                        reason=terminal_reason,
+                                        now=now,
+                                    )
+                                )
 
             await db.commit()
         return {
@@ -4173,6 +4271,8 @@ class Database:
             "history_event_ids": history_event_ids,
             "continuous_successor_task_id": continuous_successor_task_id,
             "continuous_successor_assignment_id": continuous_successor_assignment_id,
+            "retired_worker_contexts": retired_worker_contexts,
+            "worker_context_grace_started_task_id": worker_context_grace_started_task_id,
         }
 
     async def fail_transaction_assignment(
