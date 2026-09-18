@@ -600,6 +600,285 @@ async def test_transaction_same_task_worker_context_stays_fresh_without_explicit
 
 
 @pytest.mark.asyncio
+async def test_transaction_explicit_worker_context_lineage_reuses_thread_and_c_gets_status_only(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {2}},
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "Implement the first step.",
+                    "config": None,
+                }
+            ],
+        )
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A first result",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A second result using prior local context",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "context-lineage.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise explicit worker context lineage",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 2)
+
+    async with runtime.db.connect() as db:
+        first_a = await db.execute_fetchone(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id LIMIT 1""",
+            (room_id,),
+        )
+    assert first_a is not None
+    assert first_a["state"] == "completed"
+    assert first_a["context_thread_id"] is not None
+
+    c_second_prompt = adapter.calls["agent_c"][1]["prompt"]
+    assert "<task_coordination_status " in c_second_prompt
+    status_block = c_second_prompt.split("<task_coordination_status ", 1)[1].split(
+        "</task_coordination_status>", 1
+    )[0]
+    assert first_a["id"] in status_block
+    assert 'agent="agent_a"' in status_block
+    assert 'state="completed"' in status_block
+    assert "A first result" not in status_block
+
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Continue the same bounded objective with the second step.",
+                        "config": None,
+                        "context_from_assignment_id": first_a["id"],
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="C integrated the continued A work.",
+            ),
+        ]
+    )
+    adapter.release_call("agent_c", 2)
+
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    async with runtime.db.connect() as db:
+        a_assignments = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(a_assignments) == 2
+    assert a_assignments[1]["context_parent_assignment_id"] == a_assignments[0]["id"]
+    assert a_assignments[1]["context_thread_id"] == a_assignments[0]["context_thread_id"]
+    assert len([item for item in adapter.context_starts if item[0] == "agent_a"]) == 1
+    assert adapter.calls["agent_a"][0]["thread_id"] == adapter.calls["agent_a"][1]["thread_id"]
+    assert (
+        "Provider context lineage explicitly continues from Assignment ID: "
+        + a_assignments[0]["id"]
+        in adapter.calls["agent_a"][1]["prompt"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_transaction_direct_child_return_bypasses_relay_and_preserves_provenance(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Own the analysis; B may finish the answer if appropriate.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="C integrated the directly returned result.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegation_return_mode="coordinator",
+            delegations=[
+                {
+                    "target": "agent_b",
+                    "instruction": "Produce the finished answer; no A integration is needed.",
+                    "config": None,
+                }
+            ],
+        )
+    )
+    adapter.decisions["agent_b"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="B finished result",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "direct-return.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Direct result return", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    assert len(adapter.calls["agent_a"]) == 1
+    assert len(adapter.calls["agent_b"]) == 1
+
+    async with runtime.db.connect() as db:
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+        joins = await db.execute_fetchall(
+            """SELECT j.* FROM assignment_joins j
+               JOIN tasks t ON t.id=j.task_id
+               WHERE t.room_id=? ORDER BY j.created_at, j.id""",
+            (room_id,),
+        )
+
+    a_assignment = next(row for row in assignments if row["agent_key"] == "agent_a")
+    b_assignment = next(row for row in assignments if row["agent_key"] == "agent_b")
+    assert a_assignment["state"] == "waived"
+    assert a_assignment["resolution_reason"] == "direct_result_return:" + b_assignment["id"]
+    assert b_assignment["state"] == "completed"
+    assert len(joins) == 2
+    assert all(row["state"] == "released" for row in joins)
+
+    c_prompt = adapter.calls["agent_c"][1]["prompt"]
+    assert "B finished result" in c_prompt
+    assert 'result_source="agent_b"' in c_prompt
+    assert f'forwarded_assignment_id="{b_assignment["id"]}"' in c_prompt
+
+    events = await runtime.db.get_events(room_id)
+    direct_events = [
+        event for event in events if event["event_type"] == "assignment_direct_return"
+    ]
+    released_events = [
+        event for event in events if event["event_type"] == "assignment_join_released"
+    ]
+    assert len(direct_events) == 1
+    assert direct_events[0]["metadata"]["source_assignment_id"] == b_assignment["id"]
+    assert direct_events[0]["metadata"]["waived_relay_assignment_ids"] == [
+        a_assignment["id"]
+    ]
+    assert len(released_events) == 2
+
+
+@pytest.mark.asyncio
+async def test_transaction_direct_return_child_failure_resumes_parent_for_judgment(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        failures={
+            "agent_b": [
+                RuntimeError("first B failure"),
+                RuntimeError("terminal B failure"),
+            ]
+        },
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Own this work and use B if useful.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="C integrated A's degraded-path judgment.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegation_return_mode="coordinator",
+                delegations=[
+                    {
+                        "target": "agent_b",
+                        "instruction": "Attempt to produce the final checked answer.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A handled B's terminal failure and produced the final result.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "direct-return-failure.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(topic="Direct return degraded path", work_model_version=2)
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_b"]) == 2
+    assert len(adapter.calls["agent_a"]) == 2
+    assert len(adapter.calls["agent_c"]) == 2
+    assert 'state="failed"' in adapter.calls["agent_a"][1]["prompt"]
+    assert "terminal B failure" in adapter.calls["agent_a"][1]["prompt"]
+    assert "A handled B's terminal failure" in adapter.calls["agent_c"][1]["prompt"]
+
+    events = await runtime.db.get_events(room_id)
+    assert not any(event["event_type"] == "assignment_direct_return" for event in events)
+
+
+@pytest.mark.asyncio
 async def test_transaction_observer_peer_message_creates_explicit_work_then_c_integration(
     transaction_runtime_factory,
 ):
