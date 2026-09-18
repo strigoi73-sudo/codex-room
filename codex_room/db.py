@@ -3003,7 +3003,17 @@ class Database:
                    ORDER BY j.created_at, x.created_at, x.id""",
                 (assignment_id,),
             )
-        return [dict(row) for row in rows]
+        results: list[dict[str, Any]] = []
+        for row in rows:
+            item = dict(row)
+            reason = item.get("resolution_reason") or ""
+            item["forwarded_result_assignment_id"] = (
+                reason.removeprefix("direct_result_return:")
+                if reason.startswith("direct_result_return:")
+                else None
+            )
+            results.append(item)
+        return results
 
     async def get_assignment_sibling_context(
         self, assignment_id: str
@@ -3031,6 +3041,14 @@ class Database:
         """Return bounded status-only Task/Assignment/Join state for coordinator awareness."""
         limit = max(1, min(int(max_rows), 128))
         async with self.connect() as db:
+            task_row = await self._fetchone(
+                db,
+                """SELECT t.id AS task_id, t.state AS task_state,
+                          a.agent_key AS coordinator_agent_key
+                   FROM tasks t JOIN agents a ON a.id=t.coordinator_agent_id
+                   WHERE t.id=?""",
+                (task_id,),
+            )
             assignment_rows = await db.execute_fetchall(
                 """SELECT x.id AS assignment_id, a.agent_key, x.state,
                           x.parent_assignment_id, x.contribution_join_id,
@@ -3052,6 +3070,11 @@ class Database:
                 (task_id, limit + 1),
             )
         return {
+            "task_id": task_id,
+            "task_state": task_row["task_state"] if task_row is not None else None,
+            "coordinator_agent_key": (
+                task_row["coordinator_agent_key"] if task_row is not None else None
+            ),
             "assignments": [dict(row) for row in assignment_rows[:limit]],
             "joins": [dict(row) for row in join_rows[:limit]],
             "assignments_truncated": len(assignment_rows) > limit,
