@@ -3384,8 +3384,15 @@ class Database:
             "SELECT created_at FROM rounds WHERE id=? AND room_id=?",
             (round_id, room_id),
         )
-        if current_round is None:
-            raise RuntimeError("Current Round is missing during Room-history retrieval")
+        current_task = await self._fetchone(
+            db,
+            "SELECT created_at, id FROM tasks WHERE id=? AND room_id=? AND round_id=?",
+            (current_task_id, room_id, round_id),
+        )
+        if current_round is None or current_task is None:
+            raise RuntimeError(
+                "Current Round/Task is missing during Room-history retrieval"
+            )
 
         combined = list(dict.fromkeys(existing_event_ids))[:20]
         seen = set(combined)
@@ -3399,13 +3406,17 @@ class Database:
                 room_id,
                 current_round["created_at"],
                 round_id,
-                current_task_id,
+                current_task["created_at"],
+                current_task["created_at"],
+                current_task["id"],
             ]
             filters = [
                 "t.room_id=?",
                 (
                     "(ro.created_at < ? OR "
-                    "(ro.id=? AND t.state='settled' AND t.id<>?))"
+                    "(ro.id=? AND t.state='settled' AND "
+                    "(t.created_at < ? OR "
+                    "(t.created_at = ? AND t.id < ?))))"
                 ),
                 "x.state='completed'",
                 "e.content IS NOT NULL",
