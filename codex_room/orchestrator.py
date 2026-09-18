@@ -178,13 +178,15 @@ class RoomRuntime:
     )
     TRANSACTION_HISTORY_INSTRUCTION = (
         "<room_history>\n"
-        "When this assignment needs a specific fact or result from an earlier Round in this "
-        "same Room and that history is not already supplied, declare the bounded need with "
+        "When this assignment needs a specific fact or result from an earlier settled Task in "
+        "this Round or an earlier Round in this same Room and that history is not already "
+        "supplied, declare the bounded need with "
         "transaction action HISTORY. Use RECENT for a temporal dependency or SEARCH with one "
         "specific lexical query when you know the relevant concept; optionally restrict the "
         "request to one agent and request only as many results as are likely necessary. Each "
         "HISTORY request may ask for 1-10 results, with at most 4 requests in one action. CORE "
-        "selects only durable completed Assignment results from earlier Rounds and returns the "
+        "selects only durable completed Assignment results from eligible earlier Tasks/Rounds "
+        "and returns the "
         "exact bounded result events to this same assignment. Do not use HISTORY to recover "
         "current Task/Join/Evidence state already supplied in the assignment envelope, to read "
         "source files, or for broad catch-up. Ask again only when the returned history leaves a "
@@ -2775,7 +2777,7 @@ class RoomRuntime:
                 )
             if decision.action == TransactionAction.HISTORY and not content:
                 content = (
-                    f"Requested {len(history_requests)} bounded prior-Room history "
+                    f"Requested {len(history_requests)} bounded Room-history "
                     "lookup(s) from CORE."
                 )
             result_event = await self.db.create_event(
