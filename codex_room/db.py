@@ -3123,7 +3123,7 @@ class Database:
                    JOIN agents a ON a.id=x.agent_id
                    WHERE t.room_id=? AND t.round_id=?
                      AND x.context_thread_id IS NOT NULL
-                     AND x.context_grace_state IN ('eligible','retire_pending')
+                     AND x.context_grace_state='eligible'
                    ORDER BY t.settled_at DESC, x.completed_at DESC, x.id DESC
                    LIMIT 32""",
                 (room_id, round_id),
