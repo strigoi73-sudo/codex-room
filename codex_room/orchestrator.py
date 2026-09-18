@@ -1804,11 +1804,12 @@ class RoomRuntime:
                     "<continuous_round>",
                     (
                         "This Round has a standing continuous objective. COMPLETE or PASS ends "
-                        "only the bounded activity represented by the current execution; it does "
-                        "not finish the Round. CORE will return control to this same coordinator "
-                        "Assignment while the Round remains active. Continue following the Round "
-                        "objective until the human stops the Room or a hard runtime boundary "
-                        "prevents further work."
+                        "only the bounded activity represented by your current Assignment; it does "
+                        "not by itself finish the Round. Child Assignments still complete normally. "
+                        "When the task coordinator reaches the ordinary settlement boundary and no "
+                        "hard runtime boundary has fired, CORE requeues that coordinator Assignment. "
+                        "Stay within your current Assignment and its scope. The human stopping the "
+                        "Room or a hard runtime boundary ends the continuous loop."
                     ),
                     "</continuous_round>",
                 ]
