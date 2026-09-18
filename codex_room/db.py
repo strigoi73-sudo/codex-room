@@ -3131,7 +3131,7 @@ class Database:
                  AND x.agent_id<>t.coordinator_agent_id
                  AND x.context_thread_id IS NOT NULL
                  AND x.context_retired_at IS NULL
-                 AND x.state IN ('completed','passed','failed','waived')
+                 AND x.state IN ('completed','passed','failed','cancelled','waived')
                  AND NOT EXISTS (
                      SELECT 1 FROM assignments newer
                      WHERE newer.agent_id=x.agent_id
