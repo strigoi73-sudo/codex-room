@@ -526,6 +526,149 @@ async def test_transaction_explicit_same_task_worker_context_lineage_reuses_thre
 
 
 @pytest.mark.asyncio
+async def test_transaction_local_repair_loop_reuses_verifier_context_explicitly(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_a": {2}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Implement, repair if needed, and return the verified result.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="C integrated A's verified result.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_b",
+                    "instruction": "Verify A's first implementation pass.",
+                    "config": None,
+                }
+            ],
+        )
+    )
+    adapter.decisions["agent_b"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="B found one defect.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="B re-verified the repair successfully.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "local-repair-loop.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise local repair-loop context continuity",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(
+        lambda: len(adapter.completed_calls["agent_b"]) == 1
+        and len(adapter.calls["agent_a"]) == 2
+    )
+
+    async with runtime.db.connect() as db:
+        b_rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_b'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+    assert len(b_rows) == 1
+    first_b_id = b_rows[0]["id"]
+    first_b_thread = b_rows[0]["context_thread_id"]
+    assert first_b_thread
+    assert "B found one defect." in adapter.calls["agent_a"][1]["prompt"]
+    assert f'assignment_id="{first_b_id}"' in adapter.calls["agent_a"][1]["prompt"]
+
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_b",
+                        "instruction": "Re-verify the repair using the same local verifier context.",
+                        "config": None,
+                        "context_from_assignment_id": first_b_id,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A repaired the defect and B re-verified it.",
+            ),
+        ]
+    )
+    adapter.release_call("agent_a", 2)
+
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_a"]) == 3
+    assert len(adapter.calls["agent_b"]) == 2
+    assert adapter.calls["agent_b"][0]["thread_id"] == first_b_thread
+    assert adapter.calls["agent_b"][1]["thread_id"] == first_b_thread
+    assert len([item for item in adapter.context_starts if item[0] == "agent_b"]) == 1
+    assert (
+        "Provider context lineage explicitly continues from Assignment ID: "
+        + first_b_id
+        in adapter.calls["agent_b"][1]["prompt"]
+    )
+    assert "B re-verified the repair successfully." in adapter.calls["agent_a"][2]["prompt"]
+    assert "A repaired the defect and B re-verified it." in adapter.calls["agent_c"][1]["prompt"]
+
+    async with runtime.db.connect() as db:
+        a_rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+        b_rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_b'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+
+    assert len(a_rows) == 1
+    assert a_rows[0]["state"] == "completed"
+    assert len(b_rows) == 2
+    assert b_rows[1]["context_parent_assignment_id"] == first_b_id
+    assert b_rows[1]["context_thread_id"] == first_b_thread
+
+
+@pytest.mark.asyncio
 async def test_transaction_same_task_worker_context_stays_fresh_without_explicit_lineage(
     transaction_runtime_factory,
 ):
