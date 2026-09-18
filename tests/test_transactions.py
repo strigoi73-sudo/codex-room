@@ -520,6 +520,79 @@ async def test_continuous_round_pass_does_not_settle_task(
 
 
 @pytest.mark.asyncio
+async def test_continuous_round_child_assignment_completes_normally_and_preserves_scope(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                message="A has one bounded child task.",
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Perform exactly one bounded child task.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated the child result.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Completed another bounded coordinator activity.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Bounded child task complete.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "continuous-child-scope.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Stay busy.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=4,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert len(adapter.calls["agent_a"]) == 1
+    child_prompt = adapter.calls["agent_a"][0]["prompt"]
+    assert "<continuous_round>" in child_prompt
+    assert "Child Assignments still complete normally." in child_prompt
+    assert "Stay within your current Assignment and its scope." in child_prompt
+    assert "this same coordinator Assignment" not in child_prompt
+
+    async with runtime.db.connect() as db:
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+    a_assignments = [row for row in assignments if row["agent_key"] == "agent_a"]
+    assert len(a_assignments) == 1
+    assert a_assignments[0]["state"] == "completed"
+
+
+@pytest.mark.asyncio
 async def test_transaction_turn_limit_stops_before_released_parent_can_run_again(
     transaction_runtime_factory,
 ):
