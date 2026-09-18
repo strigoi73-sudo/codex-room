@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. D-037 governs the bounded-context program. **BCTX-1, BCTX-2, and BCTX-3 are complete**: continuous work is Task-bounded, C continuity crosses successor Tasks deliberately, worker continuity can cross a bounded Task boundary only through explicit grace-qualified lineage, and bounded HISTORY can recover earlier settled Task results inside the same Round.
-- **What just changed?** PR #122 added restart-safe worker-context grace/retirement plus same-Round bounded HISTORY. Completed worker contexts can remain deliberately reusable for the next two successful C executions, C may explicitly retire grace early when it moves past an objective, unused grace is archived deterministically, terminal Round boundaries retire residual grace, and Pause preserves it.
-- **Verification state:** **BCTX-3 is IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Exact head `ed44f87f7648f88aca8096109a221cd00339d563` passed the complete transaction/context suites (**38 passed**) and `verify-fast.cmd` (**54 Linux focused + 118 Windows focused + 3 browser tests**), with tracked tree clean and HEAD unchanged. PR #122 merged as `25fcf4db370aa81e2cc0aa05bf1bd143c1bc8d1e`. No GitHub-hosted workflow run was attached to that merge commit; exact-head local verification is the executable evidence. See E-134.
-- **What is blocked?** BCTX-4 is not conceptually blocked. D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** **BCTX-4 — coordinator checkpoint and refresh** is the next CORE implementation slice. Implement only that slice unless fresh evidence justifies a deliberate plan change.
-- **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no new synthetic token benchmark after every BCTX slice; no adjacent maintenance investigation without a demonstrated problem.
+- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, I-015, and the full D-037 bounded-context program are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. **BCTX-1 through BCTX-4 are implemented and exact-head verified**: continuous work is Task-bounded, worker continuity is explicit and objective-local, bounded HISTORY can recover settled same-Round results, worker contexts have bounded grace/retirement, and C can deliberately refresh its long-lived provider context through a fail-closed checkpoint handoff.
+- **What just changed?** PR #124 added C-only `REFRESH`: a bounded checkpoint is carried into a distinct fresh C context for its first turn while current deterministic organizational state is rebuilt separately from SQLite. Old-context archival gates activation; pre-activation failure falls back to the exact old context; archive-pending recovery is restart-safe; no automatic refresh threshold was added.
+- **Verification state:** **BCTX-4 is IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Exact head `fdb21c60dd9f03c82111014a3987f0f783124e7c` passed the complete transaction/context suites (**44 passed**) and `verify-fast.cmd` (**60 Linux focused + 118 Windows focused + 3 browser tests**), with tracked source clean and HEAD unchanged. PR #124 merged those verified implementation bytes as `e9669a05255beb3cce73f80cc491601f99db5219`. No GitHub-hosted workflow run was attached at closeout time; exact-head local verification is the executable evidence. See E-135.
+- **What is blocked?** D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
+- **What is next?** Stop at the completed BCTX boundary. No follow-on CORE implementation slice is automatically authorized. Use ordinary work and bounded naturalistic observation to learn whether the assembled context architecture exposes a demonstrated problem; any new CORE work should follow fresh evidence or explicit principal reprioritization.
+- **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no guessed automatic coordinator-refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
 
@@ -21,11 +21,11 @@
 
 **Decision:** D-037
 
-**Overall work state:** IN PROGRESS — BCTX-1, BCTX-2, and BCTX-3 complete; BCTX-4 next
+**Overall work state:** COMPLETE — BCTX-1 through BCTX-4 complete
 
-**Reality:** PARTIALLY IMPLEMENTED — BCTX-1 through BCTX-3 implemented; BCTX-4 not implemented
+**Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED — BCTX-1 through BCTX-4
 
-**Current production state:** D-037's Task-bounded continuous lifecycle, objective-local collaboration mechanics, worker-context grace/retirement, and same-Round bounded HISTORY are implemented through BCTX-3. Continuous mode settles bounded Tasks and preserves deliberate C continuity across successor Tasks. A/B continuity is explicit rather than identity-based: inside a Task it follows causal Assignment lineage, and across a bounded Task boundary it requires an eligible predecessor grace source. Grace lasts through the next two successful C executions unless C closes it earlier, expires into durable provider-thread retirement, survives restart, and is retired at terminal Round boundaries while Pause preserves it. C receives compact authoritative Task/Assignment/Join/grace status without automatic worker transcript replay. Coordinator checkpoint/refresh remains BCTX-4.
+**Current production state:** D-037 is implemented through BCTX-4. Continuous mode settles bounded Tasks and preserves deliberate C continuity across successor Tasks. A/B continuity is explicit rather than identity-based: inside a Task it follows causal Assignment lineage, and across a bounded Task boundary it requires an eligible predecessor grace source. Grace lasts through the next two successful C executions unless C closes it earlier, expires into durable provider-thread retirement, survives restart, and is retired at terminal Round boundaries while Pause preserves it. Bounded HISTORY can recover earlier settled same-Round results without replacing current transaction authority. C receives compact authoritative Task/Assignment/Join/grace state without automatic worker transcript replay and may deliberately issue `REFRESH` with a bounded checkpoint to move to a distinct fresh provider context through a fail-closed, restart-safe handoff. No automatic refresh threshold is implemented.
 
 The program reuses the existing work-model-v2 transaction substrate. **Task is the bounded objective/activity. Assignment remains declared agent work. Join remains dependency/return state. Round remains the human-facing lifecycle/standing objective.** No new maintained Objective entity or broad v2 redesign is authorized.
 
@@ -132,25 +132,32 @@ Verification on the exact implementation head: complete transaction/context suit
 
 #### BCTX-4 — coordinator checkpoint and refresh
 
-**Work state:** PLANNED — NEXT
+**Work state:** COMPLETE
 
-**Reality:** DECIDED / NOT IMPLEMENTED
+**Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED
+
+**Evidence:** E-135
+
+**Implementation:** PR #124; exact locally verified head `fdb21c60dd9f03c82111014a3987f0f783124e7c`; canonical merge `e9669a05255beb3cce73f80cc491601f99db5219`.
 
 **Goal:** give long-lived C coordination a deliberate context-reset mechanism without losing organizational continuity or replaying the full old transcript.
 
-Required behavior:
+Implemented behavior:
 
-- C can produce a bounded free-form continuity checkpoint describing unresolved reasoning, current strategy, important judgments, and near-term intent;
-- CORE supplies deterministic current organizational state separately from that free-form checkpoint;
-- a fresh C provider context starts from the checkpoint plus deterministic state and current Round/Task authority;
-- the old coordinator provider context is retired after successful handoff;
-- exact checkpoint source, old/new context identities, and handoff provenance are durable and inspectable;
-- failure during refresh must fail closed without leaving two independently runnable coordinator contexts;
-- exact automatic triggers/thresholds are implementation-design questions for BCTX-4 and must be justified by evidence rather than guessed in advance.
+- C may issue the explicit C-only `REFRESH` action from the root Task-coordinator Assignment in production `assignment_thread` mode and provide a bounded free-form continuity checkpoint;
+- CORE creates a distinct fresh C provider context, durably records the checkpoint source plus old/new context identities and execution/event provenance, and atomically switches Assignment context ownership while keeping the refreshed Assignment non-runnable;
+- the checkpoint is injected only on the first turn of the fresh context; current Round/Task/Assignment/Join/Evidence/grace state is reconstructed separately from SQLite;
+- the old C context must be archived before the refreshed Assignment becomes runnable;
+- failure before fresh-context activation falls back to the exact old C context;
+- archival failure after activation leaves the handoff non-runnable and durable; initialization/watchdog recovery retries the pending archival;
+- human Stop cancels unresolved refresh handoffs with the rest of transaction work;
+- refreshed C context remains the coordinator continuity source across later BCTX-1 successor Tasks;
+- transaction snapshot/export exposes exact refresh provenance;
+- no automatic refresh threshold or trigger is implemented. C deliberately requests refresh when fresh context is materially useful.
 
-Verification should cover successful refresh, failure rollback/fail-closed behavior, restart boundaries, post-refresh Task continuity, and absence of wholesale transcript replay.
+Verification on the exact implementation head: complete transaction/context suites **44/44 passed**; repository-standard fast verifier passed **60 Linux focused + 118 Windows focused + 3 browser tests** with tracked source clean and HEAD unchanged. One untracked local `data/` path remained outside tracked-source verification. No GitHub-hosted workflow run was attached at closeout time.
 
-**Stop condition:** BCTX-4 ends when coordinator refresh is safe and evidenced. Further memory/index work remains deferred unless ordinary use demonstrates a concrete need.
+**Stop condition:** satisfied. The four-slice BCTX program is complete. Further memory/index work, automatic refresh heuristics, or adjacent transaction redesign remain deferred until ordinary use demonstrates a concrete need.
 
 #### Program-wide constraints and verification policy
 

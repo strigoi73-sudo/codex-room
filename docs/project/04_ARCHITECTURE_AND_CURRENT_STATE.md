@@ -68,6 +68,7 @@ Current transaction actions are:
 - `DELEGATE`
 - `EVIDENCE`
 - `HISTORY`
+- `REFRESH`
 - `PASS`
 
 CORE owns declared mechanics: assignment creation/claiming, joins, deterministic evidence/history execution, queueing, retry/recovery, context assembly, exact execution provenance, and settlement validity. Agents retain intellectual judgment: whether peers add value, how to frame work, what evidence matters, how to interpret results, and what conclusion to reach.
@@ -94,7 +95,7 @@ The earlier naturalistic `Stay busy.` acceptance remains evidence that the stand
 
 ## 5. Assignment-scoped provider context and continuity
 
-**IMPLEMENTED / VERIFIED / PRODUCTION DEFAULT through BCTX-3**
+**IMPLEMENTED / VERIFIED / PRODUCTION DEFAULT through BCTX-4**
 
 Each logical v2 Assignment stores a durable provider `context_thread_id`. Ordinary unrelated Assignments receive different provider contexts even when owned by the same persistent A/B/C identity. D-037/BCTX-1 deliberately carries C's provider thread across causally linked successor Tasks in one continuing Round. D-037/BCTX-2 allows a later **A/B Assignment inside the same Task** to continue a prior same-worker provider context through explicit `context_from_assignment_id` / durable `context_parent_assignment_id` lineage. Common worker identity alone does not imply continuity: fresh context remains the default unless deliberate causal continuation is requested, and CORE rejects stale/forking lineage. This mechanism is generic objective-local iterative collaboration, not a deterministic repair/testing workflow.
 
@@ -106,7 +107,9 @@ BCTX-2 also adds explicit single-child result routing through Join `return_mode`
 
 C receives a bounded status-only `<task_coordination_status>` block containing current Task/Assignment/Join ownership, state, dependency, context-lineage, and return-routing metadata, plus a separate bounded worker-grace status view when grace is available. These blocks intentionally exclude worker result text, provider transcript, and tool chatter; substantive results still cross through explicit dependency/result/history paths.
 
-PR #119 implemented BCTX-2 on exact locally verified head `3a1a7f240ed43ebd4c7ea7149a5855732a23838d`; see E-133. PR #122 implemented BCTX-3 on exact locally verified head `ed44f87f7648f88aca8096109a221cd00339d563`. The complete transaction/context suites passed **38/38**; the repository fast verifier passed **54 Linux focused tests, 118 Windows focused tests, and 3 browser transcript tests** with a clean tracked tree. Canonical BCTX-3 merge commit is `25fcf4db370aa81e2cc0aa05bf1bd143c1bc8d1e`. See D-037 and E-134.
+PR #119 implemented BCTX-2 on exact locally verified head `3a1a7f240ed43ebd4c7ea7149a5855732a23838d`; see E-133. PR #122 implemented BCTX-3 on exact locally verified head `ed44f87f7648f88aca8096109a221cd00339d563`; see E-134. PR #124 implemented BCTX-4 on exact locally verified head `fdb21c60dd9f03c82111014a3987f0f783124e7c`. BCTX-4 focused transaction/context verification passed **44/44**; the repository fast verifier passed **60 Linux focused tests, 118 Windows focused tests, and 3 browser transcript tests** with the tracked tree clean and HEAD unchanged. PR #124 squash-merged those verified implementation bytes to canonical `main` as `e9669a05255beb3cce73f80cc491601f99db5219`. No hosted workflow run was attached at closeout time. See D-037 and E-135.
+
+BCTX-4 adds an explicit C-only `REFRESH` action for deliberate coordinator context reset. C supplies a bounded free-form continuity checkpoint; CORE creates a distinct fresh C provider context, records old/new context identities and checkpoint provenance durably, and injects the checkpoint only into the first turn on the fresh context. Current Round/Task/Assignment/Join/Evidence/grace state is rebuilt separately from SQLite instead of replaying the old coordinator transcript. The handoff is fail-closed: the refreshed Assignment remains non-runnable until the old C context is archived, pre-activation failure falls back to the exact old context, archive-pending handoff survives restart and is retried, and human Stop cancels unresolved refresh work with the transaction. Refreshed C context continues normally across later BCTX-1 successor Tasks. There is deliberately no automatic refresh threshold; C requests `REFRESH` when fresh context is materially useful.
 
 This separates durable organizational identity from provider-context transport. C-N1 measured a 24.0% input reduction for assignment-scoped context on a self-contained warmed-history task. C-N2 demonstrated the expected continuity gap: a fresh Assignment could not recall an arbitrary fact available on C's permanent thread. D-033/C.3 therefore added explicit bounded `HISTORY` retrieval rather than restoring wholesale provider-thread inheritance. C-N3 verified recovery of the needed prior result on the same Assignment thread with exact event provenance. See E-103 through E-106.
 
