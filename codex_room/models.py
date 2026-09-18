@@ -367,7 +367,6 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                         "minLength": 1,
                         "maxLength": 200,
                     },
-                    "uniqueItems": True,
                 },
                 {"type": "null"},
             ]
