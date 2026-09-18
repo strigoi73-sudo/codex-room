@@ -2517,6 +2517,34 @@ class RoomRuntime:
             )
             return
 
+        if delegations:
+            try:
+                await self.db.validate_transaction_delegation_context(
+                    room_id,
+                    batch["task_id"],
+                    batch.get(
+                        "provider_context_mode",
+                        "persistent_agent_thread",
+                    ),
+                    delegations,
+                )
+            except ValueError as exc:
+                validation_error = AgentDecisionValidationError(
+                    str(exc),
+                    usage=result.usage,
+                    activity=result.activity,
+                    thread_id=result.thread_id,
+                    turn_id=result.turn_id,
+                    completion_source=result.completion_source,
+                )
+                await self._record_invalid_decision_telemetry(
+                    batch, agent, validation_error
+                )
+                await self._handle_assignment_failure(
+                    batch, agent, validation_error, generation
+                )
+                return
+
         recorded = await self.db.record_execution_result(
             batch["batch_id"],
             decision.model_dump(mode="json"),
