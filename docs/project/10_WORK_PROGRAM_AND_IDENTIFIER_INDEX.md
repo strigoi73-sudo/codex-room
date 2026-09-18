@@ -10,6 +10,7 @@
 |---|---|---|---|
 | `P#` | Major development / operating-economics phase or roadmap workstream | `06_DEVELOPMENT_CONTROL.md`; long-range direction may also appear in `08_PRODUCT_VISION.md` | `P3` — usage-wall delayed continuation |
 | `EF-#` | Engineering Foundation subphase | `06_DEVELOPMENT_CONTROL.md` | `EF-3` — minimal GitHub CI |
+| `BCTX-#` | Bounded-context architecture implementation slice | `06_DEVELOPMENT_CONTROL.md`; governing decision in `05_DECISION_REGISTER.md` | `BCTX-1` — Task-bounded continuous lifecycle and coordinator continuity |
 | `A#` | Assurance pass | `06_DEVELOPMENT_CONTROL.md`; evidence in `07_EVIDENCE_REGISTER.md` | `A2` — Assurance Pass 2 |
 | `I-###` | Maintenance issue, observed gap, or item needing verification | `06_DEVELOPMENT_CONTROL.md` | `I-001` — 2,000-event snapshot/export cutoff |
 | `D-###` | Settled decision | `05_DECISION_REGISTER.md` | `D-018` — allocate cognition once; execute at the cheapest capable layer |
@@ -37,6 +38,10 @@ This table preserves names and navigation only. Read Development Control for cur
 | `A2` | Assurance Pass 2 | Development Control / Evidence Register |
 | `A3` | Whole-system housekeeping, efficiency, and operational assurance audit | Development Control / Evidence Register |
 | `P4` | Deterministic Room and agent capabilities | Development Control / Product Vision |
+| `BCTX-1` | Task-bounded continuous lifecycle and coordinator continuity | Development Control / D-037 |
+| `BCTX-2` | Objective-local worker context, direct result return, and compact coordinator status | Development Control / D-037 |
+| `BCTX-3` | Worker-context grace/retirement and same-Round bounded HISTORY | Development Control / D-037 |
+| `BCTX-4` | Coordinator checkpoint and refresh | Development Control / D-037 |
 
 ## 3. Established maintenance identifiers
 
