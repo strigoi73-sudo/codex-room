@@ -80,7 +80,9 @@ class DelegationRequest(BaseModel):
     target: Literal["agent_a", "agent_b", "agent_c"]
     instruction: str = Field(min_length=1, max_length=50_000)
     config: ExecutionConfigId | None = None
-    context_from_assignment_id: str | None = Field(default=None, max_length=200)
+    context_from_assignment_id: str | None = Field(
+        default=None, min_length=1, max_length=200
+    )
 
 
 class SourceEvidenceRequest(BaseModel):
@@ -300,7 +302,7 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                             },
                             "context_from_assignment_id": {
                                 "anyOf": [
-                                    {"type": "string", "maxLength": 200},
+                                    {"type": "string", "minLength": 1, "maxLength": 200},
                                     {"type": "null"},
                                 ]
                             },
