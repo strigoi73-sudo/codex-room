@@ -3106,6 +3106,8 @@ class Database:
         missing_required_contributors: list[str] = []
         evidence_request_id: str | None = None
         history_event_ids: list[str] = []
+        continuous_successor_task_id: str | None = None
+        continuous_successor_assignment_id: str | None = None
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             execution = await self._fetchone(
@@ -3139,6 +3141,8 @@ class Database:
                     "decision_applied": False,
                     "evidence_request_id": None,
                     "history_event_ids": [],
+                    "continuous_successor_task_id": None,
+                    "continuous_successor_assignment_id": None,
                 }
             if assignment["state"] != "running":
                 await db.rollback()
@@ -3156,7 +3160,8 @@ class Database:
 
             round_budget = await self._fetchone(
                 db,
-                """SELECT ro.turn_count, ro.completion_policy, r.max_turns
+                """SELECT ro.turn_count, ro.completion_policy,
+                          ro.provider_context_mode, r.max_turns
                    FROM rounds ro JOIN rooms r ON r.id=ro.room_id
                    WHERE ro.id=? AND ro.room_id=?""",
                 (round_id, room_id),
@@ -3463,36 +3468,66 @@ class Database:
                             round_budget
                             and round_budget["completion_policy"] == "continuous"
                         )
-                        if continuous_round:
-                            if not turn_limit_hit:
-                                cursor = await db.execute(
-                                    """UPDATE assignments
-                                       SET state='queued', completed_at=NULL, updated_at=?
-                                       WHERE id=? AND state IN ('completed','passed')""",
-                                    (now, assignment_id),
-                                )
-                                if cursor.rowcount != 1:
-                                    await db.rollback()
-                                    raise RuntimeError(
-                                        "Continuous Round could not resume its coordinator assignment"
-                                    )
-                                wake_agent_keys.append(assignment["agent_key"])
-                                continuous_resumed = True
-                        else:
+                        await db.execute(
+                            """UPDATE tasks
+                               SET state='settled', settled_at=?, updated_at=?,
+                                   settlement_event_id=?, settlement_reason=?
+                               WHERE id=? AND state='active'""",
+                            (
+                                now,
+                                now,
+                                result_event_id,
+                                action.lower(),
+                                assignment["task_id"],
+                            ),
+                        )
+                        task_settled = True
+                        if continuous_round and not turn_limit_hit:
+                            continuous_successor_task_id = new_id("task")
+                            continuous_successor_assignment_id = new_id("assignment")
+                            inherited_context_thread_id = (
+                                assignment["context_thread_id"]
+                                if round_budget
+                                and round_budget["provider_context_mode"]
+                                == "assignment_thread"
+                                else None
+                            )
                             await db.execute(
-                                """UPDATE tasks
-                                   SET state='settled', settled_at=?, updated_at=?,
-                                       settlement_event_id=?, settlement_reason=?
-                                   WHERE id=? AND state='active'""",
+                                """INSERT INTO tasks
+                                   (id, room_id, round_id, parent_task_id, origin_event_id,
+                                    coordinator_agent_id, state, required_contributors_json,
+                                    created_at, updated_at)
+                                   VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)""",
                                 (
-                                    now,
-                                    now,
-                                    result_event_id,
-                                    action.lower(),
+                                    continuous_successor_task_id,
+                                    room_id,
+                                    round_id,
                                     assignment["task_id"],
+                                    result_event_id,
+                                    task["coordinator_agent_id"],
+                                    task["required_contributors_json"] or "[]",
+                                    now,
+                                    now,
                                 ),
                             )
-                            task_settled = True
+                            await db.execute(
+                                """INSERT INTO assignments
+                                   (id, task_id, agent_id, origin_event_id, instruction,
+                                    context_thread_id, state, created_at, updated_at)
+                                   VALUES (?, ?, ?, ?, ?, ?, 'queued', ?, ?)""",
+                                (
+                                    continuous_successor_assignment_id,
+                                    continuous_successor_task_id,
+                                    task["coordinator_agent_id"],
+                                    result_event_id,
+                                    "Advance the standing Round objective with the next bounded activity.",
+                                    inherited_context_thread_id,
+                                    now,
+                                    now,
+                                ),
+                            )
+                            wake_agent_keys.append(assignment["agent_key"])
+                            continuous_resumed = True
 
             await db.commit()
         return {
@@ -3505,6 +3540,8 @@ class Database:
             "decision_applied": True,
             "evidence_request_id": evidence_request_id,
             "history_event_ids": history_event_ids,
+            "continuous_successor_task_id": continuous_successor_task_id,
+            "continuous_successor_assignment_id": continuous_successor_assignment_id,
         }
 
     async def fail_transaction_assignment(
