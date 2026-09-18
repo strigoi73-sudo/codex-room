@@ -671,6 +671,27 @@ async def test_bctx3_pending_worker_context_retirement_recovers_after_restart(
     assert retired["context_archived_at"] is not None
 
 
+def test_bctx3_worker_context_retirement_signal_is_bounded() -> None:
+    with pytest.raises(
+        ValidationError,
+        match="retire_worker_context_task_ids accepts at most 8 Task IDs",
+    ):
+        TransactionDecision(
+            action=TransactionAction.PASS,
+            retire_worker_context_task_ids=[
+                f"task_{index}" for index in range(9)
+            ],
+        )
+    with pytest.raises(
+        ValidationError,
+        match="retire_worker_context_task_ids cannot contain duplicates",
+    ):
+        TransactionDecision(
+            action=TransactionAction.PASS,
+            retire_worker_context_task_ids=["task_one", "task_one"],
+        )
+
+
 def test_history_request_validation_is_bounded() -> None:
     with pytest.raises(ValidationError, match="SEARCH history retrieval"):
         HistoryRequest(operation="SEARCH", query="")
