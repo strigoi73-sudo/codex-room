@@ -4604,3 +4604,67 @@ Post-merge inspection confirmed canonical `main` at that merge commit and confir
 **Assessment:** BCTX-1 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. This evidence does not claim BCTX-2 worker-context reuse/direct-result routing/status, BCTX-3 grace/same-Round HISTORY, or BCTX-4 coordinator checkpoint/refresh are implemented.
 
 **Namespace note:** canonical Development Control/Architecture already reserve and cite E-125 through E-131, while the current Evidence Register body ends at E-124 before this entry. E-132 is used deliberately to avoid colliding with those pre-existing reserved references. Repair of that older documentation gap is separate maintenance.
+
+### E-133 — BCTX-2 objective-local worker continuity, direct result return, and compact coordinator status implemented, exact-head locally verified, and merged
+**Date:** 2026-09-18
+**Kind:** [CORE implementation + focused deterministic verification + repository-standard fast verification + canonical merge]
+**Decision:** D-037
+**Work item:** BCTX-2
+
+BCTX-2 extends the assignment-thread transaction model without adding a new persistent Objective/context entity.
+
+Exact implementation head verified locally by the principal:
+
+`3a1a7f240ed43ebd4c7ea7149a5855732a23838d`
+
+Implementation behavior on that head:
+
+- a later A/B Assignment may deliberately continue a prior same-worker provider context only through explicit same-Task causal Assignment lineage;
+- ordinary later work by the same worker remains fresh by default when no lineage is requested;
+- CORE validates that a requested context source belongs to the same Task and worker, has a bound provider context, is an eligible terminal source, and is the latest owner of that provider thread; settlement rechecks lineage under the Room lifecycle lock to prevent stale/forking reuse;
+- context continuation is a generic objective-local iterative-collaboration mechanism rather than a workflow classifier. The tested A→B→A→B verification/repair sequence is one regression example, not a restriction on when deliberate continuity may be used;
+- `DELEGATE` may explicitly request a single-child `coordinator` return mode when that child will hold the finished required result and the parent has no material intellectual work left;
+- successful child `COMPLETE` may mechanically waive relay-only intermediate Assignments and route the exact result toward the Task coordinator;
+- `PASS`, terminal failure, and degraded child paths do not bypass the parent; ordinary parent judgment/integration remains available;
+- direct return preserves exact child result source, forwarded Assignment provenance, waived relay Assignment IDs, and released Join IDs;
+- C receives bounded status-only Task/Assignment/Join state without automatic worker result text, provider transcript, or tool chatter;
+- durable state additions are limited to `assignments.context_parent_assignment_id` and `assignment_joins.return_mode`;
+- restart recovery preserves exact active worker context lineage where applicable.
+
+The first local verification attempt on predecessor head `6ac98fbfade26658649ed9be57316cf395a4fe3a` exposed one stale prompt-wording assertion in `tests/test_assignment_context.py`: the old test expected the pre-BCTX-2 phrase `bounded to the current logical Assignment` after the prompt contract had intentionally changed to explicit Assignment-context lineage. That run otherwise showed 33 focused passes with one failure, and the fast verifier showed the same single assertion failure. The correction changed only that stale test assertion; CORE implementation bytes were unchanged.
+
+The principal then verified exact head `3a1a7f240ed43ebd4c7ea7149a5855732a23838d` from a clean tracked working tree.
+
+Focused BCTX-2 verification:
+
+`python -m pytest -q tests/test_transactions.py tests/test_assignment_context.py`
+
+Result:
+
+- **34 passed**
+- runtime approximately **183.76 s**
+
+Repository-standard `verify-fast.cmd` on the same exact head:
+
+- Linux Python 3.12 focused core: **51 passed**, 2 warnings;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **3 passed**;
+- dependency check: synchronized;
+- total verifier time: approximately **82 s**;
+- overall result: **PASS**.
+
+Post-verification state:
+
+- final HEAD remained exactly `3a1a7f240ed43ebd4c7ea7149a5855732a23838d`;
+- tracked tree remained clean;
+- one untracked local `data/` path was present and explicitly outside tracked source verification.
+
+PR #119 merged that exact verified head to canonical `main` as merge commit:
+
+`112b433dcc04520322da1e3048679137b3aa9f91`
+
+Post-merge inspection confirmed canonical `main` at that merge commit.
+
+**Assessment:** BCTX-2 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. This evidence does not claim BCTX-3 worker-context grace/retirement or same-Round HISTORY, or BCTX-4 coordinator checkpoint/refresh, are implemented.
+
+**Namespace note:** E-133 follows E-132. The older canonical Evidence Register body gap for reserved/cited E-125 through E-131 remains separate maintenance and is not repaired by this closeout.

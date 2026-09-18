@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. D-037 governs the bounded-context program. **BCTX-1 is complete**: continuous Rounds now settle each bounded activity as its own Task and create a successor Task/Coordinator Assignment while preserving C's provider-context lineage.
-- **What just changed?** PR #117 replaced continuous same-Task/same-Assignment requeue with Task-bounded successor creation. The successor Task preserves existing Task lineage and required-contributor contract; the successor C Assignment is new durable work but inherits the exact prior C `context_thread_id` in assignment-thread mode. Hard turn-limit settlement creates no successor.
-- **Verification state:** **BCTX-1 is IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Exact head `6871f8e45e76c783e9709b2a7feead561939a779` passed the focused continuous transaction selection (**4 passed, 13 deselected**) and `verify-fast.cmd` (**49 Linux focused + 118 Windows focused + 3 browser tests**), with tracked tree clean and HEAD unchanged. PR #117 merged as `46ee194f791cd6e2cf2a823c98e1e74a98814c7c`. See E-132.
-- **What is blocked?** BCTX-2 is not conceptually blocked. D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** **BCTX-2 — objective-local worker context, direct result return, and compact coordinator status** is the next CORE implementation slice. Implement only that slice unless fresh evidence justifies a deliberate plan change.
-- **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no new synthetic token benchmark after every BCTX slice; no BCTX-3 grace/HISTORY changes or BCTX-4 coordinator refresh work inside BCTX-2; no adjacent maintenance investigation without a demonstrated problem.
+- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. D-037 governs the bounded-context program. **BCTX-1 and BCTX-2 are complete**: continuous work is Task-bounded, C continuity crosses successor Tasks deliberately, and A/B may now deliberately continue objective-local provider context inside one Task through explicit Assignment lineage.
+- **What just changed?** PR #119 added explicit worker-context lineage, explicit single-child direct return toward the Task coordinator, and compact status-only Task/Assignment/Join awareness for C. Same-agent work remains fresh by default unless continuity is deliberately requested; successful direct-return work can mechanically bypass relay-only intermediate Assignments, while failure/degraded paths return to the parent for judgment.
+- **Verification state:** **BCTX-2 is IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Exact head `3a1a7f240ed43ebd4c7ea7149a5855732a23838d` passed the complete focused transaction/context suites (**34 passed**) and `verify-fast.cmd` (**51 Linux focused + 118 Windows focused + 3 browser tests**), with tracked tree clean and HEAD unchanged. PR #119 merged as `112b433dcc04520322da1e3048679137b3aa9f91`. See E-133.
+- **What is blocked?** BCTX-3 is not conceptually blocked. D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
+- **What is next?** **BCTX-3 — worker-context grace/retirement and same-Round bounded HISTORY** is the next CORE implementation slice. Implement only that slice unless fresh evidence justifies a deliberate plan change.
+- **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no new synthetic token benchmark after every BCTX slice; no BCTX-4 coordinator refresh work inside BCTX-3; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
 
@@ -21,17 +21,17 @@
 
 **Decision:** D-037
 
-**Overall work state:** IN PROGRESS — BCTX-1 complete; BCTX-2 next
+**Overall work state:** IN PROGRESS — BCTX-1 and BCTX-2 complete; BCTX-3 next
 
-**Reality:** PARTIALLY IMPLEMENTED — BCTX-1 implemented; BCTX-2 through BCTX-4 not implemented
+**Reality:** PARTIALLY IMPLEMENTED — BCTX-1 and BCTX-2 implemented; BCTX-3 and BCTX-4 not implemented
 
-**Current production state:** D-037's Task-bounded continuous lifecycle is now implemented through BCTX-1. Continuous mode settles the completed Task, creates a causally linked successor Task when the Round remains active, and creates a fresh successor coordinator Assignment carrying C's existing assignment-thread provider context. A/B objective-local context reuse, direct-result return, worker grace/same-Round HISTORY, and C checkpoint/refresh remain later slices.
+**Current production state:** D-037's Task-bounded continuous lifecycle and objective-local collaboration mechanics are now implemented through BCTX-2. Continuous mode settles bounded Tasks and preserves deliberate C continuity across successor Tasks. Inside one active Task, A/B may explicitly continue a prior same-worker provider context through causal Assignment lineage, successful single-child finished results may return directly toward C without a relay-only model turn, and C receives compact authoritative Task/Assignment/Join status without automatic transcript replay. Worker grace/same-Round HISTORY and C checkpoint/refresh remain later slices.
 
 The program reuses the existing work-model-v2 transaction substrate. **Task is the bounded objective/activity. Assignment remains declared agent work. Join remains dependency/return state. Round remains the human-facing lifecycle/standing objective.** No new maintained Objective entity or broad v2 redesign is authorized.
 
 The approved memory/context horizons are:
 
-1. **Worker active context** — A/B context retained only across explicitly causally continuous work for the current bounded Task, including useful implementation/verification/repair/re-verification loops.
+1. **Worker active context** — A/B context may be deliberately retained across explicitly causally continuous work for the current bounded Task. This is a generic objective-local iterative-collaboration mechanism; implementation/verification/repair/re-verification is one example, not a deterministic workflow category or restriction.
 2. **Coordinator continuity context** — C may carry materially longer context across successor Tasks in one continuing Round, with a later deliberate checkpoint/refresh boundary.
 3. **Durable deterministic state** — Round/Task/Assignment/Join/Evidence/history/provenance remains authoritative outside provider transcript state.
 
@@ -78,16 +78,20 @@ Verification:
 
 #### BCTX-2 — objective-local worker context, direct result return, and compact coordinator status
 
-**Work state:** PLANNED — NEXT
+**Work state:** COMPLETE
 
-**Reality:** DECIDED / NOT IMPLEMENTED
+**Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED
+
+**Evidence:** E-133
+
+**Implementation:** PR #119; exact locally verified head `3a1a7f240ed43ebd4c7ea7149a5855732a23838d`; canonical merge `112b433dcc04520322da1e3048679137b3aa9f91`.
 
 **Goal:** preserve useful A/B local cognition inside one bounded Task while removing unnecessary relay cognition and keeping C informed through compact authoritative state.
 
 Required behavior:
 
 - allow a later Assignment to reuse a worker provider context only through an **explicit causal context lineage** inside the same Task; common agent identity or common Task membership alone is insufficient when branches could be independent;
-- preserve useful worker context through implementation → verification → repair → re-verification where the work deliberately continues the same objective;
+- preserve useful worker context across any deliberately continuous same-objective iterative collaboration inside the Task; implementation → verification → repair → re-verification is a tested example, not a special-case workflow rule;
 - unrelated/new Tasks start A/B context fresh by default;
 - add an explicit structured transaction mechanism allowing a child that holds the finished required result to return directly to the Task coordinator when the intermediate parent has no material intellectual work left;
 - CORE must close/waive/resolve obsolete intermediate relay work mechanically and preserve exact provenance; relay bypass must never be inferred from prose;
@@ -100,7 +104,7 @@ Verification should include ordinary nested delegation, direct-return delegation
 
 #### BCTX-3 — worker-context grace/retirement and same-Round bounded HISTORY
 
-**Work state:** PLANNED — after BCTX-2
+**Work state:** PLANNED — NEXT
 
 **Reality:** DECIDED / NOT IMPLEMENTED
 
