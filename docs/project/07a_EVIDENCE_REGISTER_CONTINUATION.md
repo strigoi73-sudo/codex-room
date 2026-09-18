@@ -250,3 +250,55 @@ Canonical `main` was then confirmed to point to that merge commit.
 
 **Assessment:** D-036 is **IMPLEMENTED / EXACT-HEAD REVIEWED / VERIFIED TO SUFFICIENT LOCAL EVIDENCE / MERGED**. The remaining acceptance step is naturalistic runtime validation after the local installation is updated/restarted: run a Round with prompt exactly `Stay busy.`, select **Keep objective active**, use a deliberately high turn ceiling, and observe repeated coordinator return to the same standing objective until human stop or a hard boundary. That naturalistic run remains pending and is not implied by this entry.
 
+---
+
+### E-131 — Naturalistic continuous-Round `Stay busy.` acceptance
+**Date:** 2026-09-18  
+**Kind:** [ROOM naturalistic acceptance / CORE lifecycle / execution economics]  
+**Decision:** D-036
+
+A fresh Room exercised the merged continuous Round policy under ordinary runtime conditions rather than a synthetic fixture:
+
+- Room: `room_579eb5236cd246d6a1000ea3fea781d0`;
+- Round: `round_4273968a4dd54ffb8b99d5e721a0e93f`;
+- Task: `task_6de7a02ca8ea483e8b852b0bb3b99795`;
+- public objective: exactly `Stay busy.`;
+- starter: C;
+- work model: v2;
+- provider context: `assignment_thread`;
+- completion policy: `continuous`;
+- hard turn ceiling: 500.
+
+The human allowed the Room to run for 42 counted turns, then paused it manually after approximately 8 minutes 26 seconds.
+
+Observed lifecycle sequence:
+
+1. C's root Assignment was `assignment_df0eb6faf079484682e18e21beec5dcc`, with durable Assignment context thread `01a0b4f6-c404-7222-809e-521df84c8320`.
+2. C completed a bounded shipment-SLA correction/integration activity. CORE emitted `continuous_round_resumed` at sequence 52 for that same root Assignment.
+3. C then completed a separate Q3 service-review-note activity. CORE emitted another resume at sequence 81 for the same Assignment.
+4. C completed a transaction-reconciliation-note activity. CORE emitted another resume at sequence 113 for the same Assignment.
+5. C completed a billing-export incident-note activity. CORE emitted another resume at sequence 141 for the same Assignment.
+6. C immediately began a fifth bounded activity concerning shipment priority parsing rather than treating the standing Round objective as satisfied.
+7. The human paused the Room at sequence 181 while that fifth activity still had active transaction work.
+
+Across the observed run, CORE therefore crossed the ordinary coordinator settlement boundary **four times** and each time returned control to the **same root coordinator Assignment** rather than settling the Task or creating a replacement coordinator Assignment. The Round objective stayed active throughout.
+
+Child work also preserved ordinary bounded semantics. The transaction snapshot at pause contained seven child Assignments: six were completed and one was still running. Six Joins were released and one Join remained pending for the active child path. The root Task remained `active`, the Round remained `active`, and neither had a settlement/close reason. The Room itself was `paused`, demonstrating that human lifecycle control suspended further queued work without falsely settling outstanding transaction state.
+
+The manual **stop** path was not separately exercised in this run; the human used **pause**. That does not weaken the feature-specific acceptance result because the newly introduced behavior under test was repeated coordinator requeue across ordinary settlement boundaries. Existing hard-stop semantics remain separately covered by deterministic tests and prior lifecycle evidence.
+
+Execution economics were intentionally extreme and should be interpreted as stress-test evidence, not as an efficiency baseline:
+
+- 42 execution-economics records;
+- **1,882,148 raw execution-token deltas** in total;
+- C: **919,131**;
+- A: **488,906**;
+- B: **474,111**;
+- 13 native model tool calls;
+- 0 failed tool calls;
+- elapsed started-to-pause time: approximately **506 seconds**.
+
+This cost is an expected consequence of a literal standing instruction with a very high turn ceiling: the Room kept finding useful or plausibly useful work instead of deciding that enough had been done. Busywork, diminishing-value work, or escalating token spend are legitimate future product/economic questions, but this run does not by itself establish a lifecycle defect or authorize a new optimization project.
+
+**Assessment:** D-036 continuous Round behavior is **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY SUPPORTED**. The intended standing-objective lifecycle worked across four completed coordinator cycles and continued into a fifth until the human paused the Room. No further dedicated continuous-Round acceptance test is required absent a concrete recurrence or new failure mode.
+
