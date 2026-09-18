@@ -168,6 +168,10 @@ class TransactionDecision(BaseModel):
             cleaned = [item.strip() for item in self.retire_worker_context_task_ids]
             if any(not item for item in cleaned):
                 raise ValueError("retire_worker_context_task_ids cannot contain empty IDs")
+            if any(len(item) > 200 for item in cleaned):
+                raise ValueError(
+                    "retire_worker_context_task_ids entries are limited to 200 characters"
+                )
             if len(cleaned) > 8:
                 raise ValueError(
                     "retire_worker_context_task_ids accepts at most 8 Task IDs"
