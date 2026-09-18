@@ -261,6 +261,7 @@ class Database:
                     task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
                     parent_assignment_id TEXT REFERENCES assignments(id),
                     continuation_agent_id TEXT REFERENCES agents(id),
+                    return_mode TEXT NOT NULL DEFAULT 'parent',
                     state TEXT NOT NULL,
                     released_assignment_id TEXT REFERENCES assignments(id),
                     created_at TEXT NOT NULL,
@@ -279,6 +280,7 @@ class Database:
                     context_event_ids_json TEXT NOT NULL DEFAULT '[]',
                     execution_config_id TEXT,
                     context_thread_id TEXT,
+                    context_parent_assignment_id TEXT REFERENCES assignments(id),
                     state TEXT NOT NULL,
                     result_event_id TEXT REFERENCES events(id),
                     resolution_reason TEXT,
@@ -426,6 +428,18 @@ class Database:
             )
             await self._ensure_column(db, "rounds", "required_contributors_json", "TEXT NOT NULL DEFAULT '[]'")
             await self._ensure_column(db, "assignments", "context_thread_id", "TEXT")
+            await self._ensure_column(
+                db,
+                "assignments",
+                "context_parent_assignment_id",
+                "TEXT REFERENCES assignments(id)",
+            )
+            await self._ensure_column(
+                db,
+                "assignment_joins",
+                "return_mode",
+                "TEXT NOT NULL DEFAULT 'parent'",
+            )
             await self._ensure_column(db, "round_agent_state", "delivery_start_sequence", "INTEGER NOT NULL DEFAULT 0")
             await self._ensure_column(
                 db,
@@ -3010,6 +3024,39 @@ class Database:
                 (assignment_id,),
             )
         return [dict(row) for row in rows]
+
+    async def get_task_coordination_status(
+        self, task_id: str, *, max_rows: int = 64
+    ) -> dict[str, Any]:
+        """Return bounded status-only Task/Assignment/Join state for coordinator awareness."""
+        limit = max(1, min(int(max_rows), 128))
+        async with self.connect() as db:
+            assignment_rows = await db.execute_fetchall(
+                """SELECT x.id AS assignment_id, a.agent_key, x.state,
+                          x.parent_assignment_id, x.contribution_join_id,
+                          x.context_parent_assignment_id
+                   FROM assignments x
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE x.task_id=?
+                   ORDER BY x.created_at, x.id
+                   LIMIT ?""",
+                (task_id, limit + 1),
+            )
+            join_rows = await db.execute_fetchall(
+                """SELECT id AS join_id, state, parent_assignment_id,
+                          continuation_agent_id, released_assignment_id, return_mode
+                   FROM assignment_joins
+                   WHERE task_id=?
+                   ORDER BY created_at, id
+                   LIMIT ?""",
+                (task_id, limit + 1),
+            )
+        return {
+            "assignments": [dict(row) for row in assignment_rows[:limit]],
+            "joins": [dict(row) for row in join_rows[:limit]],
+            "assignments_truncated": len(assignment_rows) > limit,
+            "joins_truncated": len(join_rows) > limit,
+        }
 
     async def _select_room_history_event_ids(
         self,
