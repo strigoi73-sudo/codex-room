@@ -2110,6 +2110,65 @@ class RoomRuntime:
             )
             self._publish_event(tool_event)
 
+    async def _handle_assignment_failure_locked(
+        self,
+        batch: dict[str, Any],
+        agent: dict[str, Any],
+        exc: Exception,
+        *,
+        retryable: bool = True,
+    ) -> dict[str, Any]:
+        """Settle one Assignment failure while the caller holds the Room lifecycle lock."""
+        diagnostic = " ".join(str(exc).split()) or type(exc).__name__
+        if len(diagnostic) > 500:
+            diagnostic = diagnostic[:497] + "..."
+        outcome = await self.db.fail_transaction_assignment(
+            batch["room_id"],
+            batch["round_id"],
+            batch["batch_id"],
+            diagnostic,
+            retryable=retryable,
+        )
+        if batch.get("usage_continuation"):
+            await self.db.finish_usage_continuation(
+                batch["usage_continuation"]["id"],
+                batch["batch_id"],
+                "ready" if outcome["retried"] else "failed",
+                diagnostic,
+            )
+        event = await self.db.create_event(
+            batch["room_id"],
+            "agent_error",
+            agent["agent_key"],
+            "observer",
+            f"{agent['name']} transaction assignment failed: {diagnostic}",
+            related_event_id=batch["assignment"].get("origin_event_id"),
+            status="error",
+            metadata={
+                "assignment_id": batch["assignment_id"],
+                "task_id": batch["task_id"],
+                "batch_id": batch["batch_id"],
+                "will_retry": outcome["retried"],
+                "work_model_version": 2,
+            },
+            discussion_id=batch["round_id"],
+            round_id=batch["round_id"],
+        )
+        self._publish_event(event)
+        await self.ensure_workers(batch["room_id"])
+        for target in outcome["wake_agent_keys"]:
+            self.wake(batch["room_id"], target)
+        if outcome["task_failed"]:
+            current = await self.db.get_room(batch["room_id"])
+            if current and current["status"] == RoomStatus.RUNNING:
+                await self._close_discussion(
+                    batch["room_id"],
+                    batch["round_id"],
+                    "transaction_failed",
+                    "Transaction task closed after a terminal coordinator assignment failure.",
+                )
+        return outcome
+
     async def _handle_assignment_failure(
         self,
         batch: dict[str, Any],
@@ -2119,55 +2178,13 @@ class RoomRuntime:
         *,
         retryable: bool = True,
     ) -> None:
-        diagnostic = " ".join(str(exc).split()) or type(exc).__name__
-        if len(diagnostic) > 500:
-            diagnostic = diagnostic[:497] + "..."
         async with self._lifecycle_locks[batch["room_id"]]:
-            outcome = await self.db.fail_transaction_assignment(
-                batch["room_id"],
-                batch["round_id"],
-                batch["batch_id"],
-                diagnostic,
+            await self._handle_assignment_failure_locked(
+                batch,
+                agent,
+                exc,
                 retryable=retryable,
             )
-            if batch.get("usage_continuation"):
-                await self.db.finish_usage_continuation(
-                    batch["usage_continuation"]["id"],
-                    batch["batch_id"],
-                    "ready" if outcome["retried"] else "failed",
-                    diagnostic,
-                )
-            event = await self.db.create_event(
-                batch["room_id"],
-                "agent_error",
-                agent["agent_key"],
-                "observer",
-                f"{agent['name']} transaction assignment failed: {diagnostic}",
-                related_event_id=batch["assignment"].get("origin_event_id"),
-                status="error",
-                metadata={
-                    "assignment_id": batch["assignment_id"],
-                    "task_id": batch["task_id"],
-                    "batch_id": batch["batch_id"],
-                    "will_retry": outcome["retried"],
-                    "work_model_version": 2,
-                },
-                discussion_id=batch["round_id"],
-                round_id=batch["round_id"],
-            )
-            self._publish_event(event)
-            await self.ensure_workers(batch["room_id"])
-            for target in outcome["wake_agent_keys"]:
-                self.wake(batch["room_id"], target)
-            if outcome["task_failed"]:
-                current = await self.db.get_room(batch["room_id"])
-                if current and current["status"] == RoomStatus.RUNNING:
-                    await self._close_discussion(
-                        batch["room_id"],
-                        batch["round_id"],
-                        "transaction_failed",
-                        "Transaction task closed after a terminal coordinator assignment failure.",
-                    )
         await self.publish_state(batch["room_id"])
 
     async def _handle_transaction_usage_wall(
@@ -2716,18 +2733,28 @@ class RoomRuntime:
             if result_event.pop("_created", True):
                 self._publish_event(result_event)
 
-            settlement = await self.db.settle_transaction_decision(
-                room_id,
-                batch["round_id"],
-                batch["batch_id"],
-                batch["assignment_id"],
-                decision.action,
-                result_event["id"],
-                delegations,
-                decision.delegation_return_mode,
-                evidence_requests,
-                history_requests,
-            )
+            try:
+                settlement = await self.db.settle_transaction_decision(
+                    room_id,
+                    batch["round_id"],
+                    batch["batch_id"],
+                    batch["assignment_id"],
+                    decision.action,
+                    result_event["id"],
+                    delegations,
+                    decision.delegation_return_mode,
+                    evidence_requests,
+                    history_requests,
+                )
+            except ValueError as exc:
+                await self._handle_assignment_failure_locked(
+                    batch,
+                    agent,
+                    exc,
+                    retryable=True,
+                )
+                await self.publish_state(room_id)
+                return
             if decision.action == TransactionAction.HISTORY:
                 history_event = await self.db.create_event(
                     room_id,
