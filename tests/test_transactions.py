@@ -311,14 +311,20 @@ async def test_transaction_nested_direct_return_bypasses_relay_parent(
     assert a_assignment["state"] == "waived"
     assert b_assignment["state"] == "completed"
     assert a_assignment["result_event_id"] == b_assignment["result_event_id"]
+    assert f'forwarded_assignment_id="{b_assignment["id"]}"' in c_prompt
     events = await runtime.db.get_events(room_id)
     direct_events = [
         event for event in events if event["event_type"] == "assignment_direct_return"
     ]
     assert len(direct_events) == 1
+    assert direct_events[0]["metadata"]["source_assignment_id"] == b_assignment["id"]
     assert a_assignment["id"] in direct_events[0]["metadata"][
         "waived_relay_assignment_ids"
     ]
+    released_events = [
+        event for event in events if event["event_type"] == "assignment_join_released"
+    ]
+    assert len(released_events) == 2
 
 
 @pytest.mark.asyncio
