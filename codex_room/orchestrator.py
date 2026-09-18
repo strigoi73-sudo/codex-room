@@ -4540,6 +4540,13 @@ class RoomRuntime:
     ) -> None:
         event = await self.db.close_discussion(room_id, discussion_id, reason, content)
         self._publish_event(event)
+        retired = await self.db.retire_round_worker_contexts(
+            room_id,
+            discussion_id,
+            reason="round_closed:" + reason,
+        )
+        if retired:
+            await self._archive_pending_worker_contexts(room_id)
 
     async def _handle_turn_failure(
         self,
