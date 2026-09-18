@@ -3349,8 +3349,8 @@ class Database:
                         ):
                             await db.rollback()
                             raise ValueError(
-                                "Context source must be a terminal Assignment for the same "
-                                "worker in the same Task with a bound provider context"
+                                "Context source must be a completed, passed, or waived Assignment "
+                                "for the same worker in the same Task with a bound provider context"
                             )
                         latest_owner = await self._fetchone(
                             db,
@@ -3515,6 +3515,7 @@ class Database:
                             raise RuntimeError("Ready join has no Task")
                         direct_to_coordinator = (
                             join["return_mode"] == "coordinator"
+                            and action == "COMPLETE"
                             and parent["agent_id"]
                             != task_for_join["coordinator_agent_id"]
                         )
