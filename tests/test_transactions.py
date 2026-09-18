@@ -410,6 +410,116 @@ async def test_transaction_stop_cancels_open_task_assignments_and_join(
 
 
 @pytest.mark.asyncio
+async def test_continuous_round_requeues_same_coordinator_assignment_until_turn_limit(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="First bounded activity complete.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Second bounded activity complete.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Third bounded activity complete at the hard limit.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "continuous-complete.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Stay busy.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=3,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert len(adapter.calls["agent_c"]) == 3
+    context_threads = {call["thread_id"] for call in adapter.calls["agent_c"]}
+    assert len(context_threads) == 1
+    assert len([item for item in adapter.context_starts if item[0] == "agent_c"]) == 1
+    assert all("<continuous_round>" in call["prompt"] for call in adapter.calls["agent_c"])
+    assert all("Stay busy." in call["prompt"] for call in adapter.calls["agent_c"])
+
+    exported = await runtime.db.snapshot(room_id, event_limit=None)
+    assert exported is not None
+    assert exported["active_round"]["completion_policy"] == "continuous"
+    resumed = [
+        event
+        for event in exported["events"]
+        if event["event_type"] == "continuous_round_resumed"
+    ]
+    assert len(resumed) == 2
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=?", (room_id,)
+        )
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+    assert len(tasks) == 1
+    assert tasks[0]["state"] == "cancelled"
+    c_assignments = [row for row in assignments if row["agent_key"] == "agent_c"]
+    assert len(c_assignments) == 1
+    assert c_assignments[0]["context_thread_id"] == next(iter(context_threads))
+
+
+@pytest.mark.asyncio
+async def test_continuous_round_pass_does_not_settle_task(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    runtime = await transaction_runtime_factory(adapter, "continuous-pass.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Stay busy.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=2,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
+
+    assert len(adapter.calls["agent_c"]) == 2
+    assert adapter.calls["agent_c"][0]["thread_id"] == adapter.calls["agent_c"][1]["thread_id"]
+    events = await runtime.db.get_events(room_id)
+    assert sum(event["event_type"] == "agent_pass" for event in events) == 2
+    assert sum(event["event_type"] == "continuous_round_resumed" for event in events) == 1
+    assert not any(
+        event["event_type"] == "discussion_closed"
+        and event.get("metadata", {}).get("reason") == "transaction_settled"
+        for event in events
+    )
+
+
+@pytest.mark.asyncio
 async def test_transaction_turn_limit_stops_before_released_parent_can_run_again(
     transaction_runtime_factory,
 ):
