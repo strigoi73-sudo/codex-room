@@ -2702,7 +2702,6 @@ class RoomRuntime:
                     generation,
                 )
             else:
-                prompt = await self._assignment_prompt(batch, agent)
                 provider_context_mode = batch.get(
                     "provider_context_mode", "persistent_agent_thread"
                 )
@@ -2728,6 +2727,10 @@ class RoomRuntime:
                         batch["assignment"]["context_thread_id"] = context_thread_id
                 else:
                     context_thread_id = agent["thread_id"]
+
+                # Compose only after assignment-thread binding so C's first prompt can
+                # report exact-thread coordinator economics truthfully.
+                prompt = await self._assignment_prompt(batch, agent)
 
                 if batch.get("usage_continuation"):
                     await self.adapter.prepare_usage_continuation(
