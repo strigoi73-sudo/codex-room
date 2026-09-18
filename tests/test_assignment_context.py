@@ -942,6 +942,24 @@ async def test_bctx4_refresh_hands_off_checkpoint_once_and_preserves_successor_t
     assert refreshed_events[0]["metadata"]["old_context_thread_id"] == old_thread
     assert refreshed_events[0]["metadata"]["new_context_thread_id"] == new_thread
 
+    exported = await runtime.db.snapshot(room_id, event_limit=None)
+    assert exported is not None
+    exported_assignments = [
+        assignment
+        for task in exported["rounds"][0]["transaction_state"]["tasks"]
+        for assignment in task["assignments"]
+        if assignment["agent_key"] == "agent_c"
+    ]
+    exported_refreshes = [
+        item
+        for assignment in exported_assignments
+        for item in assignment["context_refreshes"]
+    ]
+    assert len(exported_refreshes) == 1
+    assert exported_refreshes[0]["checkpoint_text"] == checkpoint
+    assert exported_refreshes[0]["old_context_thread_id"] == old_thread
+    assert exported_refreshes[0]["new_context_thread_id"] == new_thread
+
 
 @pytest.mark.asyncio
 async def test_bctx4_refresh_start_failure_falls_back_to_exact_old_context(
