@@ -1813,6 +1813,38 @@ class RoomRuntime:
                 self._publish_event(event)
                 return failed["agent_key"]
 
+            if (
+                not new_context_thread_id
+                or new_context_thread_id == item["old_context_thread_id"]
+            ):
+                failed = await self.db.fail_coordinator_context_refresh(
+                    refresh_id,
+                    "Fresh coordinator context creation did not return a distinct thread ID",
+                )
+                event = await self.db.create_event(
+                    room_id,
+                    "coordinator_context_refresh_failed",
+                    "room",
+                    "observer",
+                    "Coordinator context refresh failed before activation; C remains on the exact old provider context.",
+                    status="error",
+                    related_event_id=item["request_event_id"],
+                    metadata={
+                        "refresh_id": refresh_id,
+                        "assignment_id": item["assignment_id"],
+                        "task_id": item["task_id"],
+                        "old_context_thread_id": item["old_context_thread_id"],
+                        "returned_context_thread_id": new_context_thread_id,
+                        "error": "fresh context was not distinct",
+                        "recovery": recovery,
+                        "work_model_version": 2,
+                    },
+                    discussion_id=item["round_id"],
+                    round_id=item["round_id"],
+                )
+                self._publish_event(event)
+                return failed["agent_key"]
+
             try:
                 item = await self.db.activate_coordinator_context_refresh(
                     refresh_id, new_context_thread_id
