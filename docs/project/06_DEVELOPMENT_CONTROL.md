@@ -7,48 +7,31 @@
 ## Operator summary
 
 - **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. PR #113 is merged on canonical `main` and adds explicit Round-level `completion_policy` values: default `auto_settle` and opt-in `continuous`.
-- **What just changed?** PR #113 merged as `aa3c98dd81303bfd2cb5798c73dec1be2f13dcda`. In continuous mode, when the coordinator reaches the ordinary settlement boundary, CORE requeues the same coordinator Assignment instead of settling the Task, preserving assignment-scoped provider context while child Assignments still complete normally. See D-036 / E-130.
-- **Verification state:** corrected feature head `24063623160bb7e4eff44e0932fbf1d0be00eb35` passed 5 focused feature/regression tests and the browser/transcript suite passed 3/3. A broader 429-test Python run produced 428 passes plus one unchanged rollover-quiescence timing failure outside the PR diff; that same rollover test then passed 3 consecutive focused reruns. `git diff --check` passed, tracked working state was clean, and canonical `main` now points to the signed GitHub merge commit. GitHub attached no hosted status checks/workflow runs to the exact PR head.
+- **What just changed?** The naturalistic `Stay busy.` acceptance run completed. At 42/500 turns, the Room had crossed four coordinator settlement boundaries and CORE had resumed the same root C Assignment after each one; C had already entered a fifth bounded activity when the human paused the Room. Child Assignments continued to complete normally. See D-036 / E-130 / E-131.
+- **Verification state:** D-036 continuous Round behavior is **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY SUPPORTED**. E-130 records deterministic verification/merge evidence; E-131 records four successful same-Assignment naturalistic resumptions under the literal `Stay busy.` objective. The run was intentionally expensive—1,882,148 raw execution-token deltas across 42 executions in about 8.4 minutes—so treat cost as stress-test evidence rather than a normal baseline.
 - **What is blocked?** No high-priority CORE blocker is known. D-019 daily usage pacing remains deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** Update the local checkout to canonical `main`, restart Codex Room, then run the naturalistic continuous-Round acceptance test: prompt exactly `Stay busy.`, completion behavior **Keep objective active**, deliberately high `max_turns` (the current stress-test plan uses 500), and observe that C repeatedly returns to the same standing objective until the human stops the Room or a hard boundary fires.
-- **What are we deliberately not doing?** No further implementation changes to continuous mode absent a demonstrated failure; no rerun of the full test suite merely because documentation changed; no further synthetic Common Cause benchmark; no retroactive rewrite of failed historical Room transactions; no fourth persistent agent; no broad v2 redesign; no new memory/index architecture; no personality calibration; no automatic model router; no adjacent maintenance investigation without a demonstrated problem.
+- **What is next?** No further dedicated continuous-Round work is required absent a demonstrated failure. Common Cause competitive play remains available when the principal explicitly authorizes it; otherwise continue ordinary-use monitoring and wait for a concrete next objective.
+- **What are we deliberately not doing?** No further implementation or dedicated testing of continuous mode absent a demonstrated failure; no new optimization project solely because the literal stress test was expensive; no further synthetic Common Cause benchmark; no retroactive rewrite of failed historical Room transactions; no fourth persistent agent; no broad v2 redesign; no new memory/index architecture; no personality calibration; no automatic model router; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
 
 ### Continuous Round naturalistic acceptance
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
 **Decision:** D-036
 
-**Evidence:** E-130
+**Evidence:** E-130, E-131
 
-**Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTIC ACCEPTANCE PENDING
+**Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY SUPPORTED
 
-The implementation phase is complete. The remaining bounded acceptance step is ordinary live use after the local checkout is moved to canonical `main` and Codex Room is restarted onto the merged code.
+The dedicated acceptance is complete. In Room `room_579eb5236cd246d6a1000ea3fea781d0`, prompt exactly `Stay busy.` ran under `completion_policy="continuous"`, work-model v2, and `assignment_thread` with a 500-turn ceiling. C completed four distinct bounded activities; after each coordinator `COMPLETE`, CORE emitted `continuous_round_resumed` for the same root Assignment `assignment_df0eb6faf079484682e18e21beec5dcc`. C then began a fifth bounded activity.
 
-Acceptance setup:
+The human paused the Room at 42 turns. The Round and root Task remained active, with six child Assignments completed, one child still running, six released Joins, and one pending Join. This is the intended behavior: the standing objective remained active, bounded child work retained ordinary lifecycle semantics, and human pause suspended further queued work without falsely settling the transaction.
 
-- public prompt exactly `Stay busy.`;
-- completion behavior **Keep objective active** (`completion_policy="continuous"`);
-- starter C;
-- production work-model v2 / `assignment_thread`;
-- deliberately high Round turn ceiling (current stress-test plan: 500);
-- human manually stops the Room after enough behavior has been observed.
+The run consumed 1,882,148 raw execution-token deltas in approximately 506 seconds. That is useful stress-test economics evidence, but the prompt was deliberately literal and open-ended with a high turn ceiling. Do not infer a new CORE defect or launch an optimization phase from this cost alone.
 
-Expected lifecycle behavior:
-
-1. C chooses and completes a bounded activity.
-2. Child Assignments, if any, complete normally.
-3. The root/coordinator Task does not settle merely because no child work remains.
-4. CORE requeues the same coordinator Assignment at the ordinary settlement boundary.
-5. The same Assignment-scoped provider context is retained and the Round objective is supplied again.
-6. C selects/coordinates further activity under the standing objective.
-7. The loop continues until human stop or a genuine hard runtime boundary.
-
-Busywork, repeated checks, diminishing-quality choices, looping, excessive delegation, or rising token cost are legitimate stress-test observations. They are not by themselves grounds for CORE to reinterpret `Stay busy.` as satisfied. The acceptance question is whether the lifecycle remains active and faithful to the literal standing instruction while preserving bounded child work and stop controls.
-
-Do not add more implementation or synthetic tests before this run unless local update/restart exposes a concrete defect.
+No further dedicated continuous-Round acceptance run is required unless ordinary use exposes a concrete recurrence or new failure mode.
 
 ### Common Cause competitive-play authorization and ordinary-use monitoring
 
