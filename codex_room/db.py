@@ -2383,10 +2383,18 @@ class Database:
                    ORDER BY e.created_at, e.id""",
                 (round_id,),
             )
+            refresh_rows = await db.execute_fetchall(
+                """SELECT c.*
+                   FROM coordinator_context_refreshes c
+                   WHERE c.round_id=?
+                   ORDER BY c.created_at, c.id""",
+                (round_id,),
+            )
         tasks: list[dict[str, Any]] = []
         assignments_by_task: dict[str, list[dict[str, Any]]] = {}
         joins_by_task: dict[str, list[dict[str, Any]]] = {}
         evidence_by_assignment: dict[str, list[dict[str, Any]]] = {}
+        refreshes_by_assignment: dict[str, list[dict[str, Any]]] = {}
         for row in evidence_rows:
             item = dict(row)
             item["request"] = json.loads(item.pop("request_json"))
@@ -2400,12 +2408,16 @@ class Database:
             )
             item.pop("transient_result_json", None)
             evidence_by_assignment.setdefault(item["assignment_id"], []).append(item)
+        for row in refresh_rows:
+            item = dict(row)
+            refreshes_by_assignment.setdefault(item["assignment_id"], []).append(item)
         for row in assignment_rows:
             item = dict(row)
             item["context_event_ids"] = json.loads(
                 item.pop("context_event_ids_json", "[]") or "[]"
             )
             item["evidence"] = evidence_by_assignment.get(item["id"], [])
+            item["context_refreshes"] = refreshes_by_assignment.get(item["id"], [])
             assignments_by_task.setdefault(item["task_id"], []).append(item)
         for row in join_rows:
             item = dict(row)
