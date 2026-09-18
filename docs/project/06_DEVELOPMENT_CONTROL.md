@@ -1,19 +1,54 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-17
+**Last updated:** 2026-09-18
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
-- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` is the public production path. Legacy Rooms were deliberately cleared rather than migrated.
-- **What just changed?** The exact-turn reconciliation repair at `6b810f0e327da4055ced97f38a60977f4eba9c46` is live. A subsequent Windows Codex helper failure was traced to redirected user `TEMP`/`TMP` on `F:`; restoring both to `C:\Users\strig\AppData\Local\Temp` and restarting Codex Room restored sandbox setup, confirmed by a one-command SDK probe and a clean `errors=[]` setup refresh (E-128). The existing Common Cause artifact then completed its previously blocked independent final verification in Round `round_557922a63c8c463ba7c40d185ddd0d58` and is now verified play-ready (E-129).
-- **Verification state:** dependency-aware sequencing and PR #110 fallback allocation are **NATURALISTICALLY SUPPORTED**. The false-interruption repair remains **IMPLEMENTED / REVIEWED / VERIFIED TO SUFFICIENT EVIDENCE / PUSHED**; E-129 adds one normal post-repair continuation that closed by `transaction_settled` without recurrence. Common Cause itself is **VERIFIED PLAY-READY**: both Python files compiled, the existing 11-test suite passed, an illegal CLI action was rejection-atomic in the exercised case, and a deterministic 48-pass smoke sequence completed all eight rounds with no unresolved offer or defense state and a final winner.
-- **What is blocked?** D-019 daily usage pacing remains blocked on unresolved mixed subscription-allowance / purchased-credit semantics. No high-priority CORE blocker is currently known. Common Cause implementation is not blocked; competitive play awaits the principal's separate authorization.
-- **What is next?** If the principal authorizes competitive play, begin the first actual Common Cause match in the same persistent Room/workspace with the now-frozen play-ready artifact. Do not add another pre-match verification round unless the artifact changes or a genuine defect appears.
-- **What are we deliberately not doing?** No further synthetic Common Cause benchmark; no retroactive rewrite of failed historical Room transactions; no fourth persistent agent; no broad v2 redesign; no new memory/index architecture; no personality calibration; no automatic model router; no adjacent maintenance investigation without a demonstrated problem; no repetitive broad pytest runs absent new evidence.
+- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, and I-015 are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. PR #113 is merged on canonical `main` and adds explicit Round-level `completion_policy` values: default `auto_settle` and opt-in `continuous`.
+- **What just changed?** PR #113 merged as `aa3c98dd81303bfd2cb5798c73dec1be2f13dcda`. In continuous mode, when the coordinator reaches the ordinary settlement boundary, CORE requeues the same coordinator Assignment instead of settling the Task, preserving assignment-scoped provider context while child Assignments still complete normally. See D-036 / E-130.
+- **Verification state:** corrected feature head `24063623160bb7e4eff44e0932fbf1d0be00eb35` passed 5 focused feature/regression tests and the browser/transcript suite passed 3/3. A broader 429-test Python run produced 428 passes plus one unchanged rollover-quiescence timing failure outside the PR diff; that same rollover test then passed 3 consecutive focused reruns. `git diff --check` passed, tracked working state was clean, and canonical `main` now points to the signed GitHub merge commit. GitHub attached no hosted status checks/workflow runs to the exact PR head.
+- **What is blocked?** No high-priority CORE blocker is known. D-019 daily usage pacing remains deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
+- **What is next?** Update the local checkout to canonical `main`, restart Codex Room, then run the naturalistic continuous-Round acceptance test: prompt exactly `Stay busy.`, completion behavior **Keep objective active**, deliberately high `max_turns` (the current stress-test plan uses 500), and observe that C repeatedly returns to the same standing objective until the human stops the Room or a hard boundary fires.
+- **What are we deliberately not doing?** No further implementation changes to continuous mode absent a demonstrated failure; no rerun of the full test suite merely because documentation changed; no further synthetic Common Cause benchmark; no retroactive rewrite of failed historical Room transactions; no fourth persistent agent; no broad v2 redesign; no new memory/index architecture; no personality calibration; no automatic model router; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
+
+### Continuous Round naturalistic acceptance
+
+**Work state:** IN PROGRESS
+
+**Decision:** D-036
+
+**Evidence:** E-130
+
+**Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTIC ACCEPTANCE PENDING
+
+The implementation phase is complete. The remaining bounded acceptance step is ordinary live use after the local checkout is moved to canonical `main` and Codex Room is restarted onto the merged code.
+
+Acceptance setup:
+
+- public prompt exactly `Stay busy.`;
+- completion behavior **Keep objective active** (`completion_policy="continuous"`);
+- starter C;
+- production work-model v2 / `assignment_thread`;
+- deliberately high Round turn ceiling (current stress-test plan: 500);
+- human manually stops the Room after enough behavior has been observed.
+
+Expected lifecycle behavior:
+
+1. C chooses and completes a bounded activity.
+2. Child Assignments, if any, complete normally.
+3. The root/coordinator Task does not settle merely because no child work remains.
+4. CORE requeues the same coordinator Assignment at the ordinary settlement boundary.
+5. The same Assignment-scoped provider context is retained and the Round objective is supplied again.
+6. C selects/coordinates further activity under the standing objective.
+7. The loop continues until human stop or a genuine hard runtime boundary.
+
+Busywork, repeated checks, diminishing-quality choices, looping, excessive delegation, or rising token cost are legitimate stress-test observations. They are not by themselves grounds for CORE to reinterpret `Stay busy.` as satisfied. The acceptance question is whether the lifecycle remains active and faithful to the literal standing instruction while preserving bounded child work and stop controls.
+
+Do not add more implementation or synthetic tests before this run unless local update/restart exposes a concrete defect.
 
 ### Common Cause competitive-play authorization and ordinary-use monitoring
 
