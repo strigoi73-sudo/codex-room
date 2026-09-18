@@ -76,6 +76,20 @@ A parent Assignment that delegates remains nonterminal until child work settles 
 
 I-015 is complete. Stage A established the transaction kernel; Stage B moved bounded source retrieval behind `EVIDENCE`; Stage C introduced assignment-scoped provider context and bounded `HISTORY`; Stage D passed the preregistered viability gate; D-034 then activated v2 + assignment-thread publicly. Post-close ordinary-use repair PR #108 corrected remaining transaction contract/retry bounds without reopening I-015. See E-094 through E-123.
 
+
+### Round completion policy
+
+**IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTIC ACCEPTANCE PENDING**
+
+Rounds now carry an explicit `completion_policy`. `auto_settle` remains the default and preserves ordinary transaction settlement. `continuous` is an opt-in standing-objective mode for instructions whose lifecycle should remain active after one bounded coordinator activity completes.
+
+In continuous mode, child Assignments still settle normally. When the task coordinator reaches the ordinary settlement boundary with no open Assignments/Joins, required contributors satisfied, and no hard turn-limit stop, CORE requeues the **same coordinator Assignment** instead of settling the Task. That preserves the Assignment's existing `context_thread_id` under the production `assignment_thread` provider-context model. The next coordinator execution receives the Round objective again plus explicit continuous-mode lifecycle guidance. `COMPLETE` or `PASS` ends the current bounded coordinator activity but does not by itself close the standing Round objective.
+
+Manual human stop, the Round hard turn limit, and genuine runtime boundaries remain termination mechanisms. Continuous mode is explicit per Round and does not weaken child-assignment scope or make perpetual execution the default.
+
+PR #113 implemented and exact-head verified this behavior; canonical merge commit is `aa3c98dd81303bfd2cb5798c73dec1be2f13dcda`. See D-036 and E-130. A naturalistic `Stay busy.` acceptance run after local update/restart remains pending, so current evidence establishes implementation/mechanics rather than yet claiming ordinary live stress-test behavior.
+
+
 ## 5. Assignment-scoped provider context and continuity
 
 **IMPLEMENTED / VERIFIED / PRODUCTION DEFAULT**
@@ -168,6 +182,6 @@ The major foundation, A2, P4, A3 remediation, and I-015 transaction redesign/cut
 
 That same continuation exposed a real CORE lifecycle defect at the exact-turn reconciliation boundary. The defect is now repaired and sufficiently verified at E-127. No further synthetic Common Cause coordination benchmark is required.
 
-The existing Common Cause game workspace should be preserved. After restarting Codex Room onto the repaired CORE, the immediate ROOM task is only the independent final exact-artifact verification that C had already attempted to delegate when the false interruption occurred. Competitive play is a separate human authorization after that play-readiness check. Volatile sequencing and monitor state live in `06_DEVELOPMENT_CONTROL.md` rather than here.
+The existing Common Cause game workspace should be preserved; its final exact-artifact verification is complete and the artifact is play-ready. PR #113 subsequently added explicit continuous Round completion semantics under D-036. The next bounded CORE/ROOM acceptance step is to update/restart the local installation and run the naturalistic `Stay busy.` standing-objective stress test. Competitive Common Cause play remains a separate human authorization. Volatile sequencing and monitor state live in `06_DEVELOPMENT_CONTROL.md` rather than here.
 
 Do not launch adjacent broad v2 redesign, personality calibration, new memory architecture, automatic model routing, or unrelated maintenance merely because this checkpoint exists.
