@@ -1278,7 +1278,7 @@ async def test_bctx3_worker_grace_cross_task_continuation_expiry_and_explicit_re
 ):
     adapter = FakeAgentAdapter(
         {"agent_a": [], "agent_b": [], "agent_c": []},
-        blocked_calls={"agent_c": {3, 5}},
+        blocked_calls={"agent_c": {3, 5, 6}},
     )
     adapter.decisions["agent_c"].extend(
         [
@@ -1329,7 +1329,7 @@ async def test_bctx3_worker_grace_cross_task_continuation_expiry_and_explicit_re
             work_model_version=2,
             provider_context_mode="assignment_thread",
             completion_policy="continuous",
-            max_turns=8,
+            max_turns=9,
         )
     )
     room_id = snapshot["id"]
@@ -1463,11 +1463,10 @@ async def test_bctx3_worker_grace_cross_task_continuation_expiry_and_explicit_re
     )
     adapter.release_call("agent_c", 5)
 
-    async def stopped() -> bool:
-        room = await runtime.db.get_room(room_id)
-        return bool(room and room["status"] == RoomStatus.STOPPED)
-
-    await wait_until(stopped)
+    # C's fifth execution is only the first post-Task-two execution. The explicit
+    # close signal should retire A's Task-two context immediately rather than wait
+    # for the automatic two-execution expiry.
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 6)
 
     async with runtime.db.connect() as db:
         cursor = await db.execute(
@@ -1481,6 +1480,20 @@ async def test_bctx3_worker_grace_cross_task_continuation_expiry_and_explicit_re
     assert a_two_final["context_grace_remaining"] == 0
     assert a_two_final["context_archived_at"] is not None
     assert a_two_final["context_thread_id"] in adapter.archived
+
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Finish the test Round at its configured hard boundary.",
+        )
+    )
+    adapter.release_call("agent_c", 6)
+
+    async def stopped() -> bool:
+        room = await runtime.db.get_room(room_id)
+        return bool(room and room["status"] == RoomStatus.STOPPED)
+
+    await wait_until(stopped)
 
 
 @pytest.mark.asyncio
