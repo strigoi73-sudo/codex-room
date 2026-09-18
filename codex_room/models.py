@@ -554,6 +554,7 @@ class CreateRoomRequest(BaseModel):
     provider_context_mode: Literal["persistent_agent_thread", "assignment_thread"] = (
         "persistent_agent_thread"
     )
+    completion_policy: Literal["auto_settle", "continuous"] = "auto_settle"
     required_contributors: list[
         Literal["agent_a", "agent_b", "agent_c"]
     ] = Field(default_factory=list)
@@ -626,6 +627,7 @@ class PrepareRoundRequest(BaseModel):
     provider_context_mode: Literal["persistent_agent_thread", "assignment_thread"] = (
         "persistent_agent_thread"
     )
+    completion_policy: Literal["auto_settle", "continuous"] = "auto_settle"
     required_contributors: list[
         Literal["agent_a", "agent_b", "agent_c"]
     ] = Field(default_factory=list)
