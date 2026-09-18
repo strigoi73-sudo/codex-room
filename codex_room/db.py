@@ -3515,9 +3515,9 @@ class Database:
                                 raise RuntimeError(
                                     "Direct result return lost its waiting parent assignment"
                                 )
-                            released_assignment_id = parent["id"]
                             direct_returned_assignment_ids.append(parent["id"])
                             if parent["contribution_join_id"]:
+                                released_assignment_id = parent["id"]
                                 pending_join_ids.append(parent["contribution_join_id"])
                             else:
                                 coordinator = await self._fetchone(
@@ -3550,6 +3550,7 @@ class Database:
                                         now,
                                     ),
                                 )
+                                released_assignment_id = coordinator_assignment_id
                                 wake_agent_keys.append(coordinator["agent_key"])
                         else:
                             await db.execute(
