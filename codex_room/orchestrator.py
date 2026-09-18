@@ -1135,9 +1135,15 @@ class RoomRuntime:
             for agent, result in zip(agents, interruption_results, strict=True)
         }
         await self._retire_room_workers(room_id, interruption_outcomes)
+        retired_worker_contexts: list[dict[str, Any]] = []
         async with self._lifecycle_locks[room_id]:
             await self.db.cancel_pending_deliveries(room_id, room["discussion_id"])
             await self.db.cancel_transaction_work(room_id, room["discussion_id"])
+            retired_worker_contexts = await self.db.retire_round_worker_contexts(
+                room_id,
+                room["discussion_id"],
+                reason="round_stopped",
+            )
             await self.db.stop_active_round(room_id, reason)
             for agent in agents:
                 slot = self._worker_slots.get((room_id, agent["agent_key"]))
@@ -1150,6 +1156,8 @@ class RoomRuntime:
                     await self.db.set_agent_status(agent["id"], AgentStatus.IDLE)
             await self._system_event(room_id, "room_stopped", reason)
             await self.publish_state(room_id)
+        if retired_worker_contexts:
+            await self._archive_pending_worker_contexts(room_id)
 
     async def new_topic(self, room_id: str, request: NewTopicRequest) -> dict[str, Any]:
         prepared = await self.prepare_round(
@@ -4964,6 +4972,7 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
     async def _watchdog_tick(self) -> None:
         now = datetime.now(UTC)
         for room in await self.db.list_rooms(include_archived=False):
+            await self._archive_pending_worker_contexts(room["id"])
             if room["status"] != RoomStatus.RUNNING:
                 continue
             # Reconcile only from structural proof: a completed/missing worker
