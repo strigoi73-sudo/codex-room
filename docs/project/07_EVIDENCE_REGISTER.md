@@ -4721,3 +4721,68 @@ PR #122 merged that exact verified head to canonical `main` as merge commit:
 Post-merge inspection confirmed canonical `main` at that merge commit. No GitHub-hosted workflow run was attached to the merge commit, so this entry relies on the exact-head local verification above rather than claiming hosted CI verification.
 
 **Assessment:** BCTX-3 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. This evidence does not claim BCTX-4 coordinator checkpoint/refresh is implemented.
+
+### E-135 — BCTX-4 coordinator checkpoint/refresh implemented, exact-head locally verified, and merged
+**Date:** 2026-09-18
+**Kind:** [CORE implementation + focused deterministic verification + repository-standard fast verification + canonical merge]
+**Decision:** D-037
+**Work item:** BCTX-4
+
+BCTX-4 completes the four-slice bounded-context program by adding a deliberate fail-closed coordinator context refresh without introducing automatic refresh heuristics, broad transcript replay, embeddings, or a new memory database.
+
+Exact implementation head verified locally by the principal:
+
+`fdb21c60dd9f03c82111014a3987f0f783124e7c`
+
+Canonical pre-merge base:
+
+`e92c825cac083d871d577195a67f07d316783095`
+
+Exact reviewed change surface:
+
+- `codex_room/db.py`
+- `codex_room/models.py`
+- `codex_room/orchestrator.py`
+- `tests/test_assignment_context.py`
+
+Implemented behavior on that head:
+
+- adds explicit C-only `REFRESH` for the root Task-coordinator Assignment in production `assignment_thread` mode;
+- C supplies a bounded free-form continuity checkpoint;
+- CORE creates a distinct fresh C provider context and durably records checkpoint source, old/new context identities, source execution/event, activation/completion state, and first-turn checkpoint consumption;
+- the refreshed Assignment remains non-runnable until old-context archival completes;
+- current Task/Assignment/Join/Evidence/grace state is reconstructed separately from SQLite, and the old coordinator transcript is not wholesale replayed;
+- fresh-context creation/activation failure before handoff falls back to the exact old context;
+- old-context archival failure after activation leaves both sides non-runnable and durable recovery retries the pending handoff on initialization/watchdog;
+- human Stop cancels unresolved refresh work with the transaction;
+- refreshed C continuity persists across ordinary BCTX-1 successor Tasks;
+- transaction snapshot/export exposes exact refresh provenance;
+- no automatic refresh threshold or trigger is implemented.
+
+The principal verified the exact head from a clean tracked working tree. Focused transaction/context verification:
+
+`python -m pytest -q tests/test_assignment_context.py tests/test_transactions.py`
+
+Result:
+
+- **44 passed** in **262.40 seconds**.
+
+Repository-standard fast verification on the same exact head:
+
+- Linux Python 3.12 focused core: **60 passed**, 2 warnings;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **3 passed**;
+- dependency checks remained synchronized;
+- total verifier result: **PASS** in **99.3 seconds**;
+- final HEAD remained exactly `fdb21c60dd9f03c82111014a3987f0f783124e7c`;
+- tracked tree remained clean;
+- one untracked local `data/` path was present and explicitly outside tracked-source verification.
+
+PR #124 squash-merged those exact verified implementation bytes to canonical `main` as:
+
+`e9669a05255beb3cce73f80cc491601f99db5219`
+
+No GitHub-hosted workflow run was attached to the merge commit at closeout time, so this entry relies on the exact-head local verification above rather than claiming hosted CI verification.
+
+**Assessment:** BCTX-4 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. **BCTX-1 through BCTX-4 are complete; the D-037 bounded-context program is COMPLETE.**
+
