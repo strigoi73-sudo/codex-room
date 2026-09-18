@@ -5619,6 +5619,35 @@ class Database:
             ),
         }
 
+    async def get_provider_context_usage_history(
+        self, agent_id: str, round_id: str, sdk_thread_id: str
+    ) -> list[dict[str, Any]]:
+        """Return recorded usage snapshots for one exact provider context thread."""
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT e.rowid AS execution_rowid, e.assignment_id, e.usage_json,
+                          x.task_id, t.state AS task_state
+                   FROM agent_executions e
+                   LEFT JOIN assignments x ON x.id=e.assignment_id
+                   LEFT JOIN tasks t ON t.id=x.task_id
+                   WHERE e.agent_id=? AND e.round_id=? AND e.sdk_thread_id=?
+                     AND e.usage_json IS NOT NULL
+                   ORDER BY e.rowid""",
+                (agent_id, round_id, sdk_thread_id),
+            )
+        history: list[dict[str, Any]] = []
+        for row in rows:
+            history.append(
+                {
+                    "execution_rowid": row["execution_rowid"],
+                    "assignment_id": row["assignment_id"],
+                    "task_id": row["task_id"],
+                    "task_state": row["task_state"],
+                    "usage": json.loads(row["usage_json"]),
+                }
+            )
+        return history
+
     async def get_usage_continuation(
         self, room_id: str, agent_key: str
     ) -> dict[str, Any] | None:
