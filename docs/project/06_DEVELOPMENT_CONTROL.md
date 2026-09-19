@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-016 — Private Principal Channel remains **IN PROGRESS pending naturalistic re-acceptance**. The deterministic private wait/resume machinery remains implemented and verified; the C action-selection repair for the first naturalistic failure is now exact-head verified and merged. See E-143 for the failed first run.
-- **What just changed?** PR #139 strengthened C's protected structural instructions and transaction decision contract so a required principal response maps to `CONSULT_PRINCIPAL`, while terminal `COMPLETE` is explicitly forbidden merely to ask the principal a question. Exact repair head `d964af1d8fdd9c49dfcdf18f3e6104aa5b21eed9` passed `git diff --check`, 63 Linux focused tests, 118 Windows portability tests, and 7 browser tests; it squash-merged as `26c7fb8035f15752929cfc27bd4295f0f8035ec7`.
-- **Verification state:** The transaction machinery and the bounded C-decision-contract repair are **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. End-to-end behavioral acceptance remains open until a fresh Room demonstrates that C actually selects `CONSULT_PRINCIPAL`, waits privately, resumes on the same Assignment, and does not involve A/B.
-- **What is blocked?** No design blocker is known. The only current I-016 gate is the fresh naturalistic acceptance rerun after runtime restart. D-019 remains separately deferred; Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** Pull/restart on merged `main`, rerun the same private-principal acceptance scenario, and stop immediately if C emits an ordinary public question instead of the private consultation UI. Do not widen the feature to A/B or add nonblocking notification semantics while closing this demonstrated issue.
+- **Where are we?** I-016 — Private Principal Channel is **COMPLETE** under D-038. The private wait/resume machinery, C action-selection repair, deterministic verification, and fresh naturalistic re-acceptance are all complete. See E-142 through E-144.
+- **What just changed?** The post-repair naturalistic Room succeeded end to end: C selected `CONSULT_PRINCIPAL`, emitted a private observer-only question with no deliveries, received the principal's private reply, resumed the same Assignment, completed the requested announcement, and never ran A or B. E-144 records the exact Room evidence.
+- **Verification state:** I-016 is **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY ACCEPTED / MERGED**. PR #137 established the mechanism; PR #139 repaired C's action selection; both exact heads passed the repository-standard verification gate; the repaired behavior then passed a fresh Room acceptance rerun.
+- **What is blocked?** No I-016 blocker remains. D-019 remains separately deferred; Common Cause competitive play still awaits separate principal authorization.
+- **What is next?** No automatic follow-on I-016 engineering phase is authorized. Preserve the C-only boundary; do not widen principal consultation to A/B or add nonblocking notification semantics without separate evidence and principal authorization.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
@@ -21,9 +21,9 @@
 
 **Decision:** D-038
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality:** IMPLEMENTED / REPAIR VERIFIED AND MERGED / NATURALISTIC RE-ACCEPTANCE PENDING
+**Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY ACCEPTED / MERGED
 
 **Authorized first release:** Agent C's root coordinator Assignment may emit structured `CONSULT_PRINCIPAL` when human judgment, authorization, or material clarification is needed. CORE records a private `principal_message` visible to the observer, creates no A/B deliveries, and moves the same Assignment to durable `waiting_principal`. The observer replies to that exact consultation event; CORE atomically rejects stale/duplicate replies, records a private `principal_reply`, and requeues the same C Assignment on its existing provider-context lineage. Private exchange is not automatically shared with A/B.
 
@@ -35,7 +35,9 @@
 
 **Observed issue:** The first naturalistic acceptance Room did not exercise that machinery because C returned `COMPLETE` with the principal question, which publicly settled the original Task. The later observer reply was therefore a normal Room message and created new A/B/C work. E-143 records the exact observed sequence. A bounded prompt/instruction repair is now required before I-016 can return to COMPLETE.
 
-**Repair state:** PR #139 exact repair head `d964af1d8fdd9c49dfcdf18f3e6104aa5b21eed9` passed `git diff --check`, 63 Linux focused tests, 118 Windows portability tests, and 7 browser tests with a clean tracked tree. It squash-merged as `26c7fb8035f15752929cfc27bd4295f0f8035ec7`. Fresh naturalistic re-acceptance is the remaining gate.
+**Repair state:** PR #139 exact repair head `d964af1d8fdd9c49dfcdf18f3e6104aa5b21eed9` passed `git diff --check`, 63 Linux focused tests, 118 Windows portability tests, and 7 browser tests with a clean tracked tree. It squash-merged as `26c7fb8035f15752929cfc27bd4295f0f8035ec7`.
+
+**Naturalistic re-acceptance:** PASS in Room `room_2613bdfdff0e4ddca15fe3ba6930029b`. C emitted `CONSULT_PRINCIPAL` privately to the observer, the principal reply remained private and bound to the same Assignment, C resumed that Assignment and completed, and A/B remained unexecuted. E-144 records the exact sequence.
 
 ### Functional acceptance campaign T0-T14
 

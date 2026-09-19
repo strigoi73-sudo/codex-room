@@ -894,3 +894,36 @@ The repair scope is deliberately bounded:
 - then rerun the naturalistic acceptance Room after exact-head verification.
 
 **Assessment:** I-016 remains mechanically implemented, but the first naturalistic acceptance attempt is a **FAIL** for end-to-end behavioral usability. I-016 is reopened until the bounded repair is verified and a fresh Room demonstrates the intended private consultation path.
+
+## E-144 — I-016 post-repair naturalistic re-acceptance passed
+
+**Date:** 2026-09-19
+**Kind:** [ROOM naturalistic behavioral acceptance / closeout]
+**Related decision:** D-038
+**Related work:** I-016
+**Room:** `room_2613bdfdff0e4ddca15fe3ba6930029b`
+
+After PR #139 repaired the C action-selection contract, the principal restarted on merged `main` and ran a fresh Room using the same acceptance objective that had previously failed.
+
+The repaired Room produced the intended sequence:
+
+- C's first substantive outcome was a `principal_message` with transaction action `CONSULT_PRINCIPAL`, destination `observer`, private visibility, `agent_readable=false`, `turn_triggering=false`, `awaiting_principal_reply=true`, and zero delivery rows;
+- the consultation asked only whether Lantern should use FORMAL or PLAYFUL;
+- the principal replied `Formal` through the dedicated private reply path;
+- the reply was recorded as `principal_reply`, destination `agent_c`, private, non-agent-readable, non-turn-triggering, bound to the exact consultation event and the same C Assignment;
+- CORE then ran that same Assignment again;
+- C completed with the requested formal Lantern announcement;
+- A and B did not execute: their Round agent state retained `context_consumed_at=null` and `last_outcome=null`;
+- the Room finished after exactly two counted turns.
+
+The exact Assignment throughout the consultation and completion was:
+
+`assignment_a7c15bf5c63a48b081d9946375a46a0b`
+
+Its durable provider context thread was:
+
+`01a0ba61-07fb-7822-a4f5-93d5ae220e61`
+
+The completed Task settled normally after C's final `COMPLETE` result.
+
+**Assessment:** I-016 is **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY ACCEPTED / MERGED**. The demonstrated first-run defect from E-143 is repaired. The current evidence supports the intended C-only private consultation flow without A/B invocation or leakage. No widening to A/B and no nonblocking private-notification primitive is implied by this acceptance.
