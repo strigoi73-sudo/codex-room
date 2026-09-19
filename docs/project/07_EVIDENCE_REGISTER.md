@@ -5024,3 +5024,49 @@ No GitHub-hosted workflow run was attached; verification is the exact-head local
 
 **Assessment:** the T8 hard-restart defect is **RESOLVED / IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY VERIFIED**. The original failing run remains preserved as evidence of the pre-repair behavior.
 
+### E-141 — Functional acceptance campaign T0–T14 completed with all tests PASS
+**Date:** 2026-09-19  
+**Kind:** [CORE + ROOM functional acceptance / integrated operational verification]  
+**Related evidence:** E-140
+
+The repeatable functional acceptance campaign in `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md` completed T0 through T14 with every test recorded **PASS** against preserved exact-HEAD and Room/export evidence.
+
+The campaign exercised, in sequence:
+
+- baseline health and repository-standard fast verification;
+- C-only trivial work and selective invocation;
+- parallel differentiated A/B delegation;
+- dependency-ordered implementation then verification;
+- nested A→B delegation with direct coordinator return;
+- bounded CORE source evidence;
+- explicit same-worker Assignment context continuation;
+- bounded same-Round HISTORY retrieval;
+- hard-restart recovery during active transaction work;
+- deliberate C-only coordinator `REFRESH`;
+- custom-capability author/register/rediscover/invoke lifecycle;
+- Room rollover continuity;
+- offline export / maintenance integrity / backup / verify;
+- explicit per-peer execution configuration;
+- an integrated naturalistic implementation-and-verification mission.
+
+The campaign exposed one demonstrated product/runtime invariant defect: T8's initial hard-restart run showed that an exact provider turn recovered as `interrupted` was treated as terminal. That defect was repaired and exact-head verified in PR #130, then naturally revalidated by the T8 rerun. E-140 owns the detailed defect/repair evidence.
+
+The campaign also preserved non-blocking behavioral or operational observations rather than converting them into CORE defects:
+
+- T6 recovered from one invalid delegation decision and one failed command while still exercising explicit A continuation lineage correctly;
+- T10 required recovery from two malformed custom-capability invocations before successful invocation;
+- T11 performed one unnecessary HISTORY lookup before completing rollover validation;
+- T14's A implementation path included one failed command after successful artifact creation/execution, and the delegated B verification assignment returned `PASS` without a substantive audit. C compensated by using bounded CORE `read_many` evidence over the exact fixture, implementation, and generated JSON before final integration.
+
+T14 exact tested state:
+
+- repository HEAD: `b2ba255b19f2ad47326e9da9457a03b3edad564d`;
+- Room: `room_2f804e5f1c78414f811e82fc6d30f249`;
+- evidence: `output\functional-acceptance\T14-20260919-022415`;
+- generated script SHA-256: `351c72f109dc981e5dbf510dc89e3baf06b7a9e0534c17252d8d4eb1113cc3ad`;
+- generated summary SHA-256: `098cad458c5396be3a7ef98efc043c09086da37bf6a753001b8b9f13a5fdd3cf`;
+- exact output: 5 orders, total amount 150.0, North 62.5, South 70.0, West 17.5;
+- Round terminal state: `transaction_settled`.
+
+**Assessment:** the functional acceptance campaign is **COMPLETE**. The exercised production paths are empirically supported at the recorded exact versions. No additional repair or adjacent acceptance work is warranted solely from this campaign. The preserved behavioral observations remain evidence for future comparison if they recur or become expensive; they do not currently establish a new CORE defect.
+
