@@ -6,6 +6,9 @@ const state = {
   reconnectTimer: null,
   profiles: null,
   followTranscript: true,
+  statusTools: null,
+  statusToolsRoomId: null,
+  statusToolsError: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -305,6 +308,9 @@ function openCreate() {
 async function openRoom(roomId) {
   disconnectSocket();
   state.eventIds.clear();
+  state.statusTools = null;
+  state.statusToolsRoomId = roomId;
+  state.statusToolsError = null;
   try {
     state.room = await api(`/api/rooms/${roomId}`);
     location.hash = `room=${roomId}`;
@@ -314,6 +320,11 @@ async function openRoom(roomId) {
     restoreObserverDraft(roomId);
     focusObserverComposer();
     connectSocket(roomId);
+    loadStatusTools(roomId).catch((error) => {
+      if (state.room?.id !== roomId) return;
+      state.statusToolsError = error.message;
+      renderStatusTools();
+    });
   } catch (error) {
     showRoomError(error.message);
   }
@@ -332,6 +343,7 @@ function renderRoom({ replaceTranscript = false } = {}) {
     ? `${round.title || "Untitled round"} · ${round.status} · ${round.turn_count} turns · starter ${round.starting_agent}${round.completion_policy === "continuous" ? " · continuous" : ""}`
     : "No active round";
   renderAgentStrip(room.agents || []);
+  renderStatusTools();
   syncParticipantControls(room);
   $("#turn-counter").textContent = `${room.turn_count} / ${room.max_turns} turns`;
   $("#pause-room").disabled = room.status !== "running";
@@ -398,6 +410,199 @@ function renderAgentStrip(agents) {
     card.append(glyph, info, statusEl);
     strip.append(card);
   });
+}
+
+function statusLabel(status) {
+  return String(status || "unknown").replaceAll("_", " ");
+}
+
+function statusBadge(status, label = null) {
+  const badge = document.createElement("span");
+  badge.className = `tool-status ${String(status || "unknown").replace(/[^a-z0-9_-]/gi, "-")}`;
+  badge.textContent = label || statusLabel(status);
+  return badge;
+}
+
+function statusLine(primary, secondary = null, status = null) {
+  const row = document.createElement("div");
+  row.className = "status-tools-line";
+  const text = document.createElement("div");
+  const strong = document.createElement("strong");
+  strong.textContent = primary;
+  text.append(strong);
+  if (secondary) {
+    const small = document.createElement("small");
+    small.textContent = secondary;
+    text.append(small);
+  }
+  row.append(text);
+  if (status) row.append(statusBadge(status));
+  return row;
+}
+
+function compactText(value, max = 180) {
+  const text = String(value || "").trim().replace(/\s+/g, " ");
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+function renderStatusTools() {
+  const room = state.room;
+  if (!room || !$("#status-tools-panel")) return;
+
+  const round = room.active_round;
+  $("#status-work-round").textContent = round
+    ? `${round.title || "Untitled round"} · ${statusLabel(round.status)}`
+    : "No active round";
+  $("#status-work-objective").textContent = round?.prompt
+    ? compactText(round.prompt, 260)
+    : "No active objective.";
+
+  const assignmentList = $("#status-work-assignments");
+  assignmentList.replaceChildren();
+  const tasks = round?.transaction_state?.tasks || [];
+  const assignments = tasks.flatMap((task) =>
+    (task.assignments || []).map((assignment) => ({ task, assignment })),
+  );
+  const visibleAssignments = assignments.slice(-6);
+  if (!visibleAssignments.length) {
+    assignmentList.append(statusLine("No active Task assignments", "C will create work ownership when the Round requires it."));
+  } else {
+    visibleAssignments.forEach(({ task, assignment }) => {
+      const owner = agentFallbackNames[assignment.agent_key] || assignment.agent_key || "Agent";
+      assignmentList.append(statusLine(
+        `${owner} · ${statusLabel(assignment.state)}`,
+        compactText(assignment.instruction || `Task ${task.id}`, 120),
+        assignment.state === "running" ? "available" : assignment.state,
+      ));
+    });
+  }
+
+  const economics = $("#status-economics");
+  economics.replaceChildren();
+  const recentEconomics = (room.events || [])
+    .filter((event) => event.event_type === "execution_economics")
+    .slice(-4)
+    .reverse();
+  if (!recentEconomics.length) {
+    const empty = document.createElement("p");
+    empty.className = "status-tools-muted";
+    empty.textContent = "No execution economics recorded yet.";
+    economics.append(empty);
+  } else {
+    recentEconomics.forEach((event) => {
+      const meta = event.metadata || {};
+      const delta = meta.usage_delta || {};
+      const usage = meta.usage || {};
+      const source = agentFallbackNames[event.source] || event.source || "Agent";
+      const tokenText = Number.isFinite(delta.total_tokens)
+        ? `${delta.total_tokens.toLocaleString()} execution tokens`
+        : "execution-token delta unavailable";
+      const contextText = Number.isFinite(usage.input_tokens)
+        ? `${usage.input_tokens.toLocaleString()} input load`
+        : "input load unavailable";
+      economics.append(statusLine(
+        source,
+        `${tokenText} · ${contextText} · ${meta.tool_calls || 0} tool call(s)`,
+      ));
+    });
+  }
+
+  const freshness = $("#status-tools-freshness");
+  const registry = $("#status-room-capabilities");
+  const inherited = $("#status-codex-tools");
+  registry.replaceChildren();
+  inherited.replaceChildren();
+
+  if (state.statusToolsRoomId !== room.id || (!state.statusTools && !state.statusToolsError)) {
+    freshness.textContent = "Room state current · tool inventory loading";
+    const loading = document.createElement("p");
+    loading.className = "status-tools-muted";
+    loading.textContent = "Capability inventory loading…";
+    registry.append(loading);
+    return;
+  }
+  if (state.statusToolsError) {
+    freshness.textContent = "Room state current · tool inventory unavailable";
+    const error = document.createElement("p");
+    error.className = "status-tools-muted";
+    error.textContent = state.statusToolsError;
+    registry.append(error);
+    return;
+  }
+
+  const visibility = state.statusTools;
+  const roomCapabilities = visibility?.room_capabilities || {};
+  freshness.textContent = `Room state current · tool inspection ${visibility?.codex?.inspection_status || "unknown"}`;
+  const capItems = roomCapabilities.items || [];
+  registry.append(statusLine(
+    "Room deterministic capabilities",
+    capItems.length ? capItems.map((item) => item.id).join(", ") : "None registered",
+    roomCapabilities.status || "unknown",
+  ));
+
+  const codex = visibility?.codex || {};
+  (codex.native || []).forEach((item) => {
+    inherited.append(statusLine(item.label || item.id, item.detail, item.status));
+  });
+
+  const web = codex.web_search || {};
+  inherited.append(statusLine(
+    "Web search",
+    web.mode ? `${web.mode} mode · ${web.detail || ""}` : web.detail || "Mode unavailable",
+    web.status || "unknown",
+  ));
+
+  const skills = codex.skills || {};
+  const skillNames = (skills.items || [])
+    .filter((item) => item.status === "available")
+    .map((item) => item.name);
+  inherited.append(statusLine(
+    "Skills",
+    `${skills.enabled_count || 0}/${skills.total_count || 0} enabled${skillNames.length ? ` · ${skillNames.join(", ")}` : ""}`,
+    skills.status || "unknown",
+  ));
+
+  const mcp = codex.mcp || {};
+  const serverText = (mcp.servers || []).map((server) =>
+    `${server.name} (${server.tool_count || 0} tools${server.auth_status === "notLoggedIn" ? ", sign-in needed" : ""})`,
+  );
+  inherited.append(statusLine(
+    "MCP",
+    `${mcp.server_count || 0} server(s) · ${mcp.tool_count || 0} tool(s)${serverText.length ? ` · ${serverText.join("; ")}` : ""}`,
+    mcp.status || "unknown",
+  ));
+
+  const apps = codex.apps || {};
+  const appNames = (apps.items || []).filter((item) => item.status === "available").map((item) => item.name);
+  inherited.append(statusLine(
+    "Apps / plugins",
+    `${apps.available_count || 0}/${apps.total_count || 0} callable${appNames.length ? ` · ${appNames.join(", ")}` : ""}`,
+    apps.status || "unknown",
+  ));
+}
+
+async function loadStatusTools(roomId, { refreshRoom = false } = {}) {
+  if (!roomId) return;
+  const button = $("#refresh-status-tools");
+  button.disabled = true;
+  state.statusToolsError = null;
+  try {
+    const [visibility, room] = await Promise.all([
+      api(`/api/rooms/${roomId}/status-tools`),
+      refreshRoom ? api(`/api/rooms/${roomId}`) : Promise.resolve(null),
+    ]);
+    if (state.room?.id !== roomId) return;
+    state.statusTools = visibility;
+    state.statusToolsRoomId = roomId;
+    if (room) {
+      state.room = room;
+      renderRoom();
+    } else {
+      renderStatusTools();
+    }
+  } finally {
+    if (state.room?.id === roomId) button.disabled = false;
+  }
 }
 
 function syncParticipantControls(room) {
@@ -708,6 +913,15 @@ $("#message-form textarea").addEventListener("keydown", (event) => {
   const form = event.currentTarget.form;
   const submit = form.querySelector("button[type=submit]");
   if (!submit.disabled) form.requestSubmit();
+});
+$("#refresh-status-tools").addEventListener("click", () => {
+  const roomId = state.room?.id;
+  if (!roomId) return;
+  loadStatusTools(roomId, { refreshRoom: true }).catch((error) => {
+    if (state.room?.id !== roomId) return;
+    state.statusToolsError = error.message;
+    renderStatusTools();
+  });
 });
 $("#pause-room").addEventListener("click", () => roomAction("pause"));
 $("#resume-room").addEventListener("click", () => roomAction("resume"));
