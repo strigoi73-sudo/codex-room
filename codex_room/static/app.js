@@ -337,6 +337,7 @@ function renderStatusTools(payload) {
       null,
       `${String(agent.work_state || agent.status || "unknown").replaceAll("_", " ")} · ${String(agent.execution_health || "health unknown").replaceAll("_", " ")} · ${agent.model || "model not run yet"}${agent.reasoning_effort ? ` · ${agent.reasoning_effort}` : ""}`,
       [
+        ["Model evidence", agent.model_recency || "not recorded"],
         ["Queued / processing", `${agent.pending_count || 0} / ${agent.processing_count || 0}`],
         ["Recent execution tokens", compactNumber(tokens)],
         ["Recent tool calls", compactNumber(economics?.tool_calls)],
@@ -353,6 +354,8 @@ function renderStatusTools(payload) {
         ["Executions on context", compactNumber(context.executions_on_context)],
         ["Last execution input", compactNumber(context.last_execution_input_tokens)],
         ["Cached input", compactNumber(context.last_execution_cached_input_tokens)],
+        ["Consider refresh at", compactNumber(context.advisory_consider_input_tokens)],
+        ["Strongly prefer at", compactNumber(context.advisory_strongly_prefer_input_tokens)],
       ],
     ));
   }
@@ -386,6 +389,8 @@ function renderStatusTools(payload) {
   codexSection.append(runtimeNote);
   const toolGrid = statusGrid();
   const labels = {
+    workspace_files: "Workspace files",
+    command_execution: "Command execution",
     web_search: "Web search",
     skills: "Skills",
     mcp: "MCP",
@@ -414,7 +419,7 @@ function renderStatusTools(payload) {
   });
   const commands = payload.codex?.commands || { status: "unknown", summary: "Command catalog not inspected." };
   toolGrid.append(statusCard(
-    "Codex commands",
+    "Exact Codex slash catalog",
     commands.status,
     commands.summary,
     [
