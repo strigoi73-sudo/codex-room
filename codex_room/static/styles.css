@@ -94,7 +94,7 @@ input:focus, textarea:focus, select:focus { border-color: #5d6470; box-shadow: 0
 .create-submit { min-width: 240px; }
 .button-note { display: block; font-size: 9px; opacity: .65; font-weight: 500; margin-top: 2px; }
 .error-banner { margin-top: 10px; border: 1px solid rgba(255,131,124,.35); background: rgba(255,131,124,.08); color: #ffaaa5; border-radius: 9px; padding: 10px 12px; font-size: 12px; }
-.room-view { height: 100%; display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; }
+.room-view { height: 100%; display: grid; grid-template-rows: auto auto auto minmax(0,1fr) auto; }
 .room-header { min-height: 79px; padding: 17px 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .room-title-wrap { display: flex; align-items: center; gap: 12px; }
 .room-title-wrap h1 { font-size: 20px; margin: 3px 0 0; letter-spacing: -.02em; }
@@ -126,6 +126,27 @@ input:focus, textarea:focus, select:focus { border-color: #5d6470; box-shadow: 0
 .route-line { color: #626872; font-size: 8px; text-transform: uppercase; letter-spacing: .12em; display: flex; align-items: center; gap: 6px; }
 .route-line i { width: 18px; height: 1px; background: #363a41; }
 @keyframes pulse { 50% { opacity: .35; } }
+.status-tools-panel { border-bottom: 1px solid var(--line); background: #101216; padding: 12px 28px 14px; max-height: 280px; overflow: auto; }
+.status-tools-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.status-tools-header .eyebrow { margin-bottom: 2px; }
+.status-tools-header small { color: var(--muted); font-size: 9px; }
+.compact-button { padding: 6px 9px; font-size: 10px; }
+.status-tools-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .9fr) minmax(0, 1.35fr); gap: 10px; }
+.status-tools-card { min-width: 0; border: 1px solid #24272d; border-radius: 10px; background: #0e1013; padding: 10px 11px; }
+.status-tools-card h2 { margin: 0 0 7px; color: #b8bdc6; font-size: 9px; text-transform: uppercase; letter-spacing: .1em; }
+.status-tools-primary { margin: 0 0 5px; font-size: 12px; font-weight: 700; color: #e9e7e0; }
+.status-tools-muted { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.status-tools-list { display: grid; gap: 6px; margin-top: 7px; }
+.status-tools-subsection { border-top: 1px solid #202329; padding-top: 8px; margin-top: 8px; }
+.status-tools-line { display: flex; align-items: start; justify-content: space-between; gap: 8px; min-width: 0; }
+.status-tools-line > div { min-width: 0; }
+.status-tools-line strong { display: block; color: #d4d6db; font-size: 10px; font-weight: 650; overflow-wrap: anywhere; }
+.status-tools-line small { display: block; margin-top: 2px; color: #777e89; font-size: 9px; line-height: 1.35; overflow-wrap: anywhere; }
+.tool-status { flex: 0 0 auto; border: 1px solid #333841; border-radius: 999px; padding: 2px 5px; color: var(--muted); font-size: 7px; text-transform: uppercase; letter-spacing: .06em; }
+.tool-status.available, .tool-status.running, .tool-status.completed { color: var(--a); border-color: rgba(86,214,179,.3); background: var(--a-dim); }
+.tool-status.interaction_required, .tool-status.waiting, .tool-status.queued { color: var(--observer); border-color: rgba(242,198,109,.3); background: rgba(242,198,109,.07); }
+.tool-status.disabled, .tool-status.cancelled, .tool-status.failed { color: #8b919b; border-color: #30343a; }
+.tool-status.unknown, .tool-status.error { color: var(--danger); border-color: rgba(255,131,124,.3); background: rgba(255,131,124,.06); }
 .transcript { overflow-y: auto; padding: 30px max(28px, calc((100vw - 260px - 880px)/2)); scroll-behavior: smooth; }
 .event { display: grid; grid-template-columns: 115px minmax(0, 1fr); gap: 18px; margin: 0 auto 24px; max-width: 880px; }
 .event-rail { text-align: right; padding-top: 2px; }
@@ -190,6 +211,8 @@ dialog p:not(.eyebrow) { color: var(--muted); font-size: 13px; line-height: 1.5;
   .header-actions { display: none; }
   .mobile-sidebar { display: block; }
   .agent-strip { padding: 10px 12px; gap: 5px; }
+  .status-tools-panel { padding: 10px 12px; max-height: 330px; }
+  .status-tools-grid { grid-template-columns: 1fr; }
   .route-line { display: none; }
   .agent-info small { max-width: 120px; }
   .transcript { padding: 22px 12px; }
