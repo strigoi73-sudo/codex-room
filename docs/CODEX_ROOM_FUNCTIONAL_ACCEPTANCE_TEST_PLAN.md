@@ -2042,7 +2042,7 @@ Update this table only with evidence from an actual run. Keep the exact HEAD and
 |---|---|---|---|---|
 | T0 | PASS | `ef92dcf6991db58208a9340c28d14ad7e3478a1c` | `output\functional-acceptance\T0-20260919-005013` | `/api/health` healthy; `verify-fast.cmd` PASS: Linux focused core 63/63, Windows portability 118/118, browser transcript stability 3/3; repository status unchanged. |
 | T1 | PASS | `fcd9e8b4c643388e71e4c15a2ee95664f319aa7a` | `room_ec1beb0323644ebf8d1d842e993fa492` / `output\functional-acceptance\T1-20260919-005645` | Fresh Room contained A/B/C; C started; one C Assignment completed; `peer_invocations=0`; no A/B execution; Room settled normally. |
-| T2 | NOT RUN | — | — | — |
+| T2 | PASS | `256fcabb21e7a4b4f8287b78ec6662fdaa59c43f` | `room_2615398a7640408da128ee908efedf8b` / `output\functional-acceptance\T2-20260919-005904` | C issued A/B delegations together in one DELEGATE action; both child assignments were created at the same timestamp, used the same dependency join, completed independently, join released once after both terminal, and C integrated before normal settlement. |
 | T3 | NOT RUN | — | — | — |
 | T4 | NOT RUN | — | — | — |
 | T5 | NOT RUN | — | — | — |
