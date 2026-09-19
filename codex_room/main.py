@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .agent import AgentAdapter, CodexAgentAdapter
 from .codex_commands import CodexCommandCatalog
+from .capabilities import list_capabilities
 from .db import Database
 from .exporter import as_json, as_markdown
 from .models import (
@@ -26,6 +27,7 @@ from .models import (
     UpdateRoomRequest,
 )
 from .orchestrator import RoomRuntime
+from .status_tools import build_status_tools_payload, summarize_codex_tool_inventory
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
@@ -64,7 +66,7 @@ def create_app(
             "/app.js",
             "/styles.css",
             "/api/codex/commands",
-        }:
+        } or request.url.path.endswith("/status-tools"):
             response.headers["Cache-Control"] = "no-store"
         return response
 
@@ -81,6 +83,50 @@ def create_app(
             else None
         )
         return await asyncio.to_thread(catalog.resolve, runtime_version)
+
+    @app.get("/api/rooms/{room_id}/status-tools")
+    async def get_status_tools(room_id: str) -> dict[str, Any]:
+        room = await runtime.snapshot(room_id)
+        if room is None:
+            raise HTTPException(status_code=404, detail="Room not found")
+
+        runtime_identity = runtime.auth_info.get("runtime")
+        runtime_version = (
+            runtime_identity.get("version")
+            if isinstance(runtime_identity, dict)
+            else None
+        )
+        coordinator = next(
+            (agent for agent in room.get("agents") or [] if agent.get("agent_key") == "agent_c"),
+            None,
+        )
+        thread_id = coordinator.get("thread_id") if coordinator else None
+        inspect_tools = getattr(runtime.adapter, "inspect_tools", None)
+
+        async def inherited_inventory() -> dict[str, Any]:
+            if not callable(inspect_tools):
+                return summarize_codex_tool_inventory({})
+            try:
+                return await inspect_tools(runtime.workspace(room_id), thread_id=thread_id)
+            except Exception:
+                return summarize_codex_tool_inventory({})
+
+        coordinator_context, capability_registry, command_state, inherited_tools = (
+            await asyncio.gather(
+                runtime.coordinator_context_status(room),
+                asyncio.to_thread(list_capabilities, runtime.workspace(room_id)),
+                asyncio.to_thread(catalog.resolve, runtime_version),
+                inherited_inventory(),
+            )
+        )
+        return build_status_tools_payload(
+            room,
+            coordinator_context=coordinator_context,
+            capability_registry=capability_registry,
+            inherited_tools=inherited_tools,
+            command_catalog=command_state,
+            runtime_identity=runtime_identity if isinstance(runtime_identity, dict) else None,
+        )
 
     @app.get("/api/profiles/defaults")
     async def get_default_profiles() -> dict[str, dict[str, Any]]:
