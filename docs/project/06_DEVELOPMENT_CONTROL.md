@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-016 — Private Principal Channel is the current authorized product objective under D-038. Its C-only private consultation/wait/resume implementation is present on a feature branch and awaits exact-head deterministic verification before merge. Earlier Engineering Foundation, A2, P4, A3 remediation, I-015, D-037/BCTX, and T0-T14 acceptance remain complete.
-- **What just changed?** The principal authorized an explicit private C↔principal consultation path that must not invoke or deliver to A/B. The implementation adds `CONSULT_PRINCIPAL`, durable `waiting_principal` Assignment state, exact-event principal reply binding, same-Assignment/provider-context resume, restart persistence, Stop cancellation, and an observer reply UI.
-- **Verification state:** I-016 is **IMPLEMENTED ON FEATURE BRANCH / VERIFICATION PENDING / NOT MERGED**. Added deterministic transaction tests cover privacy/no-delivery, same-context continuation, duplicate/stale reply rejection, restart persistence, Stop cancellation, and C-only authority; browser tests cover the private reply surface. Repository-standard `verify-fast.cmd` on the exact PR head is required before merge.
-- **What is blocked?** I-016 has no known design blocker; it is waiting on exact-head verification. D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** Finish exact-diff review, run `verify-fast.cmd` on the exact I-016 feature head, and merge only if that version passes. Do not widen I-016 to A/B or add a nonblocking notification primitive without separate evidence/authorization.
+- **Where are we?** I-016 — Private Principal Channel is **COMPLETE** under D-038. The C-only private consultation/wait/resume path is implemented, exact-head verified, and merged into canonical `main`. Earlier Engineering Foundation, A2, P4, A3 remediation, I-015, D-037/BCTX, and T0-T14 acceptance remain complete.
+- **What just changed?** PR #137 added `CONSULT_PRINCIPAL`, durable `waiting_principal` Assignment state, exact-event principal reply binding, same-Assignment/provider-context resume, restart persistence, Stop cancellation, and the observer-only private reply UI. Exact feature head `e58c758527ae6a3954be9525b1411324e12ec7de` passed the standard fast gate and squash-merged as `d57d25769a8be215cc01af354983fd9c44b10825`. See E-142.
+- **Verification state:** I-016 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Verification passed 63 Linux focused tests, 118 Windows portability tests, and 7 browser interaction/stability tests; tracked source was clean and `git diff --check` passed.
+- **What is blocked?** No I-016 blocker remains. D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
+- **What is next?** No automatic follow-on engineering phase is authorized by the I-016 closeout. Do not widen private principal consultation to A/B or add a nonblocking notification primitive without separate evidence and principal authorization.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
@@ -21,9 +21,9 @@
 
 **Decision:** D-038
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality:** IMPLEMENTED ON FEATURE BRANCH / VERIFICATION PENDING / NOT MERGED
+**Reality:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED
 
 **Authorized first release:** Agent C's root coordinator Assignment may emit structured `CONSULT_PRINCIPAL` when human judgment, authorization, or material clarification is needed. CORE records a private `principal_message` visible to the observer, creates no A/B deliveries, and moves the same Assignment to durable `waiting_principal`. The observer replies to that exact consultation event; CORE atomically rejects stale/duplicate replies, records a private `principal_reply`, and requeues the same C Assignment on its existing provider-context lineage. Private exchange is not automatically shared with A/B.
 
@@ -31,7 +31,7 @@
 
 **UI:** principal consultations render distinctly in the transcript with an inline private reply form. Existing ordinary observer messaging remains separate.
 
-**Verification gate:** exact PR-head `verify-fast.cmd`, including the new transaction and browser regressions. Merge only the verified bytes. After merge, update Architecture/Development Control from verification-pending to the exact verified state and record evidence in the Evidence Register if the result warrants a durable evidence entry.
+**Verification:** PR #137 exact feature head `e58c758527ae6a3954be9525b1411324e12ec7de` passed `git diff --check` and `verify-fast.cmd`: 63 Linux focused tests, 118 Windows portability tests, and 7 browser interaction/stability tests. The tracked tree was clean. Squash-merged as `d57d25769a8be215cc01af354983fd9c44b10825`. E-142 records the closeout evidence.
 
 ### Functional acceptance campaign T0-T14
 
