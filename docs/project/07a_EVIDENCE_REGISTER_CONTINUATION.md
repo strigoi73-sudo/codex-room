@@ -927,3 +927,33 @@ Its durable provider context thread was:
 The completed Task settled normally after C's final `COMPLETE` result.
 
 **Assessment:** I-016 is **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY ACCEPTED / MERGED**. The demonstrated first-run defect from E-143 is repaired. The current evidence supports the intended C-only private consultation flow without A/B invocation or leakage. No widening to A/B and no nonblocking private-notification primitive is implied by this acceptance.
+
+## E-145 — C self-cognition was fixed at Terra/high; current catalog supports a wider bounded set
+
+**Date:** 2026-09-19
+**Kind:** [P1 / CORE diagnosis / zero-turn catalog verification]
+**Related decision:** D-039
+**Related work:** I-017
+
+Before changing model-allocation policy, the principal ran two deterministic/local inspections.
+
+First, a direct SQLite query over the 200 most recent Agent C `agent_executions` rows found exactly one model/effort combination:
+
+- **200 / 200:** `gpt-5.6-terra` / `high`;
+- **0 observed transitions** between model/effort combinations.
+
+The inspected history included routine functional-acceptance work, transaction/EVIDENCE/HISTORY/REFRESH work, restart recovery, the explicit peer model-allocation test, the T14 integrated mission, and both I-016 principal-channel Rooms. The successful I-016 re-acceptance itself contained two executions of the same C Assignment and both remained Terra/high.
+
+Source inspection explains the fixed behavior: peer child Assignments may carry `execution_config_id`, but ordinary root C Assignments were created without a selection and therefore used the Room compatibility fallback `gpt-5.6-terra` / high at claim time. The historical evidence therefore establishes a missing self-allocation surface rather than mere model reluctance.
+
+Second, the principal reran the authenticated **zero-turn** SDK model-catalog probe against local `openai-codex==0.154.0` / `openai-codex-cli-bin==0.154.0`. The visible catalog was:
+
+- Luna: low, medium, high, xhigh, max;
+- Terra: low, medium, high, xhigh, max, ultra;
+- Sol: low, medium, high, xhigh, max, ultra;
+- Astra: low through ultra, still prohibited by D-028;
+- GPT-5.5: low through xhigh, marked for retirement on 2026-10-14 in favor of Sol.
+
+The principal then settled D-039: ordinary autonomous Room cognition is limited to Low/Medium/High across Luna/Terra/Sol; Sol/XHigh and Sol/Max are exceptional C-only settings requiring private Task-scoped approval; Sol/Ultra remains excluded because its provider description includes automatic task delegation; Astra remains prohibited; GPT-5.5 remains excluded.
+
+**Assessment:** the need for I-017 is empirically demonstrated. The catalog supports the authorized bounded configuration surface, while the preceding production behavior did not let C dynamically allocate its own cognition.
