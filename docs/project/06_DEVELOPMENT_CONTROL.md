@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-018 is complete. The principal has now authorized the post-audit human-facing capability roadmap, with **I-019 — Human-facing capability visibility** as the next bounded implementation item. I-019 is **PLANNED**; no runtime work has started yet.
-- **What just changed?** The principal selected a product sequence based on E-149: expose existing capability first, empirically verify inherited tools in ordinary Room use, add a human tool-interaction bridge only if real tools require it, add rich attachments, run real-use trials, and consider browser/computer use only if those trials demonstrate the need. Slash-command parity is not a goal.
-- **Verification state:** I-018 remains **AUDIT COMPLETE / NO RUNTIME CHANGE**. The roadmap below is **DECIDED AS DEVELOPMENT SEQUENCE / NOT YET IMPLEMENTED**. Each implementation slice must earn its own exact-version verification before being called implemented.
-- **What is blocked?** Nothing blocks I-019 planning/implementation. Later roadmap stages are intentionally gated by evidence from the preceding stage rather than pre-authorized as immediate implementation.
-- **What is next?** Implement I-019 as the smallest useful **Status & Tools** surface, verify it, then use that visibility to run bounded natural tool-use checks. Do not absorb OAuth/elicitation, attachments, browser/computer use, or unrelated Desktop parity into I-019.
+- **Where are we?** I-018 is complete. **I-019 — Human-facing capability visibility is IN PROGRESS.** Its first CORE slice, exact-runtime Codex command-catalog synchronization, is implemented and exact-head verified; the human-facing Status & Tools surface is not yet complete.
+- **What just changed?** D-040 now requires any human-facing Codex command inventory to follow the actual running App Server version and fail closed rather than display a stale catalog. The exact implementation head `466fdb39cc60dd99fd3cd690061ab2feaea67c8d` passed dedicated and repository-standard deterministic verification (E-150). Blanket Desktop slash-command parity remains out of scope.
+- **Verification state:** I-018 remains **AUDIT COMPLETE / NO RUNTIME CHANGE**. The I-019 command-catalog authority slice is **IMPLEMENTED / VERIFIED** on its exact head. I-019 overall remains unfinished and must earn separate UI/runtime verification before completion.
+- **What is blocked?** Nothing blocks continued I-019 implementation. Later roadmap stages remain gated by evidence from the preceding stage.
+- **What is next?** Continue the smallest useful **Status & Tools** surface using authoritative Room/App Server state, with the verified command catalog available as one provenance-aware input. Keep command applicability/dispatch separate from catalog freshness, and do not absorb OAuth/elicitation, attachments, browser/computer use, or unrelated Desktop parity into I-019.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
@@ -19,9 +19,9 @@
 
 **Scope:** [CORE + ROOM UI]
 
-**Work state:** PLANNED
+**Work state:** IN PROGRESS
 
-**Reality:** DECIDED / NOT IMPLEMENTED
+**Reality:** PARTIALLY IMPLEMENTED / EXACT-HEAD VERIFIED COMMAND-CATALOG FOUNDATION
 
 **Origin:** I-018 / E-149
 
@@ -49,6 +49,8 @@
 - keep the surface compact enough to improve comprehension rather than becoming a diagnostic console.
 
 **Verification target:** deterministic source/UI tests plus one bounded natural Room check demonstrating that the principal can correctly answer, from the new surface alone, what the Room is doing and what major tool classes are actually available. Verification should distinguish display correctness from whether any optional external tool/account is configured on the principal's machine.
+
+**Implemented slice — command-catalog authority (D-040 / E-150):** CORE now captures the actual running App Server version and exposes a read-only `/api/codex/commands` catalog that accepts only an exact matching official Codex release manifest, records upstream blob provenance, fails closed on mismatch/synchronization failure, and disables browser caching. Exact implementation head `466fdb39cc60dd99fd3cd690061ab2feaea67c8d` passed 6 dedicated tests plus the repository fast verifier (63 Linux focused, 118 Windows focused, 8 browser tests). Dynamic service-tier overlay, Status & Tools UI, command applicability mapping, dropdown behavior, and dispatch are not included in that verified slice.
 
 **Stop condition:** I-019 ends when capability/state visibility is implemented and exact-version verified. Do not roll directly into the later roadmap stages.
 
