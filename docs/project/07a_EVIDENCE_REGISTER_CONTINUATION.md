@@ -1145,3 +1145,35 @@ No model-driven acceptance Room was run because source plus current official pro
 
 **Assessment:** I-018 is **COMPLETE** as an exploratory product audit. It establishes no new implementation authorization. The next action is a principal product choice, not automatic development.
 
+## E-150 — I-019 exact-runtime command catalog foundation exact-head verification
+
+**Date:** 2026-09-19  
+**Kind:** [CORE implementation / deterministic verification / source provenance]  
+**Related work:** I-019 / D-040  
+**Exact implementation head verified:** `466fdb39cc60dd99fd3cd690061ab2feaea67c8d`
+
+The first bounded I-019 implementation slice established a read-only authority layer for the Codex slash-command inventory before any command dropdown or dispatcher is built.
+
+Implemented behavior on the exact verified head:
+
+- `CodexAgentAdapter.initialize()` records the actual running App Server identity from official SDK initialization metadata after the client is initialized;
+- `CodexCommandCatalog` requires a safe nonempty runtime version and resolves built-in command source against the exact official `openai/codex` release ref `rust-v<runtime-version>`;
+- synchronized manifests record runtime version, official source repository/path/ref, upstream blob SHA, synchronization timestamp, command order/names/aliases/descriptions, and dynamic-overlay metadata;
+- cached manifests are accepted only when schema, runtime version, source ref/repository/path, blob-SHA shape, and command count are internally consistent;
+- a newer/different runtime cannot fall back to an older cached catalog; failure to establish an exact catalog returns `status=unavailable` and an empty command list;
+- `GET /api/codex/commands` binds resolution to the runtime identity captured from the active adapter and is served with `Cache-Control: no-store`;
+- model service-tier commands are marked as a live model-catalog overlay and are not claimed to be present in the static manifest;
+- the runtime cache is excluded from Git through `data/cache/`.
+
+Independent source-parser check against official Codex `rust-v0.154.0` found **60 enum variants, 60 descriptions, zero missing descriptions**.
+
+The principal then ran deterministic verification on Windows/WSL against exact head `466fdb39cc60dd99fd3cd690061ab2feaea67c8d` with a clean tracked tree. Results:
+
+- dedicated I-019 command-catalog tests: **6 passed**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **8 passed**;
+- repository fast verifier: **RESULT: PASS**;
+- the only reported warnings were existing FastAPI/Starlette deprecation warnings; no test failed.
+
+**Assessment:** the command-catalog synchronization/freshness foundation is **IMPLEMENTED / VERIFIED on the exact head above**. This does **not** verify or complete I-019 as a whole: Status & Tools UI, live service-tier overlay, Room applicability classification, command dropdown, and command dispatch remain outside this verified slice unless separately implemented and verified.
