@@ -103,6 +103,13 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert "Approve for this Task" in javascript
     assert "Task cognition escalation approved" in javascript
     assert "cognition_approval" in javascript
+    assert 'id="status-tools-panel"' in html
+    assert 'id="refresh-status-tools"' in html
+    assert "Recent economics" in html
+    assert "Room deterministic capabilities" in javascript
+    assert "execution_economics" in javascript
+    assert "/status-tools" in javascript
+    assert "interaction_required" in javascript
 
 
 def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Path) -> None:
