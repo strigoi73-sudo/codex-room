@@ -2,7 +2,7 @@
 
 **Initialized:** 2026-09-10  
 **Purpose:** Stable human-facing legend and cross-reference for short identifiers used across Codex Room planning, maintenance, decisions, evidence, assurance, and prompts.  
-**Authority:** Navigation aid only. It does not own current priority or status. Use `06_DEVELOPMENT_CONTROL.md` for current work/status; `05_DECISION_REGISTER.md` for decisions; `07_EVIDENCE_REGISTER.md` for evidence; and `08_PRODUCT_VISION.md` for long-range direction.
+**Authority:** Navigation aid only. It does not own current priority or status. Use `06_DEVELOPMENT_CONTROL.md` for current work/status; `05_DECISION_REGISTER.md` for decisions; the Evidence Register (`07_EVIDENCE_REGISTER.md` + `07a_EVIDENCE_REGISTER_CONTINUATION.md`) for evidence; and `08_PRODUCT_VISION.md` for long-range direction.
 
 ## 1. Identifier families
 
@@ -11,10 +11,10 @@
 | `P#` | Major development / operating-economics phase or roadmap workstream | `06_DEVELOPMENT_CONTROL.md`; long-range direction may also appear in `08_PRODUCT_VISION.md` | `P3` — usage-wall delayed continuation |
 | `EF-#` | Engineering Foundation subphase | `06_DEVELOPMENT_CONTROL.md` | `EF-3` — minimal GitHub CI |
 | `BCTX-#` | Bounded-context architecture implementation slice | `06_DEVELOPMENT_CONTROL.md`; governing decision in `05_DECISION_REGISTER.md` | `BCTX-1` — Task-bounded continuous lifecycle and coordinator continuity |
-| `A#` | Assurance pass | `06_DEVELOPMENT_CONTROL.md`; evidence in `07_EVIDENCE_REGISTER.md` | `A2` — Assurance Pass 2 |
+| `A#` | Assurance pass | `06_DEVELOPMENT_CONTROL.md`; evidence in the Evidence Register (`07_EVIDENCE_REGISTER.md` + `07a_EVIDENCE_REGISTER_CONTINUATION.md`) | `A2` — Assurance Pass 2 |
 | `I-###` | Maintenance issue, observed gap, or item needing verification | `06_DEVELOPMENT_CONTROL.md` | `I-001` — 2,000-event snapshot/export cutoff |
 | `D-###` | Settled decision | `05_DECISION_REGISTER.md` | `D-018` — allocate cognition once; execute at the cheapest capable layer |
-| `E-###` | Evidence record | `07_EVIDENCE_REGISTER.md` | `E-023` — first minimal GitHub CI run succeeded |
+| `E-###` | Evidence record | Evidence Register (`07` + `07a` continuation) | `E-023` — first minimal GitHub CI run succeeded |
 | `[CORE]` | Runtime/codebase change with cross-Room implications | Constitution / Decision Register / Repository & Operations | `[CORE] Engineering Foundation` |
 | `[ROOM]` | Change confined to one Room's state, profiles, artifacts, tools, knowledge, objectives, or operating rules | Constitution / Decision Register / Repository & Operations | `[ROOM]` profile adjustment |
 | `[CORE + ROOM migration]` | Core capability implemented centrally, followed by Room-specific adoption | Constitution / Decision Register / Repository & Operations | migration of a new Core capability into a Room |
@@ -50,7 +50,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | ID | Title | Owner |
 |---|---|---|
 | `I-001` | 2,000-event snapshot/export cutoff | Development Control |
-| `I-003` | B SDK-thread/profile continuity residue | Development Control |
+| `I-003` | Provider-side instruction adoption after same-thread profile rebind | Development Control |
 | `I-004` | README conflicts with settled architecture | Development Control / historical evidence after closure |
 | `I-005` | legacy `Agent Personalities.txt` dependency question | Development Control / historical evidence after closure |
 | `I-006` | Early-triad default profiles missed D-020 migration | Development Control |
@@ -69,7 +69,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 `D-###` and `E-###` are record identifiers, not phases.
 
 - `D-###` means a **settled decision**. Read the exact decision and any supersession in `05_DECISION_REGISTER.md`.
-- `E-###` means an **evidence record**. Read the exact observation, test, measurement, limitations, and evidence date in `07_EVIDENCE_REGISTER.md`.
+- `E-###` means an **evidence record**. Read the exact observation, test, measurement, limitations, and evidence date in the single logical Evidence Register spanning `07_EVIDENCE_REGISTER.md` and `07a_EVIDENCE_REGISTER_CONTINUATION.md`.
 
 Use these IDs to point to durable decisions or evidence without copying their full contents. Do not maintain “latest D/E number” here; the owning register is authoritative.
 
