@@ -96,6 +96,39 @@
 
           <div id="agent-strip" class="agent-strip" aria-label="Room participants"></div>
 
+          <section id="status-tools-panel" class="status-tools-panel" aria-label="Status and tools">
+            <header class="status-tools-header">
+              <div>
+                <p class="eyebrow">Status &amp; Tools</p>
+                <small id="status-tools-freshness">Room state · tool inventory loading</small>
+              </div>
+              <button id="refresh-status-tools" class="ghost compact-button" type="button">Refresh</button>
+            </header>
+            <div class="status-tools-grid">
+              <article class="status-tools-card">
+                <h2>Work</h2>
+                <p id="status-work-round" class="status-tools-primary">No active round</p>
+                <p id="status-work-objective" class="status-tools-muted">No active objective.</p>
+                <div id="status-work-assignments" class="status-tools-list"></div>
+              </article>
+              <article class="status-tools-card">
+                <h2>Recent economics</h2>
+                <div id="status-economics" class="status-tools-list">
+                  <p class="status-tools-muted">No execution economics recorded yet.</p>
+                </div>
+              </article>
+              <article class="status-tools-card">
+                <h2>Available tools</h2>
+                <div id="status-room-capabilities" class="status-tools-list">
+                  <p class="status-tools-muted">Room capabilities loading…</p>
+                </div>
+                <div id="status-codex-tools" class="status-tools-list status-tools-subsection">
+                  <p class="status-tools-muted">Codex tool inventory loading…</p>
+                </div>
+              </article>
+            </div>
+          </section>
+
           <div id="transcript" class="transcript" aria-live="polite"></div>
 
           <div class="observer-dock">
