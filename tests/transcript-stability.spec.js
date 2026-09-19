@@ -189,7 +189,7 @@ test('Status & Tools shows current work and truthful inherited capability states
         { agent_key: 'agent_c', name: 'Agent C', status: 'idle', work_state: 'idle', execution_health: 'healthy', pending_count: 0, processing_count: 0, model: 'gpt-5.6-terra', reasoning_effort: 'high' },
       ],
       recent_economics: { agent_a: { tool_calls: 2, usage_delta: { total_tokens: 1234 } } },
-      coordinator_context: { guidance_level: 'consider', executions_on_context: 4, last_execution_input_tokens: 70000, last_execution_cached_input_tokens: 50000 },
+      coordinator_context: { guidance_level: 'consider', executions_on_context: 4, last_execution_input_tokens: 70000, last_execution_cached_input_tokens: 50000, advisory_consider_input_tokens: 64000, advisory_strongly_prefer_input_tokens: 96000 },
     },
     room_capabilities: [
       { id: 'inspect_source', description: 'Bounded source inspection', origin: 'core', scope: 'core', version: '1' },
@@ -198,6 +198,8 @@ test('Status & Tools shows current work and truthful inherited capability states
       runtime: { name: 'codex-app-server', version: '0.154.0' },
       commands: { status: 'available', summary: '60 exact-runtime built-in command(s) synchronized.', command_count: 60, source_ref: 'rust-v0.154.0' },
       tools: {
+        workspace_files: { status: 'available', summary: 'Room workspace is writable.', items: [] },
+        command_execution: { status: 'available', summary: 'Local commands are available.', items: [] },
         web_search: { status: 'available', summary: 'Web search is available in cached mode.', mode: 'cached', items: [] },
         skills: { status: 'available', summary: '1 enabled skill.', total_count: 1, enabled_count: 1, items: [{ name: 'PDFs', scope: 'user', enabled: true }] },
         mcp: { status: 'interaction_required', summary: 'One server requires authentication.', total_count: 1, available_count: 0, interaction_required_count: 1, items: [{ name: 'Example MCP', status: 'interaction_required', tool_count: 3 }] },
@@ -213,6 +215,8 @@ test('Status & Tools shows current work and truthful inherited capability states
   await expect(page.locator('#status-tools-dialog')).toBeVisible();
   await expect(page.locator('#status-tools-content')).toContainText('Understand what the Room is doing and what tools it can use.');
   await expect(page.locator('#status-tools-content')).toContainText('gpt-5.6-sol · medium');
+  await expect(page.locator('[data-status-tool="workspace_files"] .status-badge')).toHaveText('Available');
+  await expect(page.locator('[data-status-tool="command_execution"] .status-badge')).toHaveText('Available');
   await expect(page.locator('[data-status-tool="web_search"] .status-badge')).toHaveText('Available');
   await expect(page.locator('[data-status-tool="mcp"] .status-badge')).toHaveText('Auth / interaction required');
   await expect(page.locator('[data-status-tool="plugins"] .status-badge')).toHaveText('Unknown / not inspectable');
