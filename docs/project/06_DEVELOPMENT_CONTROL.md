@@ -415,9 +415,13 @@ Wishlist entries are **idea capture, not a work queue**. They have no work state
 ### Initial wishlist — 2026-09-19
 
 - **Observer composer: Enter sends; Shift+Enter inserts a newline — IMPLEMENTED / VERIFIED.** PR #133 implemented the behavior only in the ordinary observer composer, retained Ctrl/Cmd+Enter as an additional send shortcut, ignored Enter during IME composition, and added the `Enter to send · Shift+Enter for newline` hint. Exact feature head `99fb09f0c8273a918cab5ded232accad4fee3ed2` passed `verify-fast.cmd`: 63 Linux focused tests, 118 Windows portability tests, and 4 browser interaction/stability tests. Squash-merged as `74863b688962e80046944d6adda38e3c85dd20d3`.
-- **Composer focus retention.** Focus the observer composer when a Room opens and return focus after a successful send so repeated human interventions do not require another mouse click.
-- **Auto-growing observer composer.** Begin compact, expand vertically as text grows to a sensible maximum such as 6–8 lines, then use internal scrolling.
-- **Per-Room unsent drafts.** Preserve observer message text and selected target locally while typing so Room switches, refreshes, or accidental tab closure do not discard a draft. Clear the stored draft only after successful submission.
+- **Composer focus retention — IMPLEMENTED / VERIFIED.** PR #135 focuses the observer composer when a Room opens and restores focus after a successful send without forcing transcript scroll movement.
+- **Auto-growing observer composer — IMPLEMENTED / VERIFIED.** PR #135 grows the ordinary observer composer from its compact height up to a bounded 180px cap (roughly eight lines at the current typography), then uses internal vertical scrolling.
+- **Per-Room unsent drafts — IMPLEMENTED / VERIFIED.** PR #135 stores observer text and selected target per Room in browser-local storage, restores them across Room switches and page refreshes, isolates drafts by Room, and clears only the successfully submitted Room draft.
+
+
+**PR #135 verification:** Exact feature head `8b1adf77093da1f86753f79665f03bc4ab23a39d` passed `verify-fast.cmd`: 63 Linux focused tests, 118 Windows portability tests, and 5 browser interaction/stability tests. The tracked tree was clean. Squash-merged as `7942d3f43a4871bcfe67a34c2d92efe97377f179`.
+
 - **New-activity / jump-to-latest control.** When the human has scrolled away from the transcript bottom, keep the existing non-forced-scroll behavior but surface a visible `new events` indicator/button that jumps to the latest activity.
 - **One-click operational ID copying.** Make the Room ID easy to copy and expose convenient copying for relevant Round, Task, and Assignment IDs. Consider a single `Copy diagnostics` action containing the current Room/Round/Task identifiers, status, turn count, model/effort, and runtime/source provenance.
 - **Room search and filtering.** Add quick search plus simple state filters such as Active, Paused, Finished, and Archived so a growing Room list remains manageable.
