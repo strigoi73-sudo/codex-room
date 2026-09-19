@@ -47,7 +47,7 @@ function makeRoom(events, id = roomId, title = 'Large transcript stability fixtu
   };
 }
 
-async function openFixture(page, initialRoom, additionalRooms = []) {
+async function openFixture(page, initialRoom, additionalRooms = [], statusTools = null) {
   const observerMessages = [];
   const principalReplies = [];
   const rooms = [initialRoom, ...additionalRooms];
@@ -88,6 +88,10 @@ async function openFixture(page, initialRoom, additionalRooms = []) {
     }
     if (pathname === '/api/rooms') {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(rooms) });
+    }
+    const statusRoom = rooms.find((room) => pathname === `/api/rooms/${room.id}/status-tools`);
+    if (statusRoom && statusTools) {
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(statusTools) });
     }
     const detailRoom = rooms.find((room) => pathname === `/api/rooms/${room.id}`);
     if (detailRoom) {
@@ -162,6 +166,60 @@ async function transcriptState(page) {
     audit: { ...window.__transcriptAudit },
   }));
 }
+
+test('Status & Tools shows current work and truthful inherited capability states', async ({ page }) => {
+  const room = makeRoom([]);
+  const payload = {
+    work: {
+      room: { id: room.id, title: room.title, status: 'running', turn_count: 7, max_turns: 40 },
+      round: {
+        id: 'round_fixture', title: 'Inspect current capability', status: 'running',
+        objective: 'Understand what the Room is doing and what tools it can use.',
+        completion_policy: 'auto_settle', turn_count: 3,
+      },
+      task: {
+        id: 'task_fixture', state: 'active', c_cognition_ceiling: 'sol-high',
+        assignments: [
+          { id: 'assignment_a', agent_key: 'agent_a', state: 'running', instruction: 'Inspect the implementation.' },
+        ],
+      },
+      agents: [
+        { agent_key: 'agent_a', name: 'Agent A', status: 'running', work_state: 'invoking', execution_health: 'healthy', pending_count: 0, processing_count: 1, model: 'gpt-5.6-sol', reasoning_effort: 'medium' },
+        { agent_key: 'agent_b', name: 'Agent B', status: 'idle', work_state: 'idle', execution_health: 'healthy', pending_count: 0, processing_count: 0, model: null, reasoning_effort: null },
+        { agent_key: 'agent_c', name: 'Agent C', status: 'idle', work_state: 'idle', execution_health: 'healthy', pending_count: 0, processing_count: 0, model: 'gpt-5.6-terra', reasoning_effort: 'high' },
+      ],
+      recent_economics: { agent_a: { tool_calls: 2, usage_delta: { total_tokens: 1234 } } },
+      coordinator_context: { guidance_level: 'consider', executions_on_context: 4, last_execution_input_tokens: 70000, last_execution_cached_input_tokens: 50000 },
+    },
+    room_capabilities: [
+      { id: 'inspect_source', description: 'Bounded source inspection', origin: 'core', scope: 'core', version: '1' },
+    ],
+    codex: {
+      runtime: { name: 'codex-app-server', version: '0.154.0' },
+      commands: { status: 'available', summary: '60 exact-runtime built-in command(s) synchronized.', command_count: 60, source_ref: 'rust-v0.154.0' },
+      tools: {
+        web_search: { status: 'available', summary: 'Web search is available in cached mode.', mode: 'cached', items: [] },
+        skills: { status: 'available', summary: '1 enabled skill.', total_count: 1, enabled_count: 1, items: [{ name: 'PDFs', scope: 'user', enabled: true }] },
+        mcp: { status: 'interaction_required', summary: 'One server requires authentication.', total_count: 1, available_count: 0, interaction_required_count: 1, items: [{ name: 'Example MCP', status: 'interaction_required', tool_count: 3 }] },
+        apps: { status: 'unavailable', summary: 'No installed apps.', total_count: 0, callable_count: 0, items: [] },
+        plugins: { status: 'unknown', summary: 'Plugin inventory could not be inspected.', items: [] },
+      },
+    },
+  };
+
+  await openFixture(page, room, [], payload);
+  await page.getByRole('button', { name: 'Status & Tools' }).click();
+
+  await expect(page.locator('#status-tools-dialog')).toBeVisible();
+  await expect(page.locator('#status-tools-content')).toContainText('Understand what the Room is doing and what tools it can use.');
+  await expect(page.locator('#status-tools-content')).toContainText('gpt-5.6-sol · medium');
+  await expect(page.locator('[data-status-tool="web_search"] .status-badge')).toHaveText('Available');
+  await expect(page.locator('[data-status-tool="mcp"] .status-badge')).toHaveText('Auth / interaction required');
+  await expect(page.locator('[data-status-tool="plugins"] .status-badge')).toHaveText('Unknown / not inspectable');
+  await expect(page.locator('[data-status-tool="commands"]')).toContainText('60');
+  await expect(page.locator('#status-tools-content')).toContainText('inspect_source');
+  await expect(page.locator('#status-tools-content')).not.toContainText('secret');
+});
 
 test('observer composer sends on Enter, keeps Shift+Enter as newline, and ignores composing Enter', async ({ page }) => {
   const observerMessages = await openFixture(page, makeRoom([]));
