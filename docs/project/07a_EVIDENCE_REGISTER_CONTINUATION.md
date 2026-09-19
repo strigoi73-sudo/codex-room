@@ -731,7 +731,7 @@ The pre-run subscription meter showed **86% remaining** on the 5-hour allowance 
 **Assessment:** PR #127's coordinator economics/guidance refinement is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY SUPPORTED**. The demonstrated E-137 adoption gap is supported as resolved for this bounded live exercise: C received the advisory economics, chose `REFRESH` shortly after crossing the consider range, CORE completed the fail-closed handoff, and useful work continued on the fresh context. No further patch-specific benchmark or threshold tuning is warranted absent new contrary evidence.
 
 ### E-140 — Functional Acceptance T8 exposed and verified repair of hard-restart interrupted-turn recovery
-**Date:** 2026-09-19  
+**Date:** 2026-09-19
 **Kind:** [ROOM functional acceptance / CORE restart-recovery defect / exact-head deterministic verification / natural hard-restart revalidation / canonical merge]
 
 Functional Acceptance T8 deliberately restarted Codex Room while a live work-model-v2 transaction execution was active. The initial run at canonical commit `9a313df86db5596416b8a2135b107a33f7eeb635` caught an active C execution before restart and the Room returned as `running`, but exact-turn reconciliation then observed the persisted provider turn as `interrupted`. CORE treated that recovered interruption as a non-retryable terminal failure, so the root C Assignment and Task failed with `Codex turn was interrupted`, the Round closed `transaction_failed`, and A/B were never delegated.
@@ -834,7 +834,7 @@ T14 exact tested state:
 
 **Date:** 2026-09-19  
 **Kind:** [CORE + ROOM UI implementation verification / closeout]  
-**Related decision:** D-038  
+**Related decision:** D-038
 **Related work:** I-016
 
 I-016 implemented the first-release private principal consultation channel for Agent C's root coordinator Assignment.
@@ -872,9 +872,9 @@ PR #137 then squash-merged to canonical `main` as:
 ## E-143 — First naturalistic I-016 Room exposed C consultation-selection failure
 
 **Date:** 2026-09-19  
-**Kind:** [ROOM naturalistic behavioral acceptance / observed issue]  
+**Kind:** [ROOM naturalistic behavioral acceptance / observed issue]
 **Related decision:** D-038  
-**Related work:** I-016  
+**Related work:** I-016
 **Room:** `room_3c414df808d943b6994f55be191b914d`
 
 After I-016's deterministic implementation/verification closeout, the principal ran a fresh Room specifically to exercise the private principal channel. The prepared objective explicitly required C to complete the work itself, make no A/B delegation, ask the principal privately to choose FORMAL or PLAYFUL, wait for the private reply, and only then continue.
