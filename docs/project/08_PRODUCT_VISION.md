@@ -48,6 +48,8 @@ This allows broad retention with narrow active-context loading and reduces the r
 
 ## 5. Deterministic capability direction
 
+**Foundation status:** P4's CORE registry, custom capability lifecycle, and exact-version lineage inheritance are IMPLEMENTED / VERIFIED. Personal-scope promotion remains a future option when repeated general reuse demonstrates value.
+
 Repeated procedures that become stable and deterministic should migrate from expensive recurring model cognition into Codex Room-owned local capabilities/state machines when doing so improves total operating economics and reliability.
 
 The product boundary is important: these are capabilities Codex Room or its agents can use during normal operation. Git/CI/deployment/restart automation used only to build or maintain Codex Room is supporting engineering work, not itself a product phase.
@@ -58,7 +60,7 @@ Preferred principle:
 
 Codex Room should not attempt to predict every deterministic need in advance. A/B/C remain responsible for recognizing when a subproblem has explicit inputs, objectively checkable outputs, and no need for fresh judgment on each execution.
 
-The target capability model has three scopes:
+The capability model has three intended scopes:
 
 - **CORE** — a small standard library available in every new Room;
 - **lineage** — custom capability software registered during a body of work and automatically inherited by rollover successors at an exact version unless deliberately retired or excluded;
