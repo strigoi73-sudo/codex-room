@@ -812,12 +812,23 @@ class Database:
                 )
 
     async def recover_interrupted_work(self) -> None:
-        """Preserve in-flight claims for exact-turn reconciliation after restart."""
+        """Reconcile durable executions without replaying decisions already applied."""
+        now = utc_now()
         async with self.connect() as db:
             await db.execute(
                 """UPDATE agent_executions
+                   SET state='settled',
+                       settled_at=COALESCE(settled_at, ?),
+                       last_reconciled_at=?
+                   WHERE state IN ('active', 'recovering', 'result_ready')
+                     AND decision_recorded_at IS NOT NULL""",
+                (now, now),
+            )
+            await db.execute(
+                """UPDATE agent_executions
                    SET state='recovering', last_reconciled_at=NULL
-                   WHERE state IN ('active', 'recovering')"""
+                   WHERE state IN ('active', 'recovering')
+                     AND decision_recorded_at IS NULL"""
             )
             await db.execute(
                 """UPDATE agent_executions
