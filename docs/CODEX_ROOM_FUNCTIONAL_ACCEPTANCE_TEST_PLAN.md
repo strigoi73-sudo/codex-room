@@ -3,7 +3,8 @@
 **Initialized:** 2026-09-18  
 **Purpose:** Repeatable functional and operational acceptance testing of Codex Room Personal.  
 **Reference baseline when initialized:** canonical `main` at `800beeaa9c102c325e0c645a3416ec427f862500`.  
-**Proposed repository location:** `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`.  
+**Campaign status:** **COMPLETE — T0 through T14 PASS as of 2026-09-19.** Retained as the repeatable regression/acceptance specification.  
+**Repository location:** `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`.  
 **Authority:** Operational test specification. This file is not a canonical Project-source owner and does not replace `docs/project/06_DEVELOPMENT_CONTROL.md`, the Decision Register, Architecture & Current State, or the Evidence Register.
 
 ## 1. What this test plan is

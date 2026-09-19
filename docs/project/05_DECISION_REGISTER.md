@@ -1,7 +1,7 @@
 # Codex Room — Decision Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-18  
+**Last updated:** 2026-09-19  
 **Scope:** Settled architectural, governance, product-direction, and development-order decisions.  
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
@@ -234,7 +234,7 @@ The implementation scope is **[CORE + ROOM migration]**: CORE changes establish 
 
 **Reality:** IMPLEMENTED / VERIFIED — 2026-09-12. See E-027.
 
-**Development order:** the migration was completed and adequately verified before A2. **A2 — Assurance Pass 2** is now the next assurance milestone, preserving D-014's requirement that the Engineering Foundation precede A2.
+**Development-order record:** the migration was completed and adequately verified before A2, preserving D-014's sequencing requirement. A2 subsequently completed; current work order belongs only in Development Control.
 
 
 ### D-021 — Repository `docs/project/` is the canonical home for maintained Project sources
@@ -274,7 +274,7 @@ Settled direction:
 - proven capabilities may later be promoted to broader Personal or CORE scope;
 - registered capability status is stronger than arbitrary ad hoc code execution and therefore requires an explicit contract, implementation identity, permissions, and verification evidence.
 
-This sets product architecture and continuity requirements. It does not claim that custom registration, rollover inheritance, Personal promotion, or the broader default library are implemented yet.
+This sets product architecture and continuity requirements. P4 subsequently implemented and verified the CORE registry, custom registration/invocation, and exact-version lineage rollover inheritance. Broader Personal-scope promotion remains future work only if demonstrated reuse justifies it; current implementation status belongs in Architecture & Current State and Development Control.
 
 **Principle:** **Agents decide when cognition should become software; Codex Room makes that software discoverable, verifiable, persistent, and reusable.**
 
@@ -296,7 +296,7 @@ Settled design:
 
 This decision supersedes D-020 only where D-020 names **Implementer / Verifier / Integrator** as permanent agent-role descriptors. D-020's permanent-triad, C-first coordination, direct peer communication, selective invocation, and integration-before-closure requirements remain active.
 
-**Implementation status:** the protected-instruction / replaceable-personality composition model is **IMPLEMENTED / VERIFIED** by PR #28 and E-041. The existing default personality prose still contains the older Implementer / Verifier / Integrator labels pending the next deliberate personality-design slice; those labels are no longer the governing architectural definition of A, B, and C.
+**Implementation status:** the protected-instruction / replaceable-profile composition model is **IMPLEMENTED / VERIFIED** by PR #28 and E-041. D-024 subsequently established neutral/empty standard profile bodies for A/B/C; occupational labels are not startup cognitive specializations.
 
 ### D-024 — Persistent agents start from neutral default cognition
 **Date:** 2026-09-14  
@@ -342,7 +342,7 @@ D-025 builds on D-020's C-first coordination and D-024's neutral startup. It doe
 **Date:** 2026-09-14  
 **Status:** ACTIVE
 
-Cognition should be allocated economically. Because A and B are neutral peers running the same underlying model, invoking both for substantially the same analysis is ordinarily redundant and does not justify the added token and coordination cost.
+Cognition should be allocated economically. Because A and B are neutral peers, substantially duplicate assignments are ordinarily redundant and do not justify the added token and coordination cost. C may select different admitted execution configurations for delegated peers, but model heterogeneity by itself does not make duplicate cognition valuable.
 
 Settled design:
 
@@ -394,7 +394,7 @@ Settled rule:
 - Astra is excluded from every C-selectable execution configuration;
 - the runtime must fail closed if an execution path attempts to start a Room turn with the currently identified Astra model `gpt-6-astra`;
 - prompts, coordination policy, or later routing logic may not override this prohibition;
-- P1 may continue evaluating and using admitted Luna, Terra, and Sol configurations under the existing bounded adaptive-cognition trial;
+- admitted Luna, Terra, and Sol configurations remain available for bounded C-selected peer execution; the dedicated synthetic P1 benchmark series later closed without establishing a trustworthy automatic ranking, and no automatic model router is authorized;
 - changing or removing this prohibition requires an explicit later human-principal decision.
 
 This is a hard execution constraint, not an economic preference or default-selection heuristic.
@@ -556,7 +556,7 @@ The implementation is intentionally an instruction-level coordination refinement
 
 Adoption boundary: the refined protected C structural instructions apply to **freshly composed Rooms going forward**. Existing Room snapshots are not retroactively rewritten. Rollover successors retain predecessor instructions unless a later deliberate mechanism changes that behavior.
 
-Behavioral compliance remains an evidence question. Exact instruction regression/PR verification proves composition, not that a fresh C will obey the policy in every task. The next naturalistic evidence step is the controlled fresh-Room Common Cause rerun described in Development Control.
+Behavioral compliance remains an evidence question. Exact instruction regression/PR verification proves composition rather than universal compliance. E-125 later supplied naturalistic support for dependency-aware sequencing, and E-126 naturally exercised the tightened failed-delegation fallback successfully. Continue ordinary-use monitoring; Development Control owns current status and sequencing.
 
 **Principle:** **Parallelize independence; sequence dependencies; put substantial fallback where capable cognition has the least unnecessary accumulated context.**
 
@@ -614,6 +614,6 @@ This decision **amends D-033**: bounded history retrieval remains explicit and p
 
 This decision **amends D-036**: the standing-objective distinction and explicit `continuous` policy remain active, but continuous mode should no longer preserve continuity by indefinitely requeueing the same Task/coordinator Assignment. The intended successor mechanism is bounded Task settlement followed by a successor Task while the Round remains active.
 
-Implementation should proceed in bounded slices. **BCTX-1** establishes Task-bounded continuous lifecycle and coordinator context continuity first. Later slices may add objective-local worker context/direct result return, worker grace plus same-Round history, and C checkpoint/refresh. Do not collapse these into a broad transaction rewrite.
+Implementation was deliberately divided into BCTX-1 through BCTX-4 so the design could be verified in bounded slices without a broad transaction rewrite. Those four slices subsequently completed and were exact-version verified; E-132 through E-139 record implementation and naturalistic refresh-economics evidence. The D-037 architecture remains active.
 
 **Principle:** **Bound the objective in durable Task state; carry provider context only across continuity that the work actually needs.**

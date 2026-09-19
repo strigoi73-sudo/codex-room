@@ -1,6 +1,6 @@
 # Codex Room — Repository & Operations Reference
 
-**Last synthesized:** 2026-09-15  
+**Last synthesized:** 2026-09-19  
 **Scope:** Compact technical reference for source/runtime layout, maintenance boundaries, source-control workflow, recovery, and verification practices.  
 **Freshness:** Repository details are time-bounded. Prefer current live source and Git state when available.
 
@@ -60,11 +60,12 @@ Current clean-development procedure:
 
 1. use Python 3.11 or later and create a virtual environment;
 2. install with `python -m pip install -c constraints-test.txt ".[test]"`;
-3. run the canonical routine suite with `python -m pytest -q`.
+3. use `python -m pytest -q` for the raw Python suite when that scope is specifically needed;
+4. use `verify-fast.cmd` as the normal repository change/PR gate and `verify-full.cmd` for exhaustive/manual verification.
 
-`constraints-test.txt` records the known-good application/test dependency set while `pyproject.toml` retains broader supported dependency ranges. The supported Python floor is 3.11+. As of E-071, the standard Codex pair is `openai-codex==0.154.0` with `openai-codex-cli-bin==0.154.0`, and the package floor is `openai-codex>=0.154,<1`; production Room model policy remains separately pinned in source. The exact code-bearing verification for that upgrade passed **327 tests, 2 warnings**. `test-transcript-stability.ps1` remains separate from the canonical Python command because it requires Node.js plus Chrome or Edge.
+`constraints-test.txt` records the known-good application/test dependency set while `pyproject.toml` retains broader supported dependency ranges. The supported Python floor is 3.11+. As of E-071, the standard Codex pair is `openai-codex==0.154.0` with `openai-codex-cli-bin==0.154.0`, and the package floor is `openai-codex>=0.154,<1`; production Room model policy remains separately pinned in source. The exact code-bearing verification for that upgrade passed **327 tests, 2 warnings**. `test-transcript-stability.ps1` remains separate from the raw Python suite because it requires Node.js plus Chrome or Edge, but it is included by the repository verification wrappers.
 
-Routine cross-platform verification now uses the repository-root wrappers `verify-fast.cmd` and `verify-full.cmd`, both implemented by `verify-local.ps1`. Fast mode runs the focused Linux/Python 3.12 core set, synchronizes/checks pinned Windows dependencies, runs the focused Windows portability set, and runs browser transcript stability. Full mode runs the complete Python suite under Linux/Python 3.12 and 3.11, the complete Windows Python suite, browser transcript stability, and pinned `pip-audit==2.10.1`. The verifier caches its local environments, synchronizes dependencies only when needed, reports the exact commit, distinguishes tracked-source modifications from untracked local artifacts, and fails on any failing phase.
+Routine cross-platform verification uses the repository-root wrappers `verify-fast.cmd` and `verify-full.cmd`, both implemented by `verify-local.ps1`. Fast mode runs the focused Linux/Python 3.12 core set, synchronizes/checks pinned Windows dependencies, runs the focused Windows portability set, and runs browser transcript stability. Full mode runs the complete Python suite under Linux/Python 3.12 and 3.11, the complete Windows Python suite, browser transcript stability, and pinned `pip-audit==2.10.1`. The verifier caches its local environments, synchronizes dependencies only when needed, reports the exact commit, distinguishes tracked-source modifications from untracked local artifacts, and fails on any failing phase.
 
 The GitHub Actions workflows previously used for Python and dependency verification were removed from `main` on 2026-09-16 after repeated pre-runner startup failures made them an unreliable routine verification path. Their earlier successful runs remain valid historical evidence for the exact versions they exercised, including E-088. GitHub remains the canonical source-control/history/review bridge. See E-109 for the local-verifier migration and measured reference runs.
 
@@ -158,17 +159,18 @@ Generated/runtime data is not evidence of canonical source history merely becaus
 
 Current canonical source includes these useful areas/symbols:
 
-- `codex_room/models.py` — `AgentDecision`, MESSAGE/PASS/FINISH schema, `invoke_targets`;
-- `codex_room/personalities.py` — protected institutional/structural/protocol instruction composition and neutral default profile bodies;
-- `codex_room/orchestrator.py` — routing/settlement, D-026/D-027 invocation economy, delegation-cohort timing, compaction, retry/usage-wall recovery, maintenance watchdog;
-- `codex_room/db.py` — durable events/deliveries, profiles/Rounds, exact execution state, migrations, usage continuations, rollover state;
-- `codex_room/agent.py` — persistent SDK-thread interaction, fixed current model/effort boundary, exact-turn reconciliation, compaction and continuation preparation;
-- `codex_room/capabilities.py` — CORE deterministic registry, list/inspect/invoke surface, and minimal built-in library;
-- `codex_room/custom_capabilities.py`, `custom_capability_registration.py`, `custom_registry.py` — custom package validation, deterministic verification/publication, protected Room binding, unified custom discovery/invocation;
-- `codex_room/rollover.py` / rollover paths in runtime/database code — lineage continuation and exact inherited custom-capability bindings;
-- `Start-Codex-Room.cmd`, `Kill-Codex-Room.bat`, `codex-room-cap.cmd`, `codex-room-maint.cmd` — normal Windows launch/shutdown, agent capability, and offline maintenance wrappers;
-- `codex_room/maintenance.py` — I-010 persistent-data check/backup/verify/guarded-restore implementation;
-- `tests/` — regression coverage including routing/settlement, persistent execution recovery, profiles, capabilities, rollover, Windows launcher contracts, API, and UI behavior.
+- `codex_room/models.py` — production v2 API contracts, TransactionDecision actions, Task/Assignment-related request models, and admitted peer execution configurations;
+- `codex_room/personalities.py` — protected institutional/structural/protocol instruction composition, neutral standard profile bodies, and C coordination/model-allocation guidance;
+- `codex_room/orchestrator.py` — transaction execution/settlement, Task/Assignment/Join orchestration, EVIDENCE/HISTORY/REFRESH handling, provider-context continuity, recovery, usage walls, and coordinator economics telemetry;
+- `codex_room/db.py` — durable Rooms/Rounds/Tasks/Assignments/Joins, exact execution state, provider-context lineage, evidence/history/refresh state, migrations, usage continuations, and rollover state;
+- `codex_room/agent.py` — Codex SDK/app-server interaction, admitted model enforcement, exact-turn reconciliation, thread creation/resume, compaction, and continuation/recovery preparation;
+- `codex_room/capabilities.py` — CORE deterministic registry, discovery/inspection/invocation surface, and standard library;
+- `codex_room/custom_capabilities.py`, `custom_capability_registration.py`, `custom_registry.py` — custom package validation, deterministic verification/publication, protected binding, unified custom discovery/invocation;
+- `codex_room/transaction_evidence.py` — bounded transaction EVIDENCE execution over authorized sources;
+- `codex_room/rollover.py` and rollover paths in runtime/database code — lineage continuation, checkpoint/provenance handling, and exact inherited custom-capability bindings;
+- `Start-Codex-Room.cmd`, `Kill-Codex-Room.bat`, `Restart-Codex-Room.bat`, `codex-room-cap.cmd`, `codex-room-maint.cmd` — normal Windows launch/shutdown/restart, capability, and offline-maintenance wrappers;
+- `codex_room/maintenance.py` — persistent-data check/backup/verify/guarded-restore implementation;
+- `tests/` — regression coverage for transaction settlement, exact execution recovery, provider-context continuity, profiles, capabilities, rollover, Windows launcher contracts, API, and UI behavior.
 
 Locate and inspect current definitions before consequential edits; this list is a navigation aid, not a substitute for source inspection.
 
@@ -200,6 +202,8 @@ For consequential [CORE] changes:
 
 Historical test counts prove the tree/version that produced them. They do not substitute for a fresh run after later code changes.
 
+The repeatable operational acceptance specification is `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`. The 2026-09-19 T0–T14 campaign is complete with all tests recorded PASS; E-140 records the T8 hard-restart defect/repair and E-141 records campaign closeout. Preserve that plan as a regression/acceptance specification rather than treating its completed campaign as active work.
+
 ## 8. Source-control safety rules
 
 - Do not use `git clean`, destructive reset, or checkout as a casual repair mechanism around runtime data.
@@ -217,7 +221,7 @@ Current implementation behavior, historically verified 2026-09-09:
 - recognize authoritative usage-limit error + parseable terminal retry time;
 - schedule wake at provider retry time + 60 seconds;
 - persist continuation state across restart;
-- prepare/rebind the same persistent thread where safely supported;
+- preserve or prepare the exact relevant provider context where safely supported, including Assignment-scoped context in production v2;
 - release due work through the normal serialized queue;
 - repeated usage walls replace the schedule;
 - stop/lifecycle changes cancel stale continuation work;
