@@ -419,7 +419,6 @@ Wishlist entries are **idea capture, not a work queue**. They have no work state
 - **Auto-growing observer composer — IMPLEMENTED / VERIFIED.** PR #135 grows the ordinary observer composer from its compact height up to a bounded 180px cap (roughly eight lines at the current typography), then uses internal vertical scrolling.
 - **Per-Room unsent drafts — IMPLEMENTED / VERIFIED.** PR #135 stores observer text and selected target per Room in browser-local storage, restores them across Room switches and page refreshes, isolates drafts by Room, and clears only the successfully submitted Room draft.
 
-
 **PR #135 verification:** Exact feature head `8b1adf77093da1f86753f79665f03bc4ab23a39d` passed `verify-fast.cmd`: 63 Linux focused tests, 118 Windows portability tests, and 5 browser interaction/stability tests. The tracked tree was clean. Squash-merged as `7942d3f43a4871bcfe67a34c2d92efe97377f179`.
 
 - **New-activity / jump-to-latest control.** When the human has scrolled away from the transcript bottom, keep the existing non-forced-scroll behavior but surface a visible `new events` indicator/button that jumps to the latest activity.
