@@ -2330,6 +2330,8 @@ async def test_transaction_principal_wait_survives_runtime_restart(
         )
     assert persisted[0]["state"] == "waiting_principal"
     assert persisted[0]["context_thread_id"] == context_thread_id
+    await asyncio.sleep(0.05)
+    assert second_adapter.calls["agent_c"] == []
 
     await runtime2.principal_reply(
         room_id,
