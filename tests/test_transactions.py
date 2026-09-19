@@ -2779,3 +2779,45 @@ async def test_transaction_exceptional_cognition_approval_expires_at_task_bounda
     await runtime.stop(room_id, "Task-boundary cognition test complete.")
     adapter.release_call("agent_c", 3)
 
+@pytest.mark.asyncio
+async def test_transaction_unapproved_exceptional_self_config_fails_closed(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            message="Attempt an unauthorized exceptional continuation.",
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "This child must never become runnable.",
+                    "config": "luna-low",
+                }
+            ],
+            next_self_config="sol-xhigh",
+        )
+    )
+    runtime = await transaction_runtime_factory(adapter, "c-unapproved-exceptional.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exceptional self config must fail closed",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert adapter.calls["agent_a"] == []
+    events = await runtime.db.get_events(room_id)
+    assert not any(
+        event["event_type"] == "principal_message"
+        for event in events
+    )
+    assert any(
+        event["event_type"] == "agent_error"
+        and "approved cognition ceiling" in event["content"]
+        for event in events
+    )
+
