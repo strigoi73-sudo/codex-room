@@ -825,6 +825,27 @@ class Database:
                 (now, now),
             )
             await db.execute(
+                """UPDATE agents
+                   SET status=?, updated_at=?
+                   WHERE id IN (
+                       SELECT agent_id
+                       FROM agent_executions
+                       WHERE state='settled'
+                         AND decision_recorded_at IS NOT NULL
+                         AND last_reconciled_at=?
+                   )
+                   AND NOT EXISTS (
+                       SELECT 1
+                       FROM agent_executions pending
+                       WHERE pending.agent_id=agents.id
+                         AND pending.state IN
+                           ('claimed','active','recovering','result_ready',
+                            'usage_suspended','quarantined')
+                         AND pending.decision_recorded_at IS NULL
+                   )""",
+                (AgentStatus.IDLE, now, now),
+            )
+            await db.execute(
                 """UPDATE agent_executions
                    SET state='recovering', last_reconciled_at=NULL
                    WHERE state IN ('active', 'recovering')
