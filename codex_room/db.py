@@ -5043,7 +5043,7 @@ class Database:
                     WHERE state IN
                       ('queued','running','waiting_join','waiting_evidence',
                        'waiting_principal','refreshing')
-                      {assignment_clause}""
+                      {assignment_clause}""",
                 assignment_params,
             )
             join_clause = (
