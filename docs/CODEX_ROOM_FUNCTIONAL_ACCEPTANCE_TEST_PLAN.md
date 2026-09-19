@@ -2040,7 +2040,7 @@ Update this table only with evidence from an actual run. Keep the exact HEAD and
 
 | Test | Status | HEAD | Room / evidence reference | Notes |
 |---|---|---|---|---|
-| T0 | NOT RUN | — | — | — |
+| T0 | PASS | `ef92dcf6991db58208a9340c28d14ad7e3478a1c` | `output\functional-acceptance\T0-20260919-005013` | `/api/health` healthy; `verify-fast.cmd` PASS: Linux focused core 63/63, Windows portability 118/118, browser transcript stability 3/3; repository status unchanged. |
 | T1 | NOT RUN | — | — | — |
 | T2 | NOT RUN | — | — | — |
 | T3 | NOT RUN | — | — | — |
