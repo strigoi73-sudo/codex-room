@@ -24,7 +24,7 @@ from .agent import (
     AgentTurnStateUnknownError,
     InterruptOutcome,
 )
-from .capabilities import CORE_CAPABILITIES
+from .capabilities import CORE_CAPABILITIES, list_capabilities
 from .custom_capabilities import CustomCapabilityPackageError
 from .custom_capability_registration import (
     CustomCapabilityPublicationError,
@@ -1374,6 +1374,80 @@ class RoomRuntime:
         if room is not None:
             await self._attach_execution(room)
         return room
+
+    async def status_tools(self, room_id: str) -> dict[str, Any]:
+        """Return compact human-facing capability visibility for one Room."""
+
+        room = await self.db.get_room(room_id)
+        if room is None:
+            raise KeyError(room_id)
+        agents = await self.db.get_agents(room_id)
+        preferred = next(
+            (agent for agent in agents if agent["agent_key"] == "agent_c"),
+            agents[0] if agents else None,
+        )
+        thread_id = preferred.get("thread_id") if preferred else None
+
+        capability_result = list_capabilities(self.workspace(room_id))
+        room_capabilities = [
+            {
+                "id": item["id"],
+                "description": item["description"],
+                "origin": item["origin"],
+                "scope": item["scope"],
+                "version": item["version"],
+                "status": "available",
+            }
+            for item in capability_result.get("capabilities", [])
+        ]
+
+        try:
+            inherited = await self.adapter.inspect_tool_availability(
+                self.workspace(room_id),
+                thread_id=thread_id,
+            )
+        except Exception:
+            unknown = {
+                "status": "unknown",
+                "detail": "Inherited Codex tool availability could not be inspected.",
+            }
+            inherited = {
+                "inspection_status": "unavailable",
+                "native": [],
+                "web_search": dict(unknown, mode=None),
+                "skills": dict(
+                    unknown,
+                    enabled_count=0,
+                    total_count=0,
+                    error_count=0,
+                    items=[],
+                    truncated=False,
+                ),
+                "mcp": dict(
+                    unknown,
+                    server_count=0,
+                    tool_count=0,
+                    servers=[],
+                    truncated=False,
+                ),
+                "apps": dict(
+                    unknown,
+                    available_count=0,
+                    total_count=0,
+                    items=[],
+                    truncated=False,
+                ),
+            }
+
+        return {
+            "room_id": room_id,
+            "room_capabilities": {
+                "status": "available",
+                "count": len(room_capabilities),
+                "items": room_capabilities,
+            },
+            "codex": inherited,
+        }
 
     def workspace(self, room_id: str) -> Path:
         return self.data_root / "rooms" / room_id / "shared"
