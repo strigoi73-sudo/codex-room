@@ -10,7 +10,7 @@
 - **What just changed?** T8 deliberately restarted the server during an active transaction. The first run at `9a313df...` exposed that an exact provider turn can become authoritatively `interrupted` across a hard restart and was then treated as terminal. PR #130 repaired only startup-recovered interrupted transaction turns by allowing the same Assignment to spend its existing one-retry budget. Exact head `17da2833f24e9ab84416e1585bb4d00bfd0cb86f` passed targeted and repository-standard verification plus a natural hard-restart rerun; PR #130 squash-merged as `f11b1d5bc02b8f8a7f9d2bcc84e3991b8c767877`. See E-140.
 - **Verification state:** Functional acceptance T0-T8 are recorded PASS in `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`. For the T8 repair, targeted restart tests passed **2/2**; `verify-fast.cmd` passed **63 Linux focused + 118 Windows focused + 3 browser tests**; the natural rerun preserved the same C Assignment across the interrupted provider turn, delegated A/B together after retry, released the Join once, integrated, and closed `transaction_settled`. No GitHub-hosted workflow run was attached.
 - **What is blocked?** D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** Continue the authorized functional acceptance campaign with **T10 — custom deterministic capability lifecycle**. T0 through T9 are PASS.
+- **What is next?** Continue the authorized functional acceptance campaign with **T11 — rollover continuity**. T0 through T10 are PASS.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
@@ -23,9 +23,9 @@
 
 **Authoritative operational procedure:** `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`
 
-**Current state:** T0 through T9 are PASS. T8's initial failure was a genuine runtime-invariant failure, not permitted model variation: hard restart preserved the durable Assignment but the exact provider turn became `interrupted` and was terminally failed. PR #130 repaired and revalidated that path; E-140 owns the consequential evidence. T9 then cleanly exercised the explicit C-only BCTX-4 `REFRESH` path with a bounded checkpoint and distinct fresh coordinator context.
+**Current state:** T0 through T10 are PASS. T8's initial failure was a genuine runtime-invariant failure, not permitted model variation: hard restart preserved the durable Assignment but the exact provider turn became `interrupted` and was terminally failed. PR #130 repaired and revalidated that path; E-140 owns the consequential evidence. T9 cleanly exercised the explicit C-only BCTX-4 `REFRESH` path. T10 then exercised the P4 custom-capability lifecycle end to end: author, deterministic verification, protected registration/activation, fresh rediscovery, inspection, and registered invocation.
 
-**Next:** T10 — custom deterministic capability lifecycle.
+**Next:** T11 — rollover continuity.
 
 The campaign remains evidence-first: preserve FAIL/INCONCLUSIVE artifacts, characterize before repair, and do not convert behavioral variation into CORE defects unless a runtime invariant fails.
 
