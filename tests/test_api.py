@@ -68,6 +68,24 @@ def test_http_create_state_and_exports(tmp_path):
         assert state.status_code == 200
         assert state.json()["title"] == "Test"
 
+        status_tools = client.get(f"/api/rooms/{room_id}/status-tools")
+        assert status_tools.status_code == 200
+        visibility = status_tools.json()
+        assert visibility["room_id"] == room_id
+        capability_ids = {
+            item["id"] for item in visibility["room_capabilities"]["items"]
+        }
+        assert "assert_file" in capability_ids
+        assert visibility["codex"]["inspection_status"] == "complete"
+        assert visibility["codex"]["web_search"]["mode"] == "cached"
+        assert visibility["codex"]["skills"]["items"] == [
+            {"name": "fake-skill", "status": "available"}
+        ]
+        assert visibility["codex"]["mcp"]["servers"][0]["auth_status"] == "notLoggedIn"
+        assert visibility["codex"]["apps"]["items"] == [
+            {"name": "Fake App", "status": "available"}
+        ]
+
         json_export = client.get(f"/api/rooms/{room_id}/export?format=json")
         assert json_export.status_code == 200
         assert json_export.json()["id"] == room_id
