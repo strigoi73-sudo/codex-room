@@ -64,6 +64,135 @@ async def test_initialize_uses_explicit_codex_runtime(monkeypatch, tmp_path: Pat
     assert created[0].closed is True
 
 
+class InventoryRpcClient:
+    def __init__(self) -> None:
+        self.calls: dict[str, dict] = {}
+
+    async def request(self, method, params, *, response_model):
+        self.calls[method] = {
+            "params": params,
+            "response_model": response_model.__name__,
+        }
+        if method == "config/read":
+            return SimpleNamespace(
+                config=SimpleNamespace(
+                    web_search=SimpleNamespace(value="live"),
+                    secret_token="must-not-escape",
+                )
+            )
+        if method == "modelProvider/capabilities/read":
+            return SimpleNamespace(web_search=True)
+        if method == "skills/list":
+            return SimpleNamespace(
+                data=[
+                    SimpleNamespace(
+                        errors=[],
+                        skills=[
+                            SimpleNamespace(
+                                name="alpha-skill",
+                                enabled=True,
+                                path="/private/skill/path",
+                            ),
+                            SimpleNamespace(
+                                name="disabled-skill",
+                                enabled=False,
+                                path="/private/disabled/path",
+                            ),
+                        ],
+                    )
+                ]
+            )
+        if method == "mcpServerStatus/list":
+            return SimpleNamespace(
+                data=[
+                    SimpleNamespace(
+                        name="ready-server",
+                        auth_status=SimpleNamespace(value="unsupported"),
+                        tools={"search": object(), "read": object()},
+                    ),
+                    SimpleNamespace(
+                        name="auth-server",
+                        auth_status=SimpleNamespace(value="notLoggedIn"),
+                        tools={},
+                    ),
+                ],
+                next_cursor=None,
+            )
+        if method == "app/installed":
+            return SimpleNamespace(
+                apps=[
+                    SimpleNamespace(
+                        id="callable-app",
+                        runtime_name="Callable App",
+                        enabled=True,
+                        callable=True,
+                    ),
+                    SimpleNamespace(
+                        id="policy-blocked-app",
+                        runtime_name="Policy Blocked",
+                        enabled=True,
+                        callable=False,
+                    ),
+                ]
+            )
+        raise AssertionError(f"unexpected App Server request: {method}")
+
+
+@pytest.mark.asyncio
+async def test_tool_visibility_uses_read_only_app_server_inventory_and_sanitizes(
+    tmp_path: Path,
+):
+    adapter = CodexAgentAdapter()
+    rpc = InventoryRpcClient()
+    adapter._client = SimpleNamespace(_client=rpc)
+
+    result = await adapter.inspect_tool_availability(
+        tmp_path,
+        thread_id="thread-c",
+    )
+
+    assert set(rpc.calls) == {
+        "config/read",
+        "modelProvider/capabilities/read",
+        "skills/list",
+        "mcpServerStatus/list",
+        "app/installed",
+    }
+    assert rpc.calls["config/read"]["params"] == {
+        "cwd": str(tmp_path),
+        "includeLayers": False,
+    }
+    assert rpc.calls["skills/list"]["params"]["forceReload"] is False
+    assert rpc.calls["mcpServerStatus/list"]["params"]["detail"] == "toolsAndAuthOnly"
+    assert rpc.calls["mcpServerStatus/list"]["params"]["threadId"] == "thread-c"
+    assert rpc.calls["app/installed"]["params"] == {
+        "forceRefresh": False,
+        "threadId": "thread-c",
+    }
+
+    assert result["inspection_status"] == "complete"
+    assert result["web_search"] == {
+        "status": "available",
+        "mode": "live",
+        "detail": "Hosted web search is available in live mode.",
+    }
+    assert result["skills"]["enabled_count"] == 1
+    assert result["skills"]["items"] == [
+        {"name": "alpha-skill", "status": "available"},
+        {"name": "disabled-skill", "status": "disabled"},
+    ]
+    assert result["mcp"]["status"] == "available"
+    assert result["mcp"]["servers"][0]["tools"] == ["read", "search"]
+    assert result["mcp"]["servers"][1]["status"] == "interaction_required"
+    assert result["apps"]["items"] == [
+        {"name": "Callable App", "status": "available"},
+        {"name": "Policy Blocked", "status": "unknown"},
+    ]
+    serialized = json.dumps(result, sort_keys=True)
+    assert "must-not-escape" not in serialized
+    assert "/private/" not in serialized
+
+
 class CompactingThread:
     def __init__(self) -> None:
         self.id = "thread-one"
