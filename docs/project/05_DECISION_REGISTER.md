@@ -639,3 +639,29 @@ Settled boundary:
 This extends D-030/D-037 without changing the fixed three-agent organization or C's epistemic status. The human principal remains outside the A/B/C production-agent set; C controls coordination, not judgment, and consultation exists to obtain human authority rather than replace it.
 
 **Principle:** **Ask the principal privately when human judgment is needed; preserve the same work context, involve no peer implicitly, and promote only necessary consequences back to shared state.**
+
+### D-039 — C controls dynamic cognition within an ordinary ceiling; exceptional C cognition requires Task-scoped principal approval
+**Date:** 2026-09-19
+**Status:** ACTIVE
+
+The principal authorized Agent C to allocate its own execution cognition dynamically rather than remaining fixed at Terra/high, while preserving a human approval boundary for exceptional spend.
+
+Settled boundary:
+
+- the ordinary autonomous execution set is Low, Medium, and High reasoning on each admitted current-generation model: Luna, Terra, and Sol;
+- C may select among those nine ordinary configurations for its own subsequent executions and for bounded peer Assignments, using the cheapest configuration it reasonably expects to be sufficient;
+- C's self-selection is explicit and auditable transaction state, not an automatic CORE model router. CORE enforces the allowed set and executes C's declared next configuration;
+- the existing Terra/high compatibility fallback remains the initial/default execution when no explicit Assignment configuration has yet been selected;
+- Sol/XHigh and Sol/Max are exceptional **C-only** cognition levels. A/B may not receive them through ordinary delegation;
+- exceptional cognition requires C to use the private principal channel and request a specific Task cognition ceiling, with a concise reason it would materially help;
+- approval is bound to the exact current bounded Task. It raises C's available ceiling for that Task but does not force every C execution to use the ceiling; C may continue to choose cheaper configurations and may downgrade at any time;
+- approval for Sol/XHigh does not authorize Sol/Max. C must request a higher Task ceiling separately if later evidence warrants Max;
+- approval expires automatically when the Task settles, fails, or is cancelled. A successor Task begins again with the ordinary Sol/high ceiling;
+- a declined request resumes the same C Assignment without raising the Task ceiling;
+- Sol/Ultra is excluded because the provider-defined mode includes automatic task delegation, which conflicts with Codex Room's explicit inspectable A/B/C delegation architecture;
+- Astra remains prohibited by D-028 at every effort level; GPT-5.5 remains excluded as a retiring previous-generation model;
+- service-tier/priority speed remains outside this cognition policy.
+
+This decision narrows the previously deferred “dynamic model routing” question: **automatic CORE routing remains unauthorized**, while deliberate C-controlled self-allocation is authorized as part of C's coordination responsibility. C controls coordination and cognition spend, not truth or peer judgment.
+
+**Principle:** **C may spend ordinary cognition autonomously; exceptional C cognition requires explicit human authority for the bounded Task that needs it.**
