@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-018 — Codex Desktop ↔ Codex Room capability audit is **IN PROGRESS**. I-017 and I-016 remain complete.
-- **What just changed?** The principal authorized I-018 to determine what useful Codex Desktop capabilities Codex Room already inherits, what the Room hides or replaces, and what is genuinely missing before any further feature work is proposed.
-- **Verification state:** I-018 is an **EXPLORATORY / evidence-gathering** audit, not an implementation change. It will compare current official Codex Desktop/OpenAI documentation with current canonical Codex Room source/runtime behavior. No runtime modification is authorized by this audit.
-- **What is blocked?** Nothing currently blocks the audit. Any capability whose status cannot be established from current documentation/source may receive one bounded empirical probe; expensive model-driven experiments are not the default.
-- **What is next?** Complete I-018 and return a compact capability matrix classifying each relevant Codex Desktop feature as inherited/usable, available-but-hidden, replaced by an intentional Room mechanism, genuinely missing, or incompatible/out of scope. Stop before implementation and ask the principal which demonstrated gaps, if any, are worth pursuing.
+- **Where are we?** I-018 — Codex Desktop ↔ Codex Room capability audit is **COMPLETE**. The audit found that Codex Room already inherits much of the local Codex execution/tool substrate; the largest demonstrated gaps are human-facing host surfaces and interactive tool-management affordances rather than basic file/shell/web capability. I-017 and I-016 remain complete.
+- **What just changed?** I-018 compared current official Codex/App Server documentation with canonical Room source at `9d875ffe71d84aa862e664d23f1aae08ac0ab65b`. It established that the Room runs persistent official Codex SDK/App Server threads with workspace-write execution and inherits normal Codex configuration layers except for deliberate Room overrides; built-in Codex subagents are explicitly disabled. See E-149.
+- **Verification state:** **AUDIT COMPLETE / NO RUNTIME CHANGE.** Source and official documentation were sufficient for the product-level classification; no expensive synthetic model probe was warranted. Config/account-dependent MCP, skill, and app availability remains environment-specific and was not represented as universally enabled.
+- **What is blocked?** No implementation blocker is established because I-018 intentionally stops before implementation. The principal must choose whether any demonstrated gap is worth product work.
+- **What is next?** Decide whether to pursue any I-018 candidate. The strongest low-risk candidate is a human-facing Room status/tools surface that exposes state and configured tool availability without cloning Desktop slash syntax. Rich attachments and, separately, a browser/computer-use host could expand general-purpose value but are larger product choices. No candidate is authorized automatically.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
@@ -19,9 +19,9 @@
 
 **Scope:** [CORE / ROOM product capability audit]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality:** EXPLORATORY
+**Reality:** EXPLORATORY AUDIT COMPLETE / NO IMPLEMENTATION AUTHORIZED
 
 **Objective:** determine what useful work current Codex Desktop can do that current Codex Room cannot, with special attention to whether Codex Room is failing to expose capabilities already present in the embedded Codex SDK/runtime.
 
@@ -42,9 +42,27 @@
 5. distinguish agent capability from observer/UI convenience so a missing slash command is not mistaken for a missing underlying capability;
 6. identify only demonstrated product gaps whose benefit could plausibly exceed their implementation/maintenance cost.
 
-**Deliverable:** one compact capability matrix plus findings about the practical difference between Codex Desktop and Codex Room, followed by a short set of candidate changes (if any) ordered by demonstrated product value rather than parity.
+**Result:** E-149 records the completed matrix. The principal finding is that **Codex Room is not a reduced text-only Codex engine**: A/B/C run on persistent official Codex SDK/App Server threads with `workspace_write`, native command/file tooling, normal Codex configuration inheritance, and Room-specific deterministic capabilities. Codex built-in subagents are deliberately disabled because A/B/C and Room transactions own multi-agent organization.
 
-**Stop conditions:** this audit does **not** authorize implementation, blanket slash-command parity, a new model router, restoration of Codex built-in subagents, or a broad UI redesign. Stop after the evidence-backed comparison and recommendations so the principal can choose whether any gap deserves implementation.
+The missing Desktop `/` palette is primarily a **host/UI gap**, not proof that the underlying agent capability is absent. Current Room composer/API sends observer text as ordinary Room messages and has no slash-command parser.
+
+**Important classifications:**
+
+- **INHERITED / config-dependent:** workspace file work, shell/command execution, persistent Codex threads, hosted web search unless disabled by Codex configuration, and configured MCP/App Server tool availability where authentication/interaction requirements are already satisfied.
+- **AVAILABLE BUT HIDDEN / incomplete host surface:** Room status/economics/model/context data; configured MCP/tool inventory; skills/apps/plugin inventory and explicit selection; some App Server thread controls. Interactive OAuth, elicitation, and generic tool-approval UX are not currently provided by the Room observer surface.
+- **ROOM EQUIVALENT:** model/reasoning control through D-039; context compaction/refresh; Round/Task objective state; persistent agent profiles; A/B/C organization in place of built-in Codex subagents; bounded Room history; independent verifier delegation in place of a Desktop review shortcut.
+- **GENUINELY MISSING HOST CAPABILITIES:** the Desktop built-in visual browser/computer-use surface, rich observer attachments/input UX, integrated human terminal, Desktop diff/review UI, and Desktop-managed worktrees. Some are coding-specific; browser/attachments have broader general-purpose implications.
+- **DO NOT COPY FOR PARITY ALONE:** slash syntax itself, direct `/model` or `/reasoning` overrides that bypass D-039, built-in Codex subagents, or host utilities such as product feedback/pet commands.
+
+**Candidate product work, pending principal choice:**
+
+1. **Room status + tools visibility** — expose current Round/Task/Assignment state, agent/model/economics data, and configured skill/MCP/app availability in one human-facing surface. Prefer reusing App Server APIs rather than reproducing tool registries.
+2. **Tool interaction bridge** — only if MCP/plugins become important in ordinary use, add the missing human authorization/authentication/elicitation path needed for tools that cannot run unattended.
+3. **Rich attachments** — give the principal a first-class way to attach files/images to Room work instead of relying on filesystem placement or text-only instructions.
+4. **Browser/computer-use host** — potentially high general-purpose value, but a materially larger product/authority/safety integration than exposing inherited tools.
+5. **Plan-only or review-specific modes** — consider only if ordinary use demonstrates that natural-language constraints plus existing verifier/transaction mechanics are insufficient.
+
+**Stop condition satisfied:** I-018 made no runtime change and authorizes none. Do not implement blanket slash-command parity or any candidate above until the principal explicitly selects it.
 
 ### I-017 — Dynamic C cognition and Task-scoped exceptional approval
 
