@@ -160,6 +160,16 @@ Custom capabilities use a bounded draft/package model, deterministic verificatio
 
 Agents decide when deterministic software is warranted. Registered capabilities are preferred when they are adequate; custom software is justified by demonstrated reuse, reliability, provenance, or mechanical-complexity value rather than by a desire to create tooling for its own sake.
 
+### Underlying Codex runtime versus Room host surface
+
+**IMPLEMENTED / AUDITED**
+
+Each Room participant runs through the official local Codex SDK/App Server substrate as a persistent, non-ephemeral Codex thread rooted in that Room's shared workspace with `workspace_write` sandbox authority. Room session overrides select the Room model/reasoning defaults and explicitly disable Codex's built-in multi-agent/subagent layer; they do not replace the normal Codex configuration stack. Consequently, ordinary Codex runtime facilities such as command execution, file changes, and configuration-dependent web/MCP tooling belong to the underlying execution substrate unless separately disabled by effective Codex configuration or unavailable because required host interaction/authentication is missing.
+
+The Room browser is a separate host surface. Observer messages are submitted through the Room message API and are not parsed as Codex Desktop slash commands. Absence of a Desktop `/` command therefore does not by itself mean the underlying Codex capability is absent. Conversely, Desktop-host features such as its visual browser, integrated human terminal, worktree UI, attachment/editor affordances, and interactive MCP/authentication surfaces are not conferred merely by using App Server.
+
+Codex Room intentionally substitutes its own organizational mechanisms for several Desktop controls: A/B/C transactions replace built-in Codex subagents; D-039 governs model/reasoning allocation; Round/Task state owns organizational objectives; Room compaction/REFRESH manages long-lived coordinator context; and verifier delegation provides independent review cognition. See E-149 for the dated Desktop↔Room capability audit and its qualification of config-dependent tool availability.
+
 ## 8. Model allocation and execution constraints
 
 **IMPLEMENTED / MONITOR**
