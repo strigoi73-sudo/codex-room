@@ -100,6 +100,10 @@ class AgentAdapter(Protocol):
 
     async def close(self) -> None: ...
 
+    async def inspect_tool_availability(
+        self, cwd: Path, *, thread_id: str | None = None
+    ) -> dict[str, Any]: ...
+
     async def start_agent(self, agent: dict[str, Any], cwd: Path) -> str: ...
 
     async def start_context_thread(
@@ -212,6 +216,251 @@ class CodexAgentAdapter:
         self._active_handles.clear()
         self._unconfirmed_handles.clear()
         self._usage_continuation_agents.clear()
+
+    async def inspect_tool_availability(
+        self, cwd: Path, *, thread_id: str | None = None
+    ) -> dict[str, Any]:
+        """Return a sanitized read-only view of inherited Codex/App Server tools."""
+
+        from openai_codex.generated.v2_all import (
+            AppsInstalledResponse,
+            ConfigReadResponse,
+            ListMcpServerStatusResponse,
+            ModelProviderCapabilitiesReadResponse,
+            SkillsListResponse,
+        )
+
+        self._require_client()
+        rpc_client = getattr(self._client, "_client", None)
+        request = getattr(rpc_client, "request", None)
+        if not callable(request):
+            return self._unknown_tool_inventory(
+                "The installed Codex SDK does not expose the expected read-only App Server request path."
+            )
+
+        async def read(method: str, params: dict[str, Any], response_model: type[Any]) -> Any:
+            try:
+                return await request(
+                    method,
+                    params,
+                    response_model=response_model,
+                )
+            except Exception:
+                # Capability visibility must never make normal Room operation fail.
+                return None
+
+        config_params = {"cwd": str(cwd), "includeLayers": False}
+        skill_params = {"cwds": [str(cwd)], "forceReload": False}
+        mcp_params: dict[str, Any] = {"detail": "toolsAndAuthOnly", "limit": 100}
+        app_params: dict[str, Any] = {"forceRefresh": False}
+        if thread_id:
+            mcp_params["threadId"] = thread_id
+            app_params["threadId"] = thread_id
+
+        config, provider, skills, mcp, apps = await asyncio.gather(
+            read("config/read", config_params, ConfigReadResponse),
+            read(
+                "modelProvider/capabilities/read",
+                {},
+                ModelProviderCapabilitiesReadResponse,
+            ),
+            read("skills/list", skill_params, SkillsListResponse),
+            read("mcpServerStatus/list", mcp_params, ListMcpServerStatusResponse),
+            read("app/installed", app_params, AppsInstalledResponse),
+        )
+
+        inspected = [config, provider, skills, mcp, apps]
+        inspection_status = (
+            "complete"
+            if all(item is not None for item in inspected)
+            else "partial"
+            if any(item is not None for item in inspected)
+            else "unavailable"
+        )
+
+        native = [
+            {
+                "id": "workspace_files",
+                "label": "Workspace files",
+                "status": "available",
+                "detail": "Read/write access inside the Room workspace sandbox.",
+            },
+            {
+                "id": "command_execution",
+                "label": "Commands",
+                "status": "available",
+                "detail": "Command execution is available subject to the Room sandbox and approval policy.",
+            },
+        ]
+
+        web_search: dict[str, Any]
+        if config is None or provider is None:
+            web_search = {
+                "status": "unknown",
+                "mode": None,
+                "detail": "Effective web-search configuration could not be inspected.",
+            }
+        else:
+            configured = getattr(config.config, "web_search", None)
+            mode = getattr(configured, "value", configured) if configured is not None else "cached"
+            provider_support = bool(getattr(provider, "web_search", False))
+            if mode == "disabled" or not provider_support:
+                web_search = {
+                    "status": "disabled",
+                    "mode": mode,
+                    "detail": (
+                        "Web search is disabled by effective configuration."
+                        if mode == "disabled"
+                        else "The active model provider does not report hosted web-search support."
+                    ),
+                }
+            else:
+                web_search = {
+                    "status": "available",
+                    "mode": mode,
+                    "detail": (
+                        f"Hosted web search is available in {mode} mode."
+                        + (" Codex defaulted the mode to cached." if configured is None else "")
+                    ),
+                }
+
+        skill_items: list[dict[str, Any]] = []
+        skill_errors = 0
+        if skills is not None:
+            seen_skills: set[str] = set()
+            for entry in getattr(skills, "data", []) or []:
+                skill_errors += len(getattr(entry, "errors", []) or [])
+                for skill in getattr(entry, "skills", []) or []:
+                    name = str(getattr(skill, "name", "") or "").strip()
+                    if not name or name in seen_skills:
+                        continue
+                    seen_skills.add(name)
+                    skill_items.append(
+                        {
+                            "name": name,
+                            "status": "available" if bool(getattr(skill, "enabled", False)) else "disabled",
+                        }
+                    )
+            skill_items.sort(key=lambda item: item["name"].lower())
+        enabled_skills = sum(1 for item in skill_items if item["status"] == "available")
+        if skills is None:
+            skill_status = "unknown"
+        elif enabled_skills:
+            skill_status = "available"
+        elif skill_errors:
+            skill_status = "unknown"
+        else:
+            skill_status = "disabled"
+        skills_summary = {
+            "status": skill_status,
+            "enabled_count": enabled_skills,
+            "total_count": len(skill_items),
+            "error_count": skill_errors,
+            "items": skill_items[:24],
+            "truncated": len(skill_items) > 24,
+        }
+
+        mcp_servers: list[dict[str, Any]] = []
+        if mcp is not None:
+            for server in getattr(mcp, "data", []) or []:
+                auth = getattr(getattr(server, "auth_status", None), "value", None) or "unknown"
+                tools = sorted(str(name) for name in (getattr(server, "tools", {}) or {}).keys())
+                server_status = (
+                    "available"
+                    if tools
+                    else "interaction_required"
+                    if auth == "notLoggedIn"
+                    else "disabled"
+                )
+                mcp_servers.append(
+                    {
+                        "name": str(getattr(server, "name", "") or "Unnamed MCP server"),
+                        "status": server_status,
+                        "auth_status": auth,
+                        "tool_count": len(tools),
+                        "tools": tools[:12],
+                        "truncated_tools": len(tools) > 12,
+                    }
+                )
+            mcp_servers.sort(key=lambda item: item["name"].lower())
+        if mcp is None:
+            mcp_status = "unknown"
+        elif any(item["status"] == "available" for item in mcp_servers):
+            mcp_status = "available"
+        elif any(item["status"] == "interaction_required" for item in mcp_servers):
+            mcp_status = "interaction_required"
+        else:
+            mcp_status = "disabled"
+        mcp_summary = {
+            "status": mcp_status,
+            "server_count": len(mcp_servers),
+            "tool_count": sum(item["tool_count"] for item in mcp_servers),
+            "servers": mcp_servers[:24],
+            "truncated": len(mcp_servers) > 24 or bool(getattr(mcp, "next_cursor", None)),
+        }
+
+        app_items: list[dict[str, Any]] = []
+        if apps is not None:
+            for app in getattr(apps, "apps", []) or []:
+                enabled = bool(getattr(app, "enabled", False))
+                callable_now = bool(getattr(app, "callable", False))
+                status = "available" if callable_now else "unknown" if enabled else "disabled"
+                name = str(
+                    getattr(app, "runtime_name", None)
+                    or getattr(app, "id", "")
+                    or "Unnamed app"
+                )
+                app_items.append({"name": name, "status": status})
+            app_items.sort(key=lambda item: item["name"].lower())
+        if apps is None:
+            app_status = "unknown"
+        elif any(item["status"] == "available" for item in app_items):
+            app_status = "available"
+        elif any(item["status"] == "unknown" for item in app_items):
+            app_status = "unknown"
+        else:
+            app_status = "disabled"
+        apps_summary = {
+            "status": app_status,
+            "available_count": sum(1 for item in app_items if item["status"] == "available"),
+            "total_count": len(app_items),
+            "items": app_items[:24],
+            "truncated": len(app_items) > 24,
+        }
+
+        return {
+            "inspection_status": inspection_status,
+            "native": native,
+            "web_search": web_search,
+            "skills": skills_summary,
+            "mcp": mcp_summary,
+            "apps": apps_summary,
+        }
+
+    @staticmethod
+    def _unknown_tool_inventory(detail: str) -> dict[str, Any]:
+        unknown = {"status": "unknown", "detail": detail}
+        return {
+            "inspection_status": "unavailable",
+            "native": [
+                {
+                    "id": "workspace_files",
+                    "label": "Workspace files",
+                    "status": "available",
+                    "detail": "Read/write access inside the Room workspace sandbox.",
+                },
+                {
+                    "id": "command_execution",
+                    "label": "Commands",
+                    "status": "available",
+                    "detail": "Command execution is available subject to the Room sandbox and approval policy.",
+                },
+            ],
+            "web_search": dict(unknown, mode=None),
+            "skills": dict(unknown, enabled_count=0, total_count=0, error_count=0, items=[], truncated=False),
+            "mcp": dict(unknown, server_count=0, tool_count=0, servers=[], truncated=False),
+            "apps": dict(unknown, available_count=0, total_count=0, items=[], truncated=False),
+        }
 
     async def _start_thread(
         self,
