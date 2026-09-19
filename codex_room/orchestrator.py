@@ -1469,6 +1469,14 @@ class RoomRuntime:
 
         return {
             "room_id": room_id,
+            "economics_guidance": {
+                "coordinator_refresh_consider_input_tokens": (
+                    self.COORDINATOR_REFRESH_CONSIDER_INPUT_TOKENS
+                ),
+                "coordinator_refresh_prefer_input_tokens": (
+                    self.COORDINATOR_REFRESH_PREFER_INPUT_TOKENS
+                ),
+            },
             "room_capabilities": {
                 "status": room_capability_status,
                 "count": len(room_capabilities),
