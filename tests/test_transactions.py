@@ -2702,3 +2702,80 @@ def test_transaction_peer_delegation_cannot_use_exceptional_c_config() -> None:
             ],
         )
 
+@pytest.mark.asyncio
+async def test_transaction_exceptional_cognition_approval_expires_at_task_boundary(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {3}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.CONSULT_PRINCIPAL,
+                message="Approve Sol/XHigh for this bounded Task?",
+                requested_task_cognition_ceiling="sol-xhigh",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Finished the approved bounded Task.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Successor Task should be back under the ordinary ceiling.",
+            ),
+        ]
+    )
+    runtime = await transaction_runtime_factory(adapter, "c-task-ceiling-expiry.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise Task cognition ceiling expiry",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=8,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def consultation_ready() -> bool:
+        return any(
+            event["event_type"] == "principal_message"
+            for event in await runtime.db.get_events(room_id)
+        )
+
+    await wait_until(consultation_ready)
+    consultation = next(
+        event
+        for event in await runtime.db.get_events(room_id)
+        if event["event_type"] == "principal_message"
+    )
+    await runtime.principal_reply(
+        room_id,
+        PrincipalReplyRequest(
+            consultation_event_id=consultation["id"],
+            content="Approved Sol/XHigh for this Task.",
+            cognition_approval="approve",
+        ),
+    )
+    await wait_until(lambda: len(adapter.calls["agent_c"]) >= 3)
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+    assert len(tasks) >= 2
+    assert tasks[0]["state"] == "settled"
+    assert tasks[0]["c_cognition_ceiling"] == "sol-xhigh"
+    assert tasks[1]["state"] == "active"
+    assert tasks[1]["c_cognition_ceiling"] == "sol-high"
+    assert adapter.calls["agent_c"][1]["model"] == "gpt-5.6-sol"
+    assert adapter.calls["agent_c"][1]["reasoning_effort"] == "xhigh"
+    assert adapter.calls["agent_c"][2]["model"] == "gpt-5.6-terra"
+    assert adapter.calls["agent_c"][2]["reasoning_effort"] == "high"
+
+    await runtime.stop(room_id, "Task-boundary cognition test complete.")
+    adapter.release_call("agent_c", 3)
+
