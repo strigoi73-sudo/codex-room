@@ -619,7 +619,7 @@ Implementation was deliberately divided into BCTX-1 through BCTX-4 so the design
 **Principle:** **Bound the objective in durable Task state; carry provider context only across continuity that the work actually needs.**
 
 ### D-038 — Private principal consultation is an explicit C-only transaction wait/resume primitive
-**Date:** 2026-09-19  
+**Date:** 2026-09-19
 **Status:** ACTIVE
 
 The principal authorized a private human↔coordinator channel so Agent C can request judgment, authorization, or material clarification from the human principal without invoking, delivering to, or otherwise involving Agents A or B.
