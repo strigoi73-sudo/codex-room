@@ -104,12 +104,16 @@ def create_app(
         inspect_tools = getattr(runtime.adapter, "inspect_tools", None)
 
         async def inherited_inventory() -> dict[str, Any]:
+            baseline = summarize_codex_tool_inventory({})
             if not callable(inspect_tools):
-                return summarize_codex_tool_inventory({})
+                return baseline
             try:
-                return await inspect_tools(runtime.workspace(room_id), thread_id=thread_id)
+                inspected = await inspect_tools(runtime.workspace(room_id), thread_id=thread_id)
             except Exception:
-                return summarize_codex_tool_inventory({})
+                return baseline
+            if not isinstance(inspected, dict):
+                return baseline
+            return {**baseline, **inspected}
 
         coordinator_context, capability_registry, command_state, inherited_tools = (
             await asyncio.gather(
