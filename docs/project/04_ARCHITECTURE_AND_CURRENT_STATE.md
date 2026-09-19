@@ -1,6 +1,6 @@
 # Codex Room — Architecture & Current State
 
-**Last synthesized:** 2026-09-18  
+**Last synthesized:** 2026-09-19  
 **Scope:** Best current technical synthesis from canonical source, dated implementation/test evidence, and current repository state.  
 **Freshness:** Moderate to high volatility. Verify consequential current-state claims against newer source, tests, runtime evidence, and `06_DEVELOPMENT_CONTROL.md`.
 
@@ -22,6 +22,8 @@ The canonical repository is the private GitHub repo `strigoi73-sudo/codex-room`;
 Routine mechanical verification is local. `verify-fast.cmd` is the normal PR gate and `verify-full.cmd` is the exhaustive/manual tier, both backed by `verify-local.ps1`. GitHub Actions is no longer the routine verification path after repeated pre-runner startup failures. GitHub remains the canonical history/review bridge. See D-018 and E-109.
 
 Exact review validity attaches to the reviewed bytes. A push or merge is not itself verification; applicable deterministic checks must pass on the version being described as verified. Verification depth should be proportional to the demonstrated risk and changed behavior rather than repeating broad pytest coverage after sufficient focused evidence already exists.
+
+The repeatable functional acceptance campaign completed **T0–T14 with every test recorded PASS** on 2026-09-19. The campaign exercised baseline verification, transaction/delegation behavior, EVIDENCE/HISTORY, explicit worker continuity, hard-restart recovery, C REFRESH, custom capabilities, rollover, offline maintenance, explicit model allocation, and an integrated implementation/verification mission. T8 found one genuine hard-restart recovery defect; PR #130 repaired it and the natural hard-restart rerun passed. See E-140, E-141, and `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`.
 
 ## 3. Personal organization and protected instruction composition
 
@@ -177,6 +179,8 @@ Commit `6b810f0e327da4055ced97f38a60977f4eba9c46` repairs that boundary narrowly
 
 Focused reconciliation coverage passed 46/46, and the canonical fast verifier passed its Linux, Windows, and browser phases on the reviewed working tree. An additional exhaustive exact-commit attempt passed 426 Linux/Python-3.12 tests before stopping because Python 3.11 was unavailable inside WSL; that incomplete run is not represented as a full-verifier PASS. See E-127.
 
+Functional Acceptance T8 later exercised a distinct startup-recovery boundary: after a hard restart, an exact active transaction turn could be authoritatively recovered as `interrupted` and was initially treated as terminal. PR #130 now permits only a startup-marked recovering transaction execution to spend the Assignment's existing one-retry budget after that exact interrupted recovery; ordinary runtime interruptions remain terminal and uncertain identity remains fail-closed. Exact-head focused verification, `verify-fast.cmd`, and a natural hard-restart rerun all passed. The rerun retried the same durable C Assignment, completed A/B delegation and integration, and closed `transaction_settled`. See E-140.
+
 Maintenance watchdog health is operator-visible through `/api/health`, including runtime/source provenance and failure/recovery state. See E-068, E-069, E-100, E-102, E-105, and E-127.
 
 ## 11. Data, exports, and operator maintenance
@@ -197,10 +201,10 @@ The Room UI exposes the persistent Room ID and current/last execution model/effo
 
 ## 13. Current development posture
 
-The major foundation, A2, P4, A3 remediation, and I-015 transaction redesign/cutover are complete. PR #108 closed the ordinary-use transaction contract/retry defect; PRs #109 and #110 implemented the Common Cause coordination-economics structural refinement. Subsequent ordinary continuation supplied naturalistic support for both dependency-aware sequencing and PR #110's tightened failed-delegation fallback.
+Engineering Foundation, A2, P4, A3 remediation, I-015, and the complete D-037/BCTX bounded-context program are finished. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path.
 
-That same continuation exposed a real CORE lifecycle defect at the exact-turn reconciliation boundary. The defect is now repaired and sufficiently verified at E-127. No further synthetic Common Cause coordination benchmark is required.
+The 2026-09-19 repeatable functional acceptance campaign is complete: **T0 through T14 are all recorded PASS**. Its only demonstrated runtime-invariant failure was T8's startup-recovered interrupted-turn handling, which was repaired in PR #130 and revalidated by a natural hard-restart rerun. E-141 owns campaign closeout; E-140 owns the detailed defect/repair evidence.
 
-The existing Common Cause game workspace should be preserved; its final exact-artifact verification is complete and the artifact is play-ready. PR #113's continuous Round completion semantics under D-036 are naturally supported by E-131. A later post-BCTX naturalistic `Stay busy.` run exposed a separate coordinator-context economics problem: C never used BCTX-4 `REFRESH` while its exact-thread execution load grew sharply. PR #127 implements the D-037 advisory telemetry/guidance refinement and is exact-head locally verified; live naturalistic effectiveness remains a separate evidence question rather than an implementation claim. Competitive Common Cause play remains a separate human authorization. Volatile sequencing and monitor state live in `06_DEVELOPMENT_CONTROL.md` rather than here.
+No follow-on engineering phase is automatically authorized by that closeout. D-019 Personal daily usage pacing remains deferred on unresolved mixed subscription-allowance / purchased-credit semantics. The Common Cause artifact is verified play-ready, but competitive play remains a separate principal authorization. Existing reconciliation/profile-adoption/economy items remain monitor-only unless ordinary use supplies contrary evidence.
 
-Do not launch adjacent broad v2 redesign, personality calibration, new memory architecture, automatic model routing, or unrelated maintenance merely because this checkpoint exists.
+Current sequencing, blockers, and monitor state belong in `06_DEVELOPMENT_CONTROL.md`. Do not infer a new project from completion of the acceptance campaign, and do not launch adjacent redesign, automatic model routing, broad memory/index work, or maintenance investigation without demonstrated need or explicit principal direction.
