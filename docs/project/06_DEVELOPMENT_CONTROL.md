@@ -6,14 +6,45 @@
 
 ## Operator summary
 
-- **Where are we?** I-017 — Dynamic C cognition and Task-scoped exceptional approval is **COMPLETE** under D-039. The implementation is merged, exact-head verified, and naturalistically accepted for both ordinary C self-switching and Task-scoped exceptional approval. I-016 remains complete.
-- **What just changed?** The final naturalistic I-017 acceptance passed in Room `room_c5c830d0cf5443608c09e476e89f41dc`: C privately requested `sol-xhigh`, the principal approved it for the exact current Task, C actually executed `gpt-5.6-sol` / xhigh on that same Assignment, A/B executed zero times, and the successor Task reverted to the ordinary `sol-high` ceiling with C back on Terra/high. See E-148.
-- **Verification state:** **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY ACCEPTED.** Exact-head implementation evidence remains E-146; ordinary self-switch acceptance is E-147; exceptional approval, actual Sol/XHigh execution, peer isolation, and Task-boundary expiry are E-148. No GitHub Actions run was attached to the implementation head or squash merge, so the applicable implementation gate remains the exact-head local deterministic verification recorded in E-146.
-- **What is blocked?** Nothing remains blocked in I-017. Both naturalistic acceptance gates passed. No demonstrated defect or adjacent repair is open from this work item.
-- **What is next?** No automatic implementation follows from I-017. Codex Room is ready for ordinary practical use at the currently verified feature set; preserve the working system and open new work only from demonstrated problems or explicit principal direction. Automatic CORE model routing remains deferred.
+- **Where are we?** I-018 — Codex Desktop ↔ Codex Room capability audit is **IN PROGRESS**. I-017 and I-016 remain complete.
+- **What just changed?** The principal authorized I-018 to determine what useful Codex Desktop capabilities Codex Room already inherits, what the Room hides or replaces, and what is genuinely missing before any further feature work is proposed.
+- **Verification state:** I-018 is an **EXPLORATORY / evidence-gathering** audit, not an implementation change. It will compare current official Codex Desktop/OpenAI documentation with current canonical Codex Room source/runtime behavior. No runtime modification is authorized by this audit.
+- **What is blocked?** Nothing currently blocks the audit. Any capability whose status cannot be established from current documentation/source may receive one bounded empirical probe; expensive model-driven experiments are not the default.
+- **What is next?** Complete I-018 and return a compact capability matrix classifying each relevant Codex Desktop feature as inherited/usable, available-but-hidden, replaced by an intentional Room mechanism, genuinely missing, or incompatible/out of scope. Stop before implementation and ask the principal which demonstrated gaps, if any, are worth pursuing.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
+
+### I-018 — Codex Desktop ↔ Codex Room capability audit
+
+**Scope:** [CORE / ROOM product capability audit]
+
+**Work state:** IN PROGRESS
+
+**Reality:** EXPLORATORY
+
+**Objective:** determine what useful work current Codex Desktop can do that current Codex Room cannot, with special attention to whether Codex Room is failing to expose capabilities already present in the embedded Codex SDK/runtime.
+
+**Questions to answer:**
+
+- Which practical Codex Desktop capabilities are properties of the underlying Codex agent/runtime and are therefore already usable by A/B/C?
+- Which capabilities exist underneath Codex Room but are hidden, discouraged, or lack a convenient human-facing surface?
+- Which Desktop slash commands are UI shortcuts for behavior Codex Room already provides through a different mechanism?
+- Which Desktop capabilities are genuinely absent from Codex Room and would materially expand ordinary non-test use?
+- Which Desktop features are intentionally incompatible with Room architecture or primarily coding-specific and therefore should not be copied?
+
+**Method:**
+
+1. establish the current Codex Desktop capability/slash-command surface from current official OpenAI documentation;
+2. inspect canonical Codex Room source and runtime configuration to establish what A/B/C can actually access and what the observer UI/API exposes;
+3. prefer deterministic source/docs evidence; use at most bounded empirical probes only where material capability status remains ambiguous;
+4. classify each relevant capability as **INHERITED / AVAILABLE BUT HIDDEN / ROOM EQUIVALENT / GENUINELY MISSING / INCOMPATIBLE OR OUT OF SCOPE**;
+5. distinguish agent capability from observer/UI convenience so a missing slash command is not mistaken for a missing underlying capability;
+6. identify only demonstrated product gaps whose benefit could plausibly exceed their implementation/maintenance cost.
+
+**Deliverable:** one compact capability matrix plus findings about the practical difference between Codex Desktop and Codex Room, followed by a short set of candidate changes (if any) ordered by demonstrated product value rather than parity.
+
+**Stop conditions:** this audit does **not** authorize implementation, blanket slash-command parity, a new model router, restoration of Codex built-in subagents, or a broad UI redesign. Stop after the evidence-backed comparison and recommendations so the principal can choose whether any gap deserves implementation.
 
 ### I-017 — Dynamic C cognition and Task-scoped exceptional approval
 
