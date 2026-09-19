@@ -49,6 +49,7 @@ function makeRoom(events, id = roomId, title = 'Large transcript stability fixtu
 
 async function openFixture(page, initialRoom, additionalRooms = []) {
   const observerMessages = [];
+  const principalReplies = [];
   const rooms = [initialRoom, ...additionalRooms];
   await page.addInitScript(() => {
     window.__roomSockets = [];
@@ -97,6 +98,21 @@ async function openFixture(page, initialRoom, additionalRooms = []) {
       observerMessages.push(JSON.parse(route.request().postData() || '{}'));
       return route.fulfill({ contentType: 'application/json', body: '{}' });
     }
+    const principalReplyRoom = rooms.find(
+      (room) => pathname === `/api/rooms/${room.id}/principal-replies`,
+    );
+    if (principalReplyRoom && route.request().method() === 'POST') {
+      principalReplies.push(JSON.parse(route.request().postData() || '{}'));
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'event_principal_reply_fixture',
+          event_type: 'principal_reply',
+          source: 'observer',
+          destination: 'agent_c',
+        }),
+      });
+    }
     return route.fulfill({ status: 404, contentType: 'application/json', body: '{"detail":"fixture route not found"}' });
   });
 
@@ -106,6 +122,7 @@ async function openFixture(page, initialRoom, additionalRooms = []) {
     element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThan(5);
   await page.locator('#transcript').evaluate((element) => { element.style.scrollBehavior = 'auto'; });
   await expect.poll(() => page.evaluate(() => window.__roomSockets.length)).toBe(1);
+  observerMessages.principalReplies = principalReplies;
   return observerMessages;
 }
 
@@ -243,6 +260,76 @@ test('observer composer grows and preserves per-Room drafts across switching and
   await expect(composer).toHaveValue('Second room draft');
   await expect(target).toHaveValue('agent_c');
   await expect(composer).toBeFocused();
+});
+
+test('private principal consultation renders an isolated reply flow', async ({ page }) => {
+  const consultation = makeEvent(1, {
+    source: 'agent_c',
+    event_type: 'principal_message',
+    event_class: 'conversation',
+    destination: 'observer',
+    content: 'Should I take the conservative interpretation?',
+    metadata: {
+      private: true,
+      principal_channel: true,
+      awaiting_principal_reply: true,
+      assignment_id: 'assignment_private_consult',
+    },
+  });
+  const observerMessages = await openFixture(page, makeRoom([consultation]));
+  const node = page.locator(`[data-event-id="${consultation.id}"]`);
+
+  await expect(node.locator('.event-badge.private')).toHaveText('private · Agent C → you');
+  await expect(node.locator('.principal-reply-form')).toHaveCount(1);
+  const reply = node.locator('.principal-reply-form textarea');
+  await reply.fill('Use the conservative interpretation.');
+  await reply.press('Enter');
+
+  await expect.poll(() => observerMessages.principalReplies.length).toBe(1);
+  expect(observerMessages.principalReplies[0]).toEqual({
+    consultation_event_id: consultation.id,
+    content: 'Use the conservative interpretation.',
+  });
+  expect(observerMessages).toHaveLength(0);
+  await expect(node.locator('.principal-reply-form')).toHaveCount(0);
+  await expect(node.locator('.principal-reply-status')).toHaveText('Private reply sent');
+});
+
+test('answered private principal consultation does not offer a second reply form', async ({ page }) => {
+  const consultation = makeEvent(1, {
+    source: 'agent_c',
+    event_type: 'principal_message',
+    event_class: 'conversation',
+    destination: 'observer',
+    content: 'Choose alpha or beta.',
+    metadata: {
+      private: true,
+      principal_channel: true,
+      awaiting_principal_reply: true,
+      assignment_id: 'assignment_private_consult',
+    },
+  });
+  const reply = makeEvent(2, {
+    source: 'observer',
+    event_type: 'principal_reply',
+    event_class: 'conversation',
+    destination: 'agent_c',
+    content: 'Choose beta.',
+    related_event_id: consultation.id,
+    metadata: {
+      private: true,
+      principal_channel: true,
+      consultation_event_id: consultation.id,
+      assignment_id: 'assignment_private_consult',
+    },
+  });
+
+  await openFixture(page, makeRoom([consultation, reply]));
+  const consultationNode = page.locator(`[data-event-id="${consultation.id}"]`);
+  const replyNode = page.locator(`[data-event-id="${reply.id}"]`);
+  await expect(consultationNode.locator('.principal-reply-form')).toHaveCount(0);
+  await expect(consultationNode.locator('.principal-reply-status')).toHaveText('Private reply recorded');
+  await expect(replyNode.locator('.event-badge.private')).toHaveText('private · you → Agent C');
 });
 
 test('status bursts and reconnect preserve a scrolled-up large transcript without DOM churn', async ({ page }) => {
