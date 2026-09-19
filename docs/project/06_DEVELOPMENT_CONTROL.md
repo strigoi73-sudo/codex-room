@@ -6,14 +6,72 @@
 
 ## Operator summary
 
-- **Where are we?** I-018 — Codex Desktop ↔ Codex Room capability audit is **COMPLETE**. The audit found that Codex Room already inherits much of the local Codex execution/tool substrate; the largest demonstrated gaps are human-facing host surfaces and interactive tool-management affordances rather than basic file/shell/web capability. I-017 and I-016 remain complete.
-- **What just changed?** I-018 compared current official Codex/App Server documentation with canonical Room source at `9d875ffe71d84aa862e664d23f1aae08ac0ab65b`. It established that the Room runs persistent official Codex SDK/App Server threads with workspace-write execution and inherits normal Codex configuration layers except for deliberate Room overrides; built-in Codex subagents are explicitly disabled. See E-149.
-- **Verification state:** **AUDIT COMPLETE / NO RUNTIME CHANGE.** Source and official documentation were sufficient for the product-level classification; no expensive synthetic model probe was warranted. Config/account-dependent MCP, skill, and app availability remains environment-specific and was not represented as universally enabled.
-- **What is blocked?** No implementation blocker is established because I-018 intentionally stops before implementation. The principal must choose whether any demonstrated gap is worth product work.
-- **What is next?** Decide whether to pursue any I-018 candidate. The strongest low-risk candidate is a human-facing Room status/tools surface that exposes state and configured tool availability without cloning Desktop slash syntax. Rich attachments and, separately, a browser/computer-use host could expand general-purpose value but are larger product choices. No candidate is authorized automatically.
+- **Where are we?** I-018 is complete. The principal has now authorized the post-audit human-facing capability roadmap, with **I-019 — Human-facing capability visibility** as the next bounded implementation item. I-019 is **PLANNED**; no runtime work has started yet.
+- **What just changed?** The principal selected a product sequence based on E-149: expose existing capability first, empirically verify inherited tools in ordinary Room use, add a human tool-interaction bridge only if real tools require it, add rich attachments, run real-use trials, and consider browser/computer use only if those trials demonstrate the need. Slash-command parity is not a goal.
+- **Verification state:** I-018 remains **AUDIT COMPLETE / NO RUNTIME CHANGE**. The roadmap below is **DECIDED AS DEVELOPMENT SEQUENCE / NOT YET IMPLEMENTED**. Each implementation slice must earn its own exact-version verification before being called implemented.
+- **What is blocked?** Nothing blocks I-019 planning/implementation. Later roadmap stages are intentionally gated by evidence from the preceding stage rather than pre-authorized as immediate implementation.
+- **What is next?** Implement I-019 as the smallest useful **Status & Tools** surface, verify it, then use that visibility to run bounded natural tool-use checks. Do not absorb OAuth/elicitation, attachments, browser/computer use, or unrelated Desktop parity into I-019.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
+
+### I-019 — Human-facing capability visibility
+
+**Scope:** [CORE + ROOM UI]
+
+**Work state:** PLANNED
+
+**Reality:** DECIDED / NOT IMPLEMENTED
+
+**Origin:** I-018 / E-149
+
+**Goal:** make Codex Room's already-existing organizational state and inherited Codex tool substrate understandable to the human principal without requiring knowledge of internal database tables, transaction actions, SDK configuration, or Desktop slash commands.
+
+**First-release product surface:** one compact human-facing **Status & Tools** view for the active Room. It should expose only information already available or cheaply inspectable through existing Room/App Server state, including:
+
+- current Round / Task / Assignment state and the active objective at a useful level of abstraction;
+- A/B/C lifecycle status and current work ownership;
+- current or most-recent execution model/reasoning configuration for each agent where available;
+- bounded recent execution/context economics sufficient to understand whether work is cheap, accumulating, or near an advisory refresh range;
+- Room-native deterministic capabilities available to the Room;
+- inherited Codex tool categories that are actually configured/available where they can be inspected safely, including web-search mode, skills, MCP servers/tools, and installed apps/plugins/connectors when App Server exposes them;
+- clear distinction among **available**, **configured but interaction/authentication required**, **disabled/unavailable**, and **unknown/not inspectable** rather than treating all App Server features as universally active.
+
+**Design constraints:**
+
+- prefer read-only visibility in the first release;
+- reuse authoritative Room state and existing App Server/configuration APIs rather than create a competing tool registry;
+- do not expose secrets, tokens, private account identifiers, arbitrary MCP payloads, or hidden model reasoning;
+- do not add direct model/reasoning overrides that bypass D-039;
+- do not restore Codex built-in subagents;
+- do not copy Desktop slash syntax merely for parity;
+- do not add OAuth, approval, elicitation, attachments, browser/computer use, worktrees, terminal, or diff/review UI inside I-019 unless a specific dependency proves impossible to separate;
+- keep the surface compact enough to improve comprehension rather than becoming a diagnostic console.
+
+**Verification target:** deterministic source/UI tests plus one bounded natural Room check demonstrating that the principal can correctly answer, from the new surface alone, what the Room is doing and what major tool classes are actually available. Verification should distinguish display correctness from whether any optional external tool/account is configured on the principal's machine.
+
+**Stop condition:** I-019 ends when capability/state visibility is implemented and exact-version verified. Do not roll directly into the later roadmap stages.
+
+### Post-I-018 human-facing capability roadmap
+
+**Status:** principal-approved sequence; later implementation stages remain gated by evidence.
+
+The governing product rule for this sequence is:
+
+> **Do not build a new Codex Room mechanism when the underlying Codex/App Server capability already exists and can be safely exposed or reused.**
+
+Proceed in this order:
+
+1. **Expose what already exists — I-019 Status & Tools.** Make current organizational state, model/economics data, Room deterministic capabilities, and inherited/configured Codex tool availability visible to the principal.
+2. **Empirically verify inherited tools through ordinary work.** After I-019, run a small practical Room exercise that lets C use tools naturally. Verify local file work, command execution, web search, and any actually configured skill/MCP/app capability without manufacturing expensive benchmark traffic. Treat a capability as naturally usable only when runtime evidence supports it.
+3. **Add a bounded tool-interaction bridge only when demonstrated necessary.** If an inherited MCP/app/plugin is blocked because it needs human OAuth, approval, account selection, or elicitation, implement the smallest safe principal interaction path required by that demonstrated case. Do not prebuild a generic orchestration subsystem in anticipation.
+4. **Add first-class rich attachments.** Provide a principal-facing path to attach files/images directly to Room work with clear Room/workspace provenance and availability to agents selected by C. This is the next generally useful input expansion after visibility/tool access is understood.
+5. **Run a real-use campaign before larger host work.** Use Codex Room for several actual objectives across research/decision support, attached-material work, multi-stage noncoding work, and software work. Judge value by whether the Room materially reduces principal effort or improves outcomes versus an ordinary single-agent conversation. Record recurring friction; do not manufacture feature demand.
+6. **Evaluate browser/computer use only if real-use evidence justifies it.** A shared visual browser/computer-use host may materially expand general-purpose value, but it is a larger authority, safety, provenance, and UI integration. Begin that work only if prior practical use demonstrates that search/tool access is insufficient.
+
+**Explicitly deferred pending demonstrated need:** blanket Desktop slash-command parity, integrated human terminal, Desktop-style worktrees, Desktop diff/review UI, side chats, Room/thread forks, and a mechanically enforced Plan mode.
+
+**Roadmap stop discipline:** each stage is independently bounded. Completing one stage does not automatically authorize the next implementation. Preserve working systems and stop whenever sufficient evidence says a proposed addition does not earn its complexity.
 
 ### I-018 — Codex Desktop ↔ Codex Room capability audit
 
