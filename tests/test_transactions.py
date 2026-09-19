@@ -2178,6 +2178,11 @@ async def test_transaction_c_private_principal_consultation_resumes_same_context
 
     await wait_until(waiting_for_principal)
 
+    first_prompt = adapter.calls["agent_c"][0]["prompt"]
+    assert "you MUST use CONSULT_PRINCIPAL" in first_prompt
+    assert "NEVER use COMPLETE to ask the principal a question or request a response" in first_prompt
+    assert "this action, not COMPLETE, is the required waiting mechanism" in first_prompt
+
     async with runtime.db.connect() as db:
         assignments = await db.execute_fetchall(
             """SELECT x.*, a.agent_key FROM assignments x

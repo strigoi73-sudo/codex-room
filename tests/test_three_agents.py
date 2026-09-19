@@ -337,6 +337,8 @@ async def test_personality_overrides_replace_defaults_but_preserve_protected_lay
         assert "ordinary cross-reading does not require invocation" in agents[key]["developer_instructions"]
     assert "the first return is only a partial result" in agents["agent_c"]["developer_instructions"]
     assert "Wait until every requested contribution has returned" in agents["agent_c"]["developer_instructions"]
+    assert "use CONSULT_PRINCIPAL" in agents["agent_c"]["developer_instructions"]
+    assert "Do not use a terminal COMPLETE message merely to ask the principal" in agents["agent_c"]["developer_instructions"]
 
 
 @pytest.mark.asyncio
