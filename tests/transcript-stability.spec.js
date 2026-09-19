@@ -48,6 +48,7 @@ function makeRoom(events) {
 }
 
 async function openFixture(page, initialRoom) {
+  const observerMessages = [];
   await page.addInitScript(() => {
     window.__roomSockets = [];
     class MockWebSocket {
@@ -89,6 +90,10 @@ async function openFixture(page, initialRoom) {
     if (pathname === `/api/rooms/${roomId}`) {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(initialRoom) });
     }
+    if (pathname === `/api/rooms/${roomId}/messages` && route.request().method() === 'POST') {
+      observerMessages.push(JSON.parse(route.request().postData() || '{}'));
+      return route.fulfill({ contentType: 'application/json', body: '{}' });
+    }
     return route.fulfill({ status: 404, contentType: 'application/json', body: '{"detail":"fixture route not found"}' });
   });
 
@@ -98,6 +103,7 @@ async function openFixture(page, initialRoom) {
     element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThan(5);
   await page.locator('#transcript').evaluate((element) => { element.style.scrollBehavior = 'auto'; });
   await expect.poll(() => page.evaluate(() => window.__roomSockets.length)).toBe(1);
+  return observerMessages;
 }
 
 async function startTranscriptAudit(page) {
@@ -136,6 +142,39 @@ async function transcriptState(page) {
     audit: { ...window.__transcriptAudit },
   }));
 }
+
+test('observer composer sends on Enter, keeps Shift+Enter as newline, and ignores composing Enter', async ({ page }) => {
+  const observerMessages = await openFixture(page, makeRoom([]));
+  const composer = page.locator('#message-form textarea');
+
+  await expect(page.locator('.composer-hint')).toHaveText('Enter to send · Shift+Enter for newline');
+
+  await composer.fill('IME draft');
+  await composer.evaluate((element) => {
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'isComposing', { value: true });
+    element.dispatchEvent(event);
+  });
+  await expect(composer).toHaveValue('IME draft');
+  expect(observerMessages).toHaveLength(0);
+
+  await composer.fill('line one');
+  await composer.press('Shift+Enter');
+  await expect(composer).toHaveValue('line one\n');
+  expect(observerMessages).toHaveLength(0);
+
+  await composer.type('line two');
+  await composer.press('Control+Enter');
+  await expect.poll(() => observerMessages.length).toBe(1);
+  expect(observerMessages[0]).toEqual({ target: 'all', content: 'line one\nline two' });
+  await expect(composer).toHaveValue('');
+
+  await composer.fill('plain enter');
+  await composer.press('Enter');
+  await expect.poll(() => observerMessages.length).toBe(2);
+  expect(observerMessages[1]).toEqual({ target: 'all', content: 'plain enter' });
+  await expect(composer).toHaveValue('');
+});
 
 test('status bursts and reconnect preserve a scrolled-up large transcript without DOM churn', async ({ page }) => {
   const events = Array.from({ length: 864 }, (_, index) => makeEvent(index + 1));
