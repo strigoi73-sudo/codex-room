@@ -1058,3 +1058,90 @@ The principal then queried the local durable `agent_executions` provenance for t
 
 **Assessment:** the exceptional-cognition half of I-017 is **NATURALISTICALLY ACCEPTED**. The evidence demonstrates private Task-scoped approval, actual Sol/XHigh execution after approval, no peer authorization or execution leakage, and expiry of the exceptional ceiling at the Task boundary. Combined with E-146 exact-head verification and E-147 ordinary self-switch acceptance, I-017 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY ACCEPTED**.
 
+## E-149 — Codex Desktop ↔ Codex Room capability audit
+
+**Date:** 2026-09-19
+**Kind:** [product capability audit / CORE source inspection / current official Codex documentation]
+**Related work:** I-018
+**Canonical Room source inspected:** `9d875ffe71d84aa862e664d23f1aae08ac0ab65b`
+
+### Question
+
+What useful work can current Codex Desktop do that current Codex Room cannot, and which apparent differences are only host/UI differences over capabilities already present in the embedded Codex runtime?
+
+### Evidence basis
+
+Canonical Room source established that:
+
+- `codex_room/agent.py` creates real persistent local Codex SDK/App Server threads, `ephemeral=False`, rooted in the Room workspace with `Sandbox.workspace_write`;
+- turns run through the official SDK with explicit model/effort and Room decision output schema;
+- Room session overrides set the model/reasoning defaults and explicitly disable `agents.enabled` and `features.multi_agent_v2.enabled`; no blanket override disables ordinary file/shell, web-search, skill, MCP, or app facilities;
+- the adapter recognizes native Codex activity including command execution, file change, MCP tool calls, dynamic tool calls, web search, image view/generation, and context compaction;
+- `codex_room/orchestrator.py` explicitly instructs agents to use native workspace tools for ordinary one-off reads/searches/inspection/simple commands and adds Room deterministic capabilities/EVIDENCE/HISTORY for bounded organizational use;
+- `codex_room/static/app.js` sends the observer composer through the Room message API and contains no slash-command parser; `codex_room/main.py` accepts those ordinary observer messages through `/api/rooms/{room_id}/messages`.
+
+Current official OpenAI Codex documentation established that:
+
+- Codex App Server exposes persistent thread start/resume/fork, turn execution, command/file-change items, MCP calls, web search, image viewing, review-mode items, context compaction, skills APIs, installed-app APIs, and MCP status/tool APIs;
+- Codex configuration is layered: session/`--config` overrides take precedence while user `~/.codex/config.toml` and trusted project `.codex/config.toml` remain part of the effective configuration;
+- web search defaults to cached mode unless disabled or changed by configuration;
+- MCP configuration is shared by local Codex clients through the normal Codex configuration files;
+- the ChatGPT desktop app's slash palette is a host/composer interface for product actions such as plan, goal, review, status, compact, fork, and worktree-related flows;
+- the Desktop built-in browser, integrated terminal, worktree manager, diff/review surface, attachment/editor surfaces, and authentication UI are host features rather than properties automatically supplied to every App Server embedding.
+
+No model-driven acceptance Room was run because source plus current official protocol/configuration documentation resolved the product-level mechanism without buying additional cognition. Account-specific configured MCP servers, installed apps/plugins, enabled skills, OAuth state, and admin policy remain environment-dependent and are not claimed as universally present.
+
+### Capability matrix
+
+| Capability / Desktop surface | I-018 classification | Current Room assessment |
+|---|---|---|
+| Workspace reads/writes and file changes | **INHERITED** | A/B/C run in `workspace_write`; native file-change activity is supported. |
+| Shell / command execution / local Git | **INHERITED** | Native command execution is part of the embedded Codex substrate and explicitly allowed for ordinary work. |
+| Persistent Codex threads | **INHERITED** | Core Room execution mechanism; transaction Assignments bind durable provider context. |
+| Hosted web search | **INHERITED / CONFIG-DEPENDENT** | App Server supports web search; Codex default is cached unless effective config changes/disables it; Room does not override it. |
+| Configured MCP tools | **INHERITED / CONFIG-DEPENDENT** | Normal Codex config is retained and the adapter supports `mcp_tool_call`; interactive auth/elicitation is a host-surface limitation. |
+| Skills | **AVAILABLE BUT HIDDEN / CONFIG-DEPENDENT** | App Server has skill discovery/invocation and normal config/search paths remain; Room has no observer skill picker or explicit structured skill input. |
+| Installed apps/plugins/connectors | **AVAILABLE BUT HIDDEN / CONFIG-DEPENDENT** | App Server exposes installed-app/plugin and tool surfaces; Room does not provide browse/install/auth/manage UI. Do not assume any specific app is installed. |
+| Tool/MCP OAuth, approvals, elicitation | **GENUINELY INCOMPLETE HOST SURFACE** | Room lacks a general observer interaction bridge for arbitrary tool authorization/authentication/elicitation. |
+| `/status` | **AVAILABLE BUT HIDDEN** | Room already stores health/provenance, Task/Assignment state, agent status, model/effort, context/economics, and limits, but no consolidated human status surface exists. |
+| `/compact` | **ROOM EQUIVALENT** | Room calls the underlying thread compaction API and also has deliberate C `REFRESH`. |
+| `/model`, `/reasoning` | **ROOM EQUIVALENT / GOVERNED DIFFERENTLY** | D-039 gives C bounded cognition allocation and requires principal approval for exceptional C cognition; direct Desktop parity would bypass settled governance. |
+| `/goal` | **ROOM EQUIVALENT** | Round standing objectives plus bounded Task state own organizational objective continuity; duplicating App Server goal state would create competing authority. |
+| `/personality` | **ROOM EQUIVALENT** | Persistent A/B/C profiles and Room overrides own personality configuration. |
+| Built-in Codex subagents / multi-agent tools | **INCOMPATIBLE BY DESIGN** | Explicitly disabled; the A/B/C organization and transaction substrate replace this layer. |
+| `/review` reasoning | **ROOM EQUIVALENT** | Independent verifier work can be delegated to B or another peer; current Room does not provide Desktop's dedicated diff/review UI or a first-class read-only review mode. |
+| Dedicated review diff / inline comment UI | **GENUINELY MISSING / CODING-SPECIFIC** | No Desktop-style changed-file pane, inline review comments, stage/revert/commit/push surface. |
+| `/plan` plan-only mode | **PARTLY INHERITED / GENUINELY MISSING AS ENFORCED ROOM MODE** | Agents can plan on request, but Room has no first-class mechanical “plan but do not execute” mode. |
+| `/fork` | **UNDERLYING API AVAILABLE; DIRECT ROOM PARITY INCOMPATIBLE** | App Server can fork one thread, but a Room is three agents plus durable transaction state; a correct Room fork is not equivalent to exposing thread/fork. |
+| `/side` side chat | **GENUINELY MISSING / NO DEMONSTRATED NEED** | Room has no ephemeral human side-chat tied to a main Room; adding one would require clear state/authority semantics. |
+| Desktop built-in visual browser / computer-use | **GENUINELY MISSING HOST CAPABILITY** | Web search is distinct from the shared visual browser. Room has no equivalent interactive browser host. |
+| Rich user file/image attachment UX | **GENUINELY MISSING HOST SURFACE** | Underlying Codex protocol supports richer input types, but the Room observer composer/API is text-centric and does not provide a first-class attachment path. |
+| Integrated human terminal | **GENUINELY MISSING UI / CODING-SPECIFIC** | Agents can execute commands; the principal has no embedded project-scoped terminal whose output is jointly visible to the Room. |
+| Desktop-managed Git worktrees | **GENUINELY MISSING / CODING-SPECIFIC** | Room uses its shared workspace model and does not create/manage Desktop-style isolated worktrees for parallel chats. |
+| `/init` | **INHERITED AS ORDINARY WORK** | Creating an `AGENTS.md` or equivalent file needs no special Room command; an agent can create it through normal file work if requested. |
+| `/feedback`, `/pet`, other host utilities | **OUT OF SCOPE** | Product-host conveniences do not add organizational capability. |
+| Slash-command syntax itself | **OUT OF SCOPE / NOT A CAPABILITY** | The Room has no slash parser. Copying command syntax without a demonstrated product need would add UI ceremony, not agent power. |
+
+### Findings
+
+1. **The largest misconception corrected by the audit is that Codex Room agents lack Codex tools.** They already run on the Codex execution substrate. The deliberate exception is Codex's own built-in multi-agent layer.
+2. **The largest actual gap is the observer host layer.** Desktop gives the human rich control/inspection surfaces around the same class of agent runtime; Room currently exposes mostly its transcript and Room lifecycle controls.
+3. **Web search and visual browser are different capabilities.** The former belongs to the Codex runtime/configuration and is available subject to effective config; the latter is a Desktop host feature and is absent from Room.
+4. **MCP/skills/apps are not best treated as a new Room tool architecture.** The underlying App Server already exposes these ecosystems. If ordinary use needs them, the economical direction is to expose/configure/interact with the inherited surface rather than build a competing registry. Room's own deterministic capability registry remains appropriate for Room-owned repeatable local procedures.
+5. **Slash-command parity is the wrong target.** Several commands duplicate settled Room semantics; others are shortcuts to Desktop-host functions. Product work should expose useful underlying capability or state, not copy syntax.
+6. **No synthetic capability benchmark was warranted.** The audit is about available mechanisms and host surfaces, and the decisive facts were mechanically available from source/protocol/config documentation.
+
+### Candidate gaps worth principal consideration
+
+**Highest expected value / smallest conceptual change:** a consolidated **Room Status + Tools** surface showing current objective/Task/Assignment state, A/B/C status, active model/effort, recent execution economics/context indicators, and available configured skills/MCP/apps. This would make inherited capability inspectable without changing organizational authority.
+
+**Potentially high value if external tools become normal:** a bounded **tool interaction bridge** for authentication/approval/elicitation when inherited MCP/apps require human action.
+
+**Broad general-purpose value:** first-class **attachments/rich input** for files and images.
+
+**Potentially very high general-purpose value but materially larger scope:** a **browser/computer-use host** integrated with Room authority and provenance.
+
+**Lower priority absent demonstrated use:** enforced plan-only mode, Desktop-style code-review UI, human terminal, worktree orchestration, Room forks, or side chats.
+
+**Assessment:** I-018 is **COMPLETE** as an exploratory product audit. It establishes no new implementation authorization. The next action is a principal product choice, not automatic development.
+
