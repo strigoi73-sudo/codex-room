@@ -463,9 +463,13 @@ function renderStatusTools() {
   const assignments = tasks.flatMap((task) =>
     (task.assignments || []).map((assignment) => ({ task, assignment })),
   );
-  const visibleAssignments = assignments.slice(-6);
+  const terminalAssignmentStates = new Set(["completed", "failed", "cancelled"]);
+  const openAssignments = assignments.filter(
+    ({ assignment }) => !terminalAssignmentStates.has(assignment.state),
+  );
+  const visibleAssignments = (openAssignments.length ? openAssignments : assignments.slice(-3)).slice(-6);
   if (!visibleAssignments.length) {
-    assignmentList.append(statusLine("No active Task assignments", "No Task assignments are recorded for this Round."));
+    assignmentList.append(statusLine("No Task assignments", "No Task assignments are recorded for this Round."));
   } else {
     visibleAssignments.forEach(({ task, assignment }) => {
       const owner = agentFallbackNames[assignment.agent_key] || assignment.agent_key || "Agent";
