@@ -871,9 +871,9 @@ PR #137 then squash-merged to canonical `main` as:
 
 ## E-143 — First naturalistic I-016 Room exposed C consultation-selection failure
 
-**Date:** 2026-09-19  
+**Date:** 2026-09-19
 **Kind:** [ROOM naturalistic behavioral acceptance / observed issue]
-**Related decision:** D-038  
+**Related decision:** D-038
 **Related work:** I-016
 **Room:** `room_3c414df808d943b6994f55be191b914d`
 
