@@ -1896,10 +1896,7 @@ async def test_transaction_exact_active_turn_recovers_same_assignment_after_rest
     thread_id = original["sdk_thread_id"]
     await first.close()
 
-    second_adapter = FakeAgentAdapter(
-        {"agent_a": [], "agent_b": [], "agent_c": []},
-        turn_id_namespace="principal_restart_second",
-    )
+    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
     second_adapter.decisions["agent_c"].append(
         TransactionDecision(
             action=TransactionAction.COMPLETE,
@@ -2315,7 +2312,10 @@ async def test_transaction_principal_wait_survives_runtime_restart(
     context_thread_id = assignment["context_thread_id"]
     await runtime1.close()
 
-    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        turn_id_namespace="principal_restart_second",
+    )
     second_adapter.decisions["agent_c"].append(
         TransactionDecision(
             action=TransactionAction.COMPLETE,
