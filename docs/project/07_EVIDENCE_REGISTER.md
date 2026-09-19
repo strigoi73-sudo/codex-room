@@ -4925,4 +4925,48 @@ PR #127 squash-merged the exact verified bytes to canonical `main` as:
 
 Post-merge GitHub inspection confirmed canonical `main` at that commit and exact blob identity between the verified head and merged bytes for all three changed files. No GitHub-hosted status checks or workflow runs were attached, so the executable evidence is the exact-head local verification above.
 
-**Assessment:** the coordinator economics/guidance refinement is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Its **live naturalistic effectiveness remains unverified** until a bounded ordinary run establishes whether C now chooses `REFRESH` before exact-thread execution load again grows into the previously observed 100K+ range. This pending behavioral check does not reopen the completed BCTX program or authorize an automatic refresh controller.
+**Assessment at implementation close:** the coordinator economics/guidance refinement was **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Live naturalistic effectiveness was still unverified at that point; E-139 subsequently supplies the bounded behavioral revalidation. The refinement does not reopen the completed BCTX program or authorize an automatic refresh controller.
+
+### E-139 — Coordinator refresh-economics guidance succeeded in bounded naturalistic revalidation
+**Date:** 2026-09-18  
+**Kind:** [ROOM naturalistic revalidation / coordinator refresh adoption / execution-economics observation]  
+**Decision:** D-037  
+**Related evidence:** E-137, E-138
+
+After PR #127 was merged and the local runtime was updated to canonical `main`, the principal staged a fresh continuous Room from the authoritative source fixture `codex-room-spontaneous-work-test.zip`. The ZIP contained exactly **17 files**; extraction into the new Room workspace was verified file-for-file with SHA-256 before the Round began.
+
+Revalidation configuration:
+
+- Room: `room_a441e14d5e00487ca006a2a20c35534c`;
+- Round: `round_6e4c309bd94c49778022149129984297`;
+- prompt: exactly `Stay busy.`;
+- starter: C;
+- work model: v2;
+- provider context: `assignment_thread`;
+- completion policy: `continuous`;
+- hard turn ceiling: **40**.
+
+The Round ran from approximately 00:37:26.793Z to 00:44:59.476Z on 2026-09-19 UTC, approximately **7 minutes 33 seconds**, and stopped normally at the configured **40-turn** limit.
+
+The previously pending refresh-adoption question was answered positively:
+
+- C's completed-execution input load first crossed the ~64K advisory consider range at **65,796 input tokens**;
+- on the next C execution, at **67,960 input tokens**, C issued the structured `REFRESH` action with a **1,016-character** checkpoint;
+- CORE recorded a completed coordinator-context handoff from provider thread `01a0b718-bea9-7dd1-8475-51a6bfc85096` to distinct fresh thread `01a0b71c-5a0a-7542-b3b4-155b067eb9b6`;
+- the first completed C execution on the fresh thread established a new baseline of **21,421 input tokens**;
+- ordinary continuous work then continued successfully; C's final observed completed-execution input load was **58,701**, still below the 64K consider band when the 40-turn limit stopped the Round.
+
+Execution-economics comparison with E-137:
+
+- total raw execution-token deltas: **1,962,660** versus approximately **3.605 million** in E-137;
+- C: **1,149,451** raw tokens, approximately **58.6%** of the total, versus approximately **2.663 million / 74%** in E-137;
+- A: **508,512**;
+- B: **304,697**;
+- normalized total: approximately **49.1K raw execution tokens per turn**, versus approximately **61.1K per turn** in E-137, about **20% lower**.
+
+This was not a controlled identical-work benchmark: naturalistic delegated work differed between the two runs, and A performed materially more implementation work in E-139. The comparison therefore supports an observed economics improvement associated with bounded coordinator refresh; it does not establish a guaranteed percentage savings rate or causal estimate.
+
+The pre-run subscription meter showed **86% remaining** on the 5-hour allowance and **45% remaining** on the 7-day allowance. The 5-hour window reset before a post-run reading could be captured, so no post-run 5-hour consumption delta is claimed or back-calculated.
+
+**Assessment:** PR #127's coordinator economics/guidance refinement is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY SUPPORTED**. The demonstrated E-137 adoption gap is supported as resolved for this bounded live exercise: C received the advisory economics, chose `REFRESH` shortly after crossing the consider range, CORE completed the fail-closed handoff, and useful work continued on the fresh context. No further patch-specific benchmark or threshold tuning is warranted absent new contrary evidence.
+
