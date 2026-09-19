@@ -2820,3 +2820,81 @@ async def test_transaction_unapproved_exceptional_self_config_fails_closed(
         and "approved cognition ceiling" in event["content"]
         for event in events
     )
+
+@pytest.mark.asyncio
+async def test_recover_interrupted_work_settles_decision_recorded_execution_without_replay(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.CONSULT_PRINCIPAL,
+            message="Wait for the principal.",
+        )
+    )
+    runtime = await transaction_runtime_factory(adapter, "decision-recorded-recovery.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise decision-recorded restart recovery",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def waiting_with_execution() -> bool:
+        async with runtime.db.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT e.batch_id, e.state, e.decision_recorded_at
+                   FROM agent_executions e
+                   JOIN assignments x ON x.id=e.assignment_id
+                   JOIN tasks t ON t.id=x.task_id
+                   WHERE t.room_id=?
+                     AND x.state='waiting_principal'
+                     AND e.decision_recorded_at IS NOT NULL
+                   ORDER BY e.created_at DESC
+                   LIMIT 1""",
+                (room_id,),
+            )
+        return len(rows) == 1
+
+    await wait_until(waiting_with_execution)
+
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT e.batch_id
+               FROM agent_executions e
+               JOIN assignments x ON x.id=e.assignment_id
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=?
+                 AND x.state='waiting_principal'
+                 AND e.decision_recorded_at IS NOT NULL
+               ORDER BY e.created_at DESC
+               LIMIT 1""",
+            (room_id,),
+        )
+        batch_id = rows[0]["batch_id"]
+        await db.execute(
+            """UPDATE agent_executions
+               SET state='active', settled_at=NULL
+               WHERE batch_id=?""",
+            (batch_id,),
+        )
+        await db.commit()
+
+    await runtime.db.recover_interrupted_work()
+
+    async with runtime.db.connect() as db:
+        row = (
+            await db.execute_fetchall(
+                """SELECT state, settled_at, decision_recorded_at
+                   FROM agent_executions
+                   WHERE batch_id=?""",
+                (batch_id,),
+            )
+        )[0]
+
+    assert row["decision_recorded_at"] is not None
+    assert row["state"] == "settled"
+    assert row["settled_at"] is not None
+
