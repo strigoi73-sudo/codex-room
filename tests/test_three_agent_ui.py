@@ -99,6 +99,10 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert "Execution: ${phase} · ${health}" in javascript
     assert "execution.reason" in javascript
     assert 'setAttribute("aria-label", `${execution.text}. ${execution.title}`)' in javascript
+    assert "requested_task_cognition_ceiling" in javascript
+    assert "Approve for this Task" in javascript
+    assert "Task cognition escalation approved" in javascript
+    assert "cognition_approval" in javascript
 
 
 def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Path) -> None:
