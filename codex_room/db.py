@@ -287,6 +287,7 @@ class Database:
                     context_archived_at TEXT,
                     state TEXT NOT NULL,
                     result_event_id TEXT REFERENCES events(id),
+                    principal_reply_event_id TEXT REFERENCES events(id),
                     resolution_reason TEXT,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
@@ -455,6 +456,12 @@ class Database:
             )
             await self._ensure_column(db, "rounds", "required_contributors_json", "TEXT NOT NULL DEFAULT '[]'")
             await self._ensure_column(db, "assignments", "context_thread_id", "TEXT")
+            await self._ensure_column(
+                db,
+                "assignments",
+                "principal_reply_event_id",
+                "TEXT REFERENCES events(id)",
+            )
             await self._ensure_column(
                 db,
                 "assignments",
@@ -2088,6 +2095,169 @@ class Database:
         async with self.connect() as db:
             row = await self._fetchone(db, "SELECT * FROM events WHERE id=?", (event_id,))
         return self._decode_row(row) if row else None
+
+    async def reply_to_principal_consultation(
+        self,
+        room_id: str,
+        consultation_event_id: str,
+        content: str,
+    ) -> dict[str, Any]:
+        """Atomically bind one private principal reply to the exact waiting C Assignment."""
+        now = utc_now()
+        reply_event_id = new_id("event")
+        async with self.connect() as db:
+            await db.execute("BEGIN IMMEDIATE")
+            room = await self._fetchone(
+                db,
+                """SELECT id, status, discussion_id, active_round_id
+                   FROM rooms WHERE id=?""",
+                (room_id,),
+            )
+            if room is None:
+                await db.rollback()
+                raise KeyError(room_id)
+            if room["status"] not in {RoomStatus.RUNNING, RoomStatus.PAUSED}:
+                await db.rollback()
+                raise ValueError(
+                    "Private principal replies require a running or paused Room"
+                )
+            consultation = await self._fetchone(
+                db,
+                """SELECT * FROM events
+                   WHERE id=? AND room_id=?""",
+                (consultation_event_id, room_id),
+            )
+            if consultation is None:
+                await db.rollback()
+                raise ValueError("Private principal consultation event was not found")
+            consultation_metadata = json.loads(
+                consultation["metadata_json"] or "{}"
+            )
+            if (
+                consultation["event_type"] != "principal_message"
+                or consultation["source"] != "agent_c"
+                or consultation["destination"] != "observer"
+                or consultation_metadata.get("principal_channel") is not True
+            ):
+                await db.rollback()
+                raise ValueError(
+                    "The referenced event is not an Agent C principal consultation"
+                )
+            assignment_id = consultation_metadata.get("assignment_id")
+            if not isinstance(assignment_id, str) or not assignment_id:
+                await db.rollback()
+                raise RuntimeError(
+                    "Private principal consultation lost its Assignment provenance"
+                )
+            assignment = await self._fetchone(
+                db,
+                """SELECT x.*, t.room_id, t.round_id, t.state AS task_state,
+                          t.coordinator_agent_id, a.agent_key
+                   FROM assignments x
+                   JOIN tasks t ON t.id=x.task_id
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE x.id=?""",
+                (assignment_id,),
+            )
+            if (
+                assignment is None
+                or assignment["room_id"] != room_id
+                or assignment["round_id"] != room["active_round_id"]
+                or assignment["task_state"] != "active"
+                or assignment["agent_key"] != "agent_c"
+                or assignment["coordinator_agent_id"] != assignment["agent_id"]
+                or assignment["parent_assignment_id"] is not None
+                or assignment["contribution_join_id"] is not None
+            ):
+                await db.rollback()
+                raise ValueError(
+                    "Private principal consultation no longer belongs to the active root coordinator"
+                )
+            if (
+                assignment["state"] != "waiting_principal"
+                or assignment["result_event_id"] != consultation_event_id
+                or assignment["principal_reply_event_id"] is not None
+            ):
+                await db.rollback()
+                raise ValueError(
+                    "Private principal consultation is stale or already answered"
+                )
+
+            sequence_row = await self._fetchone(
+                db,
+                """SELECT COALESCE(MAX(sequence_no), 0) + 1 AS next_sequence
+                   FROM events WHERE room_id=?""",
+                (room_id,),
+            )
+            sequence_no = sequence_row["next_sequence"] if sequence_row else 1
+            reply_metadata = {
+                "private": True,
+                "principal_channel": True,
+                "consultation_event_id": consultation_event_id,
+                "assignment_id": assignment_id,
+                "task_id": assignment["task_id"],
+                "work_model_version": 2,
+            }
+            await db.execute(
+                """INSERT INTO events
+                   (id, room_id, discussion_id, created_at, event_type, source,
+                    destination, content, related_event_id, status, metadata_json,
+                    round_id, sequence_no, event_class, conversational, counts_as_turn,
+                    counts_toward_pass, visibility, agent_readable, turn_triggering,
+                    execution_id)
+                   VALUES (?, ?, ?, ?, 'principal_reply', 'observer', 'agent_c', ?,
+                           ?, 'recorded', ?, ?, ?, 'conversation', 1, 0, 0,
+                           'private', 0, 0, NULL)""",
+                (
+                    reply_event_id,
+                    room_id,
+                    room["discussion_id"],
+                    now,
+                    content,
+                    consultation_event_id,
+                    json.dumps(reply_metadata, ensure_ascii=False),
+                    assignment["round_id"],
+                    sequence_no,
+                ),
+            )
+            cursor = await db.execute(
+                """UPDATE assignments
+                   SET state='queued', principal_reply_event_id=?, updated_at=?
+                   WHERE id=? AND state='waiting_principal'
+                     AND result_event_id=? AND principal_reply_event_id IS NULL""",
+                (
+                    reply_event_id,
+                    now,
+                    assignment_id,
+                    consultation_event_id,
+                ),
+            )
+            if cursor.rowcount != 1:
+                await db.rollback()
+                raise ValueError(
+                    "Private principal consultation was answered concurrently"
+                )
+            await db.execute(
+                "UPDATE rooms SET updated_at=? WHERE id=?",
+                (now, room_id),
+            )
+            await db.execute(
+                "UPDATE rounds SET last_activity_at=? WHERE id=?",
+                (now, assignment["round_id"]),
+            )
+            await db.commit()
+
+        event = await self.get_event(reply_event_id)
+        assert event is not None
+        event["_created"] = True
+        return {
+            "event": event,
+            "agent_key": "agent_c",
+            "assignment_id": assignment_id,
+            "round_id": assignment["round_id"],
+            "room_status": room["status"],
+        }
+
 
     async def get_events_by_ids(
         self, room_id: str, event_ids: list[str]
@@ -4119,6 +4289,36 @@ class Database:
                     await db.rollback()
                     raise RuntimeError("Room-history retrieval lost its running assignment")
                 wake_agent_keys.append(assignment["agent_key"])
+            elif action == "CONSULT_PRINCIPAL":
+                task_for_consultation = await self._fetchone(
+                    db,
+                    "SELECT * FROM tasks WHERE id=? AND state='active'",
+                    (assignment["task_id"],),
+                )
+                if (
+                    assignment["agent_key"] != "agent_c"
+                    or task_for_consultation is None
+                    or task_for_consultation["coordinator_agent_id"]
+                    != assignment["agent_id"]
+                    or assignment["parent_assignment_id"] is not None
+                    or assignment["contribution_join_id"] is not None
+                ):
+                    await db.rollback()
+                    raise ValueError(
+                        "CONSULT_PRINCIPAL is valid only for Agent C's root coordinator Assignment"
+                    )
+                cursor = await db.execute(
+                    """UPDATE assignments
+                       SET state='waiting_principal', result_event_id=?,
+                           principal_reply_event_id=NULL, updated_at=?
+                       WHERE id=? AND state='running'""",
+                    (result_event_id, now, assignment_id),
+                )
+                if cursor.rowcount != 1:
+                    await db.rollback()
+                    raise RuntimeError(
+                        "Principal consultation lost its running coordinator Assignment"
+                    )
             elif action == "REFRESH":
                 checkpoint = (coordinator_checkpoint or "").strip()
                 if not checkpoint:
@@ -4217,8 +4417,22 @@ class Database:
                 await db.rollback()
                 raise RuntimeError("Transaction decision settlement lost its compare-and-set")
 
+            if assignment["principal_reply_event_id"] is not None:
+                await db.execute(
+                    """UPDATE assignments
+                       SET principal_reply_event_id=NULL
+                       WHERE id=?""",
+                    (assignment_id,),
+                )
+
             contribution_join_id = assignment["contribution_join_id"]
-            if action not in {"DELEGATE", "EVIDENCE", "HISTORY", "REFRESH"} and contribution_join_id:
+            if action not in {
+                "DELEGATE",
+                "EVIDENCE",
+                "HISTORY",
+                "REFRESH",
+                "CONSULT_PRINCIPAL",
+            } and contribution_join_id:
                 pending_join_ids = [contribution_join_id]
                 propagated_result_event_id = result_event_id
                 while pending_join_ids:
@@ -4395,12 +4609,19 @@ class Database:
                     )
                 )
 
-            if action not in {"DELEGATE", "EVIDENCE", "HISTORY", "REFRESH"}:
+            if action not in {
+                "DELEGATE",
+                "EVIDENCE",
+                "HISTORY",
+                "REFRESH",
+                "CONSULT_PRINCIPAL",
+            }:
                 open_assignment = await self._fetchone(
                     db,
                     """SELECT 1 FROM assignments
                        WHERE task_id=? AND state IN
-                         ('queued','running','waiting_join','waiting_evidence','refreshing')
+                         ('queued','running','waiting_join','waiting_evidence',
+                          'waiting_principal','refreshing')
                        LIMIT 1""",
                     (assignment["task_id"],),
                 )
@@ -4770,7 +4991,8 @@ class Database:
                     JOIN agents a ON a.id=x.agent_id
                     WHERE t.room_id=? AND a.agent_key=?
                       AND t.state='active'
-                      AND x.state IN ('queued','running','waiting_join','waiting_evidence','refreshing')
+                      AND x.state IN ('queued','running','waiting_join','waiting_evidence',
+                                      'waiting_principal','refreshing')
                       {round_clause}
                     LIMIT 1""",
                 tuple(params),
@@ -4819,8 +5041,9 @@ class Database:
                     SET state='cancelled', updated_at=?, completed_at=?,
                         resolution_reason='room_lifecycle_change'
                     WHERE state IN
-                      ('queued','running','waiting_join','waiting_evidence','refreshing')
-                      {assignment_clause}""",
+                      ('queued','running','waiting_join','waiting_evidence',
+                       'waiting_principal','refreshing')
+                      {assignment_clause}""
                 assignment_params,
             )
             join_clause = (
@@ -6544,6 +6767,10 @@ class Database:
             return "conversation", True, False, False, True, True, "public"
         if event_type == "agent_message":
             return "conversation", True, True, False, True, True, "public"
+        if event_type == "principal_message":
+            return "conversation", True, True, False, False, False, "private"
+        if event_type == "principal_reply":
+            return "conversation", True, False, False, False, False, "private"
         if event_type == "agent_pass":
             return "conversation", True, True, True, False, False, "public"
         if event_type in {"agent_finish", "agent_reopened"}:
