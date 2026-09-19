@@ -617,3 +617,25 @@ This decision **amends D-036**: the standing-objective distinction and explicit 
 Implementation was deliberately divided into BCTX-1 through BCTX-4 so the design could be verified in bounded slices without a broad transaction rewrite. Those four slices subsequently completed and were exact-version verified; E-132 through E-139 record implementation and naturalistic refresh-economics evidence. The D-037 architecture remains active.
 
 **Principle:** **Bound the objective in durable Task state; carry provider context only across continuity that the work actually needs.**
+
+### D-038 — Private principal consultation is an explicit C-only transaction wait/resume primitive
+**Date:** 2026-09-19  
+**Status:** ACTIVE
+
+The principal authorized a private human↔coordinator channel so Agent C can request judgment, authorization, or material clarification from the human principal without invoking, delivering to, or otherwise involving Agents A or B.
+
+Settled boundary:
+
+- work-model v2 gains a structured nonterminal `CONSULT_PRINCIPAL` action;
+- the initial authority is deliberately **C-only** and valid only from C's root coordinator Assignment. It is not a general hidden A/B side channel;
+- the consultation message is a durable private observer event with no A/B delivery, no peer wakeup, and no generic agent-readable/turn-triggering semantics;
+- `CONSULT_PRINCIPAL` moves the same C Assignment into durable `waiting_principal` state rather than completing it or creating a new Task;
+- the principal replies to the exact consultation event. CORE binds that reply atomically to the exact waiting Assignment, rejects stale/duplicate replies, and requeues the same Assignment on its existing provider-context lineage;
+- the principal reply is likewise private, creates no normal agent delivery, and is injected only into the resumed C Assignment;
+- a pending consultation survives process restart because the wait is durable transaction state; Pause may retain the wait, while Stop/cancel terminates it with the surrounding transaction lifecycle;
+- private consultation does **not** silently become shared organizational knowledge. If A or B later need a consequence of the private exchange, C must deliberately communicate only the necessary shared consequence through normal transaction work;
+- the first implementation does not add a nonblocking private notification action. If ordinary use later demonstrates a need for “tell the principal without waiting,” that should be a distinct semantic rather than overloading consultation.
+
+This extends D-030/D-037 without changing the fixed three-agent organization or C's epistemic status. The human principal remains outside the A/B/C production-agent set; C controls coordination, not judgment, and consultation exists to obtain human authority rather than replace it.
+
+**Principle:** **Ask the principal privately when human judgment is needed; preserve the same work context, involve no peer implicitly, and promote only necessary consequences back to shared state.**
