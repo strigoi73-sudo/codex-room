@@ -1,7 +1,7 @@
 # Codex Room — Evidence Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-18  
+**Last updated:** 2026-09-19  
 **Scope:** Compact empirical record supporting important project claims.  
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
@@ -4969,4 +4969,58 @@ This was not a controlled identical-work benchmark: naturalistic delegated work 
 The pre-run subscription meter showed **86% remaining** on the 5-hour allowance and **45% remaining** on the 7-day allowance. The 5-hour window reset before a post-run reading could be captured, so no post-run 5-hour consumption delta is claimed or back-calculated.
 
 **Assessment:** PR #127's coordinator economics/guidance refinement is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY SUPPORTED**. The demonstrated E-137 adoption gap is supported as resolved for this bounded live exercise: C received the advisory economics, chose `REFRESH` shortly after crossing the consider range, CORE completed the fail-closed handoff, and useful work continued on the fresh context. No further patch-specific benchmark or threshold tuning is warranted absent new contrary evidence.
+
+### E-140 — Functional Acceptance T8 exposed and verified repair of hard-restart interrupted-turn recovery
+**Date:** 2026-09-19  
+**Kind:** [ROOM functional acceptance / CORE restart-recovery defect / exact-head deterministic verification / natural hard-restart revalidation / canonical merge]
+
+Functional Acceptance T8 deliberately restarted Codex Room while a live work-model-v2 transaction execution was active. The initial run at canonical commit `9a313df86db5596416b8a2135b107a33f7eeb635` caught an active C execution before restart and the Room returned as `running`, but exact-turn reconciliation then observed the persisted provider turn as `interrupted`. CORE treated that recovered interruption as a non-retryable terminal failure, so the root C Assignment and Task failed with `Codex turn was interrupted`, the Round closed `transaction_failed`, and A/B were never delegated.
+
+The same run also exposed an acceptance-harness observability gap: top-level Room status became `finished` after the failed transaction, so checking only Room status could falsely print a successful-looking completion. The authoritative export preserved the failed transaction state.
+
+PR #130 implemented the bounded repair:
+
+- a provider `AgentTurnInterruptedError` is handled separately only in the transaction Assignment path;
+- only an execution marked `recovering` by startup recovery may spend the Assignment's existing one-retry budget after the exact persisted provider turn is authoritatively interrupted;
+- the retry remains the same durable Assignment and retains its bound assignment provider context;
+- ordinary runtime interruptions remain terminal;
+- exact-turn identity uncertainty remains quarantined/fail-closed;
+- other terminal provider failures retain existing semantics;
+- T8's PowerShell harness now checks `active_round.close_reason` and failed Task state so `transaction_failed` cannot masquerade as success.
+
+Exact PR head verified by the principal:
+
+`17da2833f24e9ab84416e1585bb4d00bfd0cb86f`
+
+Verification on that exact head:
+
+- targeted restart-recovery tests: **2 passed**, 22 deselected;
+- repository-standard `verify-fast.cmd`:
+  - Linux Python 3.12 focused core — **63 passed**, 2 warnings;
+  - Windows focused portability — **118 passed**;
+  - browser transcript stability — **3 passed**;
+  - overall result — **PASS** in approximately **89.7 s**;
+- tracked tree remained clean; one pre-existing untracked local file remained outside tracked-source verification.
+
+Natural hard-restart revalidation on the same exact head:
+
+- Room: `room_0397719906ec48e6a90515b71556cc3f`;
+- evidence: `output\functional-acceptance\T8-RERUN-20260919-015831`;
+- C's first exact provider turn became `interrupted` after restart;
+- CORE recorded `will_retry=true` and retried the **same root C Assignment** under a new execution batch;
+- the retry then delegated A and B together with differentiated independent work;
+- A and B both completed;
+- the dependency Join released exactly once;
+- C integrated and completed the root Assignment;
+- the Task settled `complete`;
+- the Round closed `transaction_settled`;
+- top-level Room status was `finished` with no failed Task.
+
+PR #130 squash-merged the exact verified implementation bytes to canonical `main` as:
+
+`f11b1d5bc02b8f8a7f9d2bcc84e3991b8c767877`
+
+No GitHub-hosted workflow run was attached; verification is the exact-head local deterministic gate plus the natural hard-restart exercise above.
+
+**Assessment:** the T8 hard-restart defect is **RESOLVED / IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY VERIFIED**. The original failing run remains preserved as evidence of the pre-repair behavior.
 
