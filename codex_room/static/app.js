@@ -12,6 +12,62 @@ const $ = (selector) => document.querySelector(selector);
 const views = [$("#welcome-view"), $("#create-view"), $("#room-view")];
 const agentFallbackNames = { agent_a: "Agent A", agent_b: "Agent B", agent_c: "Agent C" };
 
+function observerDraftKey(roomId) {
+  return `codex-room:observer-draft:${roomId}`;
+}
+
+function loadObserverDraft(roomId) {
+  try {
+    const raw = localStorage.getItem(observerDraftKey(roomId));
+    if (!raw) return null;
+    const draft = JSON.parse(raw);
+    if (typeof draft?.content !== "string" || typeof draft?.target !== "string") return null;
+    return draft;
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveObserverDraft() {
+  if (!state.room) return;
+  const form = $("#message-form");
+  const draft = {
+    content: form.elements.content.value,
+    target: form.elements.target.value,
+  };
+  try {
+    localStorage.setItem(observerDraftKey(state.room.id), JSON.stringify(draft));
+  } catch (_) { /* local persistence is best-effort */ }
+}
+
+function clearObserverDraft(roomId) {
+  if (!roomId) return;
+  try {
+    localStorage.removeItem(observerDraftKey(roomId));
+  } catch (_) { /* local persistence is best-effort */ }
+}
+
+function resizeObserverComposer() {
+  const textarea = $("#message-form textarea");
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function restoreObserverDraft(roomId) {
+  const form = $("#message-form");
+  const draft = loadObserverDraft(roomId);
+  form.elements.content.value = draft?.content || "";
+  form.elements.target.value = "all";
+  if (draft?.target && [...form.elements.target.options].some((option) => option.value === draft.target)) {
+    form.elements.target.value = draft.target;
+  }
+  resizeObserverComposer();
+}
+
+function focusObserverComposer() {
+  $("#message-form textarea").focus({ preventScroll: true });
+}
+
 function agentLetter(agentKey) {
   return agentKey.replace(/^agent_/, "").slice(0, 1).toLowerCase();
 }
@@ -135,6 +191,8 @@ async function openRoom(roomId) {
     showView($("#room-view"));
     renderRoom({ replaceTranscript: true });
     renderRoomList();
+    restoreObserverDraft(roomId);
+    focusObserverComposer();
     connectSocket(roomId);
   } catch (error) {
     showRoomError(error.message);
@@ -479,11 +537,25 @@ $("#message-form").addEventListener("submit", async (event) => {
   const form = event.currentTarget;
   const values = Object.fromEntries(new FormData(form));
   const button = form.querySelector("button");
+  const roomId = state.room?.id;
   button.disabled = true;
   try {
-    if (await roomAction("messages", values)) form.elements.content.value = "";
+    if (await roomAction("messages", values)) {
+      clearObserverDraft(roomId);
+      if (state.room?.id === roomId) {
+        form.elements.content.value = "";
+        resizeObserverComposer();
+        focusObserverComposer();
+      }
+    }
   } finally { button.disabled = false; }
 });
+
+$("#message-form textarea").addEventListener("input", () => {
+  resizeObserverComposer();
+  saveObserverDraft();
+});
+$("#message-form select[name=target]").addEventListener("change", saveObserverDraft);
 
 $("#message-form textarea").addEventListener("keydown", (event) => {
   if (event.key !== "Enter" || event.isComposing || event.shiftKey) return;
