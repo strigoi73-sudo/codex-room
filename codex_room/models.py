@@ -47,6 +47,7 @@ class TransactionAction(StrEnum):
     EVIDENCE = "EVIDENCE"
     HISTORY = "HISTORY"
     REFRESH = "REFRESH"
+    CONSULT_PRINCIPAL = "CONSULT_PRINCIPAL"
     PASS = "PASS"
 
 
@@ -147,8 +148,11 @@ class TransactionDecision(BaseModel):
     @model_validator(mode="after")
     def validate_transaction_decision(self) -> "TransactionDecision":
         self.message = self.message.strip()
-        if self.action == TransactionAction.COMPLETE and not self.message:
-            raise ValueError("COMPLETE requires non-empty message text")
+        if self.action in {
+            TransactionAction.COMPLETE,
+            TransactionAction.CONSULT_PRINCIPAL,
+        } and not self.message:
+            raise ValueError(f"{self.action} requires non-empty message text")
         if self.action == TransactionAction.REFRESH:
             if self.checkpoint is None or not self.checkpoint.strip():
                 raise ValueError("REFRESH requires a non-empty coordinator checkpoint")
@@ -292,7 +296,15 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
     "properties": {
         "action": {
             "type": "string",
-            "enum": ["COMPLETE", "DELEGATE", "EVIDENCE", "HISTORY", "REFRESH", "PASS"],
+            "enum": [
+                "COMPLETE",
+                "DELEGATE",
+                "EVIDENCE",
+                "HISTORY",
+                "REFRESH",
+                "CONSULT_PRINCIPAL",
+                "PASS",
+            ],
         },
         "message": {"type": "string"},
         "checkpoint": {
@@ -684,6 +696,11 @@ class BindInstitutionalReleaseRequest(BaseModel):
 
 class ObserverMessageRequest(BaseModel):
     target: Literal["all", "both", "agent_a", "agent_b", "agent_c"]
+    content: str = Field(min_length=1, max_length=50_000)
+
+
+class PrincipalReplyRequest(BaseModel):
+    consultation_event_id: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1, max_length=50_000)
 
 
