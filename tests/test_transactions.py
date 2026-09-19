@@ -5,7 +5,7 @@ import asyncio
 import pytest
 
 from codex_room.agent import InterruptOutcome
-from codex_room.agent import AgentTurnTerminalError
+from codex_room.agent import AgentTurnInterruptedError, AgentTurnTerminalError
 from codex_room.db import Database
 from codex_room.exporter import as_markdown
 from codex_room.models import (
@@ -1919,6 +1919,134 @@ async def test_transaction_exact_active_turn_recovers_same_assignment_after_rest
     assert len(executions) == 1
     assert executions[0]["batch_id"] == original_batch_id
     assert executions[0]["state"] == "settled"
+
+
+@pytest.mark.asyncio
+async def test_transaction_interrupted_exact_turn_after_restart_retries_same_assignment(
+    transaction_runtime_factory,
+):
+    class InterruptedOnResumeAdapter(FakeAgentAdapter):
+        async def resume_agent(
+            self,
+            agent,
+            cwd,
+            thread_id,
+            turn_id,
+            on_progress=None,
+            *,
+            transactional=False,
+        ):
+            self.calls[agent["agent_key"]].append(
+                {
+                    "thread_id": thread_id,
+                    "turn_id": turn_id,
+                    "prompt": "[recovered interrupted exact turn]",
+                    "cwd": str(cwd),
+                    "recovered": True,
+                }
+            )
+            if on_progress is not None:
+                await on_progress()
+            raise AgentTurnInterruptedError("Codex turn was interrupted")
+
+    first_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {1}},
+    )
+    first = await transaction_runtime_factory(
+        first_adapter, "transaction-interrupted-restart.db"
+    )
+    snapshot = await first.create_room(
+        CreateRoomRequest(
+            topic="Retry an exact provider turn interrupted by process restart",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: len(first_adapter.calls["agent_c"]) == 1)
+
+    async def active_execution() -> bool:
+        async with first.db.connect() as db:
+            row = await first.db._fetchone(
+                db,
+                """SELECT state FROM agent_executions
+                   WHERE room_id=? AND assignment_id IS NOT NULL
+                   ORDER BY created_at DESC LIMIT 1""",
+                (room_id,),
+            )
+        return bool(row and row["state"] == "active")
+
+    await wait_until(active_execution)
+    async with first.db.connect() as db:
+        original = await first.db._fetchone(
+            db,
+            """SELECT * FROM agent_executions
+               WHERE room_id=? AND assignment_id IS NOT NULL
+               ORDER BY created_at DESC LIMIT 1""",
+            (room_id,),
+        )
+    assert original is not None
+    assignment_id = original["assignment_id"]
+    original_batch_id = original["batch_id"]
+    original_turn_id = original["sdk_turn_id"]
+    context_thread_id = original["sdk_thread_id"]
+    await first.close()
+
+    second_adapter = InterruptedOnResumeAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        turn_id_namespace="restart_retry",
+    )
+    second_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Recovered interrupted transaction assignment.",
+        )
+    )
+    second = await transaction_runtime_factory(
+        second_adapter, "transaction-interrupted-restart.db"
+    )
+    await wait_until(lambda: _room_finished(second, room_id))
+
+    assert len(second_adapter.calls["agent_c"]) == 2
+    recovered, retried = second_adapter.calls["agent_c"]
+    assert recovered["recovered"] is True
+    assert recovered["thread_id"] == context_thread_id
+    assert recovered["turn_id"] == original_turn_id
+    assert retried.get("recovered") is not True
+    assert retried["thread_id"] == context_thread_id
+    assert "Codex turn was interrupted" in retried["prompt"]
+
+    async with second.db.connect() as db:
+        assignments = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+        executions = await db.execute_fetchall(
+            """SELECT * FROM agent_executions
+               WHERE room_id=? AND assignment_id=?
+               ORDER BY created_at, batch_id""",
+            (room_id, assignment_id),
+        )
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=?",
+            (room_id,),
+        )
+
+    assert len(assignments) == 1
+    assert assignments[0]["state"] == "completed"
+    assert len(executions) == 2
+    assert executions[0]["batch_id"] == original_batch_id
+    assert executions[0]["state"] == "failed"
+    assert "Codex turn was interrupted" in executions[0]["error"]
+    assert executions[1]["state"] == "settled"
+    assert executions[1]["batch_id"] != original_batch_id
+    assert all(row["assignment_id"] == assignment_id for row in executions)
+    assert len(tasks) == 1
+    assert tasks[0]["state"] == "settled"
+
 
 @pytest.mark.asyncio
 async def test_transaction_new_round_cancels_old_work_and_late_result_cannot_settle(
