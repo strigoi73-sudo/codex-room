@@ -94,6 +94,8 @@ The initial I-016 release deliberately excludes A/B→principal consultation and
 
 PR #137 exact feature head `e58c758527ae6a3954be9525b1411324e12ec7de` passed the repository-standard fast gate: 63 Linux focused tests, 118 Windows portability tests, and 7 browser interaction/stability tests, with a clean tracked tree and clean `git diff --check`. It squash-merged to canonical `main` as `d57d25769a8be215cc01af354983fd9c44b10825`. See E-142.
 
+The first naturalistic Room exposed a C action-selection defect: C used terminal `COMPLETE` to ask the principal instead of entering the private wait state. PR #139 hardened C's protected structural instructions and transaction decision contract; exact repair head `d964af1d8fdd9c49dfcdf18f3e6104aa5b21eed9` passed the same 63 Linux / 118 Windows / 7 browser gate and squash-merged as `26c7fb8035f15752929cfc27bd4295f0f8035ec7`. A fresh post-repair Room then passed end-to-end naturalistic acceptance: private C→principal consultation, private exact-event reply, same-Assignment continuation, no A/B execution, and successful completion. See E-143 and E-144.
+
 
 ### Round completion policy
 
