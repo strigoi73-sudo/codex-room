@@ -957,3 +957,43 @@ Second, the principal reran the authenticated **zero-turn** SDK model-catalog pr
 The principal then settled D-039: ordinary autonomous Room cognition is limited to Low/Medium/High across Luna/Terra/Sol; Sol/XHigh and Sol/Max are exceptional C-only settings requiring private Task-scoped approval; Sol/Ultra remains excluded because its provider description includes automatic task delegation; Astra remains prohibited; GPT-5.5 remains excluded.
 
 **Assessment:** the need for I-017 is empirically demonstrated. The catalog supports the authorized bounded configuration surface, while the preceding production behavior did not let C dynamically allocate its own cognition.
+
+## E-146 — I-017 dynamic C cognition exact-head verification and merge
+
+**Date:** 2026-09-19
+**Kind:** [CORE + ROOM UI implementation verification / restart regression / merge closeout]
+**Related decision:** D-039
+**Related work:** I-017
+
+The final I-017 feature head was:
+
+`b498709ed30541d7a673b245f19a9021eca98ee5`
+
+The principal ran the complete exact-head verification procedure against that commit. Results:
+
+- `git diff --check origin/main...HEAD`: PASS;
+- restart-recovery regressions: **2 passed**;
+- focused I-017 suite (`tests/test_transactions.py`, `tests/test_three_agents.py`, `tests/test_three_agent_ui.py`): **85 passed, 2 warnings**;
+- repository-standard `verify-fast.cmd`:
+  - Linux Python 3.12 focused core — **63 passed, 2 warnings**;
+  - Windows focused portability — **118 passed**;
+  - browser transcript stability / interaction — **8 passed**;
+  - overall result — **PASS**;
+- post-verification HEAD remained exactly `b498709ed30541d7a673b245f19a9021eca98ee5`;
+- tracked repository state remained clean after verification; one untracked local file was reported and explicitly excluded from tracked-source verification.
+
+The final commit on the verified head, `b498709` (`Scope fake turn namespace to principal restart test`), made only the intended test-harness correction: it removed the special fake turn-ID namespace from an unrelated restart test and applied it to the principal-wait restart test where adapter restart would otherwise recreate the same fake `(sdk_thread_id, sdk_turn_id)`.
+
+The restart investigation established two distinct facts:
+
+1. CORE recovery must treat durable transaction state as authoritative: a lagging active/recovering/result-ready execution is settled rather than replayed when its decision was already recorded or its bound Assignment has advanced out of `running`.
+2. The remaining two-call artifact after that repair came from the fake provider resetting its turn counter after restart and colliding with CORE's deliberate unique exact-turn identity constraint; giving only the restarted principal-wait fake adapter a distinct namespace removed that harness artifact.
+
+GitHub confirmed PR #142 was open, mergeable, and still pointed to the exact verified head before merge. Neither the exact feature head nor the squash merge had an attached GitHub Actions workflow run; the applicable implementation evidence is therefore the exact-head local deterministic gate above.
+
+PR #142 squash-merged the verified implementation bytes to canonical `main` as:
+
+`1806a7a16e1477f9dbe88515100f787c0389c709`
+
+**Assessment:** I-017 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Deterministic evidence supports ordinary C self-selection, Task-scoped exceptional approval mechanics, peer exclusion from exceptional configurations, Task-boundary ceiling expiry, and the restart-recovery repair at the exact verified version. A bounded naturalistic Room exercise remains required before I-017 is closed as end-to-end accepted.
+
