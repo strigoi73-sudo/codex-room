@@ -538,7 +538,7 @@ async def test_invalid_transaction_decision_retry_gets_feedback_and_keeps_teleme
             """SELECT state, usage_json, activity_json, sdk_thread_id
                FROM agent_executions
                WHERE round_id=?
-               ORDER BY created_at, rowid""",
+               ORDER BY rowid""",
             (snapshot["active_round_id"],),
         )
 
@@ -638,7 +638,7 @@ async def test_invalid_transaction_decision_after_evidence_continuation_gets_one
         executions = await db.execute_fetchall(
             """SELECT state FROM agent_executions
                WHERE assignment_id IS NOT NULL AND round_id=?
-               ORDER BY created_at, rowid""",
+               ORDER BY rowid""",
             (snapshot["active_round_id"],),
         )
         task = await runtime.db._fetchone(
