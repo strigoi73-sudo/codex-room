@@ -6,14 +6,32 @@
 
 ## Operator summary
 
-- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, I-015, the full D-037 bounded-context program, and the repeatable T0-T14 functional acceptance campaign are **COMPLETE**. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. T0 through T14 are recorded PASS; the campaign exposed one real hard-restart recovery defect at T8, repaired it, and revalidated the repaired path. See E-140 and E-141.
-- **What just changed?** The acceptance campaign reached T14 and closed. T9-T14 additionally exercised coordinator refresh, custom-capability lifecycle, rollover continuity, offline export/backup/verify, explicit model allocation, and an integrated implementation/verification mission. T14 finished `transaction_settled` with correct exact artifacts. E-141 records the campaign-level closeout; E-140 remains the detailed T8 defect/repair record.
-- **Verification state:** Functional acceptance T0-T14 are recorded PASS in `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`, with exact HEAD and preserved evidence references for each run. The campaign includes repository-standard fast verification, exact transaction/context behaviors, restart recovery, refresh, capability lifecycle, rollover, persistence maintenance, explicit execution allocation, and the integrated T14 mission. No additional acceptance rerun is indicated absent contrary evidence.
-- **What is blocked?** D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** No automatic follow-on engineering phase is authorized by this closeout. Stop acceptance work unless new evidence warrants regression testing. D-019 remains deferred; Common Cause competitive play still requires separate principal authorization. The principal may now choose the next product/development objective.
+- **Where are we?** I-016 — Private Principal Channel is the current authorized product objective under D-038. Its C-only private consultation/wait/resume implementation is present on a feature branch and awaits exact-head deterministic verification before merge. Earlier Engineering Foundation, A2, P4, A3 remediation, I-015, D-037/BCTX, and T0-T14 acceptance remain complete.
+- **What just changed?** The principal authorized an explicit private C↔principal consultation path that must not invoke or deliver to A/B. The implementation adds `CONSULT_PRINCIPAL`, durable `waiting_principal` Assignment state, exact-event principal reply binding, same-Assignment/provider-context resume, restart persistence, Stop cancellation, and an observer reply UI.
+- **Verification state:** I-016 is **IMPLEMENTED ON FEATURE BRANCH / VERIFICATION PENDING / NOT MERGED**. Added deterministic transaction tests cover privacy/no-delivery, same-context continuation, duplicate/stale reply rejection, restart persistence, Stop cancellation, and C-only authority; browser tests cover the private reply surface. Repository-standard `verify-fast.cmd` on the exact PR head is required before merge.
+- **What is blocked?** I-016 has no known design blocker; it is waiting on exact-head verification. D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
+- **What is next?** Finish exact-diff review, run `verify-fast.cmd` on the exact I-016 feature head, and merge only if that version passes. Do not widen I-016 to A/B or add a nonblocking notification primitive without separate evidence/authorization.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
+
+### I-016 — Private Principal Channel
+
+**Scope:** [CORE + ROOM UI]
+
+**Decision:** D-038
+
+**Work state:** IN PROGRESS
+
+**Reality:** IMPLEMENTED ON FEATURE BRANCH / VERIFICATION PENDING / NOT MERGED
+
+**Authorized first release:** Agent C's root coordinator Assignment may emit structured `CONSULT_PRINCIPAL` when human judgment, authorization, or material clarification is needed. CORE records a private `principal_message` visible to the observer, creates no A/B deliveries, and moves the same Assignment to durable `waiting_principal`. The observer replies to that exact consultation event; CORE atomically rejects stale/duplicate replies, records a private `principal_reply`, and requeues the same C Assignment on its existing provider-context lineage. Private exchange is not automatically shared with A/B.
+
+**Lifecycle:** waiting survives runtime restart; Pause preserves the wait and may accept the reply without executing until Resume; Stop/cancel terminates it with the surrounding Task. No fourth agent or human-as-agent entity is introduced.
+
+**UI:** principal consultations render distinctly in the transcript with an inline private reply form. Existing ordinary observer messaging remains separate.
+
+**Verification gate:** exact PR-head `verify-fast.cmd`, including the new transaction and browser regressions. Merge only the verified bytes. After merge, update Architecture/Development Control from verification-pending to the exact verified state and record evidence in the Evidence Register if the result warrants a durable evidence entry.
 
 ### Functional acceptance campaign T0-T14
 
