@@ -868,3 +868,29 @@ PR #137 then squash-merged to canonical `main` as:
 `d57d25769a8be215cc01af354983fd9c44b10825`
 
 **Assessment:** I-016 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. The first-release C-only private principal channel is supported by deterministic transaction and browser regression coverage at the recorded exact version. No widening to A/B and no nonblocking private-notification primitive is implied by this closeout.
+
+## E-143 — First naturalistic I-016 Room exposed C consultation-selection failure
+
+**Date:** 2026-09-19  
+**Kind:** [ROOM naturalistic behavioral acceptance / observed issue]  
+**Related decision:** D-038  
+**Related work:** I-016  
+**Room:** `room_3c414df808d943b6994f55be191b914d`
+
+After I-016's deterministic implementation/verification closeout, the principal ran a fresh Room specifically to exercise the private principal channel. The prepared objective explicitly required C to complete the work itself, make no A/B delegation, ask the principal privately to choose FORMAL or PLAYFUL, wait for the private reply, and only then continue.
+
+The first C execution did not select `CONSULT_PRINCIPAL`. Instead it returned terminal `COMPLETE` with the question “Which announcement style should I use for Lantern: FORMAL or PLAYFUL?”. CORE therefore recorded an ordinary public `agent_message` to `all` and settled the original Task normally. No `principal_message`, `principal_reply`, or `waiting_principal` state occurred.
+
+The principal then replied “Playful” through the ordinary observer composer. Because the original Task had already settled, that message was correctly processed as a new public observer message. It reopened the discussion and created new transaction work for C, A, and B. A and B both executed and produced public launch-announcement outputs, exactly the involvement the acceptance scenario was designed to avoid.
+
+The exported Room also contains the I-016 schema/state additions such as `principal_reply_event_id`, demonstrating that this was not an old-runtime/restart mismatch. The demonstrated failure is therefore a **C action-selection / instruction-contract defect**, not a failure of the private wait/resume state machine and not an operator routing error.
+
+The repair scope is deliberately bounded:
+
+- strengthen C's protected structural instructions so a required principal response maps to `CONSULT_PRINCIPAL`;
+- state explicitly that `COMPLETE` is terminal and must not be used merely to ask the principal a question or request a response;
+- strengthen the transaction decision prompt with the same negative/positive mapping;
+- add deterministic regressions asserting those instructions remain present;
+- then rerun the naturalistic acceptance Room after exact-head verification.
+
+**Assessment:** I-016 remains mechanically implemented, but the first naturalistic acceptance attempt is a **FAIL** for end-to-end behavioral usability. I-016 is reopened until the bounded repair is verified and a fresh Room demonstrates the intended private consultation path.
