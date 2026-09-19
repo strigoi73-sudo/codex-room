@@ -18,6 +18,7 @@ from .models import (
     DefaultProfilesUpdate,
     NewTopicRequest,
     ObserverMessageRequest,
+    PrincipalReplyRequest,
     PrepareRoundApiRequest,
     RolloverRoomApiRequest,
     UpdateRoomRequest,
@@ -116,6 +117,12 @@ def create_app(
     @app.post("/api/rooms/{room_id}/messages", status_code=201)
     async def send_message(room_id: str, request: ObserverMessageRequest) -> dict[str, Any]:
         return await _translate_errors(runtime.observer_message(room_id, request))
+
+    @app.post("/api/rooms/{room_id}/principal-replies", status_code=201)
+    async def send_principal_reply(
+        room_id: str, request: PrincipalReplyRequest
+    ) -> dict[str, Any]:
+        return await _translate_errors(runtime.principal_reply(room_id, request))
 
     @app.post("/api/rooms/{room_id}/pause", status_code=204)
     async def pause_room(room_id: str) -> Response:
