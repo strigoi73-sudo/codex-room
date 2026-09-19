@@ -253,6 +253,14 @@ def summarize_codex_tool_inventory(
         )
 
     return {
+        "workspace_files": _category(
+            AVAILABLE,
+            "Room agents have read/write access inside the shared Room workspace sandbox.",
+        ),
+        "command_execution": _category(
+            AVAILABLE,
+            "Local command execution is part of the inherited Codex runtime, subject to Room sandbox and approval policy.",
+        ),
         "web_search": web,
         "skills": skills,
         "mcp": mcp,
