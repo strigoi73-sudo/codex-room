@@ -185,7 +185,7 @@ def summarize_codex_tool_inventory(
         for index, raw in enumerate(apps_payload.get("apps") or [], start=1):
             enabled = bool(raw.get("enabled"))
             callable_ = bool(raw.get("callable"))
-            item_status = AVAILABLE if callable_ else UNKNOWN if enabled else UNAVAILABLE
+            item_status = AVAILABLE if callable_ else UNAVAILABLE
             app_items.append(
                 {
                     "name": str(raw.get("runtimeName") or f"Installed app {index}"),
