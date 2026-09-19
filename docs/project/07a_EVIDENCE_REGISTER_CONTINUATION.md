@@ -829,3 +829,42 @@ T14 exact tested state:
 - Round terminal state: `transaction_settled`.
 
 **Assessment:** the functional acceptance campaign is **COMPLETE**. The exercised production paths are empirically supported at the recorded exact versions. No additional repair or adjacent acceptance work is warranted solely from this campaign. The preserved behavioral observations remain evidence for future comparison if they recur or become expensive; they do not currently establish a new CORE defect.
+
+## E-142 — I-016 private principal channel exact-head verification and merge closeout
+
+**Date:** 2026-09-19  
+**Kind:** [CORE + ROOM UI implementation verification / closeout]  
+**Related decision:** D-038  
+**Related work:** I-016
+
+I-016 implemented the first-release private principal consultation channel for Agent C's root coordinator Assignment.
+
+The implemented path adds structured `CONSULT_PRINCIPAL`, durable `waiting_principal` Assignment state, exact consultation-event reply binding, same-Assignment/provider-context continuation, restart persistence, Pause preservation, Stop/cancel termination, and an observer-only private reply surface. C's consultation and the principal's reply create no normal A/B delivery or peer wakeup, and private content is not automatically promoted into shared organizational state.
+
+Verification history preserved one useful pre-closeout correction:
+
+- exact head `53aec1c3d317ebafeb1b2c554c7ea462e9f62b70` passed `git diff --check` but the focused Linux suite exposed a pre-existing ordering-sensitive assertion in `tests/test_transaction_evidence.py`;
+- the failing test's behavioral prompt assertions already showed the intended evidence → invalid decision → retry sequence, while its final execution-state query ordered rows by millisecond `created_at` before `rowid`;
+- the two affected retry assertions were changed to deterministic SQLite insertion order (`ORDER BY rowid`), matching CORE's existing use of execution row order when resolving exact prior execution history;
+- no I-016 runtime semantics were changed by that correction.
+
+Final exact feature head:
+
+`e58c758527ae6a3954be9525b1411324e12ec7de`
+
+The principal then ran the repository-standard exact-head verification procedure against that commit:
+
+- `git diff --check origin/main...HEAD`: PASS;
+- Linux Python 3.12 focused core: **63 passed** with 2 deprecation warnings;
+- Windows focused portability: **118 passed**;
+- browser transcript stability / interaction: **7 passed**;
+- tracked tree: clean;
+- only local untracked `data/` remained, explicitly outside tracked source.
+
+PR #137 was re-checked as open, mergeable, and still pointing to the exact verified head before merge. No hosted commit statuses were attached, so the exact local deterministic verification above is the applicable merge evidence.
+
+PR #137 then squash-merged to canonical `main` as:
+
+`d57d25769a8be215cc01af354983fd9c44b10825`
+
+**Assessment:** I-016 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. The first-release C-only private principal channel is supported by deterministic transaction and browser regression coverage at the recorded exact version. No widening to A/B and no nonblocking private-notification primitive is implied by this closeout.
