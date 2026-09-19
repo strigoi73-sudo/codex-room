@@ -1198,8 +1198,25 @@ Invoke-WebRequest -UseBasicParsing -Method Get `
     -Uri "$Base/api/rooms/$roomId/export?format=json" `
     -OutFile (Join-Path $EvidenceDir 'room-export.json')
 
-if ([string]$final.status -eq 'error') {
-    throw 'T8 FAIL candidate: Room entered error after restart. Preserve the evidence directory.'
+$transactionFailed = $false
+
+if ($null -ne $final.active_round) {
+    if ([string]$final.active_round.close_reason -eq 'transaction_failed') {
+        $transactionFailed = $true
+    }
+
+    $failedTasks = @(
+        $final.active_round.transaction_state.tasks |
+            Where-Object { [string]$_.state -eq 'failed' }
+    )
+
+    if ($failedTasks.Count -gt 0) {
+        $transactionFailed = $true
+    }
+}
+
+if ([string]$final.status -eq 'error' -or $transactionFailed) {
+    throw 'T8 FAIL candidate: restart recovery ended in a failed Room transaction. Preserve the evidence directory.'
 }
 
 Write-Host ""
