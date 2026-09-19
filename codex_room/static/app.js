@@ -465,7 +465,7 @@ function renderStatusTools() {
   );
   const visibleAssignments = assignments.slice(-6);
   if (!visibleAssignments.length) {
-    assignmentList.append(statusLine("No active Task assignments", "C will create work ownership when the Round requires it."));
+    assignmentList.append(statusLine("No active Task assignments", "No Task assignments are recorded for this Round."));
   } else {
     visibleAssignments.forEach(({ task, assignment }) => {
       const owner = agentFallbackNames[assignment.agent_key] || assignment.agent_key || "Agent";
@@ -514,7 +514,7 @@ function renderStatusTools() {
   inherited.replaceChildren();
 
   if (state.statusToolsRoomId !== room.id || (!state.statusTools && !state.statusToolsError)) {
-    freshness.textContent = "Room state current · tool inventory loading";
+    freshness.textContent = "Room snapshot · tool inventory loading";
     const loading = document.createElement("p");
     loading.className = "status-tools-muted";
     loading.textContent = "Capability inventory loading…";
@@ -522,7 +522,7 @@ function renderStatusTools() {
     return;
   }
   if (state.statusToolsError) {
-    freshness.textContent = "Room state current · tool inventory unavailable";
+    freshness.textContent = "Room snapshot · tool inventory unavailable";
     const error = document.createElement("p");
     error.className = "status-tools-muted";
     error.textContent = state.statusToolsError;
@@ -532,7 +532,7 @@ function renderStatusTools() {
 
   const visibility = state.statusTools;
   const roomCapabilities = visibility?.room_capabilities || {};
-  freshness.textContent = `Room state current · tool inspection ${visibility?.codex?.inspection_status || "unknown"}`;
+  freshness.textContent = `Room snapshot · tool inspection ${visibility?.codex?.inspection_status || "unknown"}`;
   const capItems = roomCapabilities.items || [];
   registry.append(statusLine(
     "Room deterministic capabilities",
