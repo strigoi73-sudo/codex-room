@@ -58,7 +58,13 @@ def create_app(
     @app.middleware("http")
     async def disable_local_ui_cache(request: Request, call_next):
         response = await call_next(request)
-        if request.url.path in {"/", "/index.html", "/app.js", "/styles.css"}:
+        if request.url.path in {
+            "/",
+            "/index.html",
+            "/app.js",
+            "/styles.css",
+            "/api/codex/commands",
+        }:
             response.headers["Cache-Control"] = "no-store"
         return response
 
