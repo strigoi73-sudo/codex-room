@@ -221,15 +221,15 @@ def parse_slash_command_source(source: str) -> list[dict[str, Any]]:
         if line.startswith("#["):
             pending_attributes.append(line)
             continue
-        variant_match = re.fullmatch(r"([A-Z][A-Za-z0-9_]*)\\s*,", line)
+        variant_match = re.fullmatch(r"([A-Z][A-Za-z0-9_]*)\s*,", line)
         if variant_match is None:
             continue
 
         variant = variant_match.group(1)
         attributes = " ".join(pending_attributes)
         pending_attributes.clear()
-        to_string = re.search(r'to_string\\s*=\\s*"([^"]+)"', attributes)
-        serializes = re.findall(r'serialize\\s*=\\s*"([^"]+)"', attributes)
+        to_string = re.search(r'to_string\s*=\s*"([^"]+)"', attributes)
+        serializes = re.findall(r'serialize\s*=\s*"([^"]+)"', attributes)
         command = (
             to_string.group(1)
             if to_string is not None
@@ -263,8 +263,8 @@ def _parse_descriptions(source: str) -> dict[str, str]:
     body = _extract_braced_body(source, "pub fn description")
     mapping: dict[str, str] = {}
     arm_pattern = re.compile(
-        rf"((?:SlashCommand::[A-Za-z0-9_]+\\s*(?:\\|\\s*)?)+)"
-        rf"=>\\s*(?:\\{{\\s*)?({_RUST_STRING})\\s*(?:\\}})?\\s*,",
+        rf"((?:SlashCommand::[A-Za-z0-9_]+\s*(?:\|\s*)?)+)"
+        rf"=>\s*(?:\{{\s*)?({_RUST_STRING})\s*(?:\}})?\s*,",
         re.DOTALL,
     )
     for match in arm_pattern.finditer(body):
