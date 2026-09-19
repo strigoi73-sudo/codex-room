@@ -2960,14 +2960,20 @@ class RoomRuntime:
             retire_worker_context_task_ids = list(
                 decision.retire_worker_context_task_ids or []
             )
-            if decision.action == TransactionAction.CONSULT_PRINCIPAL and (
-                agent_key != "agent_c"
-                or batch["assignment"].get("parent_assignment_id") is not None
-                or batch["assignment"].get("contribution_join_id") is not None
-            ):
-                raise ValueError(
-                    "CONSULT_PRINCIPAL is valid only for Agent C's root coordinator Assignment"
+            if decision.action == TransactionAction.CONSULT_PRINCIPAL:
+                consultation_status = await self.db.get_task_coordination_status(
+                    batch["task_id"]
                 )
+                if (
+                    agent_key != "agent_c"
+                    or consultation_status.get("task_state") != "active"
+                    or consultation_status.get("coordinator_agent_key") != "agent_c"
+                    or batch["assignment"].get("parent_assignment_id") is not None
+                    or batch["assignment"].get("contribution_join_id") is not None
+                ):
+                    raise ValueError(
+                        "CONSULT_PRINCIPAL is valid only for Agent C's root coordinator Assignment"
+                    )
             for item in delegations:
                 if item["target"] == agent_key or item["target"] not in participants:
                     raise ValueError("Transaction delegation must target an available peer")
