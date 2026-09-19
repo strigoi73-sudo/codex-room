@@ -25,10 +25,10 @@ function makeEvent(sequence, overrides = {}) {
   };
 }
 
-function makeRoom(events) {
+function makeRoom(events, id = roomId, title = 'Large transcript stability fixture') {
   return {
-    id: roomId,
-    title: 'Large transcript stability fixture',
+    id,
+    title,
     status: 'running',
     turn_count: 321,
     max_turns: 500,
@@ -47,8 +47,9 @@ function makeRoom(events) {
   };
 }
 
-async function openFixture(page, initialRoom) {
+async function openFixture(page, initialRoom, additionalRooms = []) {
   const observerMessages = [];
+  const rooms = [initialRoom, ...additionalRooms];
   await page.addInitScript(() => {
     window.__roomSockets = [];
     class MockWebSocket {
@@ -85,19 +86,21 @@ async function openFixture(page, initialRoom) {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(profiles) });
     }
     if (pathname === '/api/rooms') {
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify([initialRoom]) });
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(rooms) });
     }
-    if (pathname === `/api/rooms/${roomId}`) {
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(initialRoom) });
+    const detailRoom = rooms.find((room) => pathname === `/api/rooms/${room.id}`);
+    if (detailRoom) {
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(detailRoom) });
     }
-    if (pathname === `/api/rooms/${roomId}/messages` && route.request().method() === 'POST') {
+    const messageRoom = rooms.find((room) => pathname === `/api/rooms/${room.id}/messages`);
+    if (messageRoom && route.request().method() === 'POST') {
       observerMessages.push(JSON.parse(route.request().postData() || '{}'));
       return route.fulfill({ contentType: 'application/json', body: '{}' });
     }
     return route.fulfill({ status: 404, contentType: 'application/json', body: '{"detail":"fixture route not found"}' });
   });
 
-  await page.goto(`http://room.test/#room=${roomId}`);
+  await page.goto(`http://room.test/#room=${initialRoom.id}`);
   await expect(page.locator('#transcript .event')).toHaveCount(initialRoom.events.length);
   await expect.poll(() => page.locator('#transcript').evaluate((element) =>
     element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThan(5);
@@ -147,6 +150,7 @@ test('observer composer sends on Enter, keeps Shift+Enter as newline, and ignore
   const observerMessages = await openFixture(page, makeRoom([]));
   const composer = page.locator('#message-form textarea');
 
+  await expect(composer).toBeFocused();
   await expect(page.locator('.composer-hint')).toHaveText('Enter to send · Shift+Enter for newline');
 
   await composer.fill('IME draft');
@@ -168,12 +172,77 @@ test('observer composer sends on Enter, keeps Shift+Enter as newline, and ignore
   await expect.poll(() => observerMessages.length).toBe(1);
   expect(observerMessages[0]).toEqual({ target: 'all', content: 'line one\nline two' });
   await expect(composer).toHaveValue('');
+  await expect(composer).toBeFocused();
 
   await composer.fill('plain enter');
   await composer.press('Enter');
   await expect.poll(() => observerMessages.length).toBe(2);
   expect(observerMessages[1]).toEqual({ target: 'all', content: 'plain enter' });
   await expect(composer).toHaveValue('');
+  await expect(composer).toBeFocused();
+});
+
+test('observer composer grows and preserves per-Room drafts across switching and refresh', async ({ page }) => {
+  const secondRoomId = 'room_composer_second';
+  const firstRoom = makeRoom([], roomId, 'Primary room');
+  const secondRoom = makeRoom([], secondRoomId, 'Second room');
+  const observerMessages = await openFixture(page, firstRoom, [secondRoom]);
+  const composer = page.locator('#message-form textarea');
+  const target = page.locator('#message-form select[name=target]');
+
+  const initialHeight = await composer.evaluate((element) => element.getBoundingClientRect().height);
+  await composer.fill(['one', 'two', 'three', 'four', 'five', 'six'].join('\n'));
+  const grownHeight = await composer.evaluate((element) => element.getBoundingClientRect().height);
+  expect(grownHeight).toBeGreaterThan(initialHeight);
+
+  await composer.fill(Array.from({ length: 16 }, (_, index) => `line ${index + 1}`).join('\n'));
+  const capped = await composer.evaluate((element) => ({
+    height: element.getBoundingClientRect().height,
+    clientHeight: element.clientHeight,
+    scrollHeight: element.scrollHeight,
+    maxHeight: Number.parseFloat(getComputedStyle(element).maxHeight),
+    overflowY: getComputedStyle(element).overflowY,
+  }));
+  expect(capped.height).toBeLessThanOrEqual(capped.maxHeight + 1);
+  expect(capped.scrollHeight).toBeGreaterThan(capped.clientHeight);
+  expect(capped.overflowY).toBe('auto');
+
+  await composer.fill('First room draft');
+  await target.selectOption('agent_b');
+  await page.locator('#room-list button').filter({ hasText: 'Second room' }).click();
+  await expect(composer).toBeFocused();
+  await expect(composer).toHaveValue('');
+  await expect(target).toHaveValue('all');
+
+  await composer.fill('Second room draft');
+  await target.selectOption('agent_c');
+  await page.locator('#room-list button').filter({ hasText: 'Primary room' }).click();
+  await expect(composer).toHaveValue('First room draft');
+  await expect(target).toHaveValue('agent_b');
+  await expect(composer).toBeFocused();
+
+  await page.reload();
+  await expect(composer).toHaveValue('First room draft');
+  await expect(target).toHaveValue('agent_b');
+  await expect(composer).toBeFocused();
+
+  await composer.press('Enter');
+  await expect.poll(() => observerMessages.length).toBe(1);
+  expect(observerMessages[0]).toEqual({ target: 'agent_b', content: 'First room draft' });
+  await expect(composer).toHaveValue('');
+  await expect(composer).toBeFocused();
+
+  const storedDrafts = await page.evaluate(({ firstId, secondId }) => ({
+    first: localStorage.getItem(`codex-room:observer-draft:${firstId}`),
+    second: localStorage.getItem(`codex-room:observer-draft:${secondId}`),
+  }), { firstId: roomId, secondId: secondRoomId });
+  expect(storedDrafts.first).toBeNull();
+  expect(JSON.parse(storedDrafts.second)).toEqual({ content: 'Second room draft', target: 'agent_c' });
+
+  await page.locator('#room-list button').filter({ hasText: 'Second room' }).click();
+  await expect(composer).toHaveValue('Second room draft');
+  await expect(target).toHaveValue('agent_c');
+  await expect(composer).toBeFocused();
 });
 
 test('status bursts and reconnect preserve a scrolled-up large transcript without DOM churn', async ({ page }) => {
