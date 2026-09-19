@@ -11,6 +11,7 @@ from codex_room.exporter import as_markdown
 from codex_room.models import (
     CreateRoomRequest,
     ObserverMessageRequest,
+    PrincipalReplyRequest,
     PrepareRoundRequest,
     RoomStatus,
     TransactionAction,
@@ -2134,3 +2135,311 @@ async def test_transaction_new_round_cancels_old_work_and_late_result_cannot_set
         for event in events
     )
 
+
+
+@pytest.mark.asyncio
+async def test_transaction_c_private_principal_consultation_resumes_same_context_without_peers(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.CONSULT_PRINCIPAL,
+                message="Should I use the conservative interpretation?",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated the principal's private answer.",
+            ),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "principal-consult.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Consult the principal only if judgment is required",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def waiting_for_principal() -> bool:
+        async with runtime.db.connect() as db:
+            row = await db.execute_fetchall(
+                """SELECT x.*, a.agent_key FROM assignments x
+                   JOIN tasks t ON t.id=x.task_id
+                   JOIN agents a ON a.id=x.agent_id
+                   WHERE t.room_id=? AND x.state='waiting_principal'""",
+                (room_id,),
+            )
+        return len(row) == 1 and row[0]["agent_key"] == "agent_c"
+
+    await wait_until(waiting_for_principal)
+
+    async with runtime.db.connect() as db:
+        assignments = await db.execute_fetchall(
+            """SELECT x.*, a.agent_key FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+    c_assignment = next(row for row in assignments if row["agent_key"] == "agent_c")
+    consultation_event_id = c_assignment["result_event_id"]
+    context_thread_id = c_assignment["context_thread_id"]
+    assert consultation_event_id
+    assert context_thread_id
+
+    events = await runtime.db.get_events(room_id)
+    consultation = next(event for event in events if event["id"] == consultation_event_id)
+    assert consultation["event_type"] == "principal_message"
+    assert consultation["source"] == "agent_c"
+    assert consultation["destination"] == "observer"
+    assert consultation["visibility"] == "private"
+    assert consultation["agent_readable"] is False
+    assert consultation["turn_triggering"] is False
+    assert consultation["metadata"]["private"] is True
+    assert consultation["metadata"]["principal_channel"] is True
+    assert consultation["deliveries"] == []
+    assert adapter.calls["agent_a"] == []
+    assert adapter.calls["agent_b"] == []
+
+    await runtime.pause(room_id)
+    reply = await runtime.principal_reply(
+        room_id,
+        PrincipalReplyRequest(
+            consultation_event_id=consultation_event_id,
+            content="Yes. Use the conservative interpretation and explain the consequence.",
+        ),
+    )
+    assert reply["event_type"] == "principal_reply"
+    assert reply["source"] == "observer"
+    assert reply["destination"] == "agent_c"
+    assert reply["visibility"] == "private"
+    assert reply["agent_readable"] is False
+    assert reply["turn_triggering"] is False
+    assert reply["related_event_id"] == consultation_event_id
+
+    with pytest.raises(ValueError):
+        await runtime.principal_reply(
+            room_id,
+            PrincipalReplyRequest(
+                consultation_event_id=consultation_event_id,
+                content="This duplicate reply must fail closed.",
+            ),
+        )
+
+    async with runtime.db.connect() as db:
+        queued = await db.execute_fetchall(
+            "SELECT * FROM assignments WHERE id=?",
+            (c_assignment["id"],),
+        )
+    assert queued[0]["state"] == "queued"
+    assert queued[0]["principal_reply_event_id"] == reply["id"]
+
+    await runtime.resume(room_id)
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    assert adapter.calls["agent_c"][0]["thread_id"] == context_thread_id
+    assert adapter.calls["agent_c"][1]["thread_id"] == context_thread_id
+    assert "<private_principal_reply " in adapter.calls["agent_c"][1]["prompt"]
+    assert (
+        "Yes. Use the conservative interpretation and explain the consequence."
+        in adapter.calls["agent_c"][1]["prompt"]
+    )
+    assert "CORE did not deliver the consultation or reply to A or B" in adapter.calls[
+        "agent_c"
+    ][1]["prompt"]
+    assert adapter.calls["agent_a"] == []
+    assert adapter.calls["agent_b"] == []
+
+    events = await runtime.db.get_events(room_id)
+    persisted_reply = next(event for event in events if event["id"] == reply["id"])
+    assert persisted_reply["deliveries"] == []
+
+
+@pytest.mark.asyncio
+async def test_transaction_principal_wait_survives_runtime_restart(
+    transaction_runtime_factory,
+):
+    first_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    first_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.CONSULT_PRINCIPAL,
+            message="Choose alpha or beta before I continue.",
+        )
+    )
+    runtime1 = await transaction_runtime_factory(first_adapter, "principal-restart.db")
+    snapshot = await runtime1.create_room(
+        CreateRoomRequest(
+            topic="Restart-safe principal consultation",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def waiting_state() -> bool:
+        async with runtime1.db.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT x.* FROM assignments x
+                   JOIN tasks t ON t.id=x.task_id
+                   WHERE t.room_id=? AND x.state='waiting_principal'""",
+                (room_id,),
+            )
+        return len(rows) == 1
+
+    await wait_until(waiting_state)
+    async with runtime1.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=? AND x.state='waiting_principal'""",
+            (room_id,),
+        )
+    assignment = rows[0]
+    consultation_event_id = assignment["result_event_id"]
+    context_thread_id = assignment["context_thread_id"]
+    await runtime1.close()
+
+    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second_adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Continued after the restart-safe private reply.",
+        )
+    )
+    runtime2 = await transaction_runtime_factory(second_adapter, "principal-restart.db")
+    room = await runtime2.db.get_room(room_id)
+    assert room["status"] == RoomStatus.RUNNING
+
+    async with runtime2.db.connect() as db:
+        persisted = await db.execute_fetchall(
+            "SELECT * FROM assignments WHERE id=?",
+            (assignment["id"],),
+        )
+    assert persisted[0]["state"] == "waiting_principal"
+    assert persisted[0]["context_thread_id"] == context_thread_id
+
+    await runtime2.principal_reply(
+        room_id,
+        PrincipalReplyRequest(
+            consultation_event_id=consultation_event_id,
+            content="Use beta.",
+        ),
+    )
+    await wait_until(lambda: _room_finished(runtime2, room_id))
+
+    assert len(second_adapter.calls["agent_c"]) == 1
+    assert second_adapter.calls["agent_c"][0]["thread_id"] == context_thread_id
+    assert "Use beta." in second_adapter.calls["agent_c"][0]["prompt"]
+    assert second_adapter.calls["agent_a"] == []
+    assert second_adapter.calls["agent_b"] == []
+
+
+@pytest.mark.asyncio
+async def test_transaction_stop_cancels_private_principal_wait(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.CONSULT_PRINCIPAL,
+            message="I need a principal decision before continuing.",
+        )
+    )
+    runtime = await transaction_runtime_factory(adapter, "principal-stop.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Stop a principal consultation",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def consultation() -> dict | None:
+        events = await runtime.db.get_events(room_id)
+        return next(
+            (event for event in events if event["event_type"] == "principal_message"),
+            None,
+        )
+
+    await wait_until(consultation)
+    consult = await consultation()
+    assert consult is not None
+
+    await runtime.stop(room_id)
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=?""",
+            (room_id,),
+        )
+    assert len(rows) == 1
+    assert rows[0]["state"] == "cancelled"
+
+    with pytest.raises(ValueError, match="stopped"):
+        await runtime.principal_reply(
+            room_id,
+            PrincipalReplyRequest(
+                consultation_event_id=consult["id"],
+                content="A stopped Room must not resume from this reply.",
+            ),
+        )
+
+
+@pytest.mark.asyncio
+async def test_transaction_non_coordinator_cannot_consult_principal(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Perform the bounded worker analysis.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="C recovered after the invalid worker action.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.CONSULT_PRINCIPAL,
+            message="A must not open a private principal side channel.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "principal-c-only.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Only C may consult the principal",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    events = await runtime.db.get_events(room_id)
+    assert not any(event["event_type"] == "principal_message" for event in events)
+    assert len(adapter.calls["agent_a"]) == 1
+    assert len(adapter.calls["agent_c"]) == 2
+    assert any(
+        event["event_type"] == "agent_error"
+        and "CONSULT_PRINCIPAL is valid only for Agent C" in event["content"]
+        for event in events
+    )
