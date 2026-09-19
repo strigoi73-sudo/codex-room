@@ -159,6 +159,7 @@ input:focus, textarea:focus, select:focus { border-color: #5d6470; box-shadow: 0
 .composer select, .composer textarea { margin: 0; border: 0; background: transparent; resize: none; }
 .composer select { color: #b3b7c0; font-size: 11px; border-right: 1px solid var(--line); border-radius: 0; }
 .composer textarea { min-height: 45px; }
+.composer-hint { grid-column: 2; color: var(--muted); font-size: 10px; line-height: 1.2; margin: -4px 8px 1px; }
 .send-button { width: 36px; height: 36px; align-self: center; border: 0; border-radius: 9px; background: var(--text); color: #111; font-size: 20px; font-weight: 800; }
 .send-button:disabled { opacity: .5; }
 .mobile-sidebar { display: none; }
