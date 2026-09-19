@@ -1388,18 +1388,28 @@ class RoomRuntime:
         )
         thread_id = preferred.get("thread_id") if preferred else None
 
-        capability_result = list_capabilities(self.workspace(room_id))
-        room_capabilities = [
-            {
-                "id": item["id"],
-                "description": item["description"],
-                "origin": item["origin"],
-                "scope": item["scope"],
-                "version": item["version"],
-                "status": "available",
-            }
-            for item in capability_result.get("capabilities", [])
-        ]
+        try:
+            capability_result = list_capabilities(self.workspace(room_id))
+        except Exception:
+            room_capability_status = "unknown"
+            room_capability_detail = (
+                "The Room capability registry could not be inspected safely."
+            )
+            room_capabilities: list[dict[str, Any]] = []
+        else:
+            room_capability_status = "available"
+            room_capability_detail = None
+            room_capabilities = [
+                {
+                    "id": item["id"],
+                    "description": item["description"],
+                    "origin": item["origin"],
+                    "scope": item["scope"],
+                    "version": item["version"],
+                    "status": "available",
+                }
+                for item in capability_result.get("capabilities", [])
+            ]
 
         try:
             inherited = await self.adapter.inspect_tool_availability(
@@ -1413,7 +1423,25 @@ class RoomRuntime:
             }
             inherited = {
                 "inspection_status": "unavailable",
-                "native": [],
+                "native": [
+                    {
+                        "id": "workspace_files",
+                        "label": "Workspace files",
+                        "status": "available",
+                        "detail": (
+                            "Read/write access inside the Room workspace sandbox."
+                        ),
+                    },
+                    {
+                        "id": "command_execution",
+                        "label": "Commands",
+                        "status": "available",
+                        "detail": (
+                            "Command execution is available subject to the Room sandbox "
+                            "and approval policy."
+                        ),
+                    },
+                ],
                 "web_search": dict(unknown, mode=None),
                 "skills": dict(
                     unknown,
@@ -1442,9 +1470,14 @@ class RoomRuntime:
         return {
             "room_id": room_id,
             "room_capabilities": {
-                "status": "available",
+                "status": room_capability_status,
                 "count": len(room_capabilities),
                 "items": room_capabilities,
+                **(
+                    {"detail": room_capability_detail}
+                    if room_capability_detail is not None
+                    else {}
+                ),
             },
             "codex": inherited,
         }
