@@ -91,6 +91,13 @@ def create_app(
             raise HTTPException(status_code=404, detail="Room not found")
         return snapshot
 
+    @app.get("/api/rooms/{room_id}/status-tools")
+    async def get_status_tools(room_id: str) -> dict[str, Any]:
+        try:
+            return await runtime.status_tools(room_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="Room not found") from exc
+
     @app.post("/api/rooms/{room_id}/agents", status_code=201)
     async def add_agent(room_id: str, request: AddAgentRequest) -> dict[str, Any]:
         return await _translate_errors(runtime.add_agent(room_id, request))
