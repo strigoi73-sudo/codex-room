@@ -406,6 +406,27 @@ Environment/document truth, repository hygiene, runtime provenance, maintenance 
 
 The intended default remains one-seventh of the weekly allowance (~14.3%), using structured provider usage/rate-limit data rather than Room token estimates. Implementation remains blocked until mixed subscription allowance versus purchased-credit semantics are understood well enough to define which pool is paced and how multiple pools interact.
 
+## QoL Wishlist
+
+**Purpose:** Retain useful quality-of-life ideas without silently promoting them into authorized implementation work.
+
+Wishlist entries are **idea capture, not a work queue**. They have no work state merely by appearing here. When the principal explicitly selects an item for implementation, track that active work through the normal Development Control flow and verify it according to its actual risk. Prefer thin UI/operator improvements that do not disturb transaction semantics, durable state, or agent judgment.
+
+### Initial wishlist — 2026-09-19
+
+- **Observer composer: Enter sends; Shift+Enter inserts a newline.** Apply this behavior only to the ordinary observer chat composer, not every multiline form. Retain Ctrl/Cmd+Enter as an additional send shortcut if practical. Ignore Enter while an IME composition is active. Show a subtle `Enter to send · Shift+Enter for newline` hint.
+- **Composer focus retention.** Focus the observer composer when a Room opens and return focus after a successful send so repeated human interventions do not require another mouse click.
+- **Auto-growing observer composer.** Begin compact, expand vertically as text grows to a sensible maximum such as 6–8 lines, then use internal scrolling.
+- **Per-Room unsent drafts.** Preserve observer message text and selected target locally while typing so Room switches, refreshes, or accidental tab closure do not discard a draft. Clear the stored draft only after successful submission.
+- **New-activity / jump-to-latest control.** When the human has scrolled away from the transcript bottom, keep the existing non-forced-scroll behavior but surface a visible `new events` indicator/button that jumps to the latest activity.
+- **One-click operational ID copying.** Make the Room ID easy to copy and expose convenient copying for relevant Round, Task, and Assignment IDs. Consider a single `Copy diagnostics` action containing the current Room/Round/Task identifiers, status, turn count, model/effort, and runtime/source provenance.
+- **Room search and filtering.** Add quick search plus simple state filters such as Active, Paused, Finished, and Archived so a growing Room list remains manageable.
+- **Transcript detail/noise controls.** Allow the human to switch between conversation-focused and full-activity views or collapse low-level activity. Errors, attempt warnings, recoveries, and important lifecycle transitions should remain prominent.
+- **Clear immediate action feedback.** Give obvious transient feedback for actions such as sending, copying, preparing/starting, and failures; keep error feedback visually associated with the initiating control where practical.
+- **Remember harmless UI preferences locally.** Persist presentation-only choices such as transcript-detail mode, sidebar state/width, last-used observer target, and whether archived Rooms are shown. Do not turn these into CORE/institutional state unless evidence later requires it.
+- **Conservative keyboard shortcuts.** Support useful navigation/focus shortcuts such as Escape to close dialogs and a shortcut to focus Room search or the observer composer. Avoid shortcuts for destructive/lifecycle actions such as Stop, Reset Agents, or Archive.
+- **Copy individual agent responses.** Provide a small copy action on individual transcript messages so exact agent output can be reused without manual text selection.
+
 ## Maintenance / monitor items
 
 ### PR #110 failed-delegation fallback behavior
