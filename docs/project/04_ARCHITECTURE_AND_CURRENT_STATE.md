@@ -82,7 +82,7 @@ I-015 is complete. Stage A established the transaction kernel; Stage B moved bou
 
 ### Private principal consultation
 
-**IMPLEMENTED ON I-016 FEATURE BRANCH / VERIFICATION PENDING / NOT MERGED**
+**IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**
 
 D-038 adds a C-only `CONSULT_PRINCIPAL` action for the root coordinator Assignment. The action is explicitly nonterminal: CORE records C's consultation as a private observer event, creates no A/B delivery or wakeup, and moves the exact Assignment to durable `waiting_principal` state. The human principal is not modeled as a fourth production agent.
 
@@ -91,6 +91,8 @@ The principal's reply is bound to the exact consultation event and waiting Assig
 The wait is transaction state, so an ordinary runtime restart does not erase it. Pause may preserve the wait and accept a reply without executing until Resume; Stop/cancel marks `waiting_principal` work cancelled with the rest of the Task. Private consultation does not become shared organizational knowledge automatically. C must explicitly communicate only the necessary consequence if A/B later need it.
 
 The initial I-016 release deliberately excludes A/B→principal consultation and a nonblocking private notification action. Those are separate product choices, not implicit extensions of this primitive.
+
+PR #137 exact feature head `e58c758527ae6a3954be9525b1411324e12ec7de` passed the repository-standard fast gate: 63 Linux focused tests, 118 Windows portability tests, and 7 browser interaction/stability tests, with a clean tracked tree and clean `git diff --check`. It squash-merged to canonical `main` as `d57d25769a8be215cc01af354983fd9c44b10825`. See E-142.
 
 
 ### Round completion policy
