@@ -812,16 +812,29 @@ class Database:
                 )
 
     async def recover_interrupted_work(self) -> None:
-        """Reconcile durable executions without replaying decisions already applied."""
+        """Reconcile durable executions without replaying completed transaction turns."""
         now = utc_now()
         async with self.connect() as db:
+            # A transactional provider turn is replayable only while its Assignment
+            # still says that turn is running. Waiting/queued/terminal Assignment
+            # states mean Room-side decision effects already advanced beyond that
+            # provider turn, even if the execution row lagged during process exit.
             await db.execute(
                 """UPDATE agent_executions
                    SET state='settled',
                        settled_at=COALESCE(settled_at, ?),
                        last_reconciled_at=?
-                   WHERE state IN ('active', 'recovering', 'result_ready')
-                     AND decision_recorded_at IS NOT NULL""",
+                   WHERE assignment_id IS NOT NULL
+                     AND state IN ('active', 'recovering', 'result_ready')
+                     AND (
+                         decision_recorded_at IS NOT NULL
+                         OR EXISTS (
+                             SELECT 1
+                             FROM assignments x
+                             WHERE x.id=agent_executions.assignment_id
+                               AND x.state<>'running'
+                         )
+                     )""",
                 (now, now),
             )
             await db.execute(
@@ -831,7 +844,6 @@ class Database:
                        SELECT agent_id
                        FROM agent_executions
                        WHERE state='settled'
-                         AND decision_recorded_at IS NOT NULL
                          AND last_reconciled_at=?
                    )
                    AND NOT EXISTS (
@@ -841,14 +853,27 @@ class Database:
                          AND pending.state IN
                            ('claimed','active','recovering','result_ready',
                             'usage_suspended','quarantined')
-                         AND pending.decision_recorded_at IS NULL
                    )""",
                 (AgentStatus.IDLE, now, now),
             )
             await db.execute(
                 """UPDATE agent_executions
                    SET state='recovering', last_reconciled_at=NULL
-                   WHERE state IN ('active', 'recovering')
+                   WHERE assignment_id IS NOT NULL
+                     AND state IN ('active', 'recovering')
+                     AND decision_recorded_at IS NULL
+                     AND EXISTS (
+                         SELECT 1
+                         FROM assignments x
+                         WHERE x.id=agent_executions.assignment_id
+                           AND x.state='running'
+                     )"""
+            )
+            await db.execute(
+                """UPDATE agent_executions
+                   SET state='recovering', last_reconciled_at=NULL
+                   WHERE assignment_id IS NULL
+                     AND state IN ('active', 'recovering')
                      AND decision_recorded_at IS NULL"""
             )
             await db.execute(
