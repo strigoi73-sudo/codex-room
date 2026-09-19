@@ -2825,7 +2825,7 @@ async def test_transaction_unapproved_exceptional_self_config_fails_closed(
     )
 
 @pytest.mark.asyncio
-async def test_recover_interrupted_work_settles_decision_recorded_execution_without_replay(
+async def test_recover_interrupted_work_settles_nonrunning_assignment_execution_without_replay(
     transaction_runtime_factory,
 ):
     adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
