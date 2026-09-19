@@ -1877,4 +1877,3 @@ async def test_snapshot_exposes_current_then_last_agent_model(runtime_factory):
     assert settled_a["execution"]["model"] == "gpt-5.6-terra"
     assert settled_a["execution"]["reasoning_effort"] == "high"
     assert settled_a["execution"]["model_recency"] == "last"
-
