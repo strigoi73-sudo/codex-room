@@ -104,6 +104,7 @@
               <button id="resume-room" class="control">▶ Resume</button>
               <button id="stop-room" class="control danger-text">■ Stop</button>
               <button id="new-round" class="control">＋ New round</button>
+              <button id="status-tools-button" class="control">Status &amp; Tools</button>
               <button id="start-round" class="control primary">▶ Start round</button>
               <button id="add-agent-c" class="control">Upgrade legacy Room to triad</button>
               <button id="reset-room" class="control danger-text">↻ Reset agents</button>
@@ -156,6 +157,17 @@
         </div>
         <div class="dialog-actions"><button type="button" class="ghost close-dialog">Cancel</button><button value="default" class="primary" type="submit">Save defaults</button></div>
       </form>
+    </dialog>
+    <dialog id="status-tools-dialog">
+      <div>
+        <p class="eyebrow">Read-only inspection</p><h2>Status &amp; Tools</h2>
+        <p id="status-tools-subtitle">Current Room work, execution state, economics, and safely inspectable Codex capabilities.</p>
+        <div id="status-tools-content" class="status-tools-content" aria-live="polite"></div>
+        <div class="dialog-actions">
+          <button type="button" class="ghost" id="refresh-status-tools">Refresh</button>
+          <button type="button" class="primary close-dialog">Close</button>
+        </div>
+      </div>
     </dialog>
     <script src="/app.js" type="module"></script>
   </body>
