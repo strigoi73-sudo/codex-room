@@ -1409,7 +1409,12 @@ class RoomRuntime:
             round_item["id"],
             root_assignment["context_thread_id"],
         )
-        return self._coordinator_context_economics(history)
+        economics = self._coordinator_context_economics(history)
+        return {
+            **economics,
+            "advisory_consider_input_tokens": self.COORDINATOR_REFRESH_CONSIDER_INPUT_TOKENS,
+            "advisory_strongly_prefer_input_tokens": self.COORDINATOR_REFRESH_PREFER_INPUT_TOKENS,
+        }
 
     def workspace(self, room_id: str) -> Path:
         return self.data_root / "rooms" / room_id / "shared"
