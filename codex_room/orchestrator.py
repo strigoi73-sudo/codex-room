@@ -53,7 +53,10 @@ from .models import (
     AgentStatus,
     BindInstitutionalReleaseRequest,
     CreateRoomRequest,
+    C_COGNITION_CEILING_RANK,
+    EXCEPTIONAL_C_EXECUTION_CONFIGS,
     EXECUTION_CONFIGS,
+    ORDINARY_EXECUTION_CONFIGS,
     NewTopicRequest,
     ObserverMessageRequest,
     PrincipalReplyRequest,
@@ -1034,6 +1037,7 @@ class RoomRuntime:
                 room_id,
                 request.consultation_event_id,
                 request.content,
+                request.cognition_approval,
             )
         event = result["event"]
         self._publish_event(event)
@@ -2216,6 +2220,19 @@ class RoomRuntime:
                     ),
                 ]
             )
+            reply_metadata = principal_reply.get("metadata", {})
+            if reply_metadata.get("requested_task_cognition_ceiling"):
+                context_parts.append(
+                    "<task_cognition_approval "
+                    f"decision=\"{reply_metadata.get('cognition_approval') or ''}\" "
+                    f"requested_ceiling=\"{reply_metadata.get('requested_task_cognition_ceiling') or ''}\" />"
+                )
+                context_parts.append(
+                    "CORE applied the structured cognition approval decision above. "
+                    "If approved, the Task's C cognition ceiling is durably raised for this "
+                    "Task only and this resumed execution uses the approved configuration. "
+                    "If declined, the Task retains its prior ceiling."
+                )
         private = round_item.get("participant_private", {}).get(agent["agent_key"])
         if private:
             context_parts.append(f"Private initialization for you:\n{private}")
@@ -2230,7 +2247,8 @@ class RoomRuntime:
                 "<task "
                 f"id=\"{task_status['task_id']}\" "
                 f"state=\"{task_status.get('task_state') or ''}\" "
-                f"coordinator=\"{task_status.get('coordinator_agent_key') or ''}\" />"
+                f"coordinator=\"{task_status.get('coordinator_agent_key') or ''}\" "
+                f"c_cognition_ceiling=\"{task_status.get('c_cognition_ceiling') or 'sol-high'}\" />"
             )
             for item in task_status["assignments"]:
                 context_parts.append(
@@ -2451,9 +2469,19 @@ class RoomRuntime:
                     "checkpoint must be non-null only for REFRESH and null for every other action. "
                     "retire_worker_context_task_ids is independent of action but is valid only for C. "
                     "evidence_requests must be null outside EVIDENCE, and history_requests must be "
-                    "null outside HISTORY."
+                    "null outside HISTORY. next_self_config is C-only and controls C's next execution "
+                    "of this same root coordinator Assignment; it must be null on COMPLETE/PASS. "
+                    "requested_task_cognition_ceiling is C-only, valid only on CONSULT_PRINCIPAL, "
+                    "and may request sol-xhigh or sol-max approval for the current Task."
                 ),
-                self._transaction_execution_config_prompt(agent["agent_key"]),
+                self._transaction_execution_config_prompt(
+                    agent["agent_key"],
+                    task_status.get("c_cognition_ceiling", "sol-high")
+                    if task_status is not None
+                    else "sol-high",
+                    (batch.get("execution") or {}).get("model"),
+                    (batch.get("execution") or {}).get("reasoning_effort"),
+                ),
             ]
         )
         return "\n\n".join(context_parts)
@@ -2965,12 +2993,19 @@ class RoomRuntime:
             retire_worker_context_task_ids = list(
                 decision.retire_worker_context_task_ids or []
             )
-            if decision.action == TransactionAction.CONSULT_PRINCIPAL:
+            consultation_status = None
+            if (
+                decision.action == TransactionAction.CONSULT_PRINCIPAL
+                or decision.next_self_config is not None
+                or decision.requested_task_cognition_ceiling is not None
+            ):
                 consultation_status = await self.db.get_task_coordination_status(
                     batch["task_id"]
                 )
+            if decision.action == TransactionAction.CONSULT_PRINCIPAL:
                 if (
                     agent_key != "agent_c"
+                    or consultation_status is None
                     or consultation_status.get("task_state") != "active"
                     or consultation_status.get("coordinator_agent_key") != "agent_c"
                     or batch["assignment"].get("parent_assignment_id") is not None
@@ -2979,12 +3014,57 @@ class RoomRuntime:
                     raise ValueError(
                         "CONSULT_PRINCIPAL is valid only for Agent C's root coordinator Assignment"
                     )
+            if decision.next_self_config is not None:
+                if (
+                    agent_key != "agent_c"
+                    or consultation_status is None
+                    or consultation_status.get("coordinator_agent_key") != "agent_c"
+                    or batch["assignment"].get("parent_assignment_id") is not None
+                    or batch["assignment"].get("contribution_join_id") is not None
+                ):
+                    raise ValueError(
+                        "next_self_config is valid only for Agent C's root coordinator Assignment"
+                    )
+                if decision.next_self_config in EXCEPTIONAL_C_EXECUTION_CONFIGS:
+                    if (
+                        C_COGNITION_CEILING_RANK[decision.next_self_config]
+                        > C_COGNITION_CEILING_RANK.get(
+                            consultation_status.get("c_cognition_ceiling", "sol-high"), 0
+                        )
+                    ):
+                        raise ValueError(
+                            "Exceptional next_self_config exceeds this Task's approved cognition ceiling"
+                        )
+            if decision.requested_task_cognition_ceiling is not None:
+                if decision.action != TransactionAction.CONSULT_PRINCIPAL:
+                    raise ValueError(
+                        "Task cognition escalation requires CONSULT_PRINCIPAL"
+                    )
+                current_ceiling = consultation_status.get(
+                    "c_cognition_ceiling", "sol-high"
+                )
+                if (
+                    C_COGNITION_CEILING_RANK[
+                        decision.requested_task_cognition_ceiling
+                    ]
+                    <= C_COGNITION_CEILING_RANK.get(current_ceiling, 0)
+                ):
+                    raise ValueError(
+                        "Requested Task cognition ceiling is already authorized"
+                    )
             for item in delegations:
                 if item["target"] == agent_key or item["target"] not in participants:
                     raise ValueError("Transaction delegation must target an available peer")
                 if item.get("config") is not None and agent_key != "agent_c":
                     raise ValueError(
                         "Only Agent C may select a peer execution configuration"
+                    )
+                if (
+                    item.get("config") is not None
+                    and item["config"] not in ORDINARY_EXECUTION_CONFIGS
+                ):
+                    raise ValueError(
+                        "Peer execution configuration must stay within the ordinary Low/Medium/High set"
                     )
             runnable_targets = [item["target"] for item in delegations]
         except ValueError as exc:
@@ -3222,6 +3302,10 @@ class RoomRuntime:
                     ),
                     "evidence_requests": evidence_requests or None,
                     "history_requests": history_requests or None,
+                    "next_self_config": decision.next_self_config,
+                    "requested_task_cognition_ceiling": (
+                        decision.requested_task_cognition_ceiling
+                    ),
                     "work_model_version": 2,
                 },
                 discussion_id=batch["round_id"],
@@ -3245,6 +3329,8 @@ class RoomRuntime:
                     decision.checkpoint,
                     evidence_requests,
                     history_requests,
+                    decision.next_self_config,
+                    decision.requested_task_cognition_ceiling,
                 )
             except ValueError as exc:
                 await self._handle_assignment_failure_locked(
@@ -5428,21 +5514,50 @@ Respond to this event according to your own judgment. Your final response must s
 For MESSAGE, execution_configs is null or an array of target/config records, for example a record selecting agent_a with luna-medium. For PASS or FINISH, set invoke_targets and execution_configs to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
 
     @staticmethod
-    def _transaction_execution_config_prompt(agent_key: str) -> str:
+    def _transaction_execution_config_prompt(
+        agent_key: str,
+        task_cognition_ceiling: str = "sol-high",
+        current_model: str | None = None,
+        current_effort: str | None = None,
+    ) -> str:
         if agent_key != "agent_c":
             return (
-                "Only Agent C may select a peer execution config in this P1 trial. "
-                "If you DELEGATE, set each delegation record's config to null. "
-                "If stronger cognition appears necessary, say so in your substantive "
-                "result or delegation instruction so C can decide whether to escalate."
+                "Only Agent C may select execution configuration. If you DELEGATE, "
+                "set each delegation record's config to null. If stronger cognition "
+                "appears necessary, say why in your substantive result so C can decide."
             )
-        choices = ", ".join(EXECUTION_CONFIGS)
+        peer_choices = ", ".join(ORDINARY_EXECUTION_CONFIGS)
+        allowed_self = list(ORDINARY_EXECUTION_CONFIGS)
+        ceiling_rank = C_COGNITION_CEILING_RANK.get(task_cognition_ceiling, 0)
+        allowed_self.extend(
+            config
+            for config in EXCEPTIONAL_C_EXECUTION_CONFIGS
+            if C_COGNITION_CEILING_RANK[config] <= ceiling_rank
+        )
+        current = (
+            f"{current_model}/{current_effort}"
+            if current_model and current_effort
+            else "the compatibility Terra/high fallback"
+        )
         return (
-            "As Agent C, each DELEGATE record may optionally select that peer's "
-            f"execution config from: {choices}. Prefer luna-medium for routine, "
-            "bounded work and spend more only for affirmative complexity, uncertainty, "
-            "risk, or verification reasons. A null config uses the Terra/high "
-            "compatibility fallback. COMPLETE and PASS contain no delegation records."
+            "As Agent C, allocate cognition economically. Your current execution used "
+            f"{current}. For your own next nonterminal execution of this same root "
+            "Assignment, next_self_config may be one of: "
+            + ", ".join(allowed_self)
+            + ". A null next_self_config retains the Assignment's current selection. "
+            "Ordinary autonomous self-routing is limited to Low/Medium/High across "
+            "Luna, Terra, and Sol. The current Task cognition ceiling is "
+            f"{task_cognition_ceiling}. If Sol/XHigh or Sol/Max would materially help "
+            "and the current Task ceiling does not already authorize it, use "
+            "CONSULT_PRINCIPAL with requested_task_cognition_ceiling set to the desired "
+            "ceiling and briefly explain why. CORE will ask the principal privately; "
+            "approval raises the ceiling for this Task only and resumes this same "
+            "Assignment using the approved configuration. Sol/Ultra, Astra, and GPT-5.5 "
+            "are unavailable. For peers, each DELEGATE record may use only the ordinary "
+            f"set: {peer_choices}. Prefer the cheapest configuration likely to be "
+            "sufficient; spend more only for affirmative complexity, uncertainty, risk, "
+            "or verification reasons. A null peer config retains the Terra/high "
+            "compatibility fallback."
         )
 
     @staticmethod
@@ -5453,17 +5568,16 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
                 "Set execution_configs to null. If the assigned work appears to need "
                 "stronger cognition, report that to C in a MESSAGE and request escalation."
             )
-        choices = ", ".join(EXECUTION_CONFIGS)
+        choices = ", ".join(ORDINARY_EXECUTION_CONFIGS)
         return (
             "As Agent C, you may set execution_configs only for peers you are invoking "
-            "in this MESSAGE. Allowed bounded P1 configs are: "
-            f"{choices}. Prefer luna-medium for routine, bounded delegated work. "
-            "Choose a more expensive config only when complexity, uncertainty, risk, "
-            "or prior verification trouble gives an affirmative reason to spend more. "
-            "A peer may ask you to escalate later; you can redelegate with a stronger "
-            "config. If an invoked peer has no explicit execution_configs entry, the "
-            "compatibility fallback remains the current Terra/high policy. "
-            "Set execution_configs to null when no peer cognition is invoked."
+            "in this MESSAGE. Allowed peer configs are: "
+            f"{choices}. Prefer the cheapest configuration likely to be sufficient. "
+            "Exceptional Sol/XHigh or Sol/Max authority is reserved for C's own Task-scoped "
+            "private approval path and cannot be assigned to peers. If an invoked peer has "
+            "no explicit execution_configs entry, the compatibility fallback remains the "
+            "current Terra/high policy. Set execution_configs to null when no peer cognition "
+            "is invoked."
         )
 
     async def _system_event(
