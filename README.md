@@ -1,31 +1,31 @@
 # Codex Room
 
-Codex Room is a local browser application for a persistent, inspectable AI organization. Its settled Personal production architecture is a fixed triad of three persistent Codex threads: A — Implementer, B — Verifier, and C — Integrator, communicating through a durable mechanical router while a human observes and intervenes. The current runtime retains two-agent Room compatibility, including adding C to an existing A/B Room.
+Codex Room is a local browser application for a persistent, inspectable AI organization. Personal production uses a fixed triad of **Agent A, Agent B, and Agent C**. They are persistent organizational identities and epistemic peers; standard profile bodies are neutral. Agent C has protected coordination responsibility, serves as the ordinary human entry point, and controls coordination without gaining superior judgment.
 
-The application uses the official `openai-codex` Python SDK and its local app-server transport. It reuses the Codex authentication already available on the machine. Normal Room turns are explicitly pinned at the adapter boundary to `gpt-5.6-terra` with `high` reasoning; this Room-local policy does not depend on the user's global Codex model default.
+The current public production path is **work-model version 2** with `provider_context_mode="assignment_thread"`. Durable Room/Task/Assignment/Join state is authoritative. Provider context is bounded to declared work and explicit continuity rather than serving as the definition of agent identity.
+
+Codex Room uses the official `openai-codex` Python SDK and its local app-server transport, reusing Codex authentication already available on the machine.
 
 ## Install for development and testing
 
-Codex Room requires Python 3.11 or later. From this directory, create an environment and install the application with its test dependencies:
+Codex Room requires Python 3.11 or later. From the repository root:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -c constraints-test.txt ".[test]"
 ```
 
-`constraints-test.txt` records the known-good application and test dependency versions used by routine development and CI. Dependency upgrades should be deliberate changes to that constraint set rather than incidental resolver drift.
+`constraints-test.txt` records the known-good application/test dependency set. Dependency upgrades are deliberate changes rather than incidental resolver drift.
 
 ## Start
 
-From this directory, double-click `Start-Codex-Room.cmd`. It starts the local server and opens:
+Double-click `Start-Codex-Room.cmd`. It starts the local server and opens:
 
 <http://127.0.0.1:8765>
 
-The first start can take several seconds while the Codex app-server initializes. The application stores its SQLite database and per-room shared workspaces under `data/`.
+The application stores its SQLite database and per-Room shared workspaces under `data/`.
 
-`Start-Codex-Room.cmd` uses the Codex runtime pinned by the installed `openai-codex` Python package by default. Set `CODEX_ROOM_CODEX_BIN` explicitly only when an operator deliberately needs a different supported `codex.exe`; the launcher validates an explicit override before starting.
-
-The current implementation pins normal Room turns to `gpt-5.6-terra` with `high` reasoning and does not yet route dynamically between model/effort levels. That is current implementation state, not a claim that one fixed level is the final economic policy; Development Control owns the planned P1 measurement work.
+`Start-Codex-Room.cmd` normally uses the Codex runtime pinned by the installed `openai-codex` package. Set `CODEX_ROOM_CODEX_BIN` only when deliberately testing another supported `codex.exe`.
 
 For development, the equivalent entry point is:
 
@@ -34,93 +34,109 @@ $env:CODEX_ROOM_CODEX_BIN = "C:\path\to\current\codex.exe"
 .\.venv\Scripts\python.exe -m codex_room
 ```
 
+Use `Kill-Codex-Room.bat` to stop the local runtime and `Restart-Codex-Room.bat` for the normal server-only restart path that preserves the existing browser window/tab.
+
 ## First run
 
 1. Select **New room**.
-2. Enter an opening topic.
-3. Optionally edit participant names/profile overrides and safety limits. Agent C is included in every new Personal Room.
-4. Create the room. Distinct persistent Codex threads are created for A, B, and C, and the opening Round remains in `preparing`.
-5. Review the staged Round and select **Start Round**. Only the designated starter is invoked.
-6. Watch the transcript. Observer messages can target all agents or be delivered privately to one.
+2. Enter the opening objective/topic.
+3. Optionally edit participant names/profile overrides and safety limits.
+4. Create the Room. New Personal Rooms contain A/B/C and stage the opening Round in `preparing`.
+5. Review the staged Round and select **Start Round**. C is the ordinary default starter.
+6. Observe the transcript and intervene when useful.
 
-Use **New Round** to stage a public prompt, per-participant private initialization, temporary overlays, and a designated starter. Preparation performs no model invocation. **Start Round** schedules only the chosen starter, or every participant independently when that option is selected; waiting participants receive their stored context with their first legitimate conversational turn.
+Round preparation itself performs no model invocation. A Round can also be started with all participants independently when deliberate independent first-pass cognition is desired.
 
-Pause stops new queue claims after active turns finish. Stop interrupts active turns best-effort and cancels queued deliveries. Resume never leaves an empty queue falsely marked as running: if Stop left no runnable work, the Round closes immediately and the next observer message reopens it with fresh work on the same threads. The legacy New Topic API now prepares and immediately starts a Round for compatibility. Reset Agents is deliberately destructive to identity: it archives every participant's old Codex thread, records the IDs in the transcript, and creates replacements.
+## Current work model
 
-### Agent C and legacy two-agent Rooms
-
-Every new Personal Room is created as the permanent A/B/C triad. C is the ordinary default Round starter and human entry point. C retains protected coordination responsibilities but has no superior judgment over A or B. C may selectively invoke A, B, both, or neither; A and B may communicate directly without routing through C. Public peer messages remain readable to the whole triad while `invoke_targets` controls which peers become runnable.
-
-C is not invoked after every A/B exchange. Passive readable deliveries let C stay durably informed without spending a model turn. If material A/B MESSAGE work remains unread by C when the Round would otherwise settle, the runtime creates one integration opportunity for C before final closure. C then consumes the pending peer material through the normal coalesced delivery path and may synthesize, report, redelegate, or finish.
-
-Historical two-agent Rooms remain valid and are not silently mutated. Their **Upgrade legacy Room to triad** action adds a fresh C thread while preserving the exact A/B identities and histories. The upgrade does not deliver pre-join Room history, private prompts, overlays, or a synopsis to C. New rollover successor Rooms use the permanent triad even when the predecessor was a historical A/B Room.
-
-## Architecture
+The production scheduler is transaction-based:
 
 ```text
-Browser UI ──HTTP/WebSocket── FastAPI
-                              │
-                    RoomRuntime (mechanical only)
-                     │        │        │
-               agent A queue  │  agent B queue   agent C queue
-                     │        │        │
-                     └──────── Codex SDK ────────┘
-                              │
-                    persistent participant threads
-
-FastAPI / RoomRuntime ── SQLite rooms, agents, events, deliveries
+Room
+└─ Round
+   └─ Task
+      ├─ Assignment
+      ├─ Assignment
+      └─ Join / integration / settlement state
 ```
 
-- `codex_room/agent.py` — official SDK adapter, structured `MESSAGE` / `PASS` / `FINISH` decisions, interruption, and safe activity summaries.
-- `codex_room/orchestrator.py` — serialized per-agent workers, explicit peer delivery, concurrency, lifecycle controls, retry handling, and limits. It never chooses an intellectual position.
-- `codex_room/db.py` — additive SQLite migrations, Rooms/Rounds/profiles, atomic batch claims, and durable event consumption. Interrupted `processing` rows return to `pending` at startup.
-- `codex_room/main.py` — HTTP, exports, and live WebSocket API.
-- `codex_room/static/` — dependency-free observer interface.
-- `tests/` — fake-agent routing, persistence, lifecycle, limit, and API coverage without model calls.
+A **Task** is the bounded objective/activity. An **Assignment** is declared agent work. A **Join** records dependency/return state. CORE owns the mechanical lifecycle and provenance; agents retain judgment about decomposition, evidence, conclusions, and whether further cognition is worthwhile.
 
-### Durable event flow
+Transaction-enabled agent actions include:
 
-Every visible event contains an event ID and monotonic room sequence, Room/Round IDs, timestamp, type/class, visibility, source, destination, content, status, related event, conversational/turn/PASS flags, and metadata. A separate delivery row is inserted in the same transaction for each authorized reader, with a per-recipient `runnable` bit recording whether that delivery may initiate cognition. `UNIQUE(event_id, agent_id)` prevents duplicate delivery records; `BEGIN IMMEDIATE` makes routing and claiming atomic. Each agent has exactly one worker, so its turns never overlap, while different participants can run concurrently.
+- `COMPLETE` — finish the current Assignment with a substantive result;
+- `DELEGATE` — create explicit peer Assignment work;
+- `EVIDENCE` — request bounded deterministic source reads/searches;
+- `HISTORY` — retrieve bounded prior completed Room results;
+- `REFRESH` — C-only bounded coordinator context checkpoint/refresh;
+- `PASS` — finish without a substantive result where permitted.
 
-A worker can claim only when at least one pending runnable delivery exists. That atomic claim includes every earlier pending readable delivery for the same agent, in sequence order, through the newest runnable trigger. Passive information newer than that trigger remains pending for a later legitimate invocation; passive information alone never creates a catch-up turn. The model prompt lists every consumed event ID, and activity metadata distinguishes triggering from passive event IDs. Events arriving during a run remain unread and are handled by the same no-overlap backlog machinery. Delivered rows retain `consumed_at`; a FINISH records the input sequence boundary so old or duplicated deliveries at or before it are cancelled rather than reactivating the agent.
+Provider context normally belongs to an Assignment. Explicit causal lineage may preserve useful A/B context for continued work, including the bounded post-Task grace mechanism. C may carry continuity across successor Tasks in a continuous Round and can deliberately `REFRESH` to a fresh provider context with a bounded checkpoint. Durable transaction state remains authoritative throughout.
 
-Initial and new topics create all intended delivery rows before any worker runs. A peer knows a statement only because an `agent_message` event is explicitly queued to that peer. `PASS` records an event but creates no ordinary follow-up delivery.
+Legacy work-model-v1 code/tests may remain internally for historical compatibility, but v1 is not a selectable public production mode.
 
-`FINISH` is an agent-level ready-to-close state, not an immediate room shutdown. Already-running peer turns are preserved. The discussion closes only after every engaged participant in the applicable runnable delivery boundary has settled with `FINISH` or `PASS`; passive-only readers do not block closure. An agent `MESSAGE` remains public/readable to every peer while optional validated `invoke_targets` select which peers become runnable. A null or omitted target list retains legacy all-peer invocation, and `["all"]` requests it explicitly. A running Room with no active turn and no runnable delivery is reconciled immediately instead of waiting for the inactivity watchdog. Individual SDK turns also have a bounded ten-minute execution lease; expiry is recorded as an explicit terminal agent error rather than an indefinite `RUNNING` state. Manual Stop, topic replacement, archive, errors, and truly obsolete discussion results still invalidate later output and record it as `stale_result` instead of routing it. Limits, inactivity, pause, stop, and archive remain mechanical lifecycle transitions rather than moderator opinions.
+## Model allocation
 
-### Persistence and privacy
+The compatibility/default execution boundary remains **Terra/high**. Agent C can explicitly allocate delegated peer work to one of the admitted bounded configurations:
 
-The database retains room configuration, agent names and developer instructions, thread IDs, timestamps, discussion counters, events, delivery attempts, and metadata. On restart, the SDK resumes the exact stored thread IDs. Existing identities are never silently replaced.
+- `luna-medium`
+- `terra-medium`
+- `terra-high`
+- `sol-medium`
 
-Private observer events are marked in both the UI and exports. The source message is delivered only to its target. The recipient remains intellectually autonomous and may decide whether to mention it in a later peer message. Hidden reasoning is never stored or rendered; only final messages, explicit outcomes, lifecycle states, and coarse tool/activity categories are observable.
+Routine bounded delegated work is guided toward lower-cost cognition when sufficient. Stronger configurations are available when complexity, uncertainty, risk, or verification trouble justifies them. **Astra is prohibited for Codex Room execution.** There is no automatic model router.
 
-Reusable A/B/C profile bodies live separately from protected institutional/Room-protocol instructions, Room overrides, and Round overlays. Standard startup profile bodies are currently neutral/empty. A new Room snapshots the selected profile content into its independent threads; later saved-profile edits affect future Rooms only, a Room override replaces the selected profile body for that Room, and temporary overlays apply only to their Round. C's organizer/coordination responsibility is protected structure outside the replaceable profile layer, so changing C's profile does not remove that responsibility or grant C superior judgment.
+## Deterministic capabilities
 
-## API summary
+Codex Room includes a registered deterministic capability substrate for mechanical work that should not repeatedly consume model cognition. The CORE library includes capabilities such as exact file assertions, file discovery/comparison, text search, and bounded source inspection.
 
-- `POST /api/rooms` and `GET /api/rooms/{id}`
-- `POST /api/rooms/{id}/agents` (currently supports the additive `agent_c` join)
-- `POST /api/rooms/{id}/messages`
-- `POST /api/rooms/{id}/rounds` (prepare without running)
-- `POST /api/rooms/{id}/rounds/{round_id}/start`
-- `GET|PUT /api/profiles/defaults`
-- `POST /api/rooms/{id}/pause|resume|stop|new-topic`
-- `POST /api/rooms/{id}/archive|unarchive|reset`
-- `GET /api/rooms/{id}/export?format=markdown|json`
-- `WS /ws/rooms/{id}`
+Rooms can also author and register verified custom capabilities. Registered custom capability versions are immutable/provenance-bearing, and lineage-scoped capabilities can be inherited by rollover successors at the exact registered version.
 
-## Tests
+The governing principle is to use model judgment for interpretation and decisions while moving stable exact procedures into deterministic software when the expected value justifies it.
+
+## Persistence, recovery, and inspection
+
+SQLite stores Room/Round/Task/Assignment/Join state, events, exact execution provenance, provider-context identities, usage/recovery state, capability bindings, and related metadata. The runtime serializes execution per agent, protects against stale results, and reconciles exact provider turns after restart.
+
+Positive usage walls schedule durable delayed continuation instead of immediate retry storms. Hard-restart recovery for an exact active transaction turn is covered by the repaired startup-recovery path validated during Functional Acceptance T8.
+
+Live snapshots are bounded for observer efficiency while exports request complete Room history. Offline maintenance supports integrity checking, verified backup, independent backup verification, and guarded restore.
+
+## Verification
+
+The normal repository PR/change gate is:
+
+```powershell
+.\verify-fast.cmd
+```
+
+The exhaustive/manual tier is:
+
+```powershell
+.\verify-full.cmd
+```
+
+Both are implemented by `verify-local.ps1`. Fast verification includes focused Linux/Python checks, Windows portability coverage, and browser transcript stability. Full verification expands to complete supported Python suites plus dependency audit where the local prerequisites are available.
+
+The raw Python suite remains available for focused development:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-The automated suite verifies distinct identities, N-participant routing and settlement, separate histories, PASS behavior, observer targeting, pause/resume, persistence across runtime restarts, runaway limits, compaction continuity, deliberate reset/archive auditing, exports, two-agent compatibility, and Agent C's fresh-context boundary.
+GitHub remains the canonical history/review bridge. Routine verification is local because the prior GitHub Actions workflows were removed after repeated pre-runner startup failures made them unreliable as the normal gate.
 
-`test-transcript-stability.ps1` is a specialized browser transcript check using pinned `@playwright/test@1.63.0`. It remains separate from the canonical Python command because it requires Node.js plus installed Chrome or Edge; the hosted Windows CI lane runs it automatically, and operators can still run it directly when browser-level verification is needed. Hosted Python CI covers the supported Python 3.11 floor on Ubuntu, the primary Python 3.12 lane on Ubuntu, and Python 3.12 on Windows. A separate dependency-review workflow runs a pinned `pip-audit` advisory scan and an informational outdated-package report on dependency changes, on demand, and monthly; dependency upgrades remain deliberate.
+The repeatable operational acceptance specification is `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`. The 2026-09-19 T0–T14 campaign completed with every test recorded PASS; its exact evidence is retained in the acceptance plan and Evidence Register.
 
-## Roadmap
+## Project documentation
 
-Current priorities, maintenance issues, blockers, and work ordering are maintained in `docs/project/06_DEVELOPMENT_CONTROL.md`. Longer-range product direction and deliberately deferred capability space are maintained in `docs/project/08_PRODUCT_VISION.md`.
+Canonical maintained Project sources live in `docs/project/`. The key ownership split is:
 
-The README intentionally does not duplicate a feature roadmap, because that list had become stale as implemented behavior evolved.
+- `04_ARCHITECTURE_AND_CURRENT_STATE.md` — implemented/current technical synthesis;
+- `05_DECISION_REGISTER.md` — settled decisions;
+- `06_DEVELOPMENT_CONTROL.md` — current priority, issues, blockers, and next work;
+- `07_EVIDENCE_REGISTER.md` plus `07a_EVIDENCE_REGISTER_CONTINUATION.md` — empirical evidence;
+- `08_PRODUCT_VISION.md` — longer-range direction;
+- `09_REPOSITORY_AND_OPERATIONS_REFERENCE.md` — repository/operations mechanics.
+
+For current sequencing, read `docs/project/06_DEVELOPMENT_CONTROL.md` rather than inferring a roadmap from this README.
