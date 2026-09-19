@@ -68,6 +68,75 @@ function focusObserverComposer() {
   $("#message-form textarea").focus({ preventScroll: true });
 }
 
+function principalConsultationAnswered(eventId) {
+  return (state.room?.events || []).some(
+    (event) => event.event_type === "principal_reply" && event.related_event_id === eventId,
+  );
+}
+
+function markPrincipalConsultationAnswered(eventId) {
+  if (!eventId) return;
+  const article = document.querySelector(`.event[data-event-id="${eventId}"]`);
+  if (!article) return;
+  article.querySelector(".principal-reply-form")?.remove();
+  if (!article.querySelector(".principal-reply-status")) {
+    const status = document.createElement("small");
+    status.className = "principal-reply-status";
+    status.textContent = "Private reply recorded";
+    article.querySelector(".event-body")?.append(status);
+  }
+}
+
+function buildPrincipalReplyForm(event) {
+  const form = document.createElement("form");
+  form.className = "principal-reply-form";
+  const textarea = document.createElement("textarea");
+  textarea.rows = 2;
+  textarea.maxLength = 50000;
+  textarea.required = true;
+  textarea.placeholder = "Reply privately to Agent C…";
+  textarea.setAttribute("aria-label", "Private reply to Agent C");
+  const button = document.createElement("button");
+  button.type = "submit";
+  button.className = "control primary";
+  button.textContent = "Reply privately";
+  const hint = document.createElement("small");
+  hint.textContent = "Only you and Agent C · Enter to send · Shift+Enter for newline";
+  form.append(textarea, button, hint);
+
+  form.addEventListener("submit", async (submitEvent) => {
+    submitEvent.preventDefault();
+    if (!state.room || !["running", "paused"].includes(state.room.status)) {
+      showRoomError("This principal consultation is no longer open.");
+      return;
+    }
+    button.disabled = true;
+    try {
+      await api(`/api/rooms/${state.room.id}/principal-replies`, {
+        method: "POST",
+        body: JSON.stringify({
+          consultation_event_id: event.id,
+          content: textarea.value,
+        }),
+      });
+      form.replaceWith(Object.assign(document.createElement("small"), {
+        className: "principal-reply-status",
+        textContent: "Private reply sent",
+      }));
+    } catch (error) {
+      showRoomError(error.message);
+      button.disabled = false;
+    }
+  });
+
+  textarea.addEventListener("keydown", (keyEvent) => {
+    if (keyEvent.key !== "Enter" || keyEvent.isComposing || keyEvent.shiftKey) return;
+    keyEvent.preventDefault();
+    if (!button.disabled) form.requestSubmit();
+  });
+  return form;
+}
+
 function agentLetter(agentKey) {
   return agentKey.replace(/^agent_/, "").slice(0, 1).toLowerCase();
 }
@@ -423,14 +492,39 @@ function appendEvent(event, { follow = true } = {}) {
   if (event.metadata?.private) {
     const badge = document.createElement("span");
     badge.className = "event-badge private";
-    badge.textContent = `private · only ${names[event.destination] || event.destination} received`;
+    badge.textContent = event.metadata?.principal_channel
+      ? (event.event_type === "principal_reply"
+        ? "private · you → Agent C"
+        : "private · Agent C → you")
+      : `private · only ${names[event.destination] || event.destination} received`;
     meta.append(badge);
   }
   const text = document.createElement("p");
   text.textContent = event.content || (pass ? "Passed without sending a message." : "No message text.");
   body.append(meta, text);
+  if (event.event_type === "principal_message" && event.metadata?.principal_channel) {
+    article.classList.add("principal-consultation");
+    if (principalConsultationAnswered(event.id)) {
+      const status = document.createElement("small");
+      status.className = "principal-reply-status";
+      status.textContent = "Private reply recorded";
+      body.append(status);
+    } else if (["running", "paused"].includes(state.room?.status)) {
+      body.append(buildPrincipalReplyForm(event));
+    } else {
+      const status = document.createElement("small");
+      status.className = "principal-reply-status";
+      status.textContent = "Consultation closed with the Room lifecycle";
+      body.append(status);
+    }
+  } else if (event.event_type === "principal_reply" && event.metadata?.principal_channel) {
+    article.classList.add("principal-reply");
+  }
   article.append(rail, body);
   transcript.append(article);
+  if (event.event_type === "principal_reply") {
+    markPrincipalConsultationAnswered(event.related_event_id);
+  }
   if (follow && state.followTranscript && isConversationalEvent(event)) {
     transcript.scrollTop = transcript.scrollHeight;
   }
