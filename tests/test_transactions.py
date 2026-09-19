@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from pydantic import ValidationError
 
 from codex_room.agent import InterruptOutcome
 from codex_room.agent import AgentTurnInterruptedError, AgentTurnTerminalError
@@ -2689,7 +2690,7 @@ async def test_transaction_declined_task_cognition_request_keeps_ordinary_ceilin
 
 
 def test_transaction_peer_delegation_cannot_use_exceptional_c_config() -> None:
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         TransactionDecision(
             action=TransactionAction.DELEGATE,
             delegations=[
