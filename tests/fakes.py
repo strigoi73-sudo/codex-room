@@ -86,6 +86,63 @@ class FakeAgentAdapter:
     async def close(self) -> None:
         return None
 
+    async def inspect_tool_availability(
+        self, cwd: Path, *, thread_id: str | None = None
+    ) -> dict[str, Any]:
+        return {
+            "inspection_status": "complete",
+            "native": [
+                {
+                    "id": "workspace_files",
+                    "label": "Workspace files",
+                    "status": "available",
+                    "detail": "Fake workspace access.",
+                },
+                {
+                    "id": "command_execution",
+                    "label": "Commands",
+                    "status": "available",
+                    "detail": "Fake command execution.",
+                },
+            ],
+            "web_search": {
+                "status": "available",
+                "mode": "cached",
+                "detail": "Fake cached web search.",
+            },
+            "skills": {
+                "status": "available",
+                "enabled_count": 1,
+                "total_count": 1,
+                "error_count": 0,
+                "items": [{"name": "fake-skill", "status": "available"}],
+                "truncated": False,
+            },
+            "mcp": {
+                "status": "interaction_required",
+                "server_count": 1,
+                "tool_count": 0,
+                "servers": [
+                    {
+                        "name": "fake-mcp",
+                        "status": "interaction_required",
+                        "auth_status": "notLoggedIn",
+                        "tool_count": 0,
+                        "tools": [],
+                        "truncated_tools": False,
+                    }
+                ],
+                "truncated": False,
+            },
+            "apps": {
+                "status": "available",
+                "available_count": 1,
+                "total_count": 1,
+                "items": [{"name": "Fake App", "status": "available"}],
+                "truncated": False,
+            },
+        }
+
     async def start_agent(self, agent: dict[str, Any], cwd: Path) -> str:
         thread_id = f"thr_fake_{agent['agent_key']}_{len(self.starts) + 1}"
         self.starts.append((agent["agent_key"], thread_id))
