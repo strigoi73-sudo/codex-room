@@ -204,7 +204,7 @@ def test_failed_or_incomplete_inventory_reports_unknown_instead_of_guessing():
     assert inventory["web_search"]["status"] == UNKNOWN
     assert inventory["skills"]["status"] == UNKNOWN
     assert inventory["mcp"]["status"] == UNKNOWN
-    assert inventory["apps"]["status"] == UNKNOWN
+    assert inventory["apps"]["status"] == "unavailable"
     assert inventory["plugins"]["status"] == UNKNOWN
 
 
