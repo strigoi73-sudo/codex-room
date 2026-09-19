@@ -411,7 +411,9 @@ function renderStatusTools(payload) {
         ? `${item.tool_count} tool(s) · ${statusLabel(item.status)}`
         : item.scope
           ? `${item.scope} · ${item.enabled ? "enabled" : "disabled"}`
-          : statusLabel(item.status);
+          : item.auth_policy
+            ? `${statusLabel(item.status)} · auth ${item.auth_policy}`
+            : statusLabel(item.status);
       details.push([item.name || "Item", suffix]);
     });
     if (category.truncated) details.push(["Inventory", "Additional items omitted from this compact view"]);
