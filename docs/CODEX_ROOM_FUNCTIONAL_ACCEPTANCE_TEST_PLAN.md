@@ -2041,7 +2041,7 @@ Update this table only with evidence from an actual run. Keep the exact HEAD and
 | Test | Status | HEAD | Room / evidence reference | Notes |
 |---|---|---|---|---|
 | T0 | PASS | `ef92dcf6991db58208a9340c28d14ad7e3478a1c` | `output\functional-acceptance\T0-20260919-005013` | `/api/health` healthy; `verify-fast.cmd` PASS: Linux focused core 63/63, Windows portability 118/118, browser transcript stability 3/3; repository status unchanged. |
-| T1 | NOT RUN | — | — | — |
+| T1 | PASS | `fcd9e8b4c643388e71e4c15a2ee95664f319aa7a` | `room_ec1beb0323644ebf8d1d842e993fa492` / `output\functional-acceptance\T1-20260919-005645` | Fresh Room contained A/B/C; C started; one C Assignment completed; `peer_invocations=0`; no A/B execution; Room settled normally. |
 | T2 | NOT RUN | — | — | — |
 | T3 | NOT RUN | — | — | — |
 | T4 | NOT RUN | — | — | — |
