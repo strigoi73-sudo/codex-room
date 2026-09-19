@@ -1,19 +1,33 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-18
+**Last updated:** 2026-09-19
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
-- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, I-015, and the full D-037 bounded-context program are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. **BCTX-1 through BCTX-4 are implemented and exact-head verified**, and the post-BCTX coordinator-refresh economics refinement is **implemented / exact-head verified / merged / naturalistically supported**. C now receives deterministic exact-thread economics and has demonstrated deliberate use of the fail-closed `REFRESH` mechanism in ordinary continuous execution.
-- **What just changed?** The bounded post-PR-#127 `Stay busy.` revalidation completed at the deliberate 40-turn ceiling. C crossed the ~64K consider range at **65,796** completed-execution input tokens, issued `REFRESH` on the next C execution at **67,960**, and CORE completed a distinct-thread checkpoint handoff whose first completed execution reset C's baseline to **21,421** input tokens. Work continued normally afterward. See E-139.
-- **Verification state:** **PR #127 is IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY SUPPORTED.** Exact head `03bb1a898e8d2f0e5d69f6cf28cbef0a9ddb828d` passed 4 focused correction/economics tests, the complete transaction/context suites (**47 passed**), and `verify-fast.cmd` (**63 Linux focused + 118 Windows focused + 3 browser tests**) with tracked source clean and HEAD unchanged. PR #127 squash-merged those exact verified bytes as `3db7442ee8181f3aca23626d98d77e996fe2bb9e`; post-merge blob comparison confirmed byte identity for all three changed files. E-139 adds the bounded live behavioral evidence. No GitHub-hosted workflow run was attached.
+- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, I-015, and the full D-037 bounded-context program are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. A repeatable T0-T14 functional acceptance campaign is now **IN PROGRESS**; T0 through T8 are PASS after T8 exposed and drove repair of one real hard-restart recovery defect.
+- **What just changed?** T8 deliberately restarted the server during an active transaction. The first run at `9a313df...` exposed that an exact provider turn can become authoritatively `interrupted` across a hard restart and was then treated as terminal. PR #130 repaired only startup-recovered interrupted transaction turns by allowing the same Assignment to spend its existing one-retry budget. Exact head `17da2833f24e9ab84416e1585bb4d00bfd0cb86f` passed targeted and repository-standard verification plus a natural hard-restart rerun; PR #130 squash-merged as `f11b1d5bc02b8f8a7f9d2bcc84e3991b8c767877`. See E-140.
+- **Verification state:** Functional acceptance T0-T8 are recorded PASS in `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`. For the T8 repair, targeted restart tests passed **2/2**; `verify-fast.cmd` passed **63 Linux focused + 118 Windows focused + 3 browser tests**; the natural rerun preserved the same C Assignment across the interrupted provider turn, delegated A/B together after retry, released the Join once, integrated, and closed `transaction_settled`. No GitHub-hosted workflow run was attached.
 - **What is blocked?** D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** No further PR #127/BCTX refresh-economics work is warranted on current evidence. Return to separately authorized roadmap work when the principal selects it; do not reopen this patch or tune the advisory bands without new contrary evidence.
+- **What is next?** Continue the authorized functional acceptance campaign with **T9 — deliberate coordinator REFRESH**. Do not reopen the T8 repair absent contrary evidence.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
+
+### Functional acceptance campaign T0-T14
+
+**Scope:** [CORE + ROOM operational acceptance]
+
+**Work state:** IN PROGRESS
+
+**Authoritative operational procedure:** `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`
+
+**Current state:** T0 through T8 are PASS. T8's initial failure was a genuine runtime-invariant failure, not permitted model variation: hard restart preserved the durable Assignment but the exact provider turn became `interrupted` and was terminally failed. PR #130 repaired and revalidated that path; E-140 owns the consequential evidence.
+
+**Next:** T9 — deliberate C `REFRESH` with bounded checkpoint continuity and a distinct fresh coordinator context.
+
+The campaign remains evidence-first: preserve FAIL/INCONCLUSIVE artifacts, characterize before repair, and do not convert behavioral variation into CORE defects unless a runtime invariant fails.
 
 ### BCTX — bounded-context architecture program
 
