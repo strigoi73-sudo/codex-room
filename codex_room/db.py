@@ -26,7 +26,10 @@ from .models import (
     RolloverRoomRequest,
     RoomStatus,
     RoundStatus,
+    C_COGNITION_CEILING_RANK,
+    EXCEPTIONAL_C_EXECUTION_CONFIGS,
     EXECUTION_CONFIGS,
+    ORDINARY_EXECUTION_CONFIGS,
 )
 
 
@@ -249,6 +252,7 @@ class Database:
                     coordinator_agent_id TEXT NOT NULL REFERENCES agents(id),
                     state TEXT NOT NULL,
                     required_contributors_json TEXT NOT NULL DEFAULT '[]',
+                    c_cognition_ceiling TEXT NOT NULL DEFAULT 'sol-high',
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     settled_at TEXT,
@@ -455,6 +459,12 @@ class Database:
                 "TEXT NOT NULL DEFAULT 'auto_settle'",
             )
             await self._ensure_column(db, "rounds", "required_contributors_json", "TEXT NOT NULL DEFAULT '[]'")
+            await self._ensure_column(
+                db,
+                "tasks",
+                "c_cognition_ceiling",
+                "TEXT NOT NULL DEFAULT 'sol-high'",
+            )
             await self._ensure_column(db, "assignments", "context_thread_id", "TEXT")
             await self._ensure_column(
                 db,
@@ -2101,6 +2111,7 @@ class Database:
         room_id: str,
         consultation_event_id: str,
         content: str,
+        cognition_approval: str | None = None,
     ) -> dict[str, Any]:
         """Atomically bind one private principal reply to the exact waiting C Assignment."""
         now = utc_now()
@@ -2152,7 +2163,7 @@ class Database:
             assignment = await self._fetchone(
                 db,
                 """SELECT x.*, t.room_id, t.round_id, t.state AS task_state,
-                          t.coordinator_agent_id, a.agent_key
+                          t.coordinator_agent_id, t.c_cognition_ceiling, a.agent_key
                    FROM assignments x
                    JOIN tasks t ON t.id=x.task_id
                    JOIN agents a ON a.id=x.agent_id
@@ -2183,6 +2194,27 @@ class Database:
                     "Private principal consultation is stale or already answered"
                 )
 
+            requested_ceiling = consultation_metadata.get(
+                "requested_task_cognition_ceiling"
+            )
+            if requested_ceiling is None:
+                if cognition_approval is not None:
+                    await db.rollback()
+                    raise ValueError(
+                        "Generic principal consultation cannot carry cognition approval"
+                    )
+            else:
+                if requested_ceiling not in EXCEPTIONAL_C_EXECUTION_CONFIGS:
+                    await db.rollback()
+                    raise RuntimeError(
+                        "Principal cognition request contains an unsupported ceiling"
+                    )
+                if cognition_approval not in {"approve", "decline"}:
+                    await db.rollback()
+                    raise ValueError(
+                        "Cognition-ceiling consultation requires explicit approve or decline"
+                    )
+
             sequence_row = await self._fetchone(
                 db,
                 """SELECT COALESCE(MAX(sequence_no), 0) + 1 AS next_sequence
@@ -2197,6 +2229,8 @@ class Database:
                 "assignment_id": assignment_id,
                 "task_id": assignment["task_id"],
                 "work_model_version": 2,
+                "cognition_approval": cognition_approval,
+                "requested_task_cognition_ceiling": requested_ceiling,
             }
             await db.execute(
                 """INSERT INTO events
@@ -2220,13 +2254,33 @@ class Database:
                     sequence_no,
                 ),
             )
+            if requested_ceiling is not None and cognition_approval == "approve":
+                current_rank = C_COGNITION_CEILING_RANK.get(
+                    assignment["c_cognition_ceiling"], 0
+                )
+                requested_rank = C_COGNITION_CEILING_RANK[requested_ceiling]
+                if requested_rank > current_rank:
+                    await db.execute(
+                        """UPDATE tasks
+                           SET c_cognition_ceiling=?, updated_at=?
+                           WHERE id=? AND state='active'""",
+                        (requested_ceiling, now, assignment["task_id"]),
+                    )
+
+            resume_config = (
+                requested_ceiling
+                if requested_ceiling is not None and cognition_approval == "approve"
+                else assignment["execution_config_id"]
+            )
             cursor = await db.execute(
                 """UPDATE assignments
-                   SET state='queued', principal_reply_event_id=?, updated_at=?
+                   SET state='queued', principal_reply_event_id=?,
+                       execution_config_id=?, updated_at=?
                    WHERE id=? AND state='waiting_principal'
                      AND result_event_id=? AND principal_reply_event_id IS NULL""",
                 (
                     reply_event_id,
+                    resume_config,
                     now,
                     assignment_id,
                     consultation_event_id,
@@ -3277,6 +3331,7 @@ class Database:
             task_row = await self._fetchone(
                 db,
                 """SELECT t.id AS task_id, t.state AS task_state,
+                          t.c_cognition_ceiling,
                           a.agent_key AS coordinator_agent_key
                    FROM tasks t JOIN agents a ON a.id=t.coordinator_agent_id
                    WHERE t.id=?""",
@@ -3307,6 +3362,9 @@ class Database:
             "task_state": task_row["task_state"] if task_row is not None else None,
             "coordinator_agent_key": (
                 task_row["coordinator_agent_key"] if task_row is not None else None
+            ),
+            "c_cognition_ceiling": (
+                task_row["c_cognition_ceiling"] if task_row is not None else "sol-high"
             ),
             "assignments": [dict(row) for row in assignment_rows[:limit]],
             "joins": [dict(row) for row in join_rows[:limit]],
@@ -4011,6 +4069,8 @@ class Database:
         coordinator_checkpoint: str | None = None,
         evidence_requests: list[dict[str, Any]] | None = None,
         history_requests: list[dict[str, Any]] | None = None,
+        next_self_config: str | None = None,
+        requested_task_cognition_ceiling: str | None = None,
     ) -> dict[str, Any]:
         """Atomically settle one assignment decision and release any satisfied join."""
         now = utc_now()
@@ -4074,6 +4134,67 @@ class Database:
                 await db.rollback()
                 raise RuntimeError("Only a running assignment can settle a new decision")
 
+            task_policy = await self._fetchone(
+                db,
+                "SELECT * FROM tasks WHERE id=? AND state='active'",
+                (assignment["task_id"],),
+            )
+            is_root_c = bool(
+                assignment["agent_key"] == "agent_c"
+                and task_policy is not None
+                and task_policy["coordinator_agent_id"] == assignment["agent_id"]
+                and assignment["parent_assignment_id"] is None
+                and assignment["contribution_join_id"] is None
+            )
+            if next_self_config is not None:
+                if not is_root_c:
+                    await db.rollback()
+                    raise ValueError(
+                        "Only Agent C's root coordinator Assignment may select next_self_config"
+                    )
+                if next_self_config not in EXECUTION_CONFIGS:
+                    await db.rollback()
+                    raise ValueError("next_self_config is unsupported")
+                if next_self_config in EXCEPTIONAL_C_EXECUTION_CONFIGS:
+                    ceiling = (
+                        task_policy["c_cognition_ceiling"]
+                        if task_policy is not None
+                        else "sol-high"
+                    )
+                    if (
+                        C_COGNITION_CEILING_RANK.get(next_self_config, 99)
+                        > C_COGNITION_CEILING_RANK.get(ceiling, 0)
+                    ):
+                        await db.rollback()
+                        raise ValueError(
+                            "Exceptional next_self_config exceeds this Task's approved cognition ceiling"
+                        )
+            if requested_task_cognition_ceiling is not None:
+                if action != "CONSULT_PRINCIPAL" or not is_root_c:
+                    await db.rollback()
+                    raise ValueError(
+                        "Task cognition escalation is valid only for C's root CONSULT_PRINCIPAL"
+                    )
+                if (
+                    requested_task_cognition_ceiling
+                    not in EXCEPTIONAL_C_EXECUTION_CONFIGS
+                ):
+                    await db.rollback()
+                    raise ValueError("Requested Task cognition ceiling is unsupported")
+                current_ceiling = (
+                    task_policy["c_cognition_ceiling"]
+                    if task_policy is not None
+                    else "sol-high"
+                )
+                if (
+                    C_COGNITION_CEILING_RANK[requested_task_cognition_ceiling]
+                    <= C_COGNITION_CEILING_RANK.get(current_ceiling, 0)
+                ):
+                    await db.rollback()
+                    raise ValueError(
+                        "Requested Task cognition ceiling is already authorized"
+                    )
+
             await db.execute(
                 """UPDATE rooms SET turn_count=turn_count+1, updated_at=? WHERE id=?""",
                 (now, room_id),
@@ -4103,6 +4224,14 @@ class Database:
                    WHERE assignment_id=? AND state='ready'""",
                 (now, assignment_id),
             )
+
+            if next_self_config is not None:
+                await db.execute(
+                    """UPDATE assignments
+                       SET execution_config_id=?, updated_at=?
+                       WHERE id=? AND state='running'""",
+                    (next_self_config, now, assignment_id),
+                )
 
             if action == "DELEGATE":
                 if not delegations:
@@ -4160,7 +4289,10 @@ class Database:
                         await db.rollback()
                         raise ValueError(f"Delegation target {target_key} is unavailable")
                     config_id = item.get("config")
-                    if config_id is not None and config_id not in EXECUTION_CONFIGS:
+                    if (
+                        config_id is not None
+                        and config_id not in ORDINARY_EXECUTION_CONFIGS
+                    ):
                         await db.rollback()
                         raise ValueError("Delegation execution config is unsupported")
 
