@@ -2820,4 +2820,3 @@ async def test_transaction_unapproved_exceptional_self_config_fails_closed(
         and "approved cognition ceiling" in event["content"]
         for event in events
     )
-
