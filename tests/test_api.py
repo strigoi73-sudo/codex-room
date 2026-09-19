@@ -72,6 +72,10 @@ def test_http_create_state_and_exports(tmp_path):
         assert status_tools.status_code == 200
         visibility = status_tools.json()
         assert visibility["room_id"] == room_id
+        assert visibility["economics_guidance"] == {
+            "coordinator_refresh_consider_input_tokens": 64_000,
+            "coordinator_refresh_prefer_input_tokens": 96_000,
+        }
         capability_ids = {
             item["id"] for item in visibility["room_capabilities"]["items"]
         }
