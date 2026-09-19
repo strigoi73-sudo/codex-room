@@ -188,5 +188,6 @@ def test_commands_api_binds_catalog_to_running_runtime_version(tmp_path):
         response = client.get("/api/codex/commands")
 
     assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
     assert response.json()["runtime_version"] == "0.154.0"
     assert catalog.versions == ["0.154.0"]
