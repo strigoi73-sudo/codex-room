@@ -71,6 +71,7 @@ Current transaction actions are:
 - `EVIDENCE`
 - `HISTORY`
 - `REFRESH`
+- `CONSULT_PRINCIPAL`
 - `PASS`
 
 CORE owns declared mechanics: assignment creation/claiming, joins, deterministic evidence/history execution, queueing, retry/recovery, context assembly, exact execution provenance, and settlement validity. Agents retain intellectual judgment: whether peers add value, how to frame work, what evidence matters, how to interpret results, and what conclusion to reach.
@@ -78,6 +79,18 @@ CORE owns declared mechanics: assignment creation/claiming, joins, deterministic
 A parent Assignment that delegates remains nonterminal until child work settles and the parent resumes. Nested A↔B delegation remains allowed. Joins release mechanically only when members are terminal and release at most once. A Task cannot settle with unresolved transaction work. Readable/audit events do not become runnable work without an explicit Assignment.
 
 I-015 is complete. Stage A established the transaction kernel; Stage B moved bounded source retrieval behind `EVIDENCE`; Stage C introduced assignment-scoped provider context and bounded `HISTORY`; Stage D passed the preregistered viability gate; D-034 then activated v2 + assignment-thread publicly. Post-close ordinary-use repair PR #108 corrected remaining transaction contract/retry bounds without reopening I-015. See E-094 through E-123.
+
+### Private principal consultation
+
+**IMPLEMENTED ON I-016 FEATURE BRANCH / VERIFICATION PENDING / NOT MERGED**
+
+D-038 adds a C-only `CONSULT_PRINCIPAL` action for the root coordinator Assignment. The action is explicitly nonterminal: CORE records C's consultation as a private observer event, creates no A/B delivery or wakeup, and moves the exact Assignment to durable `waiting_principal` state. The human principal is not modeled as a fourth production agent.
+
+The principal's reply is bound to the exact consultation event and waiting Assignment. CORE rejects stale or duplicate replies, records the reply as a private non-agent-readable/non-turn-triggering event, and requeues the same Assignment. Under the production assignment-thread model, the same durable `context_thread_id` is therefore retained. The reply is injected only into that C continuation rather than entering normal Room delivery or bounded `HISTORY`.
+
+The wait is transaction state, so an ordinary runtime restart does not erase it. Pause may preserve the wait and accept a reply without executing until Resume; Stop/cancel marks `waiting_principal` work cancelled with the rest of the Task. Private consultation does not become shared organizational knowledge automatically. C must explicitly communicate only the necessary consequence if A/B later need it.
+
+The initial I-016 release deliberately excludes A/B→principal consultation and a nonblocking private notification action. Those are separate product choices, not implicit extensions of this primitive.
 
 
 ### Round completion policy

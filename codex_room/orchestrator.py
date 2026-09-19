@@ -56,6 +56,7 @@ from .models import (
     EXECUTION_CONFIGS,
     NewTopicRequest,
     ObserverMessageRequest,
+    PrincipalReplyRequest,
     Outcome,
     TransactionAction,
     TransactionDecision,
@@ -1017,6 +1018,29 @@ class RoomRuntime:
         await self.ensure_workers(room_id)
         for target in targets:
             self.wake(room_id, target)
+        return event
+
+    async def principal_reply(
+        self, room_id: str, request: PrincipalReplyRequest
+    ) -> dict[str, Any]:
+        """Resume the exact waiting C Assignment without involving peer agents."""
+        async with self._lifecycle_locks[room_id]:
+            room = await self._required_room(room_id)
+            if room["status"] not in {RoomStatus.RUNNING, RoomStatus.PAUSED}:
+                raise ValueError(
+                    f"Cannot reply to a principal consultation while room is {room['status']}"
+                )
+            result = await self.db.reply_to_principal_consultation(
+                room_id,
+                request.consultation_event_id,
+                request.content,
+            )
+        event = result["event"]
+        self._publish_event(event)
+        if result["room_status"] == RoomStatus.RUNNING:
+            await self.ensure_workers(room_id)
+            self.wake(room_id, result["agent_key"])
+        await self.publish_state(room_id)
         return event
 
     async def pause(self, room_id: str) -> None:
@@ -2080,6 +2104,20 @@ class RoomRuntime:
         history_events = await self.db.get_events_by_ids(
             batch["room_id"], context_event_ids
         )
+        principal_reply = None
+        if assignment.get("principal_reply_event_id"):
+            principal_reply = await self.db.get_event(
+                assignment["principal_reply_event_id"]
+            )
+            if (
+                principal_reply is None
+                or principal_reply.get("room_id") != batch["room_id"]
+                or principal_reply.get("event_type") != "principal_reply"
+                or principal_reply.get("destination") != "agent_c"
+            ):
+                raise RuntimeError(
+                    "Private principal reply provenance is missing or invalid"
+                )
         history_resume = False
         if assignment.get("result_event_id"):
             prior_result = await self.db.get_event(assignment["result_event_id"])
@@ -2156,6 +2194,26 @@ class RoomRuntime:
                         + str(retry_feedback)
                     ),
                     "</retry_feedback>",
+                ]
+            )
+        if principal_reply is not None:
+            context_parts.extend(
+                [
+                    (
+                        "<private_principal_reply "
+                        f"event_id=\"{principal_reply['id']}\" "
+                        f"consultation_event_id=\"{principal_reply.get('related_event_id') or ''}\">"
+                    ),
+                    principal_reply["content"],
+                    "</private_principal_reply>",
+                    (
+                        "This is the human principal's private reply to your own "
+                        "CONSULT_PRINCIPAL request. CORE did not deliver the consultation or "
+                        "reply to A or B. Continue this same Assignment and provider context. "
+                        "Do not assume peers know private content; if the task requires a peer "
+                        "to act on a consequence, communicate only the necessary shared "
+                        "consequence through normal transaction work."
+                    ),
                 ]
             )
         private = round_item.get("participant_private", {}).get(agent["agent_key"])
@@ -2344,7 +2402,7 @@ class RoomRuntime:
                 self.TRANSACTION_CAPABILITY_INSTRUCTION,
                 (
                     "Return the transaction structured decision only. action must be COMPLETE, "
-                    "DELEGATE, EVIDENCE, HISTORY, REFRESH, or PASS. COMPLETE ends this assignment with a "
+                    "DELEGATE, EVIDENCE, HISTORY, REFRESH, CONSULT_PRINCIPAL, or PASS. COMPLETE ends this assignment with a "
                     "substantive message. DELEGATE pauses this assignment and must include one or "
                     "more distinct peer delegations, each with target, bounded instruction, optional "
                     "config, and optional context_from_assignment_id. Use context_from_assignment_id "
@@ -2364,6 +2422,14 @@ class RoomRuntime:
                     "unresolved reasoning, current strategy, important judgments, and near-term intent without "
                     "replaying the old transcript. CORE supplies current organizational state separately and "
                     "performs the fail-closed provider-context handoff. "
+                    "CONSULT_PRINCIPAL is C-only and nonterminal: use it only from the root "
+                    "coordinator Assignment when the human principal's judgment, authorization, "
+                    "or material clarification is actually needed. Put the private question or "
+                    "message in message. CORE records it only for the observer, wakes no peer, "
+                    "and pauses this same Assignment until the principal replies; the reply "
+                    "then resumes this same Assignment on the same provider context. Private "
+                    "consultation is not shared Room knowledge, so explicitly communicate only "
+                    "the necessary consequence later if A or B needs it. "
                     "delegation_return_mode is null or "
                     "'parent' for normal parent resumption. Set it to 'coordinator' only with exactly "
                     "one child when that child will hold the finished result and this Assignment has no "
@@ -2894,6 +2960,20 @@ class RoomRuntime:
             retire_worker_context_task_ids = list(
                 decision.retire_worker_context_task_ids or []
             )
+            if decision.action == TransactionAction.CONSULT_PRINCIPAL:
+                consultation_status = await self.db.get_task_coordination_status(
+                    batch["task_id"]
+                )
+                if (
+                    agent_key != "agent_c"
+                    or consultation_status.get("task_state") != "active"
+                    or consultation_status.get("coordinator_agent_key") != "agent_c"
+                    or batch["assignment"].get("parent_assignment_id") is not None
+                    or batch["assignment"].get("contribution_join_id") is not None
+                ):
+                    raise ValueError(
+                        "CONSULT_PRINCIPAL is valid only for Agent C's root coordinator Assignment"
+                    )
             for item in delegations:
                 if item["target"] == agent_key or item["target"] not in participants:
                     raise ValueError("Transaction delegation must target an available peer")
@@ -3066,6 +3146,8 @@ class RoomRuntime:
                 if decision.action == TransactionAction.PASS
                 else "coordinator_context_refresh_requested"
                 if decision.action == TransactionAction.REFRESH
+                else "principal_message"
+                if decision.action == TransactionAction.CONSULT_PRINCIPAL
                 else "agent_message"
             )
             content = (
@@ -3093,7 +3175,10 @@ class RoomRuntime:
                 agent_key,
                 (
                     "observer"
-                    if decision.action == TransactionAction.REFRESH
+                    if decision.action in {
+                        TransactionAction.REFRESH,
+                        TransactionAction.CONSULT_PRINCIPAL,
+                    }
                     else "all"
                     if decision.action != TransactionAction.PASS
                     else "room"
@@ -3105,6 +3190,21 @@ class RoomRuntime:
                     "assignment_id": batch["assignment_id"],
                     "batch_id": batch["batch_id"],
                     "transaction_action": decision.action,
+                    "private": (
+                        True
+                        if decision.action == TransactionAction.CONSULT_PRINCIPAL
+                        else None
+                    ),
+                    "principal_channel": (
+                        True
+                        if decision.action == TransactionAction.CONSULT_PRINCIPAL
+                        else None
+                    ),
+                    "awaiting_principal_reply": (
+                        True
+                        if decision.action == TransactionAction.CONSULT_PRINCIPAL
+                        else None
+                    ),
                     "checkpoint_chars": (
                         len(decision.checkpoint or "")
                         if decision.action == TransactionAction.REFRESH

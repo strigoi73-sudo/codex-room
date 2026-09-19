@@ -63,6 +63,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-013` | SDK-internal subagent bypass | Development Control |
 | `I-014` | Deterministic retrieval economy | Development Control |
 | `I-015` | Task-transaction stabilization redesign | Development Control |
+| `I-016` | Private Principal Channel | Development Control / D-038 |
 
 ## 4. Decision and evidence identifiers
 

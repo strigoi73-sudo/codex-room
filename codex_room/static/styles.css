@@ -140,6 +140,11 @@ input:focus, textarea:focus, select:focus { border-color: #5d6470; box-shadow: 0
 .event-meta { display: flex; gap: 7px; margin-bottom: 6px; }
 .event-badge { color: #777d87; border: 1px solid #292c32; border-radius: 4px; padding: 2px 5px; font-size: 8px; text-transform: uppercase; letter-spacing: .09em; }
 .event-badge.private { color: var(--observer); border-color: rgba(242,198,109,.28); }
+.event.principal-consultation .event-body { border-color: var(--observer); }
+.principal-reply-form { display: grid; grid-template-columns: 1fr auto; gap: 7px; margin-top: 12px; padding: 10px; border: 1px solid rgba(242,198,109,.22); border-radius: 9px; background: rgba(242,198,109,.035); }
+.principal-reply-form textarea { grid-column: 1 / -1; min-height: 56px; max-height: 150px; margin: 0; resize: vertical; }
+.principal-reply-form small, .principal-reply-status { color: var(--muted); font-size: 9px; align-self: center; }
+.principal-reply-status { display: block; margin-top: 8px; }
 .event.attempt-warning .event-body { border-color: var(--observer); border-left-style: dotted; }
 .event.attempt-warning p { color: #d8bd83; font-size: 12px; }
 .event.terminal-error .event-body { border-color: var(--danger); }
