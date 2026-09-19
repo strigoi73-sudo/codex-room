@@ -262,19 +262,27 @@ def parse_slash_command_source(source: str) -> list[dict[str, Any]]:
 def _parse_descriptions(source: str) -> dict[str, str]:
     body = _extract_braced_body(source, "pub fn description")
     mapping: dict[str, str] = {}
-    arm_pattern = re.compile(
-        rf"((?:SlashCommand::[A-Za-z0-9_]+\s*(?:\|\s*)?)+)"
-        rf"=>\s*(?:\{{\s*)?({_RUST_STRING})\s*(?:\}})?\s*,",
-        re.DOTALL,
+    patterns = (
+        re.compile(
+            rf"((?:SlashCommand::[A-Za-z0-9_]+\s*(?:\|\s*)?)+)"
+            rf"=>\s*({_RUST_STRING})\s*,",
+            re.DOTALL,
+        ),
+        re.compile(
+            rf"((?:SlashCommand::[A-Za-z0-9_]+\s*(?:\|\s*)?)+)"
+            rf"=>\s*\{{\s*({_RUST_STRING})\s*\}}\s*,?",
+            re.DOTALL,
+        ),
     )
-    for match in arm_pattern.finditer(body):
-        variants = re.findall(r"SlashCommand::([A-Za-z0-9_]+)", match.group(1))
-        try:
-            description = ast.literal_eval(match.group(2))
-        except (SyntaxError, ValueError) as exc:
-            raise CommandCatalogSyncError("Codex command description could not be parsed") from exc
-        for variant in variants:
-            mapping[variant] = description
+    for arm_pattern in patterns:
+        for match in arm_pattern.finditer(body):
+            variants = re.findall(r"SlashCommand::([A-Za-z0-9_]+)", match.group(1))
+            try:
+                description = ast.literal_eval(match.group(2))
+            except (SyntaxError, ValueError) as exc:
+                raise CommandCatalogSyncError("Codex command description could not be parsed") from exc
+            for variant in variants:
+                mapping[variant] = description
     return mapping
 
 
