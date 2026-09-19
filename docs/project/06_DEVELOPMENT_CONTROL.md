@@ -21,7 +21,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality:** PARTIALLY IMPLEMENTED / EXACT-HEAD VERIFIED COMMAND-CATALOG FOUNDATION
+**Reality:** DECIDED / NOT IMPLEMENTED overall; command-catalog foundation IMPLEMENTED / VERIFIED
 
 **Origin:** I-018 / E-149
 
