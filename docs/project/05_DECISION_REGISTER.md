@@ -665,3 +665,24 @@ Settled boundary:
 This decision narrows the previously deferred “dynamic model routing” question: **automatic CORE routing remains unauthorized**, while deliberate C-controlled self-allocation is authorized as part of C's coordination responsibility. C controls coordination and cognition spend, not truth or peer judgment.
 
 **Principle:** **C may spend ordinary cognition autonomously; exceptional C cognition requires explicit human authority for the bounded Task that needs it.**
+
+### D-040 — Human-facing Codex command inventory follows the exact running runtime and fails closed on mismatch
+**Date:** 2026-09-19  
+**Status:** ACTIVE
+
+The principal authorized a trustworthy command-surface foundation before any Codex Room command-selection UI is built.
+
+Settled boundary:
+
+- the authoritative built-in command inventory must be bound to the **actual running Codex App Server version**, not merely Codex Room's Python dependency declaration;
+- when App Server exposes no native slash-command catalog API, Codex Room may derive the built-in inventory from the exact matching official `openai/codex` release source and cache it with runtime version plus upstream source provenance;
+- a cached catalog from another runtime version must never be silently displayed as current;
+- if exact-version authority cannot be established, the command catalog must fail closed as unavailable rather than presenting stale commands;
+- dynamic command families such as model service-tier commands remain live runtime/model-catalog overlays and must not be falsely frozen into the static built-in manifest;
+- if App Server later exposes a native authoritative command-catalog API, prefer that capability over maintaining a parallel source parser;
+- **current in Codex** and **appropriate/executable in Codex Room** are separate questions. Future UI/dispatch work must preserve Room governance rather than assume every Codex host command should execute unchanged;
+- this decision does not authorize blanket Codex Desktop slash-command parity. It establishes freshness/provenance for whatever command surface Codex Room deliberately exposes.
+
+The first CORE slice implementing this rule was exact-head verified at `466fdb39cc60dd99fd3cd690061ab2feaea67c8d`; see E-150. UI and dispatch remain separate unfinished work.
+
+**Principle:** **Never present a command catalog from a different Codex runtime as though it describes the one actually running.**

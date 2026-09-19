@@ -14,6 +14,7 @@ from .custom_capability_registration import (
     CustomCapabilityVerificationError,
     VerificationReceipt,
 )
+from .codex_commands import sdk_server_identity
 from .models import (
     AgentDecision,
     DECISION_SCHEMA,
@@ -202,6 +203,9 @@ class CodexAgentAdapter:
         # The browser only needs auth capability/status; do not expose account email.
         raw.pop("email", None)
         raw["authenticated"] = True
+        runtime_identity = sdk_server_identity(getattr(self._client, "metadata", None))
+        if runtime_identity is not None:
+            raw["runtime"] = runtime_identity
         return raw
 
     async def close(self) -> None:

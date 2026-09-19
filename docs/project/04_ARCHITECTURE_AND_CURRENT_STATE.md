@@ -170,6 +170,8 @@ The Room browser is a separate host surface. Observer messages are submitted thr
 
 Codex Room intentionally substitutes its own organizational mechanisms for several Desktop controls: A/B/C transactions replace built-in Codex subagents; D-039 governs model/reasoning allocation; Round/Task state owns organizational objectives; Room compaction/REFRESH manages long-lived coordinator context; and verifier delegation provides independent review cognition. See E-149 for the dated Desktop↔Room capability audit and its qualification of config-dependent tool availability.
 
+I-019 now has a verified CORE command-catalog authority layer. The adapter records the actual running App Server identity from official SDK initialization metadata. `GET /api/codex/commands` resolves the built-in slash-command inventory only against the exact matching official `openai/codex` release source (`rust-v<runtime-version>`), records the upstream source blob SHA, and caches that exact-version manifest under ignored runtime data. A catalog for another runtime version is never accepted as current; missing/unsafe runtime identity or failed exact-version synchronization returns an unavailable catalog with no commands. Browser caching of this endpoint is disabled. Dynamic model service-tier commands are explicitly identified as a live overlay and are not frozen into the built-in manifest. This layer is read-only: it does not yet provide a command dropdown, command dispatch, Room applicability mapping, or live service-tier overlay. See D-040 and E-150.
+
 ## 8. Model allocation and execution constraints
 
 **IMPLEMENTED / MONITOR**
