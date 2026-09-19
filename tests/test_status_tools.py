@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import json
+from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
+from codex_room.agent import CodexAgentAdapter
 from codex_room.main import create_app
 from codex_room.status_tools import (
     AVAILABLE,
@@ -43,6 +46,62 @@ class _StubCatalog:
                 }
             ],
         }
+
+
+def test_codex_adapter_inspects_exact_app_server_inventory_methods(tmp_path):
+    class RawClient:
+        def __init__(self):
+            self.calls = []
+
+        async def request(self, method, params, *, response_model):
+            self.calls.append((method, params))
+            payloads = {
+                "modelProvider/capabilities/read": {
+                    "imageGeneration": False,
+                    "namespaceTools": False,
+                    "webSearch": True,
+                },
+                "config/read": {
+                    "config": {"web_search": "cached"},
+                    "layers": None,
+                    "origins": {},
+                },
+                "skills/list": {"data": []},
+                "mcpServerStatus/list": {"data": [], "nextCursor": None},
+                "app/installed": {"apps": []},
+                "plugin/installed": {
+                    "marketplaces": [],
+                    "marketplaceLoadErrors": [],
+                },
+            }
+            return response_model.model_validate(payloads[method])
+
+    raw = RawClient()
+    adapter = CodexAgentAdapter()
+    adapter._client = SimpleNamespace(_client=raw)
+
+    inventory = asyncio.run(
+        adapter.inspect_tools(tmp_path, thread_id="thread_status_fixture")
+    )
+
+    assert inventory["web_search"]["status"] == AVAILABLE
+    assert inventory["web_search"]["mode"] == "cached"
+    assert inventory["skills"]["status"] == "unavailable"
+    assert inventory["mcp"]["status"] == "unavailable"
+    assert inventory["apps"]["status"] == "unavailable"
+    assert inventory["plugins"]["status"] == "unavailable"
+    assert {method for method, _ in raw.calls} == {
+        "modelProvider/capabilities/read",
+        "config/read",
+        "skills/list",
+        "mcpServerStatus/list",
+        "app/installed",
+        "plugin/installed",
+    }
+    params = dict(raw.calls)
+    assert params["mcpServerStatus/list"]["threadId"] == "thread_status_fixture"
+    assert params["app/installed"]["threadId"] == "thread_status_fixture"
+    assert params["skills/list"]["cwds"] == [str(tmp_path)]
 
 
 def test_codex_tool_inventory_is_classified_and_sanitized():
