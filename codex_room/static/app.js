@@ -334,8 +334,8 @@ function renderStatusTools(payload) {
     const tokens = economics?.usage_delta?.total_tokens;
     agentGrid.append(statusCard(
       agent.name || agentFallbackNames[agent.agent_key] || agent.agent_key,
-      agent.execution_health === "healthy" ? "available" : agent.execution_health ? "unknown" : null,
-      `${String(agent.work_state || agent.status || "unknown").replaceAll("_", " ")} · ${agent.model || "model not run yet"}${agent.reasoning_effort ? ` · ${agent.reasoning_effort}` : ""}`,
+      null,
+      `${String(agent.work_state || agent.status || "unknown").replaceAll("_", " ")} · ${String(agent.execution_health || "health unknown").replaceAll("_", " ")} · ${agent.model || "model not run yet"}${agent.reasoning_effort ? ` · ${agent.reasoning_effort}` : ""}`,
       [
         ["Queued / processing", `${agent.pending_count || 0} / ${agent.processing_count || 0}`],
         ["Recent execution tokens", compactNumber(tokens)],
@@ -347,8 +347,8 @@ function renderStatusTools(payload) {
   if (context) {
     agentGrid.append(statusCard(
       "C context guidance",
-      context.guidance_level === "normal" ? "available" : "unknown",
-      String(context.guidance_level || "unknown").replaceAll("_", " "),
+      null,
+      `Refresh guidance: ${String(context.guidance_level || "unknown").replaceAll("_", " ")}`,
       [
         ["Executions on context", compactNumber(context.executions_on_context)],
         ["Last execution input", compactNumber(context.last_execution_input_tokens)],
