@@ -295,6 +295,42 @@ test('private principal consultation renders an isolated reply flow', async ({ p
   await expect(node.locator('.principal-reply-status')).toHaveText('Private reply sent');
 });
 
+test('Task cognition escalation renders private approve and decline controls', async ({ page }) => {
+  const consultation = makeEvent(1, {
+    source: 'agent_c',
+    event_type: 'principal_message',
+    event_class: 'conversation',
+    destination: 'observer',
+    content: 'This Task would materially benefit from Sol/XHigh. Approve it for this Task?',
+    metadata: {
+      private: true,
+      principal_channel: true,
+      awaiting_principal_reply: true,
+      assignment_id: 'assignment_cognition_approval',
+      requested_task_cognition_ceiling: 'sol-xhigh',
+    },
+  });
+  const observerMessages = await openFixture(page, makeRoom([consultation]));
+  const node = page.locator(`[data-event-id="${consultation.id}"]`);
+
+  await expect(node.locator('.event-badge.private')).toHaveText('private · Agent C → you');
+  await expect(node.locator('.principal-reply-form textarea')).toHaveCount(0);
+  await expect(node.getByText('Task cognition request: sol-xhigh')).toHaveCount(1);
+  await node.getByRole('button', { name: 'Approve for this Task' }).click();
+
+  await expect.poll(() => observerMessages.principalReplies.length).toBe(1);
+  expect(observerMessages.principalReplies[0]).toEqual({
+    consultation_event_id: consultation.id,
+    content: 'Approved sol-xhigh for this Task.',
+    cognition_approval: 'approve',
+  });
+  expect(observerMessages).toHaveLength(0);
+  await expect(node.locator('.principal-reply-form')).toHaveCount(0);
+  await expect(node.locator('.principal-reply-status')).toHaveText(
+    'Task cognition escalation approved',
+  );
+});
+
 test('answered private principal consultation does not offer a second reply form', async ({ page }) => {
   const consultation = makeEvent(1, {
     source: 'agent_c',
