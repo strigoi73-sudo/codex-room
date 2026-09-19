@@ -497,9 +497,22 @@ function renderStatusTools() {
       const tokenText = Number.isFinite(delta.total_tokens)
         ? `${delta.total_tokens.toLocaleString()} execution tokens`
         : "execution-token delta unavailable";
-      const contextText = Number.isFinite(usage.input_tokens)
-        ? `${usage.input_tokens.toLocaleString()} input load`
-        : "input load unavailable";
+      const inputLoad = Number.isFinite(usage.input_tokens) ? usage.input_tokens : null;
+      let contextText = inputLoad === null
+        ? "input load unavailable"
+        : `${inputLoad.toLocaleString()} input load`;
+      if (event.source === "agent_c" && inputLoad !== null) {
+        const guidance = state.statusTools?.economics_guidance || {};
+        const consider = guidance.coordinator_refresh_consider_input_tokens;
+        const prefer = guidance.coordinator_refresh_prefer_input_tokens;
+        if (Number.isFinite(prefer) && inputLoad >= prefer) {
+          contextText += " · refresh strongly preferred at next clean Task boundary";
+        } else if (Number.isFinite(consider) && inputLoad >= consider) {
+          contextText += " · consider refresh at next clean Task boundary";
+        } else if (Number.isFinite(consider)) {
+          contextText += ` · below ${consider.toLocaleString()} refresh-consider range`;
+        }
+      }
       economics.append(statusLine(
         source,
         `${tokenText} · ${contextText} · ${meta.tool_calls || 0} tool call(s)`,
