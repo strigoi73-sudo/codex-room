@@ -414,7 +414,7 @@ Wishlist entries are **idea capture, not a work queue**. They have no work state
 
 ### Initial wishlist — 2026-09-19
 
-- **Observer composer: Enter sends; Shift+Enter inserts a newline.** Apply this behavior only to the ordinary observer chat composer, not every multiline form. Retain Ctrl/Cmd+Enter as an additional send shortcut if practical. Ignore Enter while an IME composition is active. Show a subtle `Enter to send · Shift+Enter for newline` hint.
+- **Observer composer: Enter sends; Shift+Enter inserts a newline — IMPLEMENTED / VERIFIED.** PR #133 implemented the behavior only in the ordinary observer composer, retained Ctrl/Cmd+Enter as an additional send shortcut, ignored Enter during IME composition, and added the `Enter to send · Shift+Enter for newline` hint. Exact feature head `99fb09f0c8273a918cab5ded232accad4fee3ed2` passed `verify-fast.cmd`: 63 Linux focused tests, 118 Windows portability tests, and 4 browser interaction/stability tests. Squash-merged as `74863b688962e80046944d6adda38e3c85dd20d3`.
 - **Composer focus retention.** Focus the observer composer when a Room opens and return focus after a successful send so repeated human interventions do not require another mouse click.
 - **Auto-growing observer composer.** Begin compact, expand vertically as text grows to a sensible maximum such as 6–8 lines, then use internal scrolling.
 - **Per-Room unsent drafts.** Preserve observer message text and selected target locally while typing so Room switches, refreshes, or accidental tab closure do not discard a draft. Clear the stored draft only after successful submission.
