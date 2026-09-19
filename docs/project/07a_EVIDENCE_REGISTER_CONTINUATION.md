@@ -1022,3 +1022,39 @@ Observed durable execution provenance:
 
 **Assessment:** the ordinary self-allocation half of I-017 is **NATURALISTICALLY ACCEPTED**. C demonstrably changed its own model/reasoning configuration between executions on the same root Assignment while A/B remained uninvolved and no exceptional Task ceiling was requested. Task-scoped exceptional approval remains a separate acceptance gate.
 
+## E-148 — I-017 exceptional cognition naturalistic acceptance
+
+**Date:** 2026-09-19
+**Kind:** [ROOM naturalistic behavioral acceptance / execution provenance / Task-boundary scope]
+**Related decision:** D-039
+**Related work:** I-017
+**Room:** `room_c5c830d0cf5443608c09e476e89f41dc`
+
+The principal ran the second bounded I-017 acceptance Room to exercise exceptional C-only cognition and its Task scope. The continuous Round required C to work alone, request Sol/XHigh through the private principal channel for the first Task, use that approved configuration if authorized, then complete one successor Task without carrying the exceptional approval forward.
+
+The exported Room showed the intended control flow:
+
+- C emitted a private `CONSULT_PRINCIPAL` request for `requested_task_cognition_ceiling=sol-xhigh`;
+- the principal replied through the dedicated private channel with `cognition_approval=approve`;
+- the reply remained bound to the same first Task and root C Assignment;
+- C completed the first Task with the required acceptance result;
+- CORE created one successor Task in the same continuous Round;
+- the first Task settled with `c_cognition_ceiling=sol-xhigh` and its C Assignment recorded `execution_config_id=sol-xhigh`;
+- the successor Task settled with `c_cognition_ceiling=sol-high` and no inherited exceptional `execution_config_id`;
+- A and B remained uninvolved;
+- the Round then stopped at the deliberately configured three-turn limit after both bounded Tasks had completed.
+
+The principal then queried the local durable `agent_executions` provenance for that exact Room. Results:
+
+- Agent A executions: **0**;
+- Agent B executions: **0**;
+- Agent C executions: **3**;
+- C execution 1: `gpt-5.6-terra` / high on `assignment_c2d504cdad10491fba41131d6bb53c36`;
+- C execution 2: `gpt-5.6-sol` / xhigh on the **same Assignment** after approval;
+- C execution 3: `gpt-5.6-terra` / high on successor `assignment_f59136b17cb1441b8c8de73adf228da2`;
+- first Task `task_d3c3c1a51737438a83caf4625ec740e7`: settled, ceiling `sol-xhigh`;
+- successor Task `task_4a4b05d25d6446dc9fea18bced2f83c3`: settled, parent first Task, ceiling `sol-high`;
+- the bounded acceptance checker returned **RESULT: PASS**.
+
+**Assessment:** the exceptional-cognition half of I-017 is **NATURALISTICALLY ACCEPTED**. The evidence demonstrates private Task-scoped approval, actual Sol/XHigh execution after approval, no peer authorization or execution leakage, and expiry of the exceptional ceiling at the Task boundary. Combined with E-146 exact-head verification and E-147 ordinary self-switch acceptance, I-017 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY ACCEPTED**.
+
