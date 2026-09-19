@@ -2900,4 +2900,3 @@ async def test_recover_interrupted_work_settles_decision_recorded_execution_with
     agent_c = await runtime.db.get_agent(room_id, "agent_c")
     assert agent_c is not None
     assert agent_c["status"] == AgentStatus.IDLE
-
