@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,7 @@ from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .agent import AgentAdapter, CodexAgentAdapter
+from .codex_commands import CodexCommandCatalog
 from .db import Database
 from .exporter import as_json, as_markdown
 from .models import (
@@ -35,10 +37,14 @@ def create_app(
     database_path: Path | None = None,
     data_root: Path | None = None,
     adapter: AgentAdapter | None = None,
+    command_catalog: CodexCommandCatalog | None = None,
 ) -> FastAPI:
     root = data_root or PROJECT_ROOT / "data"
     db = Database(database_path or root / "codex-room.db")
     runtime = RoomRuntime(db, adapter or CodexAgentAdapter(), root)
+    catalog = command_catalog or CodexCommandCatalog(
+        root / "cache" / "codex-command-catalog"
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -59,6 +65,16 @@ def create_app(
     @app.get("/api/health")
     async def health() -> dict[str, Any]:
         return runtime.health_status()
+
+    @app.get("/api/codex/commands")
+    async def get_codex_commands() -> dict[str, Any]:
+        runtime_identity = runtime.auth_info.get("runtime")
+        runtime_version = (
+            runtime_identity.get("version")
+            if isinstance(runtime_identity, dict)
+            else None
+        )
+        return await asyncio.to_thread(catalog.resolve, runtime_version)
 
     @app.get("/api/profiles/defaults")
     async def get_default_profiles() -> dict[str, dict[str, Any]]:
