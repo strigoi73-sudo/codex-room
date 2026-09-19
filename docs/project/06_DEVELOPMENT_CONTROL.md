@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-017 — Dynamic C cognition and Task-scoped exceptional approval is **IN PROGRESS** under D-039. The implementation is merged and exact-head verified; bounded naturalistic acceptance remains before closeout. I-016 remains complete.
+- **Where are we?** I-017 — Dynamic C cognition and Task-scoped exceptional approval is **IN PROGRESS** under D-039. The implementation is merged and exact-head verified. Ordinary C self-switching has now passed naturalistic acceptance; Task-scoped exceptional approval remains the final acceptance gate. I-016 remains complete.
 - **What just changed?** Exact feature head `b498709ed30541d7a673b245f19a9021eca98ee5` passed the two restart-recovery probes, the 85-test focused I-017 suite, and the repository-standard fast verifier (63 Linux focused, 118 Windows portability, 8 browser tests). PR #142 then squash-merged those verified implementation bytes to canonical `main` as `1806a7a16e1477f9dbe88515100f787c0389c709`. See E-145 and E-146.
 - **Verification state:** **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTIC ACCEPTANCE PENDING.** The earlier restart failures remain preserved as development evidence; the final verified head includes the Assignment-state recovery invariant and the corrected fake-provider turn-ID namespace used only by the principal-wait restart test. No GitHub Actions run was attached to either the exact feature head or the squash merge, so the applicable merge evidence is the exact-head local deterministic gate.
-- **What is blocked?** No design or implementation blocker is known. I-017 now needs a bounded naturalistic Room exercise demonstrating ordinary C self-switching and, separately, Task-scoped exceptional approval without peer leakage.
-- **What is next?** Update the local installation to merged `main`, restart Codex Room, run the bounded I-017 naturalistic acceptance exercise, and close I-017 if the observed provenance matches D-039. Automatic CORE model routing remains deferred and is not part of I-017.
+- **What is blocked?** No design or implementation blocker is known. Ordinary C self-switching passed naturalistic acceptance in Room `room_b91f31f8cccc4d6c8eb26c4c008854dd`: C executed twice on the same Assignment, changed from `gpt-5.6-terra` / high to `gpt-5.6-luna` / low, A/B executed zero times, and the Task retained the ordinary `sol-high` ceiling. Task-scoped exceptional approval without peer leakage remains the final I-017 acceptance gate.
+- **What is next?** Run the separate bounded naturalistic Task-scoped exceptional-approval exercise and close I-017 if the observed approval, execution provenance, peer isolation, and Task-boundary ceiling behavior match D-039. Automatic CORE model routing remains deferred and is not part of I-017.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
@@ -31,7 +31,9 @@
 
 **Implemented and verified:** canonical `main` now persists `tasks.c_cognition_ceiling` with ordinary default `sol-high`; adds structured `next_self_config` and `requested_task_cognition_ceiling`; reuses `CONSULT_PRINCIPAL` for a private structured approval/decline exchange; records approval in durable private events; resumes the same C Assignment at the approved configuration when authorized; resets successor Tasks to the ordinary ceiling; and reconciles restart recovery against durable Assignment state so an old provider execution is resumable only while its Assignment remains `running`. Exact feature head `b498709ed30541d7a673b245f19a9021eca98ee5` passed the repository-standard local gate and squash-merged as `1806a7a16e1477f9dbe88515100f787c0389c709`.
 
-**Next:** run the bounded naturalistic acceptance Room for ordinary self-switching and Task-scoped exceptional approval; close I-017 only if that end-to-end behavior passes.
+**Naturalistic acceptance so far:** PASS for ordinary C self-switching in Room `room_b91f31f8cccc4d6c8eb26c4c008854dd`. C executed twice on the same Assignment and moved from Terra/High to Luna/Low; A/B had zero executions; the settled Task retained `c_cognition_ceiling=sol-high`. See E-147.
+
+**Next:** run the separate bounded Task-scoped exceptional-approval acceptance Room; close I-017 only if that remaining end-to-end behavior passes.
 
 ### I-016 — Private Principal Channel
 
