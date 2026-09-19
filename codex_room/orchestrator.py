@@ -1375,6 +1375,42 @@ class RoomRuntime:
             await self._attach_execution(room)
         return room
 
+    async def coordinator_context_status(
+        self, room: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Return bounded economics for the active root coordinator context."""
+        round_item = room.get("active_round")
+        if not round_item or round_item.get("work_model_version", 1) != 2:
+            return None
+        tasks = ((round_item.get("transaction_state") or {}).get("tasks") or [])
+        root_assignment = None
+        for task in reversed(tasks):
+            for assignment in reversed(task.get("assignments") or []):
+                if (
+                    assignment.get("agent_key") == "agent_c"
+                    and assignment.get("parent_assignment_id") is None
+                    and assignment.get("contribution_join_id") is None
+                    and assignment.get("context_thread_id")
+                ):
+                    root_assignment = assignment
+                    break
+            if root_assignment is not None:
+                break
+        if root_assignment is None:
+            return None
+        coordinator = next(
+            (agent for agent in room.get("agents") or [] if agent.get("agent_key") == "agent_c"),
+            None,
+        )
+        if coordinator is None:
+            return None
+        history = await self.db.get_provider_context_usage_history(
+            coordinator["id"],
+            round_item["id"],
+            root_assignment["context_thread_id"],
+        )
+        return self._coordinator_context_economics(history)
+
     def workspace(self, room_id: str) -> Path:
         return self.data_root / "rooms" / room_id / "shared"
 
