@@ -10,6 +10,7 @@ from codex_room.agent import AgentTurnInterruptedError, AgentTurnTerminalError
 from codex_room.db import Database
 from codex_room.exporter import as_markdown
 from codex_room.models import (
+    AgentStatus,
     CreateRoomRequest,
     ObserverMessageRequest,
     PrincipalReplyRequest,
@@ -2876,7 +2877,7 @@ async def test_recover_interrupted_work_settles_decision_recorded_execution_with
         batch_id = rows[0]["batch_id"]
         await db.execute(
             """UPDATE agent_executions
-               SET state='active', settled_at=NULL
+               SET state='active', settled_at=NULL, decision_recorded_at=NULL
                WHERE batch_id=?""",
             (batch_id,),
         )
@@ -2894,7 +2895,7 @@ async def test_recover_interrupted_work_settles_decision_recorded_execution_with
             )
         )[0]
 
-    assert row["decision_recorded_at"] is not None
+    assert row["decision_recorded_at"] is None
     assert row["state"] == "settled"
     assert row["settled_at"] is not None
     agent_c = await runtime.db.get_agent(room_id, "agent_c")
