@@ -1896,7 +1896,10 @@ async def test_transaction_exact_active_turn_recovers_same_assignment_after_rest
     thread_id = original["sdk_thread_id"]
     await first.close()
 
-    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        turn_id_namespace="principal_restart_second",
+    )
     second_adapter.decisions["agent_c"].append(
         TransactionDecision(
             action=TransactionAction.COMPLETE,
@@ -2344,6 +2347,7 @@ async def test_transaction_principal_wait_survives_runtime_restart(
 
     assert len(second_adapter.calls["agent_c"]) == 1
     assert second_adapter.calls["agent_c"][0]["thread_id"] == context_thread_id
+    assert "recovered" not in second_adapter.calls["agent_c"][0]
     assert "Use beta." in second_adapter.calls["agent_c"][0]["prompt"]
     assert second_adapter.calls["agent_a"] == []
     assert second_adapter.calls["agent_b"] == []
