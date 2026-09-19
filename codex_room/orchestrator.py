@@ -19,6 +19,7 @@ from .agent import (
     AgentAdapter,
     AgentDecisionValidationError,
     AgentRunResult,
+    AgentTurnInterruptedError,
     AgentTurnTerminalError,
     AgentTurnStateUnknownError,
     InterruptOutcome,
@@ -2807,6 +2808,20 @@ class RoomRuntime:
                 slot.phase = "quarantined"
                 slot.reason = str(exc)
             await self.publish_state(room_id)
+            return
+        except AgentTurnInterruptedError as exc:
+            # A hard process restart can leave the exact persisted provider turn
+            # authoritatively interrupted even though the durable Assignment is
+            # still current. Only startup-recovered executions may spend the
+            # Assignment's existing one-retry budget to continue on its bound
+            # provider context. Ordinary runtime interruptions remain terminal.
+            await self._handle_assignment_failure(
+                batch,
+                agent,
+                exc,
+                generation,
+                retryable=execution.get("state") == "recovering",
+            )
             return
         except AgentTurnTerminalError as exc:
             if exc.codex_error_info in self.USAGE_WALL_ERROR_CODES:
