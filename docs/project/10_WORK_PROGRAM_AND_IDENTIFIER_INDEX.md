@@ -64,6 +64,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-014` | Deterministic retrieval economy | Development Control |
 | `I-015` | Task-transaction stabilization redesign | Development Control |
 | `I-016` | Private Principal Channel | Development Control / D-038 |
+| `I-017` | Dynamic C cognition and Task-scoped exceptional approval | Development Control / D-039 |
 
 ## 4. Decision and evidence identifiers
 
