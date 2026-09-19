@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, I-015, and the full D-037 bounded-context program are complete. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. A repeatable T0-T14 functional acceptance campaign is now **IN PROGRESS**; T0 through T8 are PASS after T8 exposed and drove repair of one real hard-restart recovery defect.
-- **What just changed?** T8 deliberately restarted the server during an active transaction. The first run at `9a313df...` exposed that an exact provider turn can become authoritatively `interrupted` across a hard restart and was then treated as terminal. PR #130 repaired only startup-recovered interrupted transaction turns by allowing the same Assignment to spend its existing one-retry budget. Exact head `17da2833f24e9ab84416e1585bb4d00bfd0cb86f` passed targeted and repository-standard verification plus a natural hard-restart rerun; PR #130 squash-merged as `f11b1d5bc02b8f8a7f9d2bcc84e3991b8c767877`. See E-140.
-- **Verification state:** Functional acceptance T0-T8 are recorded PASS in `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`. For the T8 repair, targeted restart tests passed **2/2**; `verify-fast.cmd` passed **63 Linux focused + 118 Windows focused + 3 browser tests**; the natural rerun preserved the same C Assignment across the interrupted provider turn, delegated A/B together after retry, released the Join once, integrated, and closed `transaction_settled`. No GitHub-hosted workflow run was attached.
+- **Where are we?** Engineering Foundation, A2, P4, A3 remediation, I-015, the full D-037 bounded-context program, and the repeatable T0-T14 functional acceptance campaign are **COMPLETE**. Work-model v2 with `provider_context_mode="assignment_thread"` remains the public production path. T0 through T14 are recorded PASS; the campaign exposed one real hard-restart recovery defect at T8, repaired it, and revalidated the repaired path. See E-140 and E-141.
+- **What just changed?** The acceptance campaign reached T14 and closed. T9-T14 additionally exercised coordinator refresh, custom-capability lifecycle, rollover continuity, offline export/backup/verify, explicit model allocation, and an integrated implementation/verification mission. T14 finished `transaction_settled` with correct exact artifacts. E-141 records the campaign-level closeout; E-140 remains the detailed T8 defect/repair record.
+- **Verification state:** Functional acceptance T0-T14 are recorded PASS in `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`, with exact HEAD and preserved evidence references for each run. The campaign includes repository-standard fast verification, exact transaction/context behaviors, restart recovery, refresh, capability lifecycle, rollover, persistence maintenance, explicit execution allocation, and the integrated T14 mission. No additional acceptance rerun is indicated absent contrary evidence.
 - **What is blocked?** D-019 daily usage pacing remains separately deferred on unresolved mixed subscription-allowance / purchased-credit semantics. Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** Continue the authorized functional acceptance campaign with **T14 — integrated naturalistic mission**. T0 through T13 are PASS.
+- **What is next?** No automatic follow-on engineering phase is authorized by this closeout. Stop acceptance work unless new evidence warrants regression testing. D-019 remains deferred; Common Cause competitive play still requires separate principal authorization. The principal may now choose the next product/development objective.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
@@ -19,15 +19,13 @@
 
 **Scope:** [CORE + ROOM operational acceptance]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
 **Authoritative operational procedure:** `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md`
 
-**Current state:** T0 through T13 are PASS. T8's initial failure was a genuine runtime-invariant failure, not permitted model variation: hard restart preserved the durable Assignment but the exact provider turn became `interrupted` and was terminally failed. PR #130 repaired and revalidated that path; E-140 owns the consequential evidence. T9 cleanly exercised the explicit C-only BCTX-4 `REFRESH` path. T10 exercised the P4 custom-capability lifecycle end to end. T11 exercised rollover continuity. T12 exercised offline export/backup/verify. T13 then mechanically verified explicit peer execution allocation: A on `luna-medium` and B on `sol-medium`, with normal concurrent settlement and no Astra use.
+**Current state:** T0 through T14 are PASS and the campaign is closed. T8's initial failure was a genuine runtime-invariant failure, not permitted model variation: hard restart preserved the durable Assignment but the exact provider turn became `interrupted` and was terminally failed. PR #130 repaired and revalidated that path; E-140 owns the detailed repair evidence. T9-T14 then exercised coordinator refresh, the custom-capability lifecycle, rollover continuity, offline export/backup/verify, explicit peer model allocation, and an integrated naturalistic implementation/verification mission. E-141 records the campaign-level outcome and retained behavioral observations.
 
-**Next:** T14 — integrated naturalistic mission.
-
-The campaign remains evidence-first: preserve FAIL/INCONCLUSIVE artifacts, characterize before repair, and do not convert behavioral variation into CORE defects unless a runtime invariant fails.
+**Next:** none automatically. Preserve the acceptance plan as the repeatable regression/acceptance specification and stop here unless new evidence or explicit principal direction justifies further work.
 
 ### BCTX — bounded-context architecture program
 
