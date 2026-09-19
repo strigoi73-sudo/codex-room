@@ -108,6 +108,8 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert "Recent economics" in html
     assert "Room deterministic capabilities" in javascript
     assert "execution_economics" in javascript
+    assert "coordinator_refresh_consider_input_tokens" in javascript
+    assert "refresh strongly preferred at next clean Task boundary" in javascript
     assert "/status-tools" in javascript
     assert "interaction_required" in javascript
 
