@@ -486,7 +486,11 @@ $("#message-form").addEventListener("submit", async (event) => {
 });
 
 $("#message-form textarea").addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) event.currentTarget.form.requestSubmit();
+  if (event.key !== "Enter" || event.isComposing || event.shiftKey) return;
+  event.preventDefault();
+  const form = event.currentTarget.form;
+  const submit = form.querySelector("button[type=submit]");
+  if (!submit.disabled) form.requestSubmit();
 });
 $("#pause-room").addEventListener("click", () => roomAction("pause"));
 $("#resume-room").addEventListener("click", () => roomAction("resume"));
