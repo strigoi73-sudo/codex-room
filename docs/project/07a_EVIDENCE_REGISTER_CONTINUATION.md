@@ -997,3 +997,28 @@ PR #142 squash-merged the verified implementation bytes to canonical `main` as:
 
 **Assessment:** I-017 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Deterministic evidence supports ordinary C self-selection, Task-scoped exceptional approval mechanics, peer exclusion from exceptional configurations, Task-boundary ceiling expiry, and the restart-recovery repair at the exact verified version. A bounded naturalistic Room exercise remains required before I-017 is closed as end-to-end accepted.
 
+## E-147 — I-017 ordinary C self-switch naturalistic acceptance
+
+**Date:** 2026-09-19
+**Kind:** [ROOM naturalistic behavioral acceptance / execution provenance]
+**Related decision:** D-039
+**Related work:** I-017
+**Room:** `room_b91f31f8cccc4d6c8eb26c4c008854dd`
+
+The principal ran a fresh bounded acceptance Room on canonical source revision `cc68344a948b4585f556be8d26c6be23b16e9fc2`. The objective required C to work alone, avoid exceptional cognition, use bounded source evidence, and deliberately select a different ordinary configuration for its next execution.
+
+Observed durable execution provenance:
+
+- Agent A executions: **0**;
+- Agent B executions: **0**;
+- Agent C executions: **2**;
+- both C executions belonged to the same Assignment, `assignment_8e5c4898bfbb4af4b8da8e0e0a731042`;
+- C execution 1: `gpt-5.6-terra` / high;
+- C execution 2: `gpt-5.6-luna` / low;
+- observed transition: **Terra/High → Luna/Low**;
+- Room terminal status: `finished`;
+- Room turn count: **2**;
+- Task `task_fcb78782d6184b8a938dcb5c174ffe93` settled with `c_cognition_ceiling=sol-high`.
+
+**Assessment:** the ordinary self-allocation half of I-017 is **NATURALISTICALLY ACCEPTED**. C demonstrably changed its own model/reasoning configuration between executions on the same root Assignment while A/B remained uninvolved and no exceptional Task ceiling was requested. Task-scoped exceptional approval remains a separate acceptance gate.
+
