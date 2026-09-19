@@ -58,30 +58,67 @@ class RoundStatus(StrEnum):
     STOPPED = "stopped"
 
 
-ExecutionConfigId = Literal[
+OrdinaryExecutionConfigId = Literal[
+    "luna-low",
     "luna-medium",
+    "luna-high",
+    "terra-low",
     "terra-medium",
     "terra-high",
+    "sol-low",
     "sol-medium",
+    "sol-high",
 ]
+ExceptionalCExecutionConfigId = Literal[
+    "sol-xhigh",
+    "sol-max",
+]
+ExecutionConfigId = OrdinaryExecutionConfigId | ExceptionalCExecutionConfigId
 
+ORDINARY_EXECUTION_CONFIGS: tuple[str, ...] = (
+    "luna-low",
+    "luna-medium",
+    "luna-high",
+    "terra-low",
+    "terra-medium",
+    "terra-high",
+    "sol-low",
+    "sol-medium",
+    "sol-high",
+)
+EXCEPTIONAL_C_EXECUTION_CONFIGS: tuple[str, ...] = (
+    "sol-xhigh",
+    "sol-max",
+)
 EXECUTION_CONFIGS: dict[str, tuple[str, str]] = {
+    "luna-low": ("gpt-5.6-luna", "low"),
     "luna-medium": ("gpt-5.6-luna", "medium"),
+    "luna-high": ("gpt-5.6-luna", "high"),
+    "terra-low": ("gpt-5.6-terra", "low"),
     "terra-medium": ("gpt-5.6-terra", "medium"),
     "terra-high": ("gpt-5.6-terra", "high"),
+    "sol-low": ("gpt-5.6-sol", "low"),
     "sol-medium": ("gpt-5.6-sol", "medium"),
+    "sol-high": ("gpt-5.6-sol", "high"),
+    "sol-xhigh": ("gpt-5.6-sol", "xhigh"),
+    "sol-max": ("gpt-5.6-sol", "max"),
+}
+C_COGNITION_CEILING_RANK: dict[str, int] = {
+    "sol-high": 0,
+    "sol-xhigh": 1,
+    "sol-max": 2,
 }
 
 
 class ExecutionSelection(BaseModel):
     target: Literal["agent_a", "agent_b", "agent_c"]
-    config: ExecutionConfigId
+    config: OrdinaryExecutionConfigId
 
 
 class DelegationRequest(BaseModel):
     target: Literal["agent_a", "agent_b", "agent_c"]
     instruction: str = Field(min_length=1, max_length=50_000)
-    config: ExecutionConfigId | None = None
+    config: OrdinaryExecutionConfigId | None = None
     context_from_assignment_id: str | None = Field(
         default=None, min_length=1, max_length=200
     )
@@ -144,6 +181,8 @@ class TransactionDecision(BaseModel):
     retire_worker_context_task_ids: list[str] | None = None
     evidence_requests: list[SourceEvidenceRequest] | None = None
     history_requests: list[HistoryRequest] | None = None
+    next_self_config: ExecutionConfigId | None = None
+    requested_task_cognition_ceiling: ExceptionalCExecutionConfigId | None = None
 
     @model_validator(mode="after")
     def validate_transaction_decision(self) -> "TransactionDecision":
@@ -207,6 +246,18 @@ class TransactionDecision(BaseModel):
                 raise ValueError("HISTORY accepts at most 4 Room-history requests")
         elif self.history_requests is not None:
             raise ValueError("history_requests is valid only for HISTORY")
+        if self.action in {TransactionAction.COMPLETE, TransactionAction.PASS}:
+            if self.next_self_config is not None:
+                raise ValueError("next_self_config is valid only for nonterminal actions")
+        if self.requested_task_cognition_ceiling is not None:
+            if self.action != TransactionAction.CONSULT_PRINCIPAL:
+                raise ValueError(
+                    "requested_task_cognition_ceiling is valid only for CONSULT_PRINCIPAL"
+                )
+            if self.next_self_config is not None:
+                raise ValueError(
+                    "cognition-ceiling consultation cannot also set next_self_config"
+                )
         return self
 
 
@@ -270,10 +321,15 @@ DECISION_SCHEMA: dict[str, Any] = {
                             "config": {
                                 "type": "string",
                                 "enum": [
+                                    "luna-low",
                                     "luna-medium",
+                                    "luna-high",
+                                    "terra-low",
                                     "terra-medium",
                                     "terra-high",
+                                    "sol-low",
                                     "sol-medium",
+                                    "sol-high",
                                 ],
                             },
                         },
@@ -335,10 +391,15 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                     {
                                         "type": "string",
                                         "enum": [
+                                            "luna-low",
                                             "luna-medium",
+                                            "luna-high",
+                                            "terra-low",
                                             "terra-medium",
                                             "terra-high",
+                                            "sol-low",
                                             "sol-medium",
+                                            "sol-high",
                                         ],
                                     },
                                     {"type": "null"},
@@ -539,6 +600,33 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                 {"type": "null"},
             ]
         },
+        "next_self_config": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "enum": [
+                        "luna-low",
+                        "luna-medium",
+                        "luna-high",
+                        "terra-low",
+                        "terra-medium",
+                        "terra-high",
+                        "sol-low",
+                        "sol-medium",
+                        "sol-high",
+                        "sol-xhigh",
+                        "sol-max",
+                    ],
+                },
+                {"type": "null"},
+            ]
+        },
+        "requested_task_cognition_ceiling": {
+            "anyOf": [
+                {"type": "string", "enum": ["sol-xhigh", "sol-max"]},
+                {"type": "null"},
+            ]
+        },
         "history_requests": {
             "anyOf": [
                 {
@@ -623,6 +711,8 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
         "retire_worker_context_task_ids",
         "evidence_requests",
         "history_requests",
+        "next_self_config",
+        "requested_task_cognition_ceiling",
     ],
     "additionalProperties": False,
 }
@@ -702,6 +792,7 @@ class ObserverMessageRequest(BaseModel):
 class PrincipalReplyRequest(BaseModel):
     consultation_event_id: str = Field(min_length=1, max_length=200)
     content: str = Field(min_length=1, max_length=50_000)
+    cognition_approval: Literal["approve", "decline"] | None = None
 
 
 class NewTopicRequest(BaseModel):

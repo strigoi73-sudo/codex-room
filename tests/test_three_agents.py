@@ -339,6 +339,9 @@ async def test_personality_overrides_replace_defaults_but_preserve_protected_lay
     assert "Wait until every requested contribution has returned" in agents["agent_c"]["developer_instructions"]
     assert "use CONSULT_PRINCIPAL" in agents["agent_c"]["developer_instructions"]
     assert "Do not use a terminal COMPLETE message merely to ask the principal" in agents["agent_c"]["developer_instructions"]
+    assert "Low, Medium, and High reasoning on Luna, Terra, or Sol" in agents["agent_c"]["developer_instructions"]
+    assert "Sol/XHigh and Sol/Max are exceptional C-only cognition levels" in agents["agent_c"]["developer_instructions"]
+    assert "approval expires when the Task ends" in agents["agent_c"]["developer_instructions"]
 
 
 @pytest.mark.asyncio
@@ -1701,6 +1704,13 @@ def test_invoke_targets_validation_and_room_membership() -> None:
             invoke_targets=["agent_a"],
             execution_configs=[{"target": "agent_a", "config": "astra-medium"}],
         )
+    with pytest.raises(ValidationError):
+        AgentDecision(
+            outcome=Outcome.MESSAGE,
+            message="Exceptional C cognition is not a peer configuration",
+            invoke_targets=["agent_a"],
+            execution_configs=[{"target": "agent_a", "config": "sol-xhigh"}],
+        )
 
     decision = AgentDecision(
         outcome=Outcome.MESSAGE,
@@ -1867,4 +1877,3 @@ async def test_snapshot_exposes_current_then_last_agent_model(runtime_factory):
     assert settled_a["execution"]["model"] == "gpt-5.6-terra"
     assert settled_a["execution"]["reasoning_effort"] == "high"
     assert settled_a["execution"]["model_recency"] == "last"
-

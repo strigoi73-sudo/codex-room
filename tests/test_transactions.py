@@ -3,12 +3,14 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from pydantic import ValidationError
 
 from codex_room.agent import InterruptOutcome
 from codex_room.agent import AgentTurnInterruptedError, AgentTurnTerminalError
 from codex_room.db import Database
 from codex_room.exporter import as_markdown
 from codex_room.models import (
+    AgentStatus,
     CreateRoomRequest,
     ObserverMessageRequest,
     PrincipalReplyRequest,
@@ -2310,7 +2312,10 @@ async def test_transaction_principal_wait_survives_runtime_restart(
     context_thread_id = assignment["context_thread_id"]
     await runtime1.close()
 
-    second_adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    second_adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        turn_id_namespace="principal_restart_second",
+    )
     second_adapter.decisions["agent_c"].append(
         TransactionDecision(
             action=TransactionAction.COMPLETE,
@@ -2328,6 +2333,8 @@ async def test_transaction_principal_wait_survives_runtime_restart(
         )
     assert persisted[0]["state"] == "waiting_principal"
     assert persisted[0]["context_thread_id"] == context_thread_id
+    await asyncio.sleep(0.05)
+    assert second_adapter.calls["agent_c"] == []
 
     await runtime2.principal_reply(
         room_id,
@@ -2340,6 +2347,7 @@ async def test_transaction_principal_wait_survives_runtime_restart(
 
     assert len(second_adapter.calls["agent_c"]) == 1
     assert second_adapter.calls["agent_c"][0]["thread_id"] == context_thread_id
+    assert "recovered" not in second_adapter.calls["agent_c"][0]
     assert "Use beta." in second_adapter.calls["agent_c"][0]["prompt"]
     assert second_adapter.calls["agent_a"] == []
     assert second_adapter.calls["agent_b"] == []
@@ -2448,3 +2456,454 @@ async def test_transaction_non_coordinator_cannot_consult_principal(
         and "CONSULT_PRINCIPAL is valid only for Agent C" in event["content"]
         for event in events
     )
+
+@pytest.mark.asyncio
+async def test_transaction_c_can_select_ordinary_config_for_its_next_execution(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                message="Delegate one bounded dependency, then continue more cheaply.",
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Return the exact word READY.",
+                        "config": "luna-low",
+                    }
+                ],
+                next_self_config="luna-high",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated READY.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(action=TransactionAction.COMPLETE, message="READY")
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "c-self-config.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise C ordinary self-routing",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    assert adapter.calls["agent_c"][0]["model"] == "gpt-5.6-terra"
+    assert adapter.calls["agent_c"][0]["reasoning_effort"] == "high"
+    assert adapter.calls["agent_c"][1]["model"] == "gpt-5.6-luna"
+    assert adapter.calls["agent_c"][1]["reasoning_effort"] == "high"
+    assert adapter.calls["agent_a"][0]["model"] == "gpt-5.6-luna"
+    assert adapter.calls["agent_a"][0]["reasoning_effort"] == "low"
+
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT x.execution_config_id, t.c_cognition_ceiling
+               FROM assignments x JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_c'""",
+            (room_id,),
+        )
+    assert rows[0]["execution_config_id"] == "luna-high"
+    assert rows[0]["c_cognition_ceiling"] == "sol-high"
+
+
+@pytest.mark.asyncio
+async def test_transaction_task_scoped_cognition_approval_allows_repeated_exceptional_c_turns_and_downgrade(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.CONSULT_PRINCIPAL,
+                message="This Task would materially benefit from Sol/XHigh. Approve it for this Task?",
+                requested_task_cognition_ceiling="sol-xhigh",
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                message="Use the approved ceiling for integration after A returns.",
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Return A-READY.",
+                        "config": "luna-low",
+                    }
+                ],
+                next_self_config="sol-xhigh",
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                message="The difficult step is done; downgrade after B returns.",
+                delegations=[
+                    {
+                        "target": "agent_b",
+                        "instruction": "Return B-READY.",
+                        "config": "luna-medium",
+                    }
+                ],
+                next_self_config="terra-low",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated A-READY and B-READY.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(action=TransactionAction.COMPLETE, message="A-READY")
+    )
+    adapter.decisions["agent_b"].append(
+        TransactionDecision(action=TransactionAction.COMPLETE, message="B-READY")
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "c-task-cognition-approval.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise Task-scoped exceptional C cognition",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def consultation_ready() -> bool:
+        events = await runtime.db.get_events(room_id)
+        return any(
+            event["event_type"] == "principal_message"
+            and event["metadata"].get("requested_task_cognition_ceiling") == "sol-xhigh"
+            for event in events
+        )
+
+    await wait_until(consultation_ready)
+    events = await runtime.db.get_events(room_id)
+    consultation = next(
+        event
+        for event in events
+        if event["event_type"] == "principal_message"
+        and event["metadata"].get("requested_task_cognition_ceiling") == "sol-xhigh"
+    )
+    assert consultation["visibility"] == "private"
+    assert consultation["deliveries"] == []
+
+    reply = await runtime.principal_reply(
+        room_id,
+        PrincipalReplyRequest(
+            consultation_event_id=consultation["id"],
+            content="Approved Sol/XHigh for this Task.",
+            cognition_approval="approve",
+        ),
+    )
+    assert reply["metadata"]["cognition_approval"] == "approve"
+    assert reply["metadata"]["requested_task_cognition_ceiling"] == "sol-xhigh"
+
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert [call["model"] for call in adapter.calls["agent_c"]] == [
+        "gpt-5.6-terra",
+        "gpt-5.6-sol",
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+    ]
+    assert [call["reasoning_effort"] for call in adapter.calls["agent_c"]] == [
+        "high",
+        "xhigh",
+        "xhigh",
+        "low",
+    ]
+    assert adapter.calls["agent_a"][0]["reasoning_effort"] == "low"
+    assert adapter.calls["agent_b"][0]["reasoning_effort"] == "medium"
+
+    async with runtime.db.connect() as db:
+        task = (
+            await db.execute_fetchall(
+                "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at LIMIT 1",
+                (room_id,),
+            )
+        )[0]
+    assert task["c_cognition_ceiling"] == "sol-xhigh"
+
+
+@pytest.mark.asyncio
+async def test_transaction_declined_task_cognition_request_keeps_ordinary_ceiling(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.CONSULT_PRINCIPAL,
+                message="May I use Sol/Max for this Task?",
+                requested_task_cognition_ceiling="sol-max",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Continued within the ordinary ceiling.",
+            ),
+        ]
+    )
+    runtime = await transaction_runtime_factory(adapter, "c-task-cognition-decline.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Decline exceptional C cognition",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def consultation_ready() -> bool:
+        return any(
+            event["event_type"] == "principal_message"
+            for event in await runtime.db.get_events(room_id)
+        )
+
+    await wait_until(consultation_ready)
+    consultation = next(
+        event
+        for event in await runtime.db.get_events(room_id)
+        if event["event_type"] == "principal_message"
+    )
+    await runtime.principal_reply(
+        room_id,
+        PrincipalReplyRequest(
+            consultation_event_id=consultation["id"],
+            content="Declined Sol/Max for this Task.",
+            cognition_approval="decline",
+        ),
+    )
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    assert adapter.calls["agent_c"][1]["model"] == "gpt-5.6-terra"
+    assert adapter.calls["agent_c"][1]["reasoning_effort"] == "high"
+    async with runtime.db.connect() as db:
+        task = (
+            await db.execute_fetchall(
+                "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at LIMIT 1",
+                (room_id,),
+            )
+        )[0]
+    assert task["c_cognition_ceiling"] == "sol-high"
+
+
+def test_transaction_peer_delegation_cannot_use_exceptional_c_config() -> None:
+    with pytest.raises(ValidationError):
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "Exceptional peer cognition is not authorized.",
+                    "config": "sol-xhigh",
+                }
+            ],
+        )
+
+@pytest.mark.asyncio
+async def test_transaction_exceptional_cognition_approval_expires_at_task_boundary(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {3}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.CONSULT_PRINCIPAL,
+                message="Approve Sol/XHigh for this bounded Task?",
+                requested_task_cognition_ceiling="sol-xhigh",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Finished the approved bounded Task.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Successor Task should be back under the ordinary ceiling.",
+            ),
+        ]
+    )
+    runtime = await transaction_runtime_factory(adapter, "c-task-ceiling-expiry.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise Task cognition ceiling expiry",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+            completion_policy="continuous",
+            max_turns=8,
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def consultation_ready() -> bool:
+        return any(
+            event["event_type"] == "principal_message"
+            for event in await runtime.db.get_events(room_id)
+        )
+
+    await wait_until(consultation_ready)
+    consultation = next(
+        event
+        for event in await runtime.db.get_events(room_id)
+        if event["event_type"] == "principal_message"
+    )
+    await runtime.principal_reply(
+        room_id,
+        PrincipalReplyRequest(
+            consultation_event_id=consultation["id"],
+            content="Approved Sol/XHigh for this Task.",
+            cognition_approval="approve",
+        ),
+    )
+    await wait_until(lambda: len(adapter.calls["agent_c"]) >= 3)
+
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            (room_id,),
+        )
+    assert len(tasks) >= 2
+    assert tasks[0]["state"] == "settled"
+    assert tasks[0]["c_cognition_ceiling"] == "sol-xhigh"
+    assert tasks[1]["state"] == "active"
+    assert tasks[1]["c_cognition_ceiling"] == "sol-high"
+    assert adapter.calls["agent_c"][1]["model"] == "gpt-5.6-sol"
+    assert adapter.calls["agent_c"][1]["reasoning_effort"] == "xhigh"
+    assert adapter.calls["agent_c"][2]["model"] == "gpt-5.6-terra"
+    assert adapter.calls["agent_c"][2]["reasoning_effort"] == "high"
+
+    await runtime.stop(room_id, "Task-boundary cognition test complete.")
+    adapter.release_call("agent_c", 3)
+
+@pytest.mark.asyncio
+async def test_transaction_unapproved_exceptional_self_config_fails_closed(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            message="Attempt an unauthorized exceptional continuation.",
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "This child must never become runnable.",
+                    "config": "luna-low",
+                }
+            ],
+            next_self_config="sol-xhigh",
+        )
+    )
+    runtime = await transaction_runtime_factory(adapter, "c-unapproved-exceptional.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exceptional self config must fail closed",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert adapter.calls["agent_a"] == []
+    events = await runtime.db.get_events(room_id)
+    assert not any(
+        event["event_type"] == "principal_message"
+        for event in events
+    )
+    assert any(
+        event["event_type"] == "agent_error"
+        and "approved cognition ceiling" in event["content"]
+        for event in events
+    )
+
+@pytest.mark.asyncio
+async def test_recover_interrupted_work_settles_nonrunning_assignment_execution_without_replay(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.CONSULT_PRINCIPAL,
+            message="Wait for the principal.",
+        )
+    )
+    runtime = await transaction_runtime_factory(adapter, "decision-recorded-recovery.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise decision-recorded restart recovery",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def waiting_with_execution() -> bool:
+        async with runtime.db.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT e.batch_id, e.state, e.decision_recorded_at
+                   FROM agent_executions e
+                   JOIN assignments x ON x.id=e.assignment_id
+                   JOIN tasks t ON t.id=x.task_id
+                   WHERE t.room_id=?
+                     AND x.state='waiting_principal'
+                     AND e.decision_recorded_at IS NOT NULL
+                   ORDER BY e.created_at DESC
+                   LIMIT 1""",
+                (room_id,),
+            )
+        return len(rows) == 1
+
+    await wait_until(waiting_with_execution)
+
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT e.batch_id
+               FROM agent_executions e
+               JOIN assignments x ON x.id=e.assignment_id
+               JOIN tasks t ON t.id=x.task_id
+               WHERE t.room_id=?
+                 AND x.state='waiting_principal'
+                 AND e.decision_recorded_at IS NOT NULL
+               ORDER BY e.created_at DESC
+               LIMIT 1""",
+            (room_id,),
+        )
+        batch_id = rows[0]["batch_id"]
+        await db.execute(
+            """UPDATE agent_executions
+               SET state='active', settled_at=NULL, decision_recorded_at=NULL
+               WHERE batch_id=?""",
+            (batch_id,),
+        )
+        await db.commit()
+
+    await runtime.db.recover_interrupted_work()
+
+    async with runtime.db.connect() as db:
+        row = (
+            await db.execute_fetchall(
+                """SELECT state, settled_at, decision_recorded_at
+                   FROM agent_executions
+                   WHERE batch_id=?""",
+                (batch_id,),
+            )
+        )[0]
+
+    assert row["decision_recorded_at"] is None
+    assert row["state"] == "settled"
+    assert row["settled_at"] is not None
+    agent_c = await runtime.db.get_agent(room_id, "agent_c")
+    assert agent_c is not None
+    assert agent_c["status"] == AgentStatus.IDLE

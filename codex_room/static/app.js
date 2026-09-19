@@ -90,6 +90,57 @@ function markPrincipalConsultationAnswered(eventId) {
 function buildPrincipalReplyForm(event) {
   const form = document.createElement("form");
   form.className = "principal-reply-form";
+  const requestedCeiling = event.metadata?.requested_task_cognition_ceiling;
+
+  if (requestedCeiling) {
+    const approvalLabel = document.createElement("strong");
+    approvalLabel.textContent = `Task cognition request: ${requestedCeiling}`;
+    const approve = document.createElement("button");
+    approve.type = "button";
+    approve.className = "control primary";
+    approve.textContent = "Approve for this Task";
+    const decline = document.createElement("button");
+    decline.type = "button";
+    decline.className = "control";
+    decline.textContent = "Decline";
+    const hint = document.createElement("small");
+    hint.textContent = "Private · approval applies only to Agent C and expires when this Task ends";
+    form.append(approvalLabel, approve, decline, hint);
+
+    const sendDecision = async (decision) => {
+      if (!state.room || !["running", "paused"].includes(state.room.status)) {
+        showRoomError("This principal consultation is no longer open.");
+        return;
+      }
+      approve.disabled = true;
+      decline.disabled = true;
+      const approved = decision === "approve";
+      try {
+        await api(`/api/rooms/${state.room.id}/principal-replies`, {
+          method: "POST",
+          body: JSON.stringify({
+            consultation_event_id: event.id,
+            content: approved
+              ? `Approved ${requestedCeiling} for this Task.`
+              : `Declined ${requestedCeiling} for this Task.`,
+            cognition_approval: decision,
+          }),
+        });
+        form.replaceWith(Object.assign(document.createElement("small"), {
+          className: "principal-reply-status",
+          textContent: approved ? "Task cognition escalation approved" : "Task cognition escalation declined",
+        }));
+      } catch (error) {
+        showRoomError(error.message);
+        approve.disabled = false;
+        decline.disabled = false;
+      }
+    };
+    approve.addEventListener("click", () => sendDecision("approve"));
+    decline.addEventListener("click", () => sendDecision("decline"));
+    return form;
+  }
+
   const textarea = document.createElement("textarea");
   textarea.rows = 2;
   textarea.maxLength = 50000;

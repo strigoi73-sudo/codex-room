@@ -6,14 +6,32 @@
 
 ## Operator summary
 
-- **Where are we?** I-016 — Private Principal Channel is **COMPLETE** under D-038. The private wait/resume machinery, C action-selection repair, deterministic verification, and fresh naturalistic re-acceptance are all complete. See E-142 through E-144.
-- **What just changed?** The post-repair naturalistic Room succeeded end to end: C selected `CONSULT_PRINCIPAL`, emitted a private observer-only question with no deliveries, received the principal's private reply, resumed the same Assignment, completed the requested announcement, and never ran A or B. E-144 records the exact Room evidence.
-- **Verification state:** I-016 is **IMPLEMENTED / EXACT-HEAD VERIFIED / NATURALISTICALLY ACCEPTED / MERGED**. PR #137 established the mechanism; PR #139 repaired C's action selection; both exact heads passed the repository-standard verification gate; the repaired behavior then passed a fresh Room acceptance rerun.
-- **What is blocked?** No I-016 blocker remains. D-019 remains separately deferred; Common Cause competitive play still awaits separate principal authorization.
-- **What is next?** No automatic follow-on I-016 engineering phase is authorized. Preserve the C-only boundary; do not widen principal consultation to A/B or add nonblocking notification semantics without separate evidence and principal authorization.
+- **Where are we?** I-017 — Dynamic C cognition and Task-scoped exceptional approval is **IN PROGRESS** under D-039. I-016 remains complete.
+- **What just changed?** Zero-turn catalog verification confirmed the current Luna/Terra/Sol effort surface, while a local execution-history inspection showed 200/200 recent C executions fixed at Terra/high. D-039 therefore authorizes deliberate C self-allocation across ordinary Low/Medium/High settings, with private Task-scoped approval required for C-only Sol/XHigh or Sol/Max. See E-145.
+- **Verification state:** The I-017 implementation branch is **IN PROGRESS / NOT YET EXACT-HEAD VERIFIED / NOT MERGED**. The first exact-head focused run at `0dd487752055d3a89a85023a24d75117ae1762bf` failed **1 of 84** focused tests on restart-safe principal waiting (83 passed, 2 warnings). A first recovery repair was too narrow: the next focused rerun at `8d17e14b19eaeb6cb9dd28574d4c01f829d96f48` failed both restart probes before the broader suite ran; one failure was a test-only missing `AgentStatus` import. The branch then adopted the stronger durable invariant that a transactional provider execution is resumable only while its Assignment remains `running`. The following focused probe at `c52cb794bba1359299b9e8d941f8c9bb482bb0a8` proved that invariant: the synthetic stale-execution regression passed and the restarted Room remained execution-silent while `waiting_principal`. Its remaining post-reply failure was traced to the fake provider reusing the same `(sdk_thread_id, sdk_turn_id)` after adapter restart, which correctly violated the database's unique exact-turn identity constraint and triggered one retry. The restart test now gives the second fake adapter a distinct turn-ID namespace and asserts that the post-reply execution is a fresh turn on the preserved Assignment context rather than recovery of the pre-restart turn. Exact-head verification is still required. Canonical `main` remains at the pre-I-017 behavior until verification and merge.
+- **What is blocked?** No design blocker is known. The current I-017 gate is deterministic exact-head verification followed by a bounded naturalistic Room exercise showing ordinary C switching and, separately, Task-scoped exceptional approval without peer leakage.
+- **What is next?** Finish focused regressions and exact-diff review, run the repository-standard verifier on the exact feature head, then merge only if it passes. Automatic CORE model routing remains deferred and is not part of I-017.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
+
+### I-017 — Dynamic C cognition and Task-scoped exceptional approval
+
+**Scope:** [CORE + ROOM UI]
+
+**Decision:** D-039
+
+**Work state:** IN PROGRESS
+
+**Reality:** DECIDED / IMPLEMENTATION IN PROGRESS
+
+**Observed gap:** local execution-history inspection of the most recent 200 Agent C execution records found zero model/effort transitions; every execution used `gpt-5.6-terra` / high. Source inspection showed why: C-selected execution configuration existed only for delegated peer Assignments while C's own root work used the Terra/high compatibility fallback.
+
+**Authorized behavior:** C may dynamically choose Low/Medium/High across Luna, Terra, and Sol for its own subsequent root-Assignment executions. Peer delegation receives the same ordinary nine-configuration set. C-only Sol/XHigh or Sol/Max requires private principal approval that raises the exact current Task's cognition ceiling; approval expires at the Task boundary and does not authorize peers. Sol/Ultra, Astra, and GPT-5.5 remain unavailable.
+
+**Implementation under verification:** the feature branch persists `tasks.c_cognition_ceiling` with ordinary default `sol-high`; adds structured `next_self_config` and `requested_task_cognition_ceiling`; reuses `CONSULT_PRINCIPAL` for a private structured approval/decline exchange; records the approval in durable private events; resumes the same C Assignment at the approved configuration when authorized; resets successor Tasks to the ordinary ceiling; and repairs restart reconciliation so transaction executions are resumed only when their durable Assignment still says that provider turn is `running`.
+
+**Next:** exact-diff review and repository-standard exact-head verification, then a naturalistic acceptance Room if the deterministic gate passes.
 
 ### I-016 — Private Principal Channel
 
@@ -491,7 +509,7 @@ E-086 demonstrated that the continuation-economy repair can radically reduce too
 Keep these deferred unless new evidence or explicit principal direction reprioritizes them:
 
 - archive indexing/embeddings/broad summarization beyond bounded `HISTORY`;
-- automatic/dynamic model routing;
+- automatic CORE model routing (C-controlled D-039 self-allocation is separate);
 - broader deterministic-tooling promotion without demonstrated reuse;
 - stronger per-capability OS isolation;
 - shareable/redacted exports;
