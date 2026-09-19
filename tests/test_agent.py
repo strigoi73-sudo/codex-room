@@ -182,8 +182,9 @@ async def test_tool_visibility_uses_read_only_app_server_inventory_and_sanitizes
         {"name": "disabled-skill", "status": "disabled"},
     ]
     assert result["mcp"]["status"] == "available"
-    assert result["mcp"]["servers"][0]["tools"] == ["read", "search"]
-    assert result["mcp"]["servers"][1]["status"] == "interaction_required"
+    mcp_by_name = {item["name"]: item for item in result["mcp"]["servers"]}
+    assert mcp_by_name["ready-server"]["tools"] == ["read", "search"]
+    assert mcp_by_name["auth-server"]["status"] == "interaction_required"
     assert result["apps"]["items"] == [
         {"name": "Callable App", "status": "available"},
         {"name": "Policy Blocked", "status": "unknown"},
