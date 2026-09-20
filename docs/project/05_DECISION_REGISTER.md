@@ -705,3 +705,30 @@ Settled boundary:
 D-040 remains historical provenance for the earlier experiment but no longer governs current product behavior.
 
 **Principle:** **Expose useful underlying capability, not another host's command surface.**
+
+
+### D-042 — Native Codex skills are the first-line reusable workflow layer; D-022 remains the stronger governed capability tier
+**Date:** 2026-09-20
+**Status:** ACTIVE
+
+I-020 established the practical boundary between Codex's native skill ecosystem and Codex Room's registered deterministic-capability system.
+
+Settled direction:
+
+- when an existing enabled Codex skill materially fits the work, A/B/C should prefer that native skill before inventing a new reusable workflow or Codex Room capability, while still considering whether the skill's workflow/tool cost earns its value unless the principal explicitly requests that skill;
+- when a reusable workflow is genuinely missing, agents should prefer native Skill Creator and keep agent-created skills Room-local under `.agents/skills/` by default;
+- a Room-local skill may contain bounded deterministic helper scripts when they improve reliability or avoid repeatedly spending model cognition on the same mechanical step;
+- valid Room-local skill packages are lineage-local Room assets: they survive Room rollover at exact inherited bytes with deterministic tree-hash provenance, but they are not silently promoted into user-global, administrator, Personal, or CORE scope;
+- native skills, Skill Creator outputs, and skill-local scripts are not equivalent to registered Codex Room deterministic capabilities. Registration remains the stronger tier for mechanisms that materially require typed contracts, declared permissions/side effects, exact implementation identity, deterministic verification evidence, durable execution/provenance semantics, independent reusable invocation, or stronger institutional promotion/lineage guarantees;
+- therefore agents should promote/register skill machinery as a Codex Room deterministic capability only when those stronger guarantees materially earn the additional governance cost;
+- Codex Room does not maintain a parallel skill catalog, copied Desktop/TUI skill picker, or Room-specific `SkillInput` invocation bridge while native discovery/selection/invocation remains adequate;
+- creating or modifying user-global or administrator-scope skills requires explicit principal authorization;
+- Codex built-in subagents remain disabled; skill workflows that call for independent cognition use the existing A/B/C organization when independent review is warranted.
+
+D-042 **clarifies rather than supersedes D-022**. D-022 remains active for the registered deterministic-capability substrate and its stronger governance/continuity contract. Its direction that agents may create and register deterministic software when useful is now applied after the native skill layer has been considered. I-020 E-153 through E-155 provide the implementation and behavioral evidence for this boundary.
+
+The resulting default hierarchy is:
+
+**existing suitable Codex skill → Skill Creator for a missing reusable workflow → bounded skill-local deterministic helper when sufficient → registered Codex Room capability when stronger institutional guarantees are justified.**
+
+**Principle:** **Reuse native Codex capability first; add Codex Room governance only when the stronger guarantees earn their cost.**
