@@ -118,7 +118,7 @@ async def test_transaction_dual_delegation_releases_c_once_after_both_peers(
     assert "sibling results remain independent until the join resolves" in agent_a_prompt
     assert "sibling results remain independent until the join resolves" in agent_b_prompt
     for prompt in (agent_a_prompt, agent_b_prompt):
-        assert "use an existing enabled Codex skill when it materially fits" in prompt.lower()
+        assert "use an existing enabled codex skill when it materially fits" in prompt.lower()
         assert "native Skill Creator" in prompt
         assert "Room-local under '.agents/skills/' by default" in prompt
         assert "user-global or administrator-scope skills without explicit principal authorization" in prompt
