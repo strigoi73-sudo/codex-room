@@ -1,0 +1,14 @@
+Use requirements.json and options.json to make the storage decision.
+
+Create decision.json with exactly these keys:
+- selected_option
+- satisfied_must
+- monthly_cost_usd
+- rationale
+
+Rules:
+- An option is eligible only if it satisfies every must requirement.
+- If more than one option is eligible, choose the eligible option with the lowest monthly_cost_usd.
+- satisfied_must must list every must requirement id exactly once.
+- rationale must be a non-empty string grounded in the supplied files.
+- Do not modify requirements.json or options.json.
