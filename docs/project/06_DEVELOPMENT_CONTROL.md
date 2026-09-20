@@ -235,7 +235,7 @@ The missing Desktop command palette is primarily a **host/UI gap**, not proof th
 2. **Tool interaction bridge** — only if MCP/plugins become important in ordinary use, add the missing human authorization/authentication/elicitation path needed for tools that cannot run unattended.
 3. **Rich attachments** — give the principal a first-class way to attach files/images to Room work instead of relying on filesystem placement or text-only instructions.
 4. **Browser/computer-use host** — potentially high general-purpose value, but a materially larger product/authority/safety integration than exposing inherited tools.
-5. **Plan-only or review-specific modes** — consider only if ordinary use demonstrates that natural-language constraints plus existing verifier/transaction mechanics are insufficient.
+5. **Plan-only or review-specific modes** — consider only if ordinary use demonstrates that natural-language constraints plus existing peer-verification/transaction mechanics are insufficient.
 
 **Stop condition satisfied:** I-018 made no runtime change and authorizes none. Do not implement blanket host-command parity or any candidate above until the principal explicitly selects it.
 
@@ -492,7 +492,7 @@ The principal chose to continue the existing Common Cause Room rather than disca
 
 That sequence naturally exercised the PR #110 fallback condition and supports the intended topology:
 
-`identify bounded defect -> fresh capable worker corrects/strengthens -> verifier checks exact result -> integrate`
+`identify bounded defect -> fresh capable peer corrects/strengthens -> another peer checks the exact result -> integrate`
 
 C then attempted to delegate one final independent exact-artifact verification. The local SDK rollout completed that exact turn with a valid `DELEGATE` decision and `task_complete`, but CORE recorded the same exact execution as `Codex turn was interrupted` and failed the transaction. Forensics identified a reconciliation race rather than a provider/model interruption. Repair commit `6b810f0e327da4055ced97f38a60977f4eba9c46` gives only the authoritative interrupted case a 0.05-second bounded opportunity for the already-started notification stream to settle; real `failed` history remains authoritative. See E-127.
 
@@ -537,7 +537,7 @@ The intended domain-general topology remains:
 
 When correction is required:
 
-`identify bounded defect -> fresh capable worker corrects -> verifier checks exact corrected bytes -> integrate`
+`identify bounded defect -> fresh capable peer corrects -> another peer checks the exact corrected bytes -> integrate`
 
 Independent work remains eligible for parallel execution.
 
@@ -599,10 +599,10 @@ Observed sequence:
 
 Replication conclusions at that historical checkpoint:
 
-- the earlier terminal `Codex turn was interrupted` after the verifier's artifact audit **did not reproduce in that controlled replication**;
+- the earlier terminal `Codex turn was interrupted` after the verification peer's artifact audit **did not reproduce in that controlled replication**;
 - artifact-dependent verification sequencing **PASSed**;
 - the Room completed below its turn ceiling;
-- quality was preserved: the verifier exercised important state transitions and found a real specification contradiction, and C stopped at the correct human-decision boundary;
+- quality was preserved: the peer assigned verification exercised important state transitions and found a real specification contradiction, and C stopped at the correct human-decision boundary;
 - PR #110's failed-delegation fallback condition **was not exercised in that Round**.
 
 E-126/E-127 supersede the earlier monitor conclusions for later ordinary continuation: the fallback branch was subsequently exercised successfully, and the coordinator-interruption problem subsequently recurred and was diagnosed as a CORE reconciliation race.
@@ -728,7 +728,7 @@ Current deterministic evidence verifies the local rebind mechanism and fail-clos
 
 **Work state:** MONITOR
 
-E-086 demonstrated that the continuation-economy repair can radically reduce tool-loop replay on a controlled fixture. E-090 showed broader source work can still become expensive. E-129 adds a concrete smaller recurrence: a requested single-verifier closeout took the path C -> A -> B, with A acting as a zero-tool relay and consuming 45,338 raw execution tokens without adding independent verification evidence. Treat this as ordinary-use cost evidence; avoid purchasing another synthetic benchmark solely to investigate it unless similar relay patterns recur or become materially expensive.
+E-086 demonstrated that the continuation-economy repair can radically reduce tool-loop replay on a controlled fixture. E-090 showed broader source work can still become expensive. E-129 adds a concrete smaller recurrence: a requested single-peer verification closeout took the path C -> A -> B, with A acting as a zero-tool relay and consuming 45,338 raw execution tokens without adding independent verification evidence. Treat this as ordinary-use cost evidence; avoid purchasing another synthetic benchmark solely to investigate it unless similar relay patterns recur or become materially expensive.
 
 ## Deferred work
 
