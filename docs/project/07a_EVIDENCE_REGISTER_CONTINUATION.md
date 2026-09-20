@@ -1120,7 +1120,7 @@ No model-driven acceptance Room was run because source plus current official pro
 | Desktop-managed Git worktrees | **GENUINELY MISSING / CODING-SPECIFIC** | Room uses its shared workspace model and does not create/manage Desktop-style isolated worktrees for parallel chats. |
 | `/init` | **INHERITED AS ORDINARY WORK** | Creating an `AGENTS.md` or equivalent file needs no special Room command; an agent can create it through normal file work if requested. |
 | `/feedback`, `/pet`, other host utilities | **OUT OF SCOPE** | Product-host conveniences do not add organizational capability. |
-| Host-command syntax itself | **OUT OF SCOPE / NOT A CAPABILITY** | The Room has no slash parser. Copying command syntax without a demonstrated product need would add UI ceremony, not agent power. |
+| Host-command syntax itself | **OUT OF SCOPE / NOT A CAPABILITY** | The Room has no Codex host-command parser. Copying command syntax without a demonstrated product need would add UI ceremony, not agent power. |
 
 ### Findings
 
