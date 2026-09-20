@@ -131,14 +131,20 @@ def _effective_config(payload: dict[str, Any] | None) -> dict[str, Any]:
     config = (payload or {}).get("config") or {}
     if not isinstance(config, dict):
         return {}
-    keys = (
-        "model",
-        "model_reasoning_effort",
-        "approval_policy",
-        "sandbox_mode",
-        "web_search",
-    )
-    return {key: sanitize(config.get(key)) for key in keys if key in config}
+    aliases = {
+        "model": ("model",),
+        "model_reasoning_effort": ("model_reasoning_effort", "modelReasoningEffort"),
+        "approval_policy": ("approval_policy", "approvalPolicy"),
+        "sandbox_mode": ("sandbox_mode", "sandboxMode"),
+        "web_search": ("web_search", "webSearch"),
+    }
+    result: dict[str, Any] = {}
+    for canonical, candidates in aliases.items():
+        for candidate in candidates:
+            if candidate in config:
+                result[canonical] = sanitize(config.get(candidate))
+                break
+    return result
 
 
 async def collect_native_context(project_root: Path) -> dict[str, Any]:
