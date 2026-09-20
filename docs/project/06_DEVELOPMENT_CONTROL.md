@@ -8,9 +8,9 @@
 
 - **Where are we?** I-021 — Principal-controlled Codex plugin management — is **PLANNED / DECIDED-NOT IMPLEMENTED / NEEDS VERIFICATION**. The principal selected a bounded host-surface objective: allow plugin install/enable/disable from Codex Room by reusing native Codex/App Server mechanisms rather than requiring a separate trip through another Codex host.
 - **What just changed?** Planning only. No runtime code or plugin state has changed. The plan makes plugin-state mutation a principal-controlled host action, not an autonomous A/B/C capability, and preserves Codex as the authoritative plugin/catalog/configuration substrate.
-- **Verification state:** Current Codex Room already inspects installed plugin, skill, MCP, and app state through App Server for Status & Tools. Current upstream Codex exposes native plugin installation and configuration-write mechanisms, but exact compatibility and semantics of the Codex Room runtime must be verified before any mutation path is implemented.
-- **What is blocked?** Nothing blocks Stage A. Any authentication/account-selection bridge remains evidence-gated: implement only the smallest native handoff a real plugin activation demonstrates is necessary.
-- **What is next?** Execute I-021 Stage A only: verify the exact local App Server/SDK plugin mutation contracts, scope, policy responses, refresh semantics, and principal-only enforcement requirements before writing the mutation bridge.
+- **Verification state:** E-157 verifies the admitted 0.154 SDK/App Server plugin mutation contracts and source-level refresh/policy semantics. One exact-runtime security fact still needs verification: whether an A/B/C-equivalent Windows workspace-write sandbox can reach the Room loopback API directly.
+- **What is blocked?** Stage B is gated on the Windows loopback reachability probe. If the agent sandbox can reach the Room API, Stage B needs an explicit principal-proof mechanism; if it cannot, that sandbox boundary may be sufficient for the first localhost-only release, subject to exact verification.
+- **What is next?** Complete the one deterministic Windows sandbox loopback probe recorded by E-157, then close Stage A and settle the smallest principal-only enforcement design before any mutation bridge is written.
 - **What are we deliberately not doing?** No parallel plugin registry or marketplace, no arbitrary Codex config editor, no autonomous agent plugin install/enable/disable, no secret capture, no prebuilt generic OAuth/elicitation subsystem, no copied Desktop/TUI plugin manager, and no adjacent host-parity work.
 
 ## Current focus
@@ -19,7 +19,7 @@
 
 **Scope:** [CORE + ROOM UI, reusing native Codex/App Server plugin facilities]
 
-**Work state:** PLANNED
+**Work state:** IN PROGRESS
 
 **Reality / evidence:** DECIDED-NOT IMPLEMENTED / NEEDS VERIFICATION
 
