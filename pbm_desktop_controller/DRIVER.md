@@ -14,7 +14,7 @@ The principal deliberately requested one initial Desktop instruction. Execute th
 
 ## 1. Initialize
 
-Run this deterministic command from this controller workspace:
+Run this deterministic wrapper from this controller workspace. The wrapper temporarily executes the PBM Python module from the repository root, then returns without changing the controller task's native working directory:
 
 ```powershell
 & 'C:\Codex Room\.venv\Scripts\python.exe' -m codex_room.pbm_onepaste init --controller-cwd (Get-Location).Path
