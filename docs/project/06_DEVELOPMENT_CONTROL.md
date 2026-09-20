@@ -6,14 +6,52 @@
 
 ## Operator summary
 
-- **Where are we?** I-021 — Principal-controlled Codex plugin management — is **IN PROGRESS / DECIDED-NOT IMPLEMENTED**. Stage A is complete: the native 0.154 plugin/configuration contracts are verified and the exact Windows authority probe established that an A/B/C-equivalent workspace-write sandbox can reach Codex Room's loopback API.
-- **What just changed?** The deterministic no-model probe used the exact SDK-pinned `codex-cli 0.154.0` runtime and returned `LOOPBACK_REACHABLE HTTP_STATUS=200` from `:workspace` against `http://127.0.0.1:8765/api/health`. No plugin or configuration state changed.
-- **Verification state:** E-157 verifies the admitted 0.154 SDK/App Server plugin mutation contracts and refresh/policy semantics. E-158 verifies Windows loopback reachability from the agent-equivalent workspace-write sandbox.
-- **What is blocked?** Native plugin capability is not blocked. Before Stage B exposes any state-changing plugin route, Codex Room must establish a separate mechanical principal-proof boundary that a shell-capable Room agent cannot obtain merely by reaching localhost.
-- **What is next?** Settle the smallest principal-proof mechanism, then implement Stage B's narrow native mutation bridge behind that boundary.
-- **What are we deliberately not doing?** No parallel plugin registry or marketplace, no arbitrary Codex config editor, no autonomous agent plugin install/enable/disable, no secret capture, no prebuilt generic OAuth/elicitation subsystem, no copied Desktop/TUI plugin manager, and no adjacent host-parity work.
+- **Where are we?** I-022 — Native Codex capability exposure and execution-economics audit — is **IN PROGRESS / EXPLORATORY**. Its purpose is to identify exact 0.154 Codex/App Server primitives that Codex Room can expose or adapt without inheriting expensive native orchestration.
+- **What just changed?** PR #167 fixed the repository's runtime-data ignore boundary, and PR #168 normalized A/B as operationally equivalent neutral peers. Exact 0.154 source inspection now confirms that several high-value primitives already exist in the pinned runtime, including active-turn steering/interruption, model discovery, thread lifecycle controls, image inputs, native review, rate-limit/usage reads, permission profiles, approval requests, and user-input elicitation.
+- **Verification state:** E-159 is a source-level exact-version audit. It verifies the listed protocol/SDK contracts and current Room host gaps, but does **not** yet claim principal-facing runtime acceptance for newly exposed features.
+- **What is next?** Rank the verified native primitives by usefulness, implementation cost, token impact, and Room-semantic fit; then perform only the smallest runtime probes needed before selecting implementation slices.
+- **What remains open?** I-021 plugin management remains unresolved. Its native contracts are verified, but no Room mutation bridge is authorized while the simpler Desktop-managed/inherited-plugin path remains unproven.
+- **What are we deliberately not doing?** No built-in Codex subagents, autonomous fan-out, automatic model router, screen-for-screen Desktop clone, generic config editor, or broad host rewrite merely for parity.
 
 ## Current focus
+
+### I-022 — Native Codex capability exposure and execution-economics audit
+
+**Scope:** [CORE + ROOM UI audit; native Codex/App Server first]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** EXPLORATORY / VERIFIED for Stage A source contracts (E-159)
+
+**Origin:** principal direction on 2026-09-20 to determine what Codex Room can expose from Codex Desktop/App Server while preserving Codex Room's central advantage: leaner, more deliberate model usage.
+
+**Objective:** achieve useful Codex capability parity without copying Codex's execution strategy. Reuse native primitives when they add capability cheaply; keep Room control over invocation, context, delegation, model allocation, verification, and deterministic substitution.
+
+**Governing economics:**
+
+- distinguish a **native capability primitive** from a **native orchestration system**;
+- prefer primitives that add little or no model cognition by themselves;
+- account for additional model executions, context replay, tool continuations, handoffs, and hidden fan-out;
+- keep A/B/C as the only persistent production organization; native subagents remain disabled;
+- use Room assignment/context economics rather than surrendering orchestration merely because Codex can automate it;
+- prefer native capability reuse over new CORE machinery when Room semantics do not require a different mechanism.
+
+**Stage A — exact 0.154 source/SDK audit. COMPLETE / VERIFIED (E-159).** Exact upstream `rust-v0.154.0` protocol plus Python SDK source confirms native support for `turn/steer`, `turn/interrupt`, `model/list`, thread list/read/fork/archive/unarchive, `review/start`, `account/rateLimits/read`, `account/usage/read`, `permissionProfile/list`, command/file/permission approval requests, tool user-input requests, and structured image/local-image turn inputs. The Python SDK directly wraps steer, interrupt, model-list, and core thread lifecycle operations; generated 0.154 models also cover review, usage/rate-limit, and permission-profile responses. Current Room source already uses interruption internally for lifecycle control, while observer input remains text-only.
+
+**Stage B — candidate classification and economics ranking. IN PROGRESS.** Classify each verified primitive as already inherited, easy to surface, requiring Room adaptation, host-only/larger integration, or deliberately superseded. Give priority to capabilities that improve principal control or reduce uncertainty without triggering extra model work.
+
+**Initial candidate order for investigation:**
+
+1. **Usage/rate-limit visibility** — low model cost; may materially inform D-019 once pool semantics are understood.
+2. **Active-turn steering** — potentially high value because it can redirect ongoing cognition without cancelling/restarting a turn.
+3. **Principal interrupt control** — substrate already exists internally; likely a small host-surface adaptation.
+4. **Image/file input** — protocol supports images now; Room needs principal-facing input/attachment semantics.
+5. **Native review** — useful primitive, but must preserve assignment-level independence and avoid turning review into a hidden fourth agent.
+6. **Permission/approval/user-input interaction** — high capability/security value; requires a precise principal-authority bridge.
+7. **Model/thread discovery controls** — reuse selectively behind existing D-039 and Room lifecycle semantics, not as raw provider UI.
+8. **Worktrees / browser / computer use / remote** — investigate separately because host/runtime integration and authority costs are materially larger.
+
+**Stop conditions:** do not implement a primitive merely because 0.154 exposes it; do not enable native subagents; do not duplicate an existing Room mechanism unless the native primitive demonstrably replaces custom complexity without weakening economics, provenance, safety, continuity, or institutional semantics.
 
 ### I-021 — Principal-controlled Codex plugin management
 
