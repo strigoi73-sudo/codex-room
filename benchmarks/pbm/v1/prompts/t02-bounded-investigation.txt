@@ -1,0 +1,12 @@
+Inspect the provided workspace without modifying the existing source/config/documentation files.
+
+Create a new file named analysis.json at the workspace root containing exactly these keys:
+- connect_timeout_seconds
+- read_timeout_seconds
+- request_timeout_seconds
+- maximum_attempts
+- evidence_files
+
+Derive the values from the workspace itself. request_timeout_seconds is the effective timeout used by the service. maximum_attempts is the total number of attempts including the initial attempt. evidence_files must list the relative files you relied on.
+
+Do not change the existing fixture files.
