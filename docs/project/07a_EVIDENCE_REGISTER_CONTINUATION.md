@@ -1505,3 +1505,35 @@ The release provides a deterministic `codex sandbox` CLI that can run an arbitra
 Stage A remains **IN PROGRESS** solely on the principal-authority boundary. The native plugin/configuration contract itself is sufficient for a narrow Stage B bridge and does not justify direct config-file editing, a parallel plugin registry, a copied marketplace, or a new plugin runtime.
 
 **Required closeout evidence:** on the principal's actual Windows Codex runtime, run one deterministic `codex sandbox --permission-profile :workspace` command that attempts only a short-timeout connection to the Room health endpoint. Record whether the sandboxed command can reach loopback. No plugin state or configuration is to be changed by that probe.
+
+## E-158 — I-021 exact Windows workspace-write loopback probe
+
+**Date:** 2026-09-20
+**Kind:** [exact-runtime deterministic Windows sandbox probe / authority-boundary evidence]
+**Related work:** I-021 Stage A
+**Plugin/configuration state changed:** none
+**Evidence state:** VERIFIED
+
+The principal ran the bounded Stage A probe against the live Codex Room service on Windows. The principal host first confirmed `GET http://127.0.0.1:8765/api/health` was reachable and healthy.
+
+The probe then resolved the exact runtime used by Codex Room:
+
+- `openai-codex` SDK: **0.154.0**;
+- runtime source: **SDK-pinned runtime**;
+- executable: `C:\\Codex Room\\.venv\\Lib\\site-packages\\codex_cli_bin\\bin\\codex.exe`;
+- CLI version: **codex-cli 0.154.0**.
+
+Using that exact executable, the probe ran an arbitrary PowerShell command through:
+
+`codex sandbox --permission-profile :workspace --cd "C:\\Codex Room" ...`
+
+The sandboxed command attempted only a short-timeout GET to the Room health endpoint and returned:
+
+`LOOPBACK_REACHABLE HTTP_STATUS=200`
+
+with sandbox command exit code **0**.
+
+**Assessment:** on the principal's actual Windows Codex Room runtime, an A/B/C-equivalent workspace-write sandbox can directly reach the localhost FastAPI service. Localhost binding, HTTP method choice, and the current workspace-write sandbox therefore do not provide a principal-only authority boundary for plugin mutation. Stage B must introduce a separate mechanical principal-proof mechanism before any state-changing plugin route is exposed.
+
+This result closes the sole pending Stage A runtime fact identified by E-157. Stage A is **COMPLETE / VERIFIED** for the bounded contract-and-authority audit. I-021 remains **DECIDED-NOT IMPLEMENTED** until later stages implement and verify the mutation path.
+
