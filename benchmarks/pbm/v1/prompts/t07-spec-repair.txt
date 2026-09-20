@@ -1,0 +1,3 @@
+Audit codec.py against SPEC.md and repair the implementation so it conforms completely.
+
+Preserve the public encode(fields) and decode(text) functions and use only the Python standard library. Do not weaken or rewrite SPEC.md.
