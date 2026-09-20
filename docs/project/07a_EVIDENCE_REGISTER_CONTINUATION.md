@@ -1342,3 +1342,43 @@ A's main `terra-medium` spreadsheet execution used:
 The principal independently observed that this Room consumed roughly **30% of the five-hour Codex allowance** before the approaching refresh. The provider meter is aggregate and should not be treated as exact per-Room attribution; it is retained as corroborating operational evidence.
 
 **Assessment:** Stage A is **COMPLETE / VERIFIED** for functional native-skill use. It simultaneously establishes a serious economics warning: skill workflows can trigger very large model/tool execution costs even for tiny artifacts. I-020 Stage B should therefore add a policy hierarchy and an explicit cost guard, while Stage C remains unwarranted absent a demonstrated native-invocation reliability gap.
+
+
+## E-154 — I-020 Stage B native-skill policy exact-head verification and merge
+
+**Date:** 2026-09-20
+**Kind:** [CORE protected-instruction implementation / exact-head deterministic verification]
+**Related work:** I-020 Stage B
+**Exact implementation head verified:** `5b97c584ef30bcfa167e2337f59c09ee55ed7ebd`
+**Canonical squash merge:** `70cb80ee25281f5217213953e40b7657e68148f2`
+
+Following E-153's natural Room proof, Stage B made the smallest CORE change justified by the evidence. It added protected guidance for both ordinary and transaction-assignment prompts so A/B/C:
+
+- prefer an existing enabled Codex skill when it materially fits;
+- do not run heavyweight skill workflows merely because a skill exists; expected workflow/tool cost must earn its value unless the principal explicitly requests the skill;
+- check existing Codex skills before inventing a new reusable workflow or custom deterministic mechanism;
+- prefer native Skill Creator for genuinely missing reusable workflows;
+- keep agent-created skills Room-local under `.agents/skills/` by default;
+- may use bounded deterministic helpers inside a skill when they improve reliability or avoid repeated model work;
+- may not create or modify user-global or administrator-scope skills without explicit principal authorization;
+- may not enable Codex built-in subagents through a skill;
+- promote/register skill machinery as a Codex Room deterministic capability only when stronger exact semantics, independent reuse, provenance, declared side effects, verification, or lineage continuity materially earns the added governance cost.
+
+No skill catalog, slash-command surface, or Room-specific `SkillInput` bridge was added.
+
+The first verification attempt exposed a test-only case-normalization bug: the transaction prompt was lowercased but compared against an assertion containing uppercase `Codex`. Runtime prompt inspection showed the Stage B policy was already present. The regression assertion alone was corrected, producing the exact candidate above.
+
+The principal then verified exact head `5b97c584ef30bcfa167e2337f59c09ee55ed7ebd` with a clean tracked tree:
+
+- `git diff --check origin/main...HEAD`: **PASS**;
+- focused I-020 regressions: **2 passed**;
+- Linux Python 3.12 focused core: **63 passed, 2 existing deprecation warnings**;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **9 passed**;
+- repository fast verifier: **RESULT: PASS**;
+- final HEAD remained exactly `5b97c584ef30bcfa167e2337f59c09ee55ed7ebd`;
+- tracked tree remained clean.
+
+PR #157 then merged that exact reviewed candidate by squash to canonical `main` as `70cb80ee25281f5217213953e40b7657e68148f2`.
+
+**Assessment:** I-020 Stage B is **COMPLETE / IMPLEMENTED / VERIFIED / MERGED**. Current evidence does not justify Stage C's explicit skill-invocation bridge. The next bounded work is Stage D: persistence of selected Room-local skills across Room rollover.
