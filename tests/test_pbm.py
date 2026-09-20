@@ -175,9 +175,14 @@ def test_context_summary_surfaces_run_boundary_availability(tmp_path: Path) -> N
         "repository": {"head": "abc123", "working_tree_clean": True},
         "environment": {"openai_codex_package_version": "0.154.0"},
         "native_codex": {
-            "account": {"data": {"runtime": {"name": "codex", "version": "0.154.0"}}},
-            "rate_limits": {"status": "available"},
-            "account_usage": {"status": "available"},
+            "native_base": {
+                "runtime": {"name": "codex", "version": "0.154.0"},
+                "rate_limits": {"status": "available"},
+                "account_usage": {"status": "available"},
+            },
+            "room": {
+                "runtime": {"name": "codex", "version": "0.154.0"}
+            },
         },
     }
     for label, captured_at in (
