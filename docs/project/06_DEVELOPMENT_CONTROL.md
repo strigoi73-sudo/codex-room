@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-020 Stages A, B, and D are **COMPLETE / VERIFIED**. Native Codex skills work inside Rooms, the protected policy governs economical skill use, and Room-local skills now survive Room rollover with exact-byte/tree-hash provenance.
+- **Where are we?** I-020 Stages A, B, D, and E are **COMPLETE**. D-042 now settles the verified hierarchy between native Codex skills, Skill Creator, skill-local deterministic helpers, and the stronger Codex Room registered-capability tier.
 - **What just changed?** A natural three-agent Room demonstrated runtime discovery of `skill-creator`, `spreadsheets`, and `documents`; autonomous spreadsheet-skill selection; explicit document-skill use; Room-local Skill Creator authoring with a deterministic helper; runtime discovery of the created skill; and cross-agent reuse. See E-153.
 - **Verification state:** Stage A natural Room evidence is **VERIFIED** (E-153). Stage B is **VERIFIED / MERGED** (E-154). Stage D exact implementation head `e4391ec18daca81038bf2d8d3e50c78ca3b22ddf` is **VERIFIED** and merged through PR #159 as canonical squash commit `7740067fcecf31c0cf7b417365a47a0814a6bef5` (E-155). The Stage A Room also exposed severe execution cost: about 5.28M recorded execution tokens total.
 - **What is blocked?** Nothing blocks ordinary Codex Room use. Skill use is functionally available natively; the current work is policy and persistence discipline, not a missing invocation mechanism.
-- **What is next?** Proceed to I-020 Stage E: reconcile D-022 against the now-verified native-skill + Skill Creator + lineage-persistence boundary, changing the settled decision only if the evidence requires an additive or superseding clarification.
+- **What is next?** Proceed to I-020 Stage F closeout. Reuse E-153's naturalistic skill exercise and E-155's exact rollover verification unless a specific unresolved acceptance gap is identified; do not manufacture another expensive skills Room merely for ceremony.
 - **What are we deliberately not doing?** No Codex Desktop/TUI command palette, no parallel Room skill registry, no automatic global/user-scope skill writes, no SkillInput bridge without evidence, no immediate rewrite of D-022, no fourth persistent agent, and no Codex built-in subagents.
 
 ## Current focus
@@ -21,7 +21,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** Stages A-B-D IMPLEMENTED / VERIFIED; Stage C NOT WARRANTED; Stage E PLANNED
+**Reality / evidence:** Stages A-B-D IMPLEMENTED / VERIFIED; Stage C NOT WARRANTED; Stage E DECIDED / COMPLETE; Stage F PLANNED
 
 **Origin:** principal selection after I-019 / D-041 cleanup
 
@@ -47,9 +47,9 @@
 
 **Stage D — Skill persistence. COMPLETE / IMPLEMENTED / VERIFIED (E-155).** Valid direct packages under `.agents/skills/<name>/SKILL.md` are now lineage-local Room skills carried through the existing atomic rollover staging path. Only package files are copied; unrelated workspace files, unrelated `.agents` state, and directories under `.agents/skills` without a direct regular `SKILL.md` remain excluded. Source and destination skill trees reject symlinks/special entries, inheritance is bounded to 1,024 files / 64 MiB, copied bytes are rehashed before exposure, and rollover events record skill names/counts plus a deterministic tree SHA-256. Skills remain Room-lineage scope; no global promotion occurs automatically.
 
-**Stage E — Reconcile D-022 after evidence.** Only after Stages A-D establish the real boundary, decide whether D-022 needs an additive/superseding decision. The likely hierarchy to evaluate is: **use existing Codex skill → create skill with Skill Creator → use skill-local deterministic script when sufficient → promote to registered Codex Room capability only for stronger institutional guarantees**. Do not alter D-022 merely from architectural analogy.
+**Stage E — Reconcile D-022 after evidence. COMPLETE / DECIDED (D-042).** D-022 remains active and is not superseded. D-042 adds the evidence-based boundary now demonstrated by I-020: prefer an existing suitable Codex skill; use Skill Creator for a genuinely missing reusable workflow; use bounded skill-local deterministic helpers when sufficient; promote/register as a Codex Room deterministic capability only when its stronger contracts, permissions/side effects, exact identity, verification/provenance, independent reusable invocation, or institutional continuity materially justify the extra governance cost. Room-local skills remain lineage-local by default and do not silently become user-global/Personal/CORE assets.
 
-**Stage F — Acceptance and closeout.** Verify the chosen exact implementation bytes with the repository-standard local gate plus one bounded naturalistic Room acceptance. Record which predefined skill was used, whether invocation was autonomous or principal-directed, whether Skill Creator produced a usable Room-local skill, whether another agent could use it, whether any deterministic helper executed, and whether continuity/promotion behavior matched the selected policy.
+**Stage F — Acceptance and closeout. PLANNED.** Consolidate the already-obtained acceptance evidence rather than automatically launching another expensive Room. E-153 already covers predefined-skill discovery, autonomous and principal/coordinator-directed use, Skill Creator output, skill-local deterministic-helper execution, and cross-agent reuse; E-155 covers exact rollover persistence/provenance and exclusion of unrelated state. Run new naturalistic model traffic only if closeout review identifies a specific acceptance requirement that those exact sources do not establish.
 
 **Acceptance target:**
 
