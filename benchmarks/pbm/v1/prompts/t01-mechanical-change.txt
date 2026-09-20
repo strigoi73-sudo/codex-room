@@ -1,0 +1,6 @@
+In the provided workspace, change the default retry limit from 3 to 5.
+
+Requirements:
+- Preserve the existing public function name and behavior except for the new default value.
+- Do not add dependencies.
+- Make only the changes needed for this task.
