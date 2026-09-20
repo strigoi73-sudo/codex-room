@@ -6,14 +6,30 @@
 
 ## Operator summary
 
-- **Where are we?** I-018 is complete. **I-019 — Human-facing capability visibility is COMPLETE / IMPLEMENTED / VERIFIED.** The compact read-only Status & Tools surface and its exact-runtime Codex command catalog have both passed deterministic and natural rendered-UI acceptance (E-150, E-151).
-- **What just changed?** The first natural Status & Tools acceptance run found one real blocker: Codex 0.154.0 SDK metadata could expose an App Server version string with its user-agent suffix attached, causing the strict command-catalog release validator to fail closed. The boundary was repaired without weakening D-040; exact code head `cc785e34d9332e479e4e8b62af7ca465f5d01cc8` then passed focused tests, the repository fast verifier, live runtime/catalog checks, and a rendered UI recheck showing **Available / 60 built-ins / rust-v0.154.0**.
-- **Verification state:** I-019 is **COMPLETE / IMPLEMENTED / VERIFIED** on exact implementation bytes `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`. The first natural run's wider surface checks remain valid for the unchanged feature behavior; the repaired exact head received a focused rendered-UI recheck of the formerly failing catalog path and Refresh behavior.
-- **What is blocked?** Nothing blocks ordinary Codex Room use. Later roadmap stages remain gated and are not automatically started by I-019 completion.
-- **What is next?** Stop at the I-019 boundary. If the principal chooses to continue the approved sequence, the next available bounded stage is an ordinary-use inherited-tool exercise that lets C use existing tools naturally and records what actually works without manufacturing benchmark traffic.
-- **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
+- **Where are we?** I-018 and the useful core of I-019 are complete. A principal-directed post-I-019 cleanup is now **IN PROGRESS** to remove the Codex host-command catalog from the Room product surface.
+- **What just changed?** Review of the official Codex command inventory showed that it is primarily a Codex Desktop/TUI control surface rather than a general-purpose Room capability set. The principal therefore reversed the earlier catalog direction. The cleanup removes the parser/cache, dedicated catalog API, Status & Tools catalog card/payload, and dedicated catalog tests while preserving the rest of Status & Tools and general App Server runtime provenance.
+- **Verification state:** the pre-cleanup I-019 bytes remain historically verified at `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`. The cleanup candidate is **NEEDS VERIFICATION** until the repository-standard local gate passes on its exact bytes.
+- **What is blocked?** Nothing blocks ordinary Codex Room use. This cleanup should be verified and merged before starting another product-development stage.
+- **What is next?** Run the normal deterministic verification gate on the cleanup candidate, review the exact diff, then close the follow-up if it passes.
+- **What are we deliberately not doing?** No Codex Desktop/TUI command parity work; no skills work in this cleanup; no new Objective entity; no broad transaction rewrite; no fourth persistent agent; no automatic model router; no adjacent maintenance investigation.
 
 ## Current focus
+
+### Post-I-019 cleanup — remove Codex host-command catalog exposure
+
+**Scope:** [CORE + ROOM UI]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** DECIDED / IMPLEMENTATION CANDIDATE / NEEDS VERIFICATION
+
+**Decision:** D-041
+
+The principal reviewed the official Codex command inventory and concluded that it is primarily specific to Codex Desktop/TUI and coding/session management rather than a useful Codex Room product surface. The current cleanup removes the exact-runtime command-catalog parser/cache, its dedicated API endpoint, its Status & Tools payload/card, and catalog-specific tests. The broader Status & Tools surface remains: current work, A/B/C state/economics/context guidance, Room-native deterministic capabilities, inherited workspace/command execution, and safely inspectable web-search, skills, MCP, apps/connectors, and plugins.
+
+App Server runtime identity normalization remains because runtime provenance is useful independently of any command catalog. Skills evaluation is explicitly back-burnered and is not part of this cleanup.
+
+**Stop condition:** exact cleanup bytes pass the repository-standard local verification gate and the diff confirms no catalog product surface remains.
 
 ### I-019 — Human-facing capability visibility
 
@@ -25,7 +41,7 @@
 
 **Origin:** I-018 / E-149
 
-**Goal achieved:** Codex Room now exposes a compact, read-only **Status & Tools** view that lets the principal understand current Room work and major Room-native/inherited Codex capability classes without requiring knowledge of internal database tables, transaction actions, SDK configuration, or Desktop slash commands.
+**Goal achieved:** Codex Room exposes a compact, read-only **Status & Tools** view that lets the principal understand current Room work and major Room-native/inherited Codex capability classes without requiring knowledge of internal database tables, transaction actions, SDK configuration, or Codex Desktop host controls.
 
 **Implemented first-release surface:**
 
@@ -36,7 +52,6 @@
 - inherited workspace-file and command-execution classes;
 - safely inspectable Codex web-search, skills, MCP, installed apps/connectors, and plugins inventory from the active App Server;
 - explicit **available / interaction required / unavailable / unknown** truth classifications rather than assuming configured features are usable;
-- exact-runtime Codex slash-command catalog provenance and built-in count, still separated from command applicability or dispatch.
 
 **Safety / architecture boundaries preserved:**
 
@@ -44,9 +59,9 @@
 - secrets, tokens, private account identifiers, arbitrary MCP schemas/payloads, filesystem paths, and hidden reasoning are not exposed;
 - direct model/reasoning overrides that bypass D-039 remain absent;
 - Codex built-in subagents remain disabled;
-- OAuth/approval/elicitation bridges, attachments, browser/computer use, worktrees, terminal, diff/review UI, slash-command dispatch, and blanket Desktop parity remain outside I-019.
+- OAuth/approval/elicitation bridges, attachments, browser/computer use, worktrees, terminal, diff/review UI, and blanket Desktop host parity remain outside I-019.
 
-**Verification closeout (E-151):** exact code head `cc785e34d9332e479e4e8b62af7ca465f5d01cc8` passed 13 focused command-catalog/Status & Tools tests, the repository fast verifier (63 Linux focused, 118 Windows focused, 9 browser transcript tests), live `/api/health` and `/api/codex/commands` checks, and a rendered browser recheck showing runtime `0.154.0`, catalog status Available, **60** built-ins, source `rust-v0.154.0`, zero console errors/warnings, and no Room mutation after Refresh. The preceding natural acceptance run had already verified Current work, A/B/C and economics, Room-native capabilities, inherited capability classifications, sanitization, and read-only behavior; its only blocker was the catalog metadata boundary subsequently repaired and rechecked.
+**Verification closeout (E-151):** the pre-cleanup I-019 implementation passed the repository fast verifier and natural rendered-UI acceptance for Current work, A/B/C and economics, Room-native capabilities, inherited capability classifications, sanitization, read-only Refresh behavior, and the then-present host-command catalog. D-041 now supersedes only that catalog portion; the cleanup requires fresh exact-byte verification before it can be called verified.
 
 **Stop condition:** met. I-019 ends here. Completing it does not automatically authorize or start the next roadmap stage.
 
@@ -67,7 +82,7 @@ Proceed in this order:
 5. **Run a real-use campaign before larger host work.** Use Codex Room for several actual objectives across research/decision support, attached-material work, multi-stage noncoding work, and software work. Judge value by whether the Room materially reduces principal effort or improves outcomes versus an ordinary single-agent conversation. Record recurring friction; do not manufacture feature demand.
 6. **Evaluate browser/computer use only if real-use evidence justifies it.** A shared visual browser/computer-use host may materially expand general-purpose value, but it is a larger authority, safety, provenance, and UI integration. Begin that work only if prior practical use demonstrates that search/tool access is insufficient.
 
-**Explicitly deferred pending demonstrated need:** blanket Desktop slash-command parity, integrated human terminal, Desktop-style worktrees, Desktop diff/review UI, side chats, Room/thread forks, and a mechanically enforced Plan mode.
+**Explicitly deferred pending demonstrated need:** blanket Desktop host-control parity, integrated human terminal, Desktop-style worktrees, Desktop diff/review UI, side chats, Room/thread forks, and a mechanically enforced Plan mode.
 
 **Roadmap stop discipline:** each stage is independently bounded. Completing one stage does not automatically authorize the next implementation. Preserve working systems and stop whenever sufficient evidence says a proposed addition does not earn its complexity.
 
@@ -85,22 +100,22 @@ Proceed in this order:
 
 - Which practical Codex Desktop capabilities are properties of the underlying Codex agent/runtime and are therefore already usable by A/B/C?
 - Which capabilities exist underneath Codex Room but are hidden, discouraged, or lack a convenient human-facing surface?
-- Which Desktop slash commands are UI shortcuts for behavior Codex Room already provides through a different mechanism?
+- Which Desktop host commands are UI shortcuts for behavior Codex Room already provides through a different mechanism?
 - Which Desktop capabilities are genuinely absent from Codex Room and would materially expand ordinary non-test use?
 - Which Desktop features are intentionally incompatible with Room architecture or primarily coding-specific and therefore should not be copied?
 
 **Method:**
 
-1. establish the current Codex Desktop capability/slash-command surface from current official OpenAI documentation;
+1. establish the current Codex Desktop capability/host-command surface from current official OpenAI documentation;
 2. inspect canonical Codex Room source and runtime configuration to establish what A/B/C can actually access and what the observer UI/API exposes;
 3. prefer deterministic source/docs evidence; use at most bounded empirical probes only where material capability status remains ambiguous;
 4. classify each relevant capability as **INHERITED / AVAILABLE BUT HIDDEN / ROOM EQUIVALENT / GENUINELY MISSING / INCOMPATIBLE OR OUT OF SCOPE**;
-5. distinguish agent capability from observer/UI convenience so a missing slash command is not mistaken for a missing underlying capability;
+5. distinguish agent capability from observer/UI convenience so a missing host command is not mistaken for a missing underlying capability;
 6. identify only demonstrated product gaps whose benefit could plausibly exceed their implementation/maintenance cost.
 
 **Result:** E-149 records the completed matrix. The principal finding is that **Codex Room is not a reduced text-only Codex engine**: A/B/C run on persistent official Codex SDK/App Server threads with `workspace_write`, native command/file tooling, normal Codex configuration inheritance, and Room-specific deterministic capabilities. Codex built-in subagents are deliberately disabled because A/B/C and Room transactions own multi-agent organization.
 
-The missing Desktop `/` palette is primarily a **host/UI gap**, not proof that the underlying agent capability is absent. Current Room composer/API sends observer text as ordinary Room messages and has no slash-command parser.
+The missing Desktop command palette is primarily a **host/UI gap**, not proof that the underlying agent capability is absent. Current Room composer/API sends observer text as ordinary Room messages and has no host-command parser.
 
 **Important classifications:**
 
@@ -108,7 +123,7 @@ The missing Desktop `/` palette is primarily a **host/UI gap**, not proof that t
 - **AVAILABLE BUT HIDDEN / incomplete host surface:** Room status/economics/model/context data; configured MCP/tool inventory; skills/apps/plugin inventory and explicit selection; some App Server thread controls. Interactive OAuth, elicitation, and generic tool-approval UX are not currently provided by the Room observer surface.
 - **ROOM EQUIVALENT:** model/reasoning control through D-039; context compaction/refresh; Round/Task objective state; persistent agent profiles; A/B/C organization in place of built-in Codex subagents; bounded Room history; independent verifier delegation in place of a Desktop review shortcut.
 - **GENUINELY MISSING HOST CAPABILITIES:** the Desktop built-in visual browser/computer-use surface, rich observer attachments/input UX, integrated human terminal, Desktop diff/review UI, and Desktop-managed worktrees. Some are coding-specific; browser/attachments have broader general-purpose implications.
-- **DO NOT COPY FOR PARITY ALONE:** slash syntax itself, direct `/model` or `/reasoning` overrides that bypass D-039, built-in Codex subagents, or host utilities such as product feedback/pet commands.
+- **DO NOT COPY FOR PARITY ALONE:** host command syntax itself, direct `/model` or `/reasoning` overrides that bypass D-039, built-in Codex subagents, or host utilities such as product feedback/pet commands.
 
 **Candidate product work, pending principal choice:**
 
@@ -118,7 +133,7 @@ The missing Desktop `/` palette is primarily a **host/UI gap**, not proof that t
 4. **Browser/computer-use host** — potentially high general-purpose value, but a materially larger product/authority/safety integration than exposing inherited tools.
 5. **Plan-only or review-specific modes** — consider only if ordinary use demonstrates that natural-language constraints plus existing verifier/transaction mechanics are insufficient.
 
-**Stop condition satisfied:** I-018 made no runtime change and authorizes none. Do not implement blanket slash-command parity or any candidate above until the principal explicitly selects it.
+**Stop condition satisfied:** I-018 made no runtime change and authorizes none. Do not implement blanket host-command parity or any candidate above until the principal explicitly selects it.
 
 ### I-017 — Dynamic C cognition and Task-scoped exceptional approval
 
