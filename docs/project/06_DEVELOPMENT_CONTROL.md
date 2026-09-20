@@ -27,7 +27,7 @@
 
 PBM is the canonical standardized performance benchmark for comparing ordinary Codex Desktop with Codex Room across a fixed, versioned suite of paired tasks. The principal invocation **“Run PBM”** must resolve to the current canonical PBM procedure rather than triggering ad hoc benchmark design.
 
-PBM v1 should establish:
+PBM v1 establishes:
 
 - a frozen versioned task suite spanning trivial mechanical work through larger ambiguous/verification-heavy work;
 - exact paired starting fixtures and prompts;
@@ -39,7 +39,7 @@ PBM v1 should establish:
 - machine-readable run records and a standard human-readable comparison report;
 - a low-cost pilot before broader replication, so the benchmark itself does not recreate previously observed high-cost synthetic testing.
 
-**Implementation boundary:** benchmark definition/harness comes first. Do not spend the paid PBM pilot until the procedure, fixtures, measurement semantics, and reporting contract are frozen and mechanically inspectable.
+**Implementation boundary:** satisfied for v1. The procedure, fixtures, measurement semantics, and reporting contract are now frozen and mechanically inspectable. Future material changes require a new benchmark version rather than silent mutation of v1.
 
 PBM v1 separates the product arms mechanically:
 
