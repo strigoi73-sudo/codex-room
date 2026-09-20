@@ -94,9 +94,13 @@ def _collect_package_files(package: Path, root: Path) -> list[_SkillFile]:
 def _inventory(workspace: Path) -> _SkillInventory:
     agents_root = workspace / ".agents"
     skills_root = workspace / ROOM_SKILLS_RELATIVE
+    if agents_root.is_symlink():
+        raise RoomSkillInheritanceError("Room-local .agents root may not be a symlink")
     if not agents_root.exists():
         return _finalize_inventory([], [])
     _require_directory(agents_root, label="Room-local .agents root")
+    if skills_root.is_symlink():
+        raise RoomSkillInheritanceError("Room-local skills root may not be a symlink")
     if not skills_root.exists():
         return _finalize_inventory([], [])
     _require_directory(skills_root, label="Room-local skills root")
@@ -118,9 +122,13 @@ def _inventory(workspace: Path) -> _SkillInventory:
                 f"Room-local skills root contains an unsupported entry: {entry.name}"
             )
         skill_file = child / "SKILL.md"
+        if skill_file.is_symlink():
+            raise RoomSkillInheritanceError(
+                f"Room-local skill SKILL.md may not be a symlink: {entry.name}/SKILL.md"
+            )
         if not skill_file.exists():
             continue
-        if skill_file.is_symlink() or not skill_file.is_file():
+        if not skill_file.is_file():
             raise RoomSkillInheritanceError(
                 f"Room-local skill SKILL.md must be a regular file: {entry.name}/SKILL.md"
             )
@@ -174,12 +182,21 @@ def inherit_room_local_skills(
     if not inventory.files:
         return inventory.metadata()
 
+    destination_agents = staging_workspace / ".agents"
     destination_root = staging_workspace / ROOM_SKILLS_RELATIVE
+    if destination_agents.is_symlink():
+        raise RoomSkillInheritanceError(
+            "Rollover destination .agents root may not be a symlink"
+        )
+    if destination_agents.exists() and not destination_agents.is_dir():
+        raise RoomSkillInheritanceError(
+            "Rollover destination .agents root must be a directory"
+        )
     if destination_root.exists() or destination_root.is_symlink():
         raise RoomSkillInheritanceError(
             "Rollover destination already contains .agents/skills"
         )
-    destination_root.parent.mkdir(parents=True, exist_ok=True)
+    destination_agents.mkdir(parents=True, exist_ok=True)
 
     source_root = source_workspace / ROOM_SKILLS_RELATIVE
     for item in inventory.files:
