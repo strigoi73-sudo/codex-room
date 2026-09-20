@@ -23,7 +23,7 @@ from codex_room.personalities import (
     AGENT_A_DEFAULT_PERSONALITY,
     AGENT_B_DEFAULT_PERSONALITY,
     AGENT_C_DEFAULT_PERSONALITY,
-    AGENT_C_INTEGRATOR_INSTRUCTIONS,
+    AGENT_C_DEFAULT_INSTRUCTIONS,
     AGENT_C_STRUCTURAL_INSTRUCTIONS,
     ROOM_PROTOCOL_INSTRUCTIONS,
     default_agent_instructions,
@@ -209,7 +209,7 @@ async def test_add_c_preserves_ab_and_enforces_newcomer_boundary(runtime_factory
     assert after["agent_c"] not in {before["agent_a"], before["agent_b"]}
     assert adapter.starts[-1][0] == "agent_c"
     c = await runtime.db.get_agent(room_id, "agent_c")
-    assert c and c["developer_instructions"] == AGENT_C_INTEGRATOR_INSTRUCTIONS
+    assert c and c["developer_instructions"] == AGENT_C_DEFAULT_INSTRUCTIONS
     state = await runtime.db.get_round_agent_state(joined["active_round_id"], c["id"])
     assert state and state["context_consumed_at"]
     # The active legacy worker may append another legitimate pre-join event

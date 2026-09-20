@@ -29,7 +29,7 @@ The repeatable functional acceptance campaign completed **T0–T14 with every te
 
 **IMPLEMENTED / VERIFIED**
 
-Personal production contains exactly three persistent agents: **A — Implementer, B — Verifier, C — Integrator**. They are epistemic peers. C coordinates but has no superior judgment: **C controls coordination, not judgment.**
+Personal production contains exactly three persistent agents: **Agent A, Agent B, and Agent C**. A and B are operationally equivalent epistemic peers with the same neutral default profile and no protected occupational or cognitive specialization. C is also an epistemic peer, with protected coordination responsibilities rather than superior judgment: **C controls coordination, not judgment.**
 
 Fresh standard Rooms use neutral/empty default profile bodies. Shared institutional/peer rules and Room protocol remain protected; C additionally receives protected structural coordination instructions. Optional saved-profile text and Room overrides remain replaceable profile content rather than protected structure. See D-002 through D-004, D-020, D-023, D-024, and E-058.
 
@@ -39,7 +39,7 @@ C's protected coordination policy currently includes:
 - if both A and B are invoked, give them meaningfully differentiated cognitive responsibilities;
 - treat invocation as a purchase of cognition, not as message visibility;
 - before concurrent delegation, determine whether each assignment can produce useful work independently; parallelize genuinely independent work and sequence work whose useful completion depends on a prerequisite artifact, evidence, or result;
-- do not treat verification of an artifact as concurrent with creation/modification of that same artifact unless the verifier has meaningful independent pre-artifact work;
+- do not treat verification of an artifact as concurrent with creation/modification of that same artifact unless the peer assigned verification has meaningful independent pre-artifact work;
 - when delegated implementation, correction, or investigation fails to produce needed work, or fallback work reaches C because another assignment failed or settled without producing it, substantial tool-heavy fallback should normally move to a fresh bounded peer assignment rather than remain on C's accumulated coordinator context;
 - that fallback rule applies whether C is in its root coordination assignment or a child assignment created by a peer;
 - prefer the capable assignment with the least unnecessary accumulated context, while correctness, safety, continuity, and reliability remain controlling constraints;
@@ -170,7 +170,7 @@ Each Room participant runs through the official local Codex SDK/App Server subst
 
 The Room browser is a separate host surface. Observer messages are handled through the Room message API rather than the Codex Desktop command palette. Missing Desktop host controls do not by themselves mean the underlying Codex capability is absent. Conversely, Desktop-host features such as its visual browser, integrated human terminal, worktree UI, attachment/editor affordances, and interactive MCP/authentication surfaces are not conferred merely by using App Server.
 
-Codex Room intentionally substitutes its own organizational mechanisms for several Desktop controls: A/B/C transactions replace built-in Codex subagents; D-039 governs model/reasoning allocation; Round/Task state owns organizational objectives; Room compaction/REFRESH manages long-lived coordinator context; and verifier delegation provides independent review cognition. See E-149 for the dated Desktop↔Room capability audit and its qualification of config-dependent tool availability.
+Codex Room intentionally substitutes its own organizational mechanisms for several Desktop controls: A/B/C transactions replace built-in Codex subagents; D-039 governs model/reasoning allocation; Round/Task state owns organizational objectives; Room compaction/REFRESH manages long-lived coordinator context; and task-specific peer delegation can provide independent review cognition. See E-149 for the dated Desktop↔Room capability audit and its qualification of config-dependent tool availability.
 
 I-019 adds a verified read-only **Status & Tools** host surface over existing Room and App Server authority. `GET /api/rooms/{room_id}/status-tools` composes current Round/Task/Assignment state, A/B/C lifecycle/model/economics evidence, coordinator-context guidance, Room-native deterministic capabilities, inherited workspace-file/command-execution classes, and safely inspectable web-search, skills, MCP, apps/connectors, and plugins inventory. Major inherited categories are reported as available, interaction-required, unavailable, or unknown rather than guessed. The surface sanitizes secrets, account-like identifiers, filesystem paths, MCP schemas/payloads, and hidden reasoning, and Refresh is read-only with respect to Room work.
 

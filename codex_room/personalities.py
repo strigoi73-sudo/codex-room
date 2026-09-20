@@ -124,13 +124,14 @@ def default_agent_instructions(
     return compose_agent_instructions(agent_key, name, personality)
 
 
-# Full effective defaults retained as compatibility/migration anchors.
-AGENT_A_IMPLEMENTER_INSTRUCTIONS = compose_agent_instructions(
+# Full effective default instruction blocks retained as compatibility/migration anchors.
+# Their names reflect persistent identities rather than occupational specialties.
+AGENT_A_DEFAULT_INSTRUCTIONS = compose_agent_instructions(
     "agent_a", "Agent A", AGENT_A_DEFAULT_PERSONALITY
 )
-AGENT_B_VERIFIER_INSTRUCTIONS = compose_agent_instructions(
+AGENT_B_DEFAULT_INSTRUCTIONS = compose_agent_instructions(
     "agent_b", "Agent B", AGENT_B_DEFAULT_PERSONALITY
 )
-AGENT_C_INTEGRATOR_INSTRUCTIONS = compose_agent_instructions(
+AGENT_C_DEFAULT_INSTRUCTIONS = compose_agent_instructions(
     "agent_c", "Agent C", AGENT_C_DEFAULT_PERSONALITY
 )
