@@ -104,6 +104,8 @@ def test_room_controller_launcher_is_detached_and_coordination_only() -> None:
 
     assert "Start-Process" in launcher
     assert "Start-Job" not in launcher
+    assert "$WorkerArgument = '\"' + $Worker + '\"'" in launcher
+    assert "'-File', $WorkerArgument" in launcher
     assert "does not solve benchmark tasks" in launcher
     assert "Invoke-RestMethod" in worker
     assert "-TimeoutSec 86400" in worker
