@@ -10,7 +10,6 @@ data/*.db
 data/*.db-*
 data/rooms/
 data/backups/
-data/cache/
 data/identity-recovery-*/
 data/.rollover-staging/
 data/*-result.json
