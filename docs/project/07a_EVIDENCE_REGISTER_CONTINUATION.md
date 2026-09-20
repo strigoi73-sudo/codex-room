@@ -1449,3 +1449,59 @@ Stage C's structured `SkillInput` bridge remains **NOT WARRANTED BY CURRENT EVID
 The Stage A economics warning remains material: the bounded naturalistic exercise recorded about **5.28 million execution-token deltas**, dominated by the Sol/Medium document + Skill Creator assignment. Repeating that exercise solely for closeout would add cost without materially improving confidence.
 
 **Assessment:** I-020 is **COMPLETE / IMPLEMENTED / VERIFIED**. The acceptance target is satisfied by E-153 through E-156 plus D-042. No further I-020 implementation or dedicated naturalistic testing is authorized absent new evidence of a specific skill-integration defect or gap.
+
+
+## E-157 — I-021 Stage A exact 0.154 plugin-contract audit; Windows loopback boundary pending
+
+**Date:** 2026-09-20
+**Kind:** [CORE/App Server source audit / plugin-management authority boundary]
+**Related work:** I-021
+**Plugin state changed:** none
+**Evidence state:** VERIFIED for source-level native contracts and install refresh semantics; NEEDS VERIFICATION for exact Windows sandbox loopback reachability
+
+I-021 Stage A audited the exact OpenAI Codex Python SDK/App Server release admitted by Codex Room's dependency floor/current package line: `openai-codex` 0.154, corresponding to upstream Codex source commit `9fd29dfd8c583e93855aeb2a51e1725346765162`. No plugin install, enable, disable, uninstall, marketplace mutation, authentication flow, or Codex configuration write was performed.
+
+### Native plugin contracts
+
+The generated Python SDK types in the 0.154 release expose the plugin/configuration contracts required for a bounded Room bridge, including:
+
+- `PluginListParams`, `PluginInstalledParams`, `PluginInstallParams`, `PluginInstallResponse`, and `PluginReconcileParams/Response`;
+- `ConfigValueWriteParams` and `ConfigWriteResponse`;
+- plugin summary state including stable plugin ID, installed/enabled state, local/remote version, install policy and its source, auth policy, availability, disabled reason, eligible plan types, and interface metadata;
+- availability values `AVAILABLE` / `DISABLED_BY_ADMIN`, install-policy values `NOT_AVAILABLE` / `AVAILABLE` / `INSTALLED_BY_DEFAULT`, and auth-policy values `ON_INSTALL` / `ON_USE`;
+- marketplace kinds for local, vertical, workspace-directory, shared-with-me, and created-by-me-remote catalogs.
+
+The exact App Server protocol routes include `plugin/list`, `plugin/installed`, `plugin/reconcile`, `plugin/read`, `plugin/install`, `plugin/uninstall`, `config/read`, `config/value/write`, and `config/batchWrite`.
+
+### Installation and enablement behavior
+
+The exact 0.154 install processor requires exactly one native marketplace locator: local `marketplacePath` or `remoteMarketplaceName`. The Room bridge therefore does not need and should not invent a package installer.
+
+After a successful local plugin install, App Server:
+
+- reloads current user configuration;
+- clears plugin and skill caches;
+- refreshes configuration for existing threads;
+- invalidates MCP runtimes;
+- refreshes hook runtimes;
+- starts native MCP OAuth handling when declared by the plugin;
+- evaluates plugin apps that still need authentication;
+- returns `authPolicy` plus `appsNeedingAuth`.
+
+Remote install similarly uses the native remote catalog/install path and distinguishes policy/admin-disabled and not-available failures. This is evidence that a successful install does not require a Codex Room process restart merely to refresh existing App Server threads.
+
+Codex TUI's own plugin toggle path writes `plugins.<plugin_id>` with value `{"enabled": <bool>}` through `config/value/write` with merge strategy `Upsert`. The config processor clears plugin/skill caches and emits toggle telemetry. `plugin/reconcile` explicitly reports plugin changes including enablement changes; it is a change/reconciliation report, not by itself a runtime-readiness guarantee. Stage B should therefore follow a mutation with authoritative reinspection of installed plugin plus skill/MCP/app state rather than infer contributed capability readiness from the write response alone.
+
+### Principal-only authority boundary
+
+Current Codex Room binds its browser/API host to `127.0.0.1:8765` by default and does not currently place an authentication middleware boundary around its ordinary localhost API. Therefore a future state-changing plugin endpoint cannot be called “principal-only” merely because it is a POST request or because it is local.
+
+A/B/C threads are started with the SDK's `Sandbox.workspace_write` preset. In 0.154 that preset maps to workspace-write with direct network disabled. macOS sandbox source explicitly gates loopback access, and Windows source applies the no-network environment treatment for the default workspace-write permission profile. However, source inspection did **not** establish with sufficient confidence that a direct Windows process in the actual Codex Room sandbox cannot connect to `127.0.0.1:8765`; the Windows filtering rules inspected are not sufficient evidence for that exact negative claim.
+
+The release provides a deterministic `codex sandbox` CLI that can run an arbitrary command directly under the same built-in `:workspace` permission profile without a model turn. This permits a cheap exact-runtime loopback probe against read-only `GET /api/health` before Stage B.
+
+### Stage A disposition
+
+Stage A remains **IN PROGRESS** solely on the principal-authority boundary. The native plugin/configuration contract itself is sufficient for a narrow Stage B bridge and does not justify direct config-file editing, a parallel plugin registry, a copied marketplace, or a new plugin runtime.
+
+**Required closeout evidence:** on the principal's actual Windows Codex runtime, run one deterministic `codex sandbox --permission-profile :workspace` command that attempts only a short-timeout connection to the Room health endpoint. Record whether the sandboxed command can reach loopback. No plugin state or configuration is to be changed by that probe.
