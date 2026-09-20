@@ -1731,3 +1731,62 @@ No runtime probe or real plugin mutation was necessary for this decision because
 
 **Assessment:** I-021 is **COMPLETE**. No Room-side plugin mutation bridge, generic configuration editor, copied marketplace UI, credential/auth proxy, or principal-proof security subsystem is currently warranted. D-043 records the settled boundary. Reopen only on concrete ordinary-use evidence that native-host administration creates a material capability, reliability, or workflow-cost problem.
 
+---
+
+### E-163 — PBM v1 exact-head verification and canonical merge equivalence
+**Date:** 2026-09-20  
+**Kind:** [deterministic exact-head verification / benchmark-harness verification / Git provenance]  
+**Related work:** I-023 / D-045  
+**Runtime/model benchmark traffic changed:** none  
+**Evidence state:** VERIFIED for the PBM v1 implementation bytes; no live PBM performance result is claimed
+
+PBM v1 was verified on exact feature head:
+
+`7b7cbfdfcea8617f8885676df2a257ce299e4657`
+
+The principal ran the complete interactive-PowerShell verification block against a clean detached checkout of that exact SHA.
+
+Observed results:
+
+- pre-verification working tree: clean;
+- fetched feature ref resolved exactly to the expected SHA;
+- detached checkout HEAD matched the expected SHA;
+- `git diff --check origin/main...HEAD`: exit 0;
+- `pbm-desktop.ps1` PowerShell parser: no errors;
+- `pbm-room.ps1` PowerShell parser: no errors;
+- focused PBM + usage tests: **11 passed**;
+- `verify-fast.cmd`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **9 passed**;
+- final HEAD remained the expected SHA;
+- final tracked working tree remained clean.
+
+The verification output included only the pre-existing dependency/deprecation warnings from FastAPI/Starlette test dependencies; no PBM-specific failure or warning was observed.
+
+PR #176 was then merged without modifying the verified feature head, using expected-head protection. Canonical merge commit:
+
+`c0fe5f6600fb12f039b7e3d4bd26e67a64795a23`
+
+Git object verification after merge established:
+
+- tested feature-head tree SHA: `aecd10f535785c27dc690719b650beb29aaed111`;
+- canonical merge-commit tree SHA: `aecd10f535785c27dc690719b650beb29aaed111`;
+- the canonical merge commit directly lists the tested feature head as one of its parents.
+
+Therefore the canonical merged PBM v1 bytes are exactly the bytes that passed the local verification gate.
+
+PBM v1 now includes:
+
+- canonical version pointer at `benchmarks/pbm/CURRENT`;
+- frozen v1 manifest/protocol;
+- eight synthetic standard-library-only paired task fixtures/prompts;
+- deterministic task graders;
+- dedicated native Desktop preparation/capture script;
+- dedicated Room preparation/run/capture script;
+- shared deterministic PBM manifest/fixture/grading/accounting/report machinery;
+- focused automated harness tests;
+- the canonical Project-runtime rule that **“Run PBM”** resolves the current PBM version and executes its defined procedure rather than redesigning the benchmark.
+
+**Assessment:** I-023 PBM v1 is **IMPLEMENTED / EXACT-HEAD VERIFIED** and may be used for its first live benchmark run. This evidence does **not** claim that a Desktop-vs-Room PBM run has yet occurred, that the live integration path has been behaviorally exercised end-to-end, or that either product has any measured performance advantage.
+
