@@ -9,6 +9,7 @@
 
 | File | Role | Expected volatility |
 |---|---|---|
+| `01_GPT_PROJECT_RUNTIME_INSTRUCTIONS.md` | Canonical maintained ChatGPT Project runtime guidance plus the reconstructable UI bootstrap/fail-safe. | Low |
 | `02_CODEX_ROOM_CHARTER.md` | System identity, purpose, human authority, Personal architecture, and high-level design philosophy. | Very low |
 | `03_CONSTITUTION_AND_INSTITUTIONAL_RULES.md` | Ratified agent Constitution and durable cross-Room governance rules. | Very low |
 | `04_ARCHITECTURE_AND_CURRENT_STATE.md` | Best current synthesis of implemented behavior and system structure. | Moderate |
@@ -21,7 +22,7 @@
 
 **Project-source authority:** the maintained files in repository `docs/project/` are the authoritative Project sources. Do not maintain parallel authoritative copies as GPT Project source attachments or elsewhere.
 
-**GPT Project instructions:** the live Codex Room GPT Project custom-instructions configuration remains authoritative for bootstrap/runtime guidance and is intentionally **not duplicated as a maintained Project source**. Its job is to identify the canonical repository and document-ownership rules, then retrieve the relevant repository source when needed. If a handoff/export ever needs a copy of the live instructions, capture it as a dated snapshot rather than maintaining a second authoritative version.
+**GPT Project runtime-instruction authority:** `01_GPT_PROJECT_RUNTIME_INSTRUCTIONS.md` is the canonical maintained source for Codex Room's project-specific ChatGPT runtime guidance. The live GPT Project custom-instructions field is deliberately a **thin bootstrap/fail-safe**, not a second maintained authority. Its job is to identify the canonical repository, require retrieval of `01` at the first substantive Codex Room turn in a new chat, preserve a small set of safe invariants if retrieval fails, and then defer to the repo source. The reconstructable bootstrap text is maintained inside `01`; update the repo source first, then synchronize the UI field when needed. Do not preserve an independently edited longer UI copy.
 
 **Manifest policy:** `MANIFEST.md` is **not a live maintained Project source**. Generate a manifest only for a deliberate export, handoff, or archival package where exact package inventory and hashes are useful.
 
@@ -31,6 +32,7 @@
 
 Do not assign one universal authority order to all project material. Resolve conflicts according to the kind of claim being made and its freshness. When a maintained Project source is required, read the canonical repository version from `docs/project/`; do not substitute an older uploaded copy or remembered text when freshness matters.
 
+- **How ChatGPT should operate on Codex Room:** use the latest `01_GPT_PROJECT_RUNTIME_INSTRUCTIONS.md` after the UI bootstrap retrieves it.
 - **What the software currently does:** prefer the freshest relevant source code, current tests, runtime evidence, and current repository inspection.
 - **What Codex Room is intended or permitted to do:** prefer the current ratified Constitution, Charter where applicable, and later explicit decisions recorded in the Decision Register.
 - **Best current implementation summary:** use `04_ARCHITECTURE_AND_CURRENT_STATE.md`, then verify volatile or consequential claims against fresher technical evidence when available.
@@ -106,7 +108,7 @@ Use explicit dates for volatile claims. Remove resolved questions from Developme
 
 ## 5. Context economy
 
-The canonical repository Project package is designed to preserve continuity without turning active context into an archive. GPT Project custom instructions should bootstrap retrieval from this package; maintained source attachments should not mirror the same documents after cutover.
+The canonical repository Project package is designed to preserve continuity without turning active context into an archive. GPT Project custom instructions should bootstrap retrieval of `01_GPT_PROJECT_RUNTIME_INSTRUCTIONS.md`, which then governs project-specific runtime behavior and targeted retrieval from the rest of this package. Maintained source attachments should not mirror these documents after cutover.
 
 Keep large or episodic material outside the maintained core, including:
 
