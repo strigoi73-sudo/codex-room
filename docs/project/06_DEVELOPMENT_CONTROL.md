@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** No feature implementation is currently selected. I-022 — Native Codex capability exposure and execution-economics audit — is **COMPLETE / VERIFIED AS AN AUDIT** through E-159/E-160. It established the exact Codex 0.154 primitive surface and a neutral capability/economics comparison without authorizing a build sequence.
-- **What just changed?** PR #167 fixed the complete `data/` runtime Git-ignore boundary; PR #168 normalized A/B as operationally equivalent neutral peers; PRs #169–#171 established and completed I-022 plus its feature-selection boundary. The 2026-09-20 roadmap audit also closed superseded open PRs #91 and #121 and removed stale roadmap/history duplication from this document.
-- **Verification state:** current implementation claims remain owned by Architecture & Current State plus their exact evidence. This audit changed roadmap/documentation state and repository hygiene only; it did not change runtime behavior.
-- **What is next?** Principal selection. Codex Room may be used normally, or the principal may select one capability/maintenance/QoL item for deeper investigation or implementation. Nothing in I-022 establishes a default next feature.
+- **Where are we?** No feature implementation is currently selected. I-021 — Principal-controlled Codex plugin management — is **COMPLETE** after Stage B selected the native Codex/ChatGPT administration path; no Room-side mutation bridge is required under current evidence. I-022 remains **COMPLETE / VERIFIED AS AN AUDIT** through E-159/E-160.
+- **What just changed?** D-043 / E-162 resolve I-021: the principal will manage plugin install/enable/disable through native Codex/ChatGPT plugin surfaces, while Codex Room continues to inherit, inspect, and use the resulting plugin/skill/MCP/app state. No runtime code or plugin state changed in this closeout.
+- **Verification state:** E-157/E-158 establish the exact Codex 0.154 plugin contracts and the localhost authority limitation; E-162 verifies the native human-controlled plugin surface and current Room inheritance/visibility boundary. Current implementation claims remain owned by Architecture & Current State plus their exact evidence.
+- **What is next?** Principal selection or ordinary use. A future development item should arise from demonstrated friction or explicit principal choice rather than from I-021/I-022 automatically advancing a queue.
 - **What is blocked?** No high-priority conceptual blocker prevents ordinary use or further development. Individual deferred items retain their own gates.
-- **What are we deliberately not doing?** No built-in Codex subagents, autonomous fan-out, automatic model router, screen-for-screen Desktop clone, generic config editor, speculative host-parity project, or implementation merely because a native primitive exists.
+- **What are we deliberately not doing?** No Room-local plugin mutation endpoint, principal-proof security subsystem solely for plugin administration, generic config editor, copied marketplace/plugin manager, built-in Codex subagents, autonomous fan-out, automatic model router, or speculative host-parity project.
 
 ## Current development state
 
@@ -39,17 +39,19 @@ E-160 then compared those families by current Room status, principal value, inhe
 
 ### I-021 — Principal-controlled Codex plugin management
 
-**Scope:** [CORE + ROOM UI, reusing native Codex/App Server plugin facilities]
+**Scope:** [native Codex/ChatGPT administration + existing Room visibility/use]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** DECIDED-NOT IMPLEMENTED / Stage A VERIFIED
+**Reality / evidence:** NATIVE-HOST PATH SELECTED / VERIFIED AS A PRODUCT BOUNDARY
 
-**Evidence:** E-157, E-158
+**Decision / evidence:** D-043; E-157, E-158, E-162
 
-Stage A verified that exact Codex 0.154 exposes the native plugin/configuration contracts needed for install/enable/disable and live refresh. It also proved on the principal's Windows runtime that an A/B/C-equivalent `:workspace` sandbox can reach Codex Room's loopback API, so localhost is not a principal-only authority boundary.
+Stage A verified the exact Codex 0.154 plugin/configuration contracts and proved that an A/B/C-equivalent Windows `:workspace` sandbox can reach Codex Room's loopback API, so a Room-local unauthenticated mutation route cannot establish principal-only authority.
 
-No state-changing Room mutation bridge is currently selected. I-021 remains open because the principal previously selected plugin administration as a development topic, but Stage B must first choose between the simpler possibility that the principal manages plugins through native Codex/Desktop configuration while Room merely discovers/uses the resulting capabilities, and a Room-side principal mutation surface. If the Room-side path is selected, it requires a separate mechanical principal-proof boundary and must reuse native Codex plugin/configuration operations rather than create a parallel registry, marketplace, installer, credentials store, or generic config editor.
+Stage B resolved the remaining product choice in favor of native administration. Exact Codex 0.154 already provides human-facing plugin discovery, install/uninstall, enable/disable, marketplace, and app-auth handoff surfaces; current official OpenAI product guidance also exposes plugin installation and management through ChatGPT/Codex surfaces. Codex Room does not override ordinary plugin configuration, already inspects native plugin/skill/MCP/app state for Status & Tools, and can use inherited capabilities through the underlying Codex runtime.
+
+Therefore I-021 closes without a Room-side mutation bridge, copied plugin manager, credential/auth proxy, or new principal-proof security subsystem. Reopen only if ordinary use demonstrates a concrete material cost or capability gap from managing plugin state through the native host.
 
 ## Approved or deferred work
 
@@ -123,6 +125,7 @@ Detailed rationale, exact commits, tests, benchmarks, and historical narrative b
 
 | Work | Current disposition | Durable references |
 |---|---|---|
+| I-021 — Principal-controlled Codex plugin management | COMPLETE / native-host administration selected / no Room bridge | D-043; E-157–E-158; E-162 |
 | I-020 — Codex skill integration / Skill Creator | COMPLETE / IMPLEMENTED / VERIFIED | D-042; E-153–E-156 |
 | Post-I-019 host-command catalog cleanup | COMPLETE / IMPLEMENTED / VERIFIED | D-041; E-152 |
 | I-019 — Status & Tools | COMPLETE / IMPLEMENTED / VERIFIED | E-149–E-152 |
@@ -173,7 +176,7 @@ No high-priority conceptual question currently blocks ordinary Codex Room use or
 
 Current unresolved questions are feature-local rather than roadmap-global:
 
-- if plugin administration is selected again, is Desktop/native configuration sufficient, or does Room need a principal-only mutation surface;
+- if ordinary use later demonstrates material friction from native-host plugin administration, what exact gap justifies reopening I-021;
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
 - if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
