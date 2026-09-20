@@ -2,7 +2,7 @@
 
 **Continues:** `07_EVIDENCE_REGISTER.md`  
 **Initialized:** 2026-09-17  
-**Last updated:** 2026-09-19  
+**Last updated:** 2026-09-20  
 **Scope:** Continuation of the canonical Evidence Register. Evidence identifiers continue the existing `E-###` sequence without a new namespace.  
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
@@ -1680,4 +1680,54 @@ The audit began from canonical `main` at `bb1d057e698909c2212663181b73cdc72f67bc
 - Architecture & Current State and Repository & Operations synthesis dates were refreshed to 2026-09-20; Architecture now records E-160's no-runtime-change/no-selection boundary.
 
 **Assessment:** after these changes, no active implementation feature is selected by default. Ordinary Codex Room use is unblocked. The next development item should arise from explicit principal selection or demonstrated ordinary-use evidence, not from stale roadmap sequence or leftover PR/branch state.
+
+## E-162 — I-021 Stage B native-host plugin administration boundary
+**Date:** 2026-09-20
+**Kind:** [exact-source/product-surface audit / product-boundary decision evidence]
+**Related work:** I-021 Stage B
+**Runtime/plugin state changed:** none
+**Evidence state:** VERIFIED for the inspected Codex 0.154 source, current Room source, and current official product guidance; no Room mutation implementation performed
+
+Stage B re-evaluated whether Codex Room should implement its originally planned principal-only plugin mutation bridge or rely on native plugin administration while Room inherits the resulting capability state.
+
+### Exact Codex 0.154 host surface
+
+Exact upstream source at tag `rust-v0.154.0` contains a TUI `/plugins` surface that:
+
+- loads native plugin marketplaces and plugin details;
+- offers **Install plugin** for installable native plugin identities;
+- offers **Uninstall plugin** for removable installed plugins;
+- exposes an installed-plugin toggle whose action is explicitly described as enable/disable;
+- blocks toggling for administrator-installed or administrator-disabled plugins as appropriate;
+- drives the native App Server plugin/configuration operations rather than a separate TUI-side registry;
+- after installation, reports any included apps that still require authentication and provides a native handoff to the applicable ChatGPT app-management page instead of collecting provider credentials itself.
+
+This complements E-157, which already verified the exact 0.154 App Server routes, install semantics, cache/runtime refresh behavior, and native configuration-write path for plugin enablement.
+
+### Current official product surface
+
+Current OpenAI plugin guidance on 2026-09-20 states that eligible users can go to **Plugins in ChatGPT or Codex**, review a plugin, select **Install plugin**, and complete any required app connection/authorization through the product's native flows. Workspace plugin policy and disable controls remain native administrative functions. Availability can vary by plan, role, workspace, region, and product surface.
+
+This establishes that principal-controlled plugin administration is already a supported product responsibility of the native host rather than a capability unique to Codex Room.
+
+### Current Codex Room boundary
+
+Current canonical Room source was inspected at the 2026-09-20 `main` baseline:
+
+- `codex_room/agent.py` applies explicit session overrides for model/reasoning defaults and disables Codex built-in agent/multi-agent features; it does not override ordinary plugin configuration;
+- the same adapter's native inventory inspection calls `plugin/installed`, `skills/list`, `mcpServerStatus/list`, and `app/installed` against the active App Server;
+- `codex_room/status_tools.py` surfaces installed plugin enabled/availability/auth-policy state together with contributed skill/MCP/app inventory;
+- therefore Room visibility already follows the authoritative native configuration rather than maintaining a competing plugin registry.
+
+E-158 remains decisive for the alternative design: an A/B/C-equivalent Windows workspace sandbox successfully reached the Room localhost API. Building Room-side plugin mutation would therefore require a separate principal-proof mechanism; localhost binding or HTTP method choice cannot supply that boundary.
+
+### Stage B disposition
+
+The principal selected the native-host path after reviewing this tradeoff.
+
+The native path satisfies the current underlying need with lower complexity and stronger authority placement: plugin state is changed through the product surface that already owns plugin policy, marketplace state, and app authorization, while Codex Room inherits and reports the resulting capabilities. The only sacrificed property is single-surface convenience for an infrequent administrative action.
+
+No runtime probe or real plugin mutation was necessary for this decision because the relevant capability and authority facts were already mechanically available from exact 0.154 source, E-157/E-158, current Room source, and current official product guidance.
+
+**Assessment:** I-021 is **COMPLETE**. No Room-side plugin mutation bridge, generic configuration editor, copied marketplace UI, credential/auth proxy, or principal-proof security subsystem is currently warranted. D-043 records the settled boundary. Reopen only on concrete ordinary-use evidence that native-host administration creates a material capability, reliability, or workflow-cost problem.
 
