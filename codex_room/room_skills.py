@@ -201,6 +201,10 @@ def inherit_room_local_skills(
     source_root = source_workspace / ROOM_SKILLS_RELATIVE
     for item in inventory.files:
         source = source_root.joinpath(*Path(item.path).parts)
+        if source.is_symlink() or not source.is_file():
+            raise RoomSkillInheritanceError(
+                f"Room-local skill source changed during rollover: {item.path}"
+            )
         destination = destination_root.joinpath(*Path(item.path).parts)
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
