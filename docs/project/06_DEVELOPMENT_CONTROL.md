@@ -6,15 +6,61 @@
 
 ## Operator summary
 
-- **Where are we?** I-018, the useful core of I-019, and the principal-directed post-I-019 command-catalog cleanup are **COMPLETE / IMPLEMENTED / VERIFIED**.
-- **What just changed?** D-041 removed the Codex host-command catalog from the Room product surface: the parser/cache, dedicated catalog API, Status & Tools catalog card/payload, and dedicated catalog tests are gone. The broader Status & Tools surface and general App Server runtime provenance remain.
-- **Verification state:** exact cleanup implementation bytes `d77e020588cf548580937a146877a15e7a76f5f4` passed `git diff --check`, 63 Linux focused tests, 118 Windows focused portability tests, 9 browser transcript tests, and the repository fast verifier with a clean tracked tree. Exact-diff review confirmed no replacement command surface or dispatcher. See E-152.
-- **What is blocked?** Nothing blocks ordinary Codex Room use.
-- **What is next?** Stop at this boundary. If the principal chooses to continue the approved sequence, the next available bounded stage is an ordinary-use inherited-tool exercise that lets C use existing tools naturally and records what actually works without manufacturing benchmark traffic.
-- **What are we deliberately not doing?** No Codex Desktop/TUI command parity work; skills remain back-burnered; no new Objective entity; no broad transaction rewrite; no fourth persistent agent; no automatic model router; no adjacent maintenance investigation.
+- **Where are we?** I-018, I-019, and the D-041 host-command cleanup are complete. The principal has selected **I-020 — Codex skill integration** as the next bounded work item; implementation has not started.
+- **What just changed?** Current Codex/App Server and Python SDK surfaces were reviewed. Codex already provides skill discovery (`skills/list`), progressive skill loading, system/predefined skills including Skill Creator, and structured `SkillInput` support. Codex Room already inspects the inherited skill inventory in Status & Tools but does not add a Room-specific skill invocation or creation layer.
+- **Verification state:** I-020 is **PLANNED / NEEDS VERIFICATION**. No new skill behavior is claimed until natural Room evidence demonstrates it.
+- **What is blocked?** Nothing blocks ordinary Codex Room use. I-020 begins with a no-CORE-change empirical gate specifically to avoid rebuilding native Codex behavior unnecessarily.
+- **What is next?** Run I-020 Stage A: verify predefined-skill discovery/use and Skill Creator behavior inside an ordinary Room before changing CORE.
+- **What are we deliberately not doing?** No Codex Desktop/TUI command palette, no parallel Room skill registry, no automatic global/user-scope skill writes, no immediate rewrite of D-022, no fourth persistent agent, and no Codex built-in subagents.
 
 ## Current focus
 
+### I-020 — Codex skill integration and Skill Creator adoption
+
+**Scope:** [CORE + ROOM behavior, only where native Codex support proves insufficient]
+
+**Work state:** PLANNED
+
+**Reality / evidence:** EXPLORATORY / NEEDS VERIFICATION
+
+**Origin:** principal selection after I-019 / D-041 cleanup
+
+**Objective:** make Codex's existing skill ecosystem the first-line reusable workflow layer for A/B/C. Agents should be able to use relevant predefined skills on their own initiative, the principal should be able to direct use of a named skill, and agents should be able to use Skill Creator for reusable Room-local workflows. Codex Room's deterministic capability registry remains the stronger promotion tier for mechanisms that require typed contracts, exact provenance, declared side effects, durable telemetry, or lineage guarantees.
+
+**Current verified design facts:**
+
+- Codex Room already calls App Server `skills/list` for the active Room workspace and exposes sanitized enabled-skill inventory through Status & Tools.
+- Current Room turns use the official Python SDK `thread.turn(...)` path with plain-text input.
+- The current Python SDK also supports structured `SkillInput(name, path)`, and App Server recommends a structured `skill` input for explicit invocation; plain `$skill-name` text remains a supported fallback.
+- Skill Creator can create a skill containing `SKILL.md`, optional references/assets, and deterministic helper scripts. Its packaging/structural validation is not equivalent to Codex Room's registered-capability verification/provenance contract.
+- A Room agent runs with `workspace_write`, so Room-local skill creation should be bounded to the Room workspace (for example `.agents/skills/...`) unless the principal separately authorizes broader user/global scope.
+- Current Room rollover does not automatically preserve arbitrary Room-workspace skills; custom deterministic capabilities have a separate explicit inheritance path. Skill continuity therefore remains a deliberate design checkpoint rather than an assumed property.
+- Codex built-in subagents remain disabled. Any Skill Creator recommendation for independent agent review must map to the existing A/B/C organization rather than re-enabling Codex subagents.
+
+**Implementation sequence:**
+
+**Stage A — Native capability proof, no CORE changes.** Use one bounded ordinary Room exercise to establish what already works. Confirm the active runtime discovers representative predefined skills including Skill Creator; have an agent use a predefined skill without the principal naming it when the task clearly matches; separately direct a named skill explicitly; then ask C to use Skill Creator to create one harmless Room-local test skill under `.agents/skills` with a tiny deterministic helper. Have another Room agent use the newly created skill. Prefer direct observable artifacts/tool effects over agent self-report.
+
+**Stage B — Agent policy only if Stage A demonstrates the native mechanism is usable.** Add the smallest protected guidance necessary: prefer an existing enabled Codex skill before inventing a new workflow; use Skill Creator when a reusable workflow is warranted; keep agent-created skills Room-local by default; allow skill-local scripts when deterministic execution earns its cost; require explicit principal authorization before creating/modifying user-global skills; and promote machinery into the Codex Room deterministic registry only when its stronger guarantees are actually needed. Do not duplicate the skill catalog in CORE.
+
+**Stage C — Explicit invocation bridge only if Stage A exposes a real reliability or latency gap.** If plain native skill selection / `$skill-name` behavior is insufficient, use the official Python SDK `SkillInput(name, path)` and the existing `skills/list` inventory to bind a selected skill to a turn. Do not build a slash-command parser or copy the Desktop/TUI popup. The bridge should accept only a skill resolved from the active runtime inventory and preserve current Room authority/sandbox rules.
+
+**Stage D — Skill persistence decision.** Test whether Room-local skills remain available across the work lifecycle that matters in practice. If rollover continuity is required, choose the smallest safe mechanism after evidence: exact-byte lineage carry of selected Room-local skills, or deliberate principal-approved promotion to a broader Codex skill scope. Do not silently make a Room-created skill global. Preserve exact provenance if Codex Room itself carries skill bytes across lineage.
+
+**Stage E — Reconcile D-022 after evidence.** Only after Stages A-D establish the real boundary, decide whether D-022 needs an additive/superseding decision. The likely hierarchy to evaluate is: **use existing Codex skill → create skill with Skill Creator → use skill-local deterministic script when sufficient → promote to registered Codex Room capability only for stronger institutional guarantees**. Do not alter D-022 merely from architectural analogy.
+
+**Stage F — Acceptance and closeout.** Verify the chosen exact implementation bytes with the repository-standard local gate plus one bounded naturalistic Room acceptance. Record which predefined skill was used, whether invocation was autonomous or principal-directed, whether Skill Creator produced a usable Room-local skill, whether another agent could use it, whether any deterministic helper executed, and whether continuity/promotion behavior matched the selected policy.
+
+**Acceptance target:**
+
+- A/B/C can use a relevant predefined Codex skill without user micromanagement when the task naturally calls for it.
+- The principal can direct a specific skill without requiring a copied Desktop/TUI command palette.
+- Skill Creator can produce a bounded Room-local skill and, when appropriate, a deterministic helper that another Room agent can actually use.
+- Skill creation does not silently escape Room scope or enable Codex built-in subagents.
+- Existing deterministic capabilities remain available and are used as the stronger governed tier rather than duplicated by default.
+- Any implemented rollover continuity preserves the exact intended skill bytes/provenance.
+
+**Stop discipline:** stop after each stage if native Codex behavior already satisfies the need. CORE work is justified only by an observed gap. Do not manufacture a generic skill manager, new persistent agent, or parallel plugin/tool ecosystem.
 ### Post-I-019 cleanup — remove Codex host-command catalog exposure
 
 **Scope:** [CORE + ROOM UI]
