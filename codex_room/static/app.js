@@ -419,17 +419,6 @@ function renderStatusTools(payload) {
     if (category.truncated) details.push(["Inventory", "Additional items omitted from this compact view"]);
     toolGrid.append(statusCard(label, category.status, category.summary, details, key));
   });
-  const commands = payload.codex?.commands || { status: "unknown", summary: "Command catalog not inspected." };
-  toolGrid.append(statusCard(
-    "Exact Codex slash catalog",
-    commands.status,
-    commands.summary,
-    [
-      ["Built-ins", compactNumber(commands.command_count)],
-      ["Source", commands.source_ref || "—"],
-    ],
-    "commands",
-  ));
   codexSection.append(toolGrid);
   root.append(codexSection);
 }
