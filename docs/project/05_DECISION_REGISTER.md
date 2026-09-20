@@ -730,3 +730,24 @@ The resulting default hierarchy is:
 **existing suitable Codex skill → Skill Creator for a missing reusable workflow → bounded skill-local deterministic helper when sufficient → registered Codex Room capability when stronger institutional guarantees are justified.**
 
 **Principle:** **Reuse native Codex capability first; add Codex Room governance only when the stronger guarantees earn their cost.**
+
+### D-043 — Plugin administration remains a native Codex/ChatGPT host responsibility
+**Date:** 2026-09-20
+**Status:** ACTIVE
+
+After I-021 Stage A established the native Codex 0.154 plugin contracts and showed that Codex Room localhost is reachable from an A/B/C-equivalent workspace sandbox, Stage B resolved the product boundary without adding a Room mutation bridge.
+
+Settled direction:
+
+- the principal manages plugin discovery, installation, removal, enablement/disablement, marketplace administration, and required app/account authorization through native Codex/ChatGPT plugin surfaces when those surfaces are available for the account/workspace;
+- Codex Room remains a consumer and visibility surface for the resulting native state: it may inspect installed/enabled/availability/auth status, expose that state through Status & Tools, and let A/B/C use inherited plugin-derived skills/MCP/apps under existing Room policy;
+- Codex Room does not create a principal-only plugin mutation endpoint, copied plugin manager, parallel marketplace/registry, generic Codex configuration editor, credential store, OAuth proxy, or new authentication/security subsystem solely to reproduce controls already provided by the native host;
+- A/B/C may recommend that the principal install, enable, disable, or authenticate a plugin, but plugin-state administration remains an external principal action and is not an autonomous Room-agent capability;
+- Codex/App Server remains authoritative for plugin/catalog/configuration state. Room should re-read authoritative inventory after native changes rather than mirror or predict plugin state;
+- plugin installation/enablement does not relax the separate boundary that Codex built-in subagents remain disabled and that use of plugin-contributed cognition/tools remains subject to existing Room governance and economics;
+- I-021 may be reopened only if ordinary use demonstrates a concrete material capability, reliability, or workflow-cost gap caused by native-host administration. Any future Room-side mutation design would still require a mechanical principal-proof boundary because E-158 disproved localhost as sufficient authority.
+
+This decision deliberately accepts a host transition for infrequent administrative actions in exchange for avoiding duplicated product surface and a security mechanism whose only current purpose would be to reproduce native plugin controls.
+
+**Principle:** **Administer plugins where Codex already owns them; let the Room inherit, inspect, and use the resulting capability state.**
+
