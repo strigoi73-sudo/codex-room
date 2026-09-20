@@ -147,38 +147,38 @@ def _effective_config(payload: dict[str, Any] | None) -> dict[str, Any]:
     return result
 
 
-async def collect_native_context(project_root: Path) -> dict[str, Any]:
-    """Collect read-only Codex account/runtime/config/tool context without model turns."""
-    from .agent import CodexAgentAdapter, ROOM_MODEL, ROOM_REASONING_EFFORT
+async def _collect_native_base(project_root: Path) -> dict[str, Any]:
+    """Inspect the pinned native Codex SDK without Room configuration overrides."""
+    from openai_codex import AsyncCodex, CodexConfig
+    from .agent import sdk_server_identity
 
-    adapter = CodexAgentAdapter()
-    result: dict[str, Any] = {
-        "room_defaults": {
-            "model": ROOM_MODEL,
-            "reasoning_effort": ROOM_REASONING_EFFORT,
-        }
-    }
+    client = AsyncCodex(
+        config=CodexConfig(codex_bin=os.environ.get("CODEX_ROOM_CODEX_BIN"))
+    )
+    result: dict[str, Any] = {}
     try:
-        account = await adapter.initialize()
+        account_response = await client.account(refresh_token=False)
+        root = getattr(account_response, "account", None)
+        if root is None:
+            root = getattr(account_response, "root", None)
+        if root is not None and hasattr(root, "model_dump"):
+            account = root.model_dump(mode="json")
+        elif hasattr(account_response, "model_dump"):
+            account = account_response.model_dump(mode="json")
+        else:
+            account = {"authenticated": True}
+        if isinstance(account, dict):
+            account.pop("email", None)
         result["account"] = {"status": "available", "data": sanitize(account)}
-        result["tool_inventory"] = await adapter.inspect_tools(project_root)
+        result["runtime"] = sdk_server_identity(getattr(client, "metadata", None))
 
-        sdk_client = getattr(adapter, "_client", None)
-        low_level = getattr(sdk_client, "_client", None)
+        low_level = getattr(client, "_client", None)
         request = getattr(low_level, "request", None)
         if not callable(request):
-            result["rate_limits"] = {
-                "status": "unavailable",
-                "error_type": "request_unavailable",
-            }
-            result["account_usage"] = {
-                "status": "unavailable",
-                "error_type": "request_unavailable",
-            }
-            result["effective_config"] = {
-                "status": "unavailable",
-                "error_type": "request_unavailable",
-            }
+            unavailable = {"status": "unavailable", "error_type": "request_unavailable"}
+            result["rate_limits"] = unavailable
+            result["account_usage"] = dict(unavailable)
+            result["effective_config"] = dict(unavailable)
             return result
 
         try:
@@ -188,10 +188,10 @@ async def collect_native_context(project_root: Path) -> dict[str, Any]:
                 GetAccountTokenUsageResponse,
             )
         except (ImportError, AttributeError) as exc:
-            error_type = type(exc).__name__
-            result["rate_limits"] = {"status": "unavailable", "error_type": error_type}
-            result["account_usage"] = {"status": "unavailable", "error_type": error_type}
-            result["effective_config"] = {"status": "unavailable", "error_type": error_type}
+            unavailable = {"status": "unavailable", "error_type": type(exc).__name__}
+            result["rate_limits"] = unavailable
+            result["account_usage"] = dict(unavailable)
+            result["effective_config"] = dict(unavailable)
             return result
 
         rate_limits, account_usage, config = await asyncio.gather(
@@ -241,13 +241,87 @@ async def collect_native_context(project_root: Path) -> dict[str, Any]:
             "effective_config",
             {"status": "unavailable", "error_type": type(exc).__name__},
         )
+        result.setdefault("runtime", None)
+        return result
+    finally:
+        try:
+            await client.close()
+        except Exception:
+            pass
+
+
+async def _collect_room_context(project_root: Path) -> dict[str, Any]:
+    """Inspect the Codex runtime with the exact Room configuration overrides."""
+    from .agent import CodexAgentAdapter
+
+    adapter = CodexAgentAdapter()
+    result: dict[str, Any] = {}
+    try:
+        account = await adapter.initialize()
+        result["runtime"] = (account or {}).get("runtime")
+        result["tool_inventory"] = await adapter.inspect_tools(project_root)
+
+        sdk_client = getattr(adapter, "_client", None)
+        low_level = getattr(sdk_client, "_client", None)
+        request = getattr(low_level, "request", None)
+        if not callable(request):
+            result["effective_config"] = {
+                "status": "unavailable",
+                "error_type": "request_unavailable",
+            }
+            return result
+        try:
+            from openai_codex.generated.v2_all import ConfigReadResponse
+        except (ImportError, AttributeError) as exc:
+            result["effective_config"] = {
+                "status": "unavailable",
+                "error_type": type(exc).__name__,
+            }
+            return result
+
+        config = await _safe_request(
+            request,
+            "config/read",
+            {"cwd": str(project_root), "includeLayers": False},
+            ConfigReadResponse,
+        )
+        if config.get("status") == "available":
+            result["effective_config"] = {
+                "status": "available",
+                "data": _effective_config(config.get("data")),
+            }
+        else:
+            result["effective_config"] = config
+        return result
+    except Exception as exc:
+        result.setdefault("runtime", None)
         result.setdefault("tool_inventory", {})
+        result.setdefault(
+            "effective_config",
+            {"status": "unavailable", "error_type": type(exc).__name__},
+        )
         return result
     finally:
         try:
             await adapter.close()
         except Exception:
             pass
+
+
+async def collect_native_context(project_root: Path) -> dict[str, Any]:
+    """Collect read-only Codex context without purchasing any model turn."""
+    from .agent import ROOM_MODEL, ROOM_REASONING_EFFORT
+
+    native_base = await _collect_native_base(project_root)
+    room = await _collect_room_context(project_root)
+    return {
+        "native_base": native_base,
+        "room": room,
+        "room_defaults": {
+            "model": ROOM_MODEL,
+            "reasoning_effort": ROOM_REASONING_EFFORT,
+        },
+    }
 
 
 def _snapshot_path(run_root: Path, label: str) -> Path:
@@ -310,16 +384,19 @@ def context_summary(run_root: Path) -> dict[str, Any]:
         if not item:
             return None
         native = item.get("native_codex") or {}
+        base = native.get("native_base") or {}
+        room = native.get("room") or {}
         return {
             "captured_at": item.get("captured_at"),
             "repository_head": (item.get("repository") or {}).get("head"),
             "working_tree_clean": (item.get("repository") or {}).get("working_tree_clean"),
-            "runtime": ((native.get("account") or {}).get("data") or {}).get("runtime"),
+            "native_runtime": base.get("runtime"),
+            "room_runtime": room.get("runtime"),
             "openai_codex_package_version": (
                 item.get("environment") or {}
             ).get("openai_codex_package_version"),
-            "rate_limits_status": (native.get("rate_limits") or {}).get("status"),
-            "account_usage_status": (native.get("account_usage") or {}).get("status"),
+            "rate_limits_status": (base.get("rate_limits") or {}).get("status"),
+            "account_usage_status": (base.get("account_usage") or {}).get("status"),
         }
 
     return {
