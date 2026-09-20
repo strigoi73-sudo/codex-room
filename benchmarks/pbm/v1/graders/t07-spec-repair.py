@@ -18,8 +18,8 @@ try:
     cases = [
         [""],
         ["a", "b", ""],
-        ["a|b", r"c\d", ""],
-        [r"\", "|", r"x\|y"],
+        ["a|b", "c\\d", ""],
+        ["\\", "|", "x\\|y"],
     ]
     for fields in cases:
         checks.append(
@@ -30,7 +30,7 @@ try:
         )
 
     invalid_decode_ok = True
-    for text in ("abc\\", r"abc\q"):
+    for text in ("abc\\", "abc\\q"):
         try:
             module.decode(text)
             invalid_decode_ok = False
