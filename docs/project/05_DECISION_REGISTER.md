@@ -827,8 +827,9 @@ Settled PBM v3 boundary:
 - exact Codex 0.154 task creation inherits the controller working directory, so only one current task fixture/instruction is staged in that dedicated controller folder at a time;
 - the Desktop controller must use native task management. PBM v3 has **no Codex CLI fallback** and fails closed before paid task execution if native fresh-task creation/wait functionality is unavailable;
 - native approval dialogs remain ordinary platform controls and may require human approval without counting as new benchmark prompts;
-- PBM creates one dedicated controller Room. The principal gives it one instruction to read/execute `PBM_ROOM_DRIVER.md`;
-- that Room is coordination-only. It launches deterministic background orchestration which creates a **fresh ordinary Room** for every Room benchmark arm;
+- PBM creates one dedicated controller Room, stages its driver files, and starts its Round with C explicitly instructed to enter a private `CONSULT_PRINCIPAL` wait without benchmark work;
+- the principal's one Room paste is the private consultation reply instructing C to read/execute `PBM_ROOM_DRIVER.md`;
+- that Room is coordination-only. After the reply, C launches deterministic background orchestration which creates a **fresh ordinary Room** for every Room benchmark arm;
 - each benchmark Room retains D-039 naturalistic dynamic cognition; PBM records rather than pins C/A/B model/reasoning choices;
 - the v1/v2 alternating Desktop-first/Room-first task order is preserved exactly;
 - controller cognition is reported separately from task execution usage, and an all-in usage view is also retained;
