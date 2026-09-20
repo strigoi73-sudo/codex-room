@@ -6,14 +6,40 @@
 
 ## Operator summary
 
-- **Where are we?** No feature implementation is currently selected. I-021 — Principal-controlled Codex plugin management — is **COMPLETE** after Stage B selected the native Codex/ChatGPT administration path; no Room-side mutation bridge is required under current evidence. I-022 remains **COMPLETE / VERIFIED AS AN AUDIT** through E-159/E-160.
-- **What just changed?** D-044 moved the maintained GPT Project runtime instructions into canonical `docs/project/01_GPT_PROJECT_RUNTIME_INSTRUCTIONS.md`; the UI custom-instructions field is now a thin bootstrap/fail-safe that retrieves `01`. I-021 remains complete under D-043 / E-162. No runtime code changed.
-- **Verification state:** D-044 is a documentation/governance change, not a runtime implementation claim. Canonical source ownership now places project-specific runtime guidance in `01`; current implementation claims remain owned by Architecture & Current State plus exact evidence.
-- **What is next?** Principal selection or ordinary use. A future development item should arise from demonstrated friction or explicit principal choice rather than from I-021/I-022 automatically advancing a queue.
+- **Where are we?** I-023 — **PBM (Performance Benchmark)** — is the selected development item. Its purpose is to create a repeatable, versioned Codex Room versus Codex Desktop operating-economics/performance benchmark. I-021 and I-022 remain complete.
+- **What just changed?** D-045 names the standardized benchmark **PBM** and reserves the principal phrase **“Run PBM”** as the canonical invocation of the current versioned procedure. PBM v1 is not yet implemented.
+- **Verification state:** PBM currently has a settled name/invocation contract only. No PBM v1 harness or benchmark result is yet claimed implemented or verified.
+- **What is next?** Define and implement PBM v1: freeze its task suite, paired-run controls, quality gates, usage accounting, deterministic harness, and standard report before spending model usage on the pilot.
 - **What is blocked?** No high-priority conceptual blocker prevents ordinary use or further development. Individual deferred items retain their own gates.
 - **What are we deliberately not doing?** No Room-local plugin mutation endpoint, principal-proof security subsystem solely for plugin administration, generic config editor, copied marketplace/plugin manager, built-in Codex subagents, autonomous fan-out, automatic model router, or speculative host-parity project.
 
 ## Current development state
+
+### I-023 — PBM (Performance Benchmark)
+
+**Scope:** [benchmark tooling + paired Codex Desktop / Codex Room execution]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** DESIGN SELECTED / NOT YET IMPLEMENTED
+
+**Decision:** D-045
+
+PBM is the canonical standardized performance benchmark for comparing ordinary Codex Desktop with Codex Room across a fixed, versioned suite of paired tasks. The principal invocation **“Run PBM”** must resolve to the current canonical PBM procedure rather than triggering ad hoc benchmark design.
+
+PBM v1 should establish:
+
+- a frozen versioned task suite spanning trivial mechanical work through larger ambiguous/verification-heavy work;
+- exact paired starting fixtures and prompts;
+- fresh isolated Desktop and Room executions without cross-arm contamination;
+- a primary naturalistic comparison in which each product operates as designed, plus a controlled mode where useful for isolating coordination/model effects;
+- provider usage accounting using existing rollout instrumentation, with Room A/B/C usage aggregated;
+- elapsed-time, tool-call, failure/retry, model/effort, agent-invocation, and coordination-waste measurements;
+- deterministic task-specific acceptance checks and explicit quality/correctness outcomes;
+- machine-readable run records and a standard human-readable comparison report;
+- a low-cost pilot before broader replication, so the benchmark itself does not recreate previously observed high-cost synthetic testing.
+
+**Implementation boundary:** benchmark definition/harness comes first. Do not spend the paid PBM pilot until the procedure, fixtures, measurement semantics, and reporting contract are frozen and mechanically inspectable.
 
 ### I-022 — Native Codex capability exposure and execution-economics audit
 
@@ -180,4 +206,4 @@ Current unresolved questions are feature-local rather than roadmap-global:
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
 - if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
-Until the principal selects a direction, **there is no default next feature**.
+PBM is the currently selected development item. Other deferred or audited capability families remain unselected unless the principal changes direction.

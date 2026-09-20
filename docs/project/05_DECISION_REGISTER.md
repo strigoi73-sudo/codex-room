@@ -771,3 +771,21 @@ This removes the recurring need to compress or reconstruct the full instruction 
 
 **Principle:** **Bootstrap from the UI; maintain the real instructions once, in the canonical repository.**
 
+### D-045 — PBM is the canonical performance benchmark and “Run PBM” is its standard invocation
+**Date:** 2026-09-20
+**Status:** ACTIVE
+
+The standardized Codex Room versus Codex Desktop performance benchmark is named **PBM**, short for **Performance Benchmark**.
+
+Settled invocation contract:
+
+- **PBM** is the canonical name of the benchmark;
+- the principal phrase **“Run PBM”** means to initiate the current canonical PBM procedure rather than invent a new benchmark design;
+- PBM is versioned. A material change to tasks, fixtures, controls, scoring, or measurement semantics requires a new benchmark version rather than silently changing the historical yardstick;
+- the canonical PBM definition and harness must live in the repository so a new chat can determine exactly what “Run PBM” means without relying on memory or prior-chat text;
+- PBM should use deterministic setup, usage capture, aggregation, acceptance checks, and reporting wherever practical; paid model cognition should be reserved for the benchmark tasks themselves;
+- PBM compares Codex Room and ordinary Codex Desktop under standardized paired conditions and must preserve quality/correctness alongside usage, rather than declaring a cheaper failed result more efficient;
+- until PBM v1 is implemented and verified, the invocation contract is settled but the benchmark itself remains under development.
+
+**Principle:** **“Run PBM” invokes a versioned standard; it does not redesign the test.**
+
