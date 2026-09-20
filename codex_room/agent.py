@@ -161,6 +161,10 @@ class AgentAdapter(Protocol):
 
     async def rebind_agent_profile(self, agent: dict[str, Any], cwd: Path) -> str: ...
 
+    async def inspect_tools(
+        self, cwd: Path, *, thread_id: str | None = None
+    ) -> dict[str, Any]: ...
+
 
 class CodexAgentAdapter:
     """Thin adapter around the official asynchronous Python Codex SDK."""
@@ -207,6 +211,89 @@ class CodexAgentAdapter:
         if runtime_identity is not None:
             raw["runtime"] = runtime_identity
         return raw
+
+    async def inspect_tools(
+        self, cwd: Path, *, thread_id: str | None = None
+    ) -> dict[str, Any]:
+        """Inspect the inherited Codex tool surface through the active App Server."""
+        from .status_tools import summarize_codex_tool_inventory
+
+        self._require_client()
+        try:
+            from openai_codex.generated.v2_all import (
+                AppsInstalledResponse,
+                ConfigReadResponse,
+                ListMcpServerStatusResponse,
+                ModelProviderCapabilitiesReadResponse,
+                PluginInstalledResponse,
+                SkillsListResponse,
+            )
+        except (ImportError, AttributeError):
+            return summarize_codex_tool_inventory({})
+
+        sdk_client = getattr(self._client, "_client", None)
+        request = getattr(sdk_client, "request", None)
+        if not callable(request):
+            return summarize_codex_tool_inventory({})
+
+        async def inspect(
+            key: str,
+            method: str,
+            params: dict[str, Any],
+            response_model: type[Any],
+        ) -> tuple[str, dict[str, Any] | None]:
+            try:
+                response = await request(
+                    method,
+                    params,
+                    response_model=response_model,
+                )
+                if hasattr(response, "model_dump"):
+                    return key, response.model_dump(mode="json", by_alias=True)
+            except Exception:
+                pass
+            return key, None
+
+        thread_params = {"threadId": thread_id} if thread_id else {}
+        results = await asyncio.gather(
+            inspect(
+                "provider",
+                "modelProvider/capabilities/read",
+                {},
+                ModelProviderCapabilitiesReadResponse,
+            ),
+            inspect(
+                "config",
+                "config/read",
+                {"cwd": str(cwd), "includeLayers": False},
+                ConfigReadResponse,
+            ),
+            inspect(
+                "skills",
+                "skills/list",
+                {"cwds": [str(cwd)], "forceReload": False},
+                SkillsListResponse,
+            ),
+            inspect(
+                "mcp",
+                "mcpServerStatus/list",
+                {**thread_params, "detail": "toolsAndAuthOnly", "limit": 100},
+                ListMcpServerStatusResponse,
+            ),
+            inspect(
+                "apps",
+                "app/installed",
+                {**thread_params, "forceRefresh": False},
+                AppsInstalledResponse,
+            ),
+            inspect(
+                "plugins",
+                "plugin/installed",
+                {"cwds": [str(cwd)]},
+                PluginInstalledResponse,
+            ),
+        )
+        return summarize_codex_tool_inventory(dict(results))
 
     async def close(self) -> None:
         if self._client is not None:

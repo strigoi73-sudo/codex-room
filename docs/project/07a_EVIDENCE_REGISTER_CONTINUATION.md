@@ -1177,3 +1177,61 @@ The principal then ran deterministic verification on Windows/WSL against exact h
 - the only reported warnings were existing FastAPI/Starlette deprecation warnings; no test failed.
 
 **Assessment:** the command-catalog synchronization/freshness foundation is **IMPLEMENTED / VERIFIED on the exact head above**. This does **not** verify or complete I-019 as a whole: Status & Tools UI, live service-tier overlay, Room applicability classification, command dropdown, and command dispatch remain outside this verified slice unless separately implemented and verified.
+
+## E-151 — I-019 Status & Tools exact-head and natural rendered-UI acceptance
+
+**Date:** 2026-09-19  
+**Kind:** [CORE + ROOM UI implementation / deterministic verification / live runtime check / natural rendered-UI acceptance]  
+**Related work:** I-019 / D-040  
+**Exact implementation head verified:** `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`
+
+The I-019 Status & Tools candidate was evaluated in two natural browser passes around one acceptance-blocking defect, with deterministic verification attached to the exact repaired implementation bytes.
+
+### First natural acceptance pass
+
+The initial rendered UI check used existing Room `room_a7012ca175104f9aa52c1a640d262cca` (“Stay Busy - BCTX Full Stack”) without starting new Room work. It established that:
+
+- Current work accurately showed the active continuous Round/objective, active Task, and C/B assignment ownership/state;
+- A/B/C lifecycle, model provenance, reasoning effort, queue/processing state, recent tokens/tool counts, and C context-refresh guidance were understandable;
+- all five Room-native deterministic capabilities appeared Available;
+- inherited workspace files, command execution, web search, skills, and plugins were classified Available while MCP and Apps/connectors were honestly shown Unknown/not inspectable;
+- no secrets, absolute filesystem paths, MCP schemas/payloads, private identifiers, or hidden reasoning were exposed;
+- Refresh was read-only: the Room remained paused at 59 turns / 249 events with the same active Round, Task, assignments, and idle A/B/C state;
+- the browser console reported zero errors.
+
+That run correctly **failed** acceptance because the rendered Exact Codex slash catalog showed Unknown / 0 built-ins. The underlying endpoint returned `runtime_version_unavailable`: the running runtime identity could be displayed, but the strict catalog validator rejected the SDK-supplied version string as an unsafe release identifier.
+
+### Defect diagnosis and repair
+
+Source inspection against official Codex `rust-v0.154.0` showed that the App Server initialize response exposes its build version in the authoritative `userAgent`, while the Python SDK's legacy metadata normalization can backfill `serverInfo.version` with the remaining OS/user-agent suffix attached. Codex Room had passed that expanded string into the intentionally strict D-040 release validator.
+
+The repair preserves fail-closed catalog semantics. At the SDK metadata boundary, Codex Room now accepts an already-safe `serverInfo.version` unchanged; otherwise it extracts only the leading App Server product/version token from the authoritative user-agent and requires it to agree with any SDK-backfilled server-info fields. Metadata disagreement still returns no runtime identity. Regression coverage includes both the real expanded 0.154.0 shape and a mismatch that must fail closed.
+
+### Exact-head deterministic and live verification
+
+The principal synchronized to exact repaired head `cc785e34d9332e479e4e8b62af7ca465f5d01cc8` with a clean tracked tree. Results:
+
+- focused `tests/test_codex_commands.py` + `tests/test_status_tools.py`: **13 passed**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **9 passed**;
+- repository fast verifier: **RESULT: PASS**;
+- only existing FastAPI/Starlette deprecation warnings were reported;
+- live `/api/health`: healthy;
+- live runtime identity: `codex_python_sdk` / `0.154.0`;
+- live `/api/codex/commands`: `status=current`, `runtime_version=0.154.0`, `source_ref=rust-v0.154.0`, `command_count=60`.
+
+### Final rendered-UI recheck
+
+A deliberately bounded second browser check did not repeat the already-passed wider acceptance campaign. On the same exact repaired head, the actual Status & Tools dialog visibly showed:
+
+- runtime `0.154.0`;
+- Exact Codex slash catalog **Available**;
+- **60** built-in commands;
+- source `rust-v0.154.0`.
+
+After one Refresh, those values remained visible. The Room remained paused at 59 turns / 249 events with the same active Round; A, B, and C remained idle; no new Room activity appeared; and the browser console reported zero errors and zero warnings. The surrounding Current work, Agents & economics, Room-native capabilities, and inherited Codex sections appeared normal.
+
+The first natural browser campaign consumed roughly **6% of the principal's five-hour Codex allowance**. That cost is process evidence, not a product defect: future verification should keep deterministic Git/test/API checks mechanical and use Codex for browser/UI or multi-step local work where that interactive capability earns its model cost.
+
+**Assessment:** I-019 is **COMPLETE / IMPLEMENTED / VERIFIED** on exact implementation bytes `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`. The intended first-release Status & Tools surface satisfies its deterministic and natural rendered-UI acceptance target. This closeout does not authorize slash-command dispatch, OAuth/elicitation bridges, attachments, browser/computer-use integration, or any later roadmap stage.

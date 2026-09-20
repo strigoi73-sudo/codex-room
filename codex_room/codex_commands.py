@@ -27,29 +27,62 @@ class CommandCatalogSyncError(RuntimeError):
 
 
 def sdk_server_identity(metadata: Any) -> dict[str, str] | None:
-    """Return the App Server identity exposed by the official Codex SDK."""
+    """Return a safe App Server release identity exposed by the official Codex SDK."""
     if metadata is None:
         return None
     if isinstance(metadata, Mapping):
         server_info = metadata.get("serverInfo") or metadata.get("server_info")
+        user_agent = metadata.get("userAgent") or metadata.get("user_agent")
     else:
         server_info = getattr(metadata, "serverInfo", None)
         if server_info is None:
             server_info = getattr(metadata, "server_info", None)
-    if server_info is None:
+        user_agent = getattr(metadata, "userAgent", None)
+        if user_agent is None:
+            user_agent = getattr(metadata, "user_agent", None)
+
+    name: Any = None
+    version: Any = None
+    if server_info is not None:
+        if isinstance(server_info, Mapping):
+            name = server_info.get("name")
+            version = server_info.get("version")
+        else:
+            name = getattr(server_info, "name", None)
+            version = getattr(server_info, "version", None)
+
+    clean_name = name.strip() if isinstance(name, str) and name.strip() else None
+    clean_version = version.strip() if isinstance(version, str) and version.strip() else None
+    if clean_version is not None and _VERSION_RE.fullmatch(clean_version):
+        identity = {"version": clean_version}
+        if clean_name is not None:
+            identity["name"] = clean_name
+        return identity
+
+    # Codex 0.154.0's App Server initialize response exposes its build identity
+    # in userAgent. The Python SDK backfills serverInfo from that string, but its
+    # legacy splitter can leave the OS/user-agent suffix attached to version.
+    # Recover only the leading product/version token that the App Server itself
+    # emitted, and only when it agrees with any SDK-backfilled serverInfo fields.
+    if not isinstance(user_agent, str):
         return None
-    if isinstance(server_info, Mapping):
-        name = server_info.get("name")
-        version = server_info.get("version")
-    else:
-        name = getattr(server_info, "name", None)
-        version = getattr(server_info, "version", None)
-    if not isinstance(version, str) or not version.strip():
+    match = re.match(
+        r"^(?P<name>[0-9A-Za-z._-]+)/(?P<version>[0-9A-Za-z][0-9A-Za-z.+-]{0,63})(?:\s|$)",
+        user_agent.strip(),
+    )
+    if match is None:
         return None
-    identity = {"version": version.strip()}
-    if isinstance(name, str) and name.strip():
-        identity["name"] = name.strip()
-    return identity
+    agent_name = match.group("name")
+    agent_version = match.group("version")
+    if clean_name is not None and clean_name != agent_name:
+        return None
+    if clean_version is not None and not (
+        clean_version == agent_version
+        or clean_version.startswith(agent_version + " ")
+        or clean_version.startswith(agent_version + "(")
+    ):
+        return None
+    return {"name": agent_name, "version": agent_version}
 
 
 class CodexCommandCatalog:

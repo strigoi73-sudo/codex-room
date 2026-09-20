@@ -152,6 +152,33 @@ def test_sdk_server_identity_reads_camel_case_sdk_metadata():
     }
 
 
+def test_sdk_server_identity_normalizes_sdk_backfilled_user_agent_version():
+    metadata = SimpleNamespace(
+        serverInfo=SimpleNamespace(
+            name="codex_cli_rs",
+            version="0.154.0 (Windows 11 10.0.26100; x86_64) codex_python_sdk/0.154.0",
+        ),
+        userAgent=(
+            "codex_cli_rs/0.154.0 (Windows 11 10.0.26100; x86_64) "
+            "codex_python_sdk/0.154.0"
+        ),
+    )
+
+    assert sdk_server_identity(metadata) == {
+        "name": "codex_cli_rs",
+        "version": "0.154.0",
+    }
+
+
+def test_sdk_server_identity_fails_closed_when_user_agent_disagrees():
+    metadata = SimpleNamespace(
+        serverInfo=SimpleNamespace(name="codex_cli_rs", version="unsafe runtime identity"),
+        userAgent="different-runtime/0.154.0 (Windows 11; x86_64)",
+    )
+
+    assert sdk_server_identity(metadata) is None
+
+
 class _VersionedFakeAdapter(FakeAgentAdapter):
     async def initialize(self):
         return {

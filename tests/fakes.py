@@ -48,6 +48,7 @@ class FakeAgentAdapter:
         failures: dict[str, list[Exception]] | None = None,
         profile_rebind_error: Exception | None = None,
         turn_id_namespace: str = "",
+        tool_inventory: dict[str, Any] | None = None,
     ) -> None:
         self.decisions = {
             key: deque(AgentDecision(outcome=outcome, message=message) for outcome, message in values)
@@ -65,6 +66,7 @@ class FakeAgentAdapter:
         self.failures = {key: deque(values) for key, values in (failures or {}).items()}
         self.profile_rebind_error = profile_rebind_error
         self.turn_id_namespace = turn_id_namespace
+        self.tool_inventory = tool_inventory
         self._call_gates: dict[tuple[str, int], asyncio.Event] = {}
         self._inactive_agents: set[str] = set()
         self.starts: list[tuple[str, str]] = []
@@ -82,6 +84,20 @@ class FakeAgentAdapter:
 
     async def initialize(self) -> dict[str, Any]:
         return {"authenticated": True, "provider": "fake"}
+
+    async def inspect_tools(
+        self, cwd: Path, *, thread_id: str | None = None
+    ) -> dict[str, Any]:
+        if self.tool_inventory is not None:
+            return self.tool_inventory
+        return {
+            key: {
+                "status": "unknown",
+                "summary": "Fake adapter does not provide this inventory.",
+                "items": [],
+            }
+            for key in ("web_search", "skills", "mcp", "apps", "plugins")
+        }
 
     async def close(self) -> None:
         return None

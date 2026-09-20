@@ -180,6 +180,26 @@ dialog::backdrop { background: rgba(0,0,0,.68); backdrop-filter: blur(3px); }
 dialog h2 { margin: 7px 0 8px; }
 dialog p:not(.eyebrow) { color: var(--muted); font-size: 13px; line-height: 1.5; }
 .dialog-actions { display: flex; justify-content: end; gap: 8px; margin-top: 15px; }
+#status-tools-dialog { max-width: 980px; max-height: calc(100vh - 40px); overflow-y: auto; }
+.status-tools-content { display: grid; gap: 18px; margin-top: 20px; }
+.status-section { display: grid; gap: 10px; }
+.status-section h3 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: #aeb3bc; }
+.status-section-note { margin: 0 !important; color: #cfd2d8 !important; white-space: pre-wrap; }
+.status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 9px; }
+.status-card { border: 1px solid var(--line); border-radius: 10px; background: #111317; padding: 11px 12px; min-width: 0; }
+.status-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+.status-card strong { font-size: 12px; }
+.status-card p { margin: 3px 0 !important; font-size: 11px !important; line-height: 1.45 !important; color: #aeb3bc !important; overflow-wrap: anywhere; }
+.status-card small { display: block; color: #777e89; font-size: 9px; line-height: 1.45; overflow-wrap: anywhere; }
+.status-badge { flex: 0 0 auto; border: 1px solid #3a3e46; border-radius: 999px; padding: 2px 6px; font-size: 8px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.status-badge.available { color: var(--a); border-color: rgba(86,214,179,.35); }
+.status-badge.interaction_required { color: var(--observer); border-color: rgba(242,198,109,.35); }
+.status-badge.unavailable { color: #8b919b; }
+.status-badge.unknown { color: var(--b); border-color: rgba(187,165,255,.3); }
+.status-list { display: grid; gap: 6px; margin-top: 8px; }
+.status-list-row { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #23262c; padding-top: 6px; font-size: 10px; color: #aeb3bc; }
+.status-list-row span:last-child { color: #777e89; text-align: right; }
+.status-loading { color: var(--muted); font-size: 12px; padding: 18px 0; }
 
 @media (max-width: 820px) {
   .app-shell { grid-template-columns: 1fr; }

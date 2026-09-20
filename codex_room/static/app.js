@@ -208,6 +208,259 @@ function executionSummary(execution) {
   };
 }
 
+function statusLabel(status) {
+  return ({
+    available: "Available",
+    interaction_required: "Auth / interaction required",
+    unavailable: "Disabled / unavailable",
+    unknown: "Unknown / not inspectable",
+  })[status] || String(status || "unknown").replaceAll("_", " ");
+}
+
+function compactNumber(value) {
+  if (typeof value !== "number") return "—";
+  return new Intl.NumberFormat().format(value);
+}
+
+function statusCard(title, status, summary, details = [], key = null) {
+  const card = document.createElement("article");
+  card.className = "status-card";
+  if (key) card.dataset.statusTool = key;
+  const head = document.createElement("div");
+  head.className = "status-card-head";
+  const strong = document.createElement("strong");
+  strong.textContent = title;
+  head.append(strong);
+  if (status) {
+    const badge = document.createElement("span");
+    badge.className = `status-badge ${status}`;
+    badge.textContent = statusLabel(status);
+    head.append(badge);
+  }
+  card.append(head);
+  if (summary) {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = summary;
+    card.append(paragraph);
+  }
+  if (details.length) {
+    const list = document.createElement("div");
+    list.className = "status-list";
+    details.forEach(([label, value]) => {
+      const row = document.createElement("div");
+      row.className = "status-list-row";
+      const left = document.createElement("span");
+      left.textContent = label;
+      const right = document.createElement("span");
+      right.textContent = value ?? "—";
+      row.append(left, right);
+      list.append(row);
+    });
+    card.append(list);
+  }
+  return card;
+}
+
+function statusSection(title) {
+  const section = document.createElement("section");
+  section.className = "status-section";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  section.append(heading);
+  return section;
+}
+
+function statusGrid() {
+  const grid = document.createElement("div");
+  grid.className = "status-grid";
+  return grid;
+}
+
+function renderStatusTools(payload) {
+  const root = $("#status-tools-content");
+  root.replaceChildren();
+  const work = payload.work || {};
+  const round = work.round;
+  const task = work.task;
+
+  const current = statusSection("Current work");
+  if (round?.objective) {
+    const objective = document.createElement("p");
+    objective.className = "status-section-note";
+    objective.textContent = round.objective;
+    current.append(objective);
+  }
+  const workGrid = statusGrid();
+  workGrid.append(statusCard(
+    "Round",
+    null,
+    round ? (round.title || "Untitled round") : "No active round",
+    round ? [
+      ["State", round.status || "—"],
+      ["Completion", String(round.completion_policy || "—").replaceAll("_", " ")],
+      ["Turns", compactNumber(round.turn_count)],
+    ] : [],
+  ));
+  workGrid.append(statusCard(
+    "Task",
+    null,
+    task ? "Current bounded objective state" : "No transaction Task exists yet.",
+    task ? [
+      ["State", task.state || "—"],
+      ["C ceiling", task.c_cognition_ceiling || "—"],
+      ["Assignments", String(task.assignments?.length || 0)],
+    ] : [],
+  ));
+  current.append(workGrid);
+  if (task?.assignments?.length) {
+    const assignments = statusGrid();
+    task.assignments.forEach((assignment) => {
+      const label = agentFallbackNames[assignment.agent_key] || assignment.agent_key || "Agent";
+      assignments.append(statusCard(
+        `${label} assignment`,
+        null,
+        assignment.instruction || "No instruction summary available.",
+        [["State", assignment.state || "—"]],
+      ));
+    });
+    current.append(assignments);
+  }
+  root.append(current);
+
+  const agentsSection = statusSection("Agents & economics");
+  const agentGrid = statusGrid();
+  (work.agents || []).forEach((agent) => {
+    const economics = work.recent_economics?.[agent.agent_key];
+    const tokens = economics?.usage_delta?.total_tokens;
+    agentGrid.append(statusCard(
+      agent.name || agentFallbackNames[agent.agent_key] || agent.agent_key,
+      null,
+      `${String(agent.work_state || agent.status || "unknown").replaceAll("_", " ")} · ${String(agent.execution_health || "health unknown").replaceAll("_", " ")} · ${agent.model || "model not run yet"}${agent.reasoning_effort ? ` · ${agent.reasoning_effort}` : ""}`,
+      [
+        ["Model evidence", agent.model_recency || "not recorded"],
+        ["Queued / processing", `${agent.pending_count || 0} / ${agent.processing_count || 0}`],
+        ["Recent execution tokens", compactNumber(tokens)],
+        ["Recent tool calls", compactNumber(economics?.tool_calls)],
+      ],
+    ));
+  });
+  const context = work.coordinator_context;
+  if (context) {
+    agentGrid.append(statusCard(
+      "C context guidance",
+      null,
+      `Refresh guidance: ${String(context.guidance_level || "unknown").replaceAll("_", " ")}`,
+      [
+        ["Executions on context", compactNumber(context.executions_on_context)],
+        ["Last execution input", compactNumber(context.last_execution_input_tokens)],
+        ["Cached input", compactNumber(context.last_execution_cached_input_tokens)],
+        ["Consider refresh at", compactNumber(context.advisory_consider_input_tokens)],
+        ["Strongly prefer at", compactNumber(context.advisory_strongly_prefer_input_tokens)],
+      ],
+    ));
+  }
+  agentsSection.append(agentGrid);
+  root.append(agentsSection);
+
+  const capabilities = statusSection("Room-native deterministic capabilities");
+  const capabilityGrid = statusGrid();
+  (payload.room_capabilities || []).forEach((capability) => {
+    capabilityGrid.append(statusCard(
+      capability.id || "Capability",
+      "available",
+      capability.description || "Registered deterministic capability.",
+      [
+        ["Origin", capability.origin || "—"],
+        ["Scope", capability.scope || "—"],
+        ["Version", capability.version || "—"],
+      ],
+    ));
+  });
+  if (!payload.room_capabilities?.length) {
+    capabilityGrid.append(statusCard("Capabilities", "unavailable", "No Room-native deterministic capabilities were reported."));
+  }
+  capabilities.append(capabilityGrid);
+  root.append(capabilities);
+
+  const codexSection = statusSection("Inherited Codex surface");
+  const runtime = payload.codex?.runtime || {};
+  const runtimeNote = document.createElement("small");
+  runtimeNote.textContent = `Runtime ${runtime.name || "Codex"} ${runtime.version || "version unknown"} · read-only inspection`;
+  codexSection.append(runtimeNote);
+  const toolGrid = statusGrid();
+  const labels = {
+    workspace_files: "Workspace files",
+    command_execution: "Command execution",
+    web_search: "Web search",
+    skills: "Skills",
+    mcp: "MCP",
+    apps: "Apps / connectors",
+    plugins: "Plugins",
+  };
+  Object.entries(labels).forEach(([key, label]) => {
+    const category = payload.codex?.tools?.[key] || { status: "unknown", summary: "Not inspected." };
+    const details = [];
+    if (typeof category.total_count === "number") details.push(["Discovered", compactNumber(category.total_count)]);
+    if (typeof category.enabled_count === "number") details.push(["Enabled", compactNumber(category.enabled_count)]);
+    if (typeof category.available_count === "number") details.push(["Usable", compactNumber(category.available_count)]);
+    if (typeof category.interaction_required_count === "number") details.push(["Needs auth", compactNumber(category.interaction_required_count)]);
+    if (typeof category.callable_count === "number") details.push(["Callable", compactNumber(category.callable_count)]);
+    if (category.mode) details.push(["Mode", category.mode]);
+    (category.items || []).slice(0, 6).forEach((item) => {
+      const suffix = item.tool_count != null
+        ? `${item.tool_count} tool(s) · ${statusLabel(item.status)}`
+        : item.scope
+          ? `${item.scope} · ${item.enabled ? "enabled" : "disabled"}`
+          : item.auth_policy
+            ? `${statusLabel(item.status)} · auth ${item.auth_policy}`
+            : statusLabel(item.status);
+      details.push([item.name || "Item", suffix]);
+    });
+    if (category.truncated) details.push(["Inventory", "Additional items omitted from this compact view"]);
+    toolGrid.append(statusCard(label, category.status, category.summary, details, key));
+  });
+  const commands = payload.codex?.commands || { status: "unknown", summary: "Command catalog not inspected." };
+  toolGrid.append(statusCard(
+    "Exact Codex slash catalog",
+    commands.status,
+    commands.summary,
+    [
+      ["Built-ins", compactNumber(commands.command_count)],
+      ["Source", commands.source_ref || "—"],
+    ],
+    "commands",
+  ));
+  codexSection.append(toolGrid);
+  root.append(codexSection);
+}
+
+async function loadStatusTools() {
+  if (!state.room) return;
+  const dialog = $("#status-tools-dialog");
+  const root = $("#status-tools-content");
+  const openButton = $("#status-tools-button");
+  const refreshButton = $("#refresh-status-tools");
+  if (!dialog.open) dialog.showModal();
+  root.replaceChildren(Object.assign(document.createElement("div"), {
+    className: "status-loading",
+    textContent: "Inspecting current Room and Codex state…",
+  }));
+  openButton.disabled = true;
+  refreshButton.disabled = true;
+  try {
+    const payload = await api(`/api/rooms/${state.room.id}/status-tools`);
+    renderStatusTools(payload);
+  } catch (error) {
+    root.replaceChildren(Object.assign(document.createElement("div"), {
+      className: "error-banner",
+      textContent: error.message,
+    }));
+  } finally {
+    openButton.disabled = false;
+    refreshButton.disabled = false;
+  }
+}
+
 function isConversationalEvent(event) {
   return event.event_class === "conversation" || [
     "observer_message", "round_start_turn", "topic", "agent_message", "agent_pass",
@@ -733,6 +986,8 @@ $("#archive-room").addEventListener("click", async () => {
 });
 $("#export-md").addEventListener("click", () => { if (state.room) location.href = `/api/rooms/${state.room.id}/export?format=markdown`; });
 $("#export-json").addEventListener("click", () => { if (state.room) location.href = `/api/rooms/${state.room.id}/export?format=json`; });
+$("#status-tools-button").addEventListener("click", () => loadStatusTools());
+$("#refresh-status-tools").addEventListener("click", () => loadStatusTools());
 $("#new-round").addEventListener("click", () => {
   if (state.room) {
     syncParticipantControls(state.room);

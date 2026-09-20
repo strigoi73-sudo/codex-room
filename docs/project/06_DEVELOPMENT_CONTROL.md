@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-018 is complete. **I-019 — Human-facing capability visibility is IN PROGRESS.** Its first CORE slice, exact-runtime Codex command-catalog synchronization, is implemented and exact-head verified; the human-facing Status & Tools surface is not yet complete.
-- **What just changed?** D-040 now requires any human-facing Codex command inventory to follow the actual running App Server version and fail closed rather than display a stale catalog. The exact implementation head `466fdb39cc60dd99fd3cd690061ab2feaea67c8d` passed dedicated and repository-standard deterministic verification (E-150). Blanket Desktop slash-command parity remains out of scope.
-- **Verification state:** I-018 remains **AUDIT COMPLETE / NO RUNTIME CHANGE**. The I-019 command-catalog authority slice is **IMPLEMENTED / VERIFIED** on its exact head. I-019 overall remains unfinished and must earn separate UI/runtime verification before completion.
-- **What is blocked?** Nothing blocks continued I-019 implementation. Later roadmap stages remain gated by evidence from the preceding stage.
-- **What is next?** Continue the smallest useful **Status & Tools** surface using authoritative Room/App Server state, with the verified command catalog available as one provenance-aware input. Keep command applicability/dispatch separate from catalog freshness, and do not absorb OAuth/elicitation, attachments, browser/computer use, or unrelated Desktop parity into I-019.
+- **Where are we?** I-018 is complete. **I-019 — Human-facing capability visibility is COMPLETE / IMPLEMENTED / VERIFIED.** The compact read-only Status & Tools surface and its exact-runtime Codex command catalog have both passed deterministic and natural rendered-UI acceptance (E-150, E-151).
+- **What just changed?** The first natural Status & Tools acceptance run found one real blocker: Codex 0.154.0 SDK metadata could expose an App Server version string with its user-agent suffix attached, causing the strict command-catalog release validator to fail closed. The boundary was repaired without weakening D-040; exact code head `cc785e34d9332e479e4e8b62af7ca465f5d01cc8` then passed focused tests, the repository fast verifier, live runtime/catalog checks, and a rendered UI recheck showing **Available / 60 built-ins / rust-v0.154.0**.
+- **Verification state:** I-019 is **COMPLETE / IMPLEMENTED / VERIFIED** on exact implementation bytes `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`. The first natural run's wider surface checks remain valid for the unchanged feature behavior; the repaired exact head received a focused rendered-UI recheck of the formerly failing catalog path and Refresh behavior.
+- **What is blocked?** Nothing blocks ordinary Codex Room use. Later roadmap stages remain gated and are not automatically started by I-019 completion.
+- **What is next?** Stop at the I-019 boundary. If the principal chooses to continue the approved sequence, the next available bounded stage is an ordinary-use inherited-tool exercise that lets C use existing tools naturally and records what actually works without manufacturing benchmark traffic.
 - **What are we deliberately not doing?** No new Objective entity; no broad transaction rewrite; no automatic transcript replay; no fourth persistent agent; no new embedding/memory-index architecture; no automatic model router; no CORE-enforced refresh threshold; no adjacent maintenance investigation without a demonstrated problem.
 
 ## Current focus
@@ -19,40 +19,36 @@
 
 **Scope:** [CORE + ROOM UI]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality:** DECIDED / NOT IMPLEMENTED overall; command-catalog foundation IMPLEMENTED / VERIFIED
+**Reality / evidence:** IMPLEMENTED / VERIFIED
 
 **Origin:** I-018 / E-149
 
-**Goal:** make Codex Room's already-existing organizational state and inherited Codex tool substrate understandable to the human principal without requiring knowledge of internal database tables, transaction actions, SDK configuration, or Desktop slash commands.
+**Goal achieved:** Codex Room now exposes a compact, read-only **Status & Tools** view that lets the principal understand current Room work and major Room-native/inherited Codex capability classes without requiring knowledge of internal database tables, transaction actions, SDK configuration, or Desktop slash commands.
 
-**First-release product surface:** one compact human-facing **Status & Tools** view for the active Room. It should expose only information already available or cheaply inspectable through existing Room/App Server state, including:
+**Implemented first-release surface:**
 
-- current Round / Task / Assignment state and the active objective at a useful level of abstraction;
-- A/B/C lifecycle status and current work ownership;
-- current or most-recent execution model/reasoning configuration for each agent where available;
-- bounded recent execution/context economics sufficient to understand whether work is cheap, accumulating, or near an advisory refresh range;
-- Room-native deterministic capabilities available to the Room;
-- inherited Codex tool categories that are actually configured/available where they can be inspected safely, including web-search mode, skills, MCP servers/tools, and installed apps/plugins/connectors when App Server exposes them;
-- clear distinction among **available**, **configured but interaction/authentication required**, **disabled/unavailable**, and **unknown/not inspectable** rather than treating all App Server features as universally active.
+- current Round / Task / Assignment state and active objective;
+- A/B/C lifecycle state, work ownership, current-or-most-recent model/reasoning evidence, bounded queue/processing state, and recent execution economics where recorded;
+- C coordinator-context guidance derived from existing context economics;
+- Room-native deterministic capability inventory;
+- inherited workspace-file and command-execution classes;
+- safely inspectable Codex web-search, skills, MCP, installed apps/connectors, and plugins inventory from the active App Server;
+- explicit **available / interaction required / unavailable / unknown** truth classifications rather than assuming configured features are usable;
+- exact-runtime Codex slash-command catalog provenance and built-in count, still separated from command applicability or dispatch.
 
-**Design constraints:**
+**Safety / architecture boundaries preserved:**
 
-- prefer read-only visibility in the first release;
-- reuse authoritative Room state and existing App Server/configuration APIs rather than create a competing tool registry;
-- do not expose secrets, tokens, private account identifiers, arbitrary MCP payloads, or hidden model reasoning;
-- do not add direct model/reasoning overrides that bypass D-039;
-- do not restore Codex built-in subagents;
-- do not copy Desktop slash syntax merely for parity;
-- do not add OAuth, approval, elicitation, attachments, browser/computer use, worktrees, terminal, or diff/review UI inside I-019 unless a specific dependency proves impossible to separate;
-- keep the surface compact enough to improve comprehension rather than becoming a diagnostic console.
+- first release is read-only and reuses authoritative Room state plus existing App Server/configuration APIs;
+- secrets, tokens, private account identifiers, arbitrary MCP schemas/payloads, filesystem paths, and hidden reasoning are not exposed;
+- direct model/reasoning overrides that bypass D-039 remain absent;
+- Codex built-in subagents remain disabled;
+- OAuth/approval/elicitation bridges, attachments, browser/computer use, worktrees, terminal, diff/review UI, slash-command dispatch, and blanket Desktop parity remain outside I-019.
 
-**Verification target:** deterministic source/UI tests plus one bounded natural Room check demonstrating that the principal can correctly answer, from the new surface alone, what the Room is doing and what major tool classes are actually available. Verification should distinguish display correctness from whether any optional external tool/account is configured on the principal's machine.
+**Verification closeout (E-151):** exact code head `cc785e34d9332e479e4e8b62af7ca465f5d01cc8` passed 13 focused command-catalog/Status & Tools tests, the repository fast verifier (63 Linux focused, 118 Windows focused, 9 browser transcript tests), live `/api/health` and `/api/codex/commands` checks, and a rendered browser recheck showing runtime `0.154.0`, catalog status Available, **60** built-ins, source `rust-v0.154.0`, zero console errors/warnings, and no Room mutation after Refresh. The preceding natural acceptance run had already verified Current work, A/B/C and economics, Room-native capabilities, inherited capability classifications, sanitization, and read-only behavior; its only blocker was the catalog metadata boundary subsequently repaired and rechecked.
 
-**Implemented slice — command-catalog authority (D-040 / E-150):** CORE now captures the actual running App Server version and exposes a read-only `/api/codex/commands` catalog that accepts only an exact matching official Codex release manifest, records upstream blob provenance, fails closed on mismatch/synchronization failure, and disables browser caching. Exact implementation head `466fdb39cc60dd99fd3cd690061ab2feaea67c8d` passed 6 dedicated tests plus the repository fast verifier (63 Linux focused, 118 Windows focused, 8 browser tests). Dynamic service-tier overlay, Status & Tools UI, command applicability mapping, dropdown behavior, and dispatch are not included in that verified slice.
-
-**Stop condition:** I-019 ends when capability/state visibility is implemented and exact-version verified. Do not roll directly into the later roadmap stages.
+**Stop condition:** met. I-019 ends here. Completing it does not automatically authorize or start the next roadmap stage.
 
 ### Post-I-018 human-facing capability roadmap
 
@@ -64,7 +60,7 @@ The governing product rule for this sequence is:
 
 Proceed in this order:
 
-1. **Expose what already exists — I-019 Status & Tools.** Make current organizational state, model/economics data, Room deterministic capabilities, and inherited/configured Codex tool availability visible to the principal.
+1. **Expose what already exists — I-019 Status & Tools. COMPLETE.** Current organizational state, model/economics data, Room deterministic capabilities, and inherited/configured Codex tool availability are now visible through the verified read-only surface.
 2. **Empirically verify inherited tools through ordinary work.** After I-019, run a small practical Room exercise that lets C use tools naturally. Verify local file work, command execution, web search, and any actually configured skill/MCP/app capability without manufacturing expensive benchmark traffic. Treat a capability as naturally usable only when runtime evidence supports it.
 3. **Add a bounded tool-interaction bridge only when demonstrated necessary.** If an inherited MCP/app/plugin is blocked because it needs human OAuth, approval, account selection, or elicitation, implement the smallest safe principal interaction path required by that demonstrated case. Do not prebuild a generic orchestration subsystem in anticipation.
 4. **Add first-class rich attachments.** Provide a principal-facing path to attach files/images directly to Room work with clear Room/workspace provenance and availability to agents selected by C. This is the next generally useful input expansion after visibility/tool access is understood.
