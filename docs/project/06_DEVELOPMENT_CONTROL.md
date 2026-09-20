@@ -7,9 +7,9 @@
 ## Operator summary
 
 - **Where are we?** I-023 — **PBM (Performance Benchmark)** — is the selected development item. Its purpose is to create a repeatable, versioned Codex Room versus Codex Desktop operating-economics/performance benchmark. I-021 and I-022 remain complete.
-- **What just changed?** D-045 names the standardized benchmark **PBM** and reserves the principal phrase **“Run PBM”** as the canonical invocation of the current versioned procedure. PBM v1 is not yet implemented.
-- **Verification state:** PBM currently has a settled name/invocation contract only. No PBM v1 harness or benchmark result is yet claimed implemented or verified.
-- **What is next?** Define and implement PBM v1: freeze its task suite, paired-run controls, quality gates, usage accounting, deterministic harness, and standard report before spending model usage on the pilot.
+- **What just changed?** PBM v1 now has an implementation candidate on the I-023 feature branch: separate native Desktop and Room scripts, shared deterministic harness machinery, a frozen eight-task naturalistic suite, task graders, and report generation. No paid PBM task has been run.
+- **Verification state:** PBM v1 remains IN PROGRESS / NEEDS VERIFICATION. Repository review and deterministic exact-head verification are still required before the v1 harness is merged or any paid pilot is authorized.
+- **What is next?** Review and deterministically verify the PBM v1 candidate, then merge/freeze it. Only after that exact version is verified may the principal start the paid PBM pilot.
 - **What is blocked?** No high-priority conceptual blocker prevents ordinary use or further development. Individual deferred items retain their own gates.
 - **What are we deliberately not doing?** No Room-local plugin mutation endpoint, principal-proof security subsystem solely for plugin administration, generic config editor, copied marketplace/plugin manager, built-in Codex subagents, autonomous fan-out, automatic model router, or speculative host-parity project.
 
@@ -21,7 +21,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** DESIGN SELECTED / NOT YET IMPLEMENTED
+**Reality / evidence:** IMPLEMENTATION CANDIDATE / NEEDS VERIFICATION
 
 **Decision:** D-045
 
@@ -40,6 +40,13 @@ PBM v1 should establish:
 - a low-cost pilot before broader replication, so the benchmark itself does not recreate previously observed high-cost synthetic testing.
 
 **Implementation boundary:** benchmark definition/harness comes first. Do not spend the paid PBM pilot until the procedure, fixtures, measurement semantics, and reporting contract are frozen and mechanically inspectable.
+
+Current candidate architecture separates the product arms mechanically:
+
+- `pbm-desktop.ps1` prepares a fresh Desktop workspace/prompt and captures the matching native Desktop rollout only after the principal runs the task in a fresh Codex Desktop chat;
+- `pbm-room.ps1` prepares a fresh Room without starting cognition, stages the same fixture, then separately starts/waits/exports/captures the Room arm;
+- `codex_room/pbm.py` owns only shared deterministic manifest, fixture, grader, accounting, and report logic;
+- `benchmarks/pbm/CURRENT` resolves the canonical benchmark version, and PBM v1 freezes eight synthetic standard-library-only tasks with deterministic graders.
 
 ### I-022 — Native Codex capability exposure and execution-economics audit
 
