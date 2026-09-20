@@ -38,6 +38,7 @@ Candidate behavior:
 - snapshot sanitation removes account identity/credential fields while retaining usage/credit/rate-limit semantics;
 - native snapshot failures are recorded as unavailable and do not fabricate values;
 - primary Desktop/Room usage accounting and deterministic quality graders remain unchanged from v1.
+- the Room arm remains naturalistic under D-039: C may dynamically allocate ordinary model/reasoning configurations for itself and peers, and PBM records rather than suppresses those choices.
 
 **Implementation boundary:** snapshot reads must remain non-cognitive and read-only. They may provide context for interpreting PBM results but must not become an alternate usage ledger or pacing policy.
 
