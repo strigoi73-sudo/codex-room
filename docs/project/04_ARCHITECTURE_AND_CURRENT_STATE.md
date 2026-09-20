@@ -229,6 +229,22 @@ SQLite uses WAL/foreign-key/transactional safeguards and durable execution/work-
 
 The Room UI exposes the persistent Room ID and current/last execution model/effort. `Restart-Codex-Room.bat` preserves the existing browser tab/window and restarts the server with `--no-browser`; the retained tab reconnects through the existing WebSocket retry path. See E-089 and E-091.
 
+
+### PBM benchmark harness and one-paste orchestration
+
+**IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED**
+
+PBM is the versioned Codex Desktop-versus-Codex Room performance harness. PBM v1 owns the frozen eight-task workload and deterministic graders; PBM v2 adds read-only run/task-pair context snapshots; PBM v3 preserves both and changes the operator surface to one initial principal instruction per platform.
+
+Canonical `benchmarks/pbm/CURRENT` now resolves to v3. The Desktop side uses a coordination-only controller rooted at `pbm_desktop_controller`; for every Desktop benchmark arm it stages only the current task and uses native Codex fresh-task management, with no Codex CLI fallback. The Room side uses one coordination-only controller Room whose files are staged before the Round starts. C enters a private `CONSULT_PRINCIPAL` wait, then the principal's single private reply instructs C to run the staged driver. That driver launches a detached deterministic worker which creates a fresh ordinary Room for each measured Room arm.
+
+The measured task contexts remain fresh and separate from controller contexts. The original alternating sixteen-arm schedule remains authoritative, D-039 naturalistic dynamic Room cognition remains part of the measured product behavior, and controller cognition is reported separately from task execution usage as well as in an all-in view. The v3 fingerprint binds orchestration implementation files in addition to inherited benchmark assets.
+
+Exact repaired feature head `e655f36141fba9a77b69cc04147a5bd13b728135` passed focused and routine deterministic verification plus the repaired Room-controller live preflight; the earlier Desktop-controller preflight remained applicable because the subsequent repair changed only the Room launcher helper and its regression test. PR #180 merged the tested implementation with no file differences between tested head and canonical merge. See D-045 through D-047 and E-163 through E-165.
+
+No live paid PBM Desktop-versus-Room run has yet occurred. Verification of the harness must not be mistaken for a performance result.
+
+
 ## 12. Current known limits / deferred items
 
 - D-019 Personal daily usage pacing remains **DECIDED / NOT IMPLEMENTED** because mixed subscription-allowance versus purchased-credit semantics are unresolved.
