@@ -1637,3 +1637,47 @@ Stage B compared the exact Codex 0.154 source/SDK surface from E-159 with curren
 
 **Assessment:** I-022 Stage B is **COMPLETE / VERIFIED** as a comparative audit. No feature, runtime probe, or implementation slice is selected by this evidence. The next action is principal review/selection or closure of I-022 if no capability warrants further work now.
 
+## E-161 — 2026-09-20 roadmap/development truth audit and Development Control consolidation
+
+**Date:** 2026-09-20
+**Kind:** [repository/document truth audit / roadmap maintenance]
+**Related work:** project-wide roadmap/development control
+**Runtime behavior changed:** none
+**Evidence state:** VERIFIED for repository/document state inspected in this audit
+
+The audit began from canonical `main` at `bb1d057e698909c2212663181b73cdc72f67bcee` and cross-checked Development Control against Architecture & Current State, the Decision Register, both Evidence Register volumes, Product Vision, Repository & Operations, the identifier index, current GitHub PR state, branch state, and recent canonical work.
+
+### Findings
+
+1. **The implementation/vision baseline was broadly coherent.** Product Vision already reflected neutral A/B peer identities, D-019 remained explicitly deferred, and the Decision Register correctly marked D-003 and D-040 superseded while retaining later active decisions. No new governing decision was required.
+
+2. **Development Control had regrown into a historical archive.** Before cleanup it was approximately 77.7 KB / 803 lines and carried detailed completed narratives for I-018/I-019/I-020, BCTX, Common Cause experiments, acceptance campaigns, and older completed programs. This conflicted with the package guide's ownership rule that Development Control should carry volatile current focus/status while durable implementation/evidence history lives elsewhere.
+
+3. **The older post-I-018 ordered roadmap was stale.** It still described a principal-approved sequence with inherited-tool exercises and rich attachments as ordered follow-ons. I-022 / E-159 / E-160 subsequently established a neutral capability/economics comparison and an explicit feature-selection boundary. The old sequence could incorrectly imply that completion of one item automatically advances to the next.
+
+4. **I-019 contained stale closeout wording.** The current file simultaneously marked the D-041 catalog cleanup COMPLETE / VERIFIED and retained an older sentence saying the cleanup still required fresh exact-byte verification. E-152 had already supplied that verification. The same area also called skills evaluation back-burnered even though I-020 later completed and D-042 settled the native-skill hierarchy.
+
+5. **I-021 no longer represented active implementation.** Stage A plugin-contract/authority evidence remains verified (E-157/E-158), but no state-changing mutation bridge is currently selected after the principal explicitly corrected the assumption that the capability audit implied moving directly into a feature build. I-021 is therefore retained as DEFERRED / DECIDED-NOT IMPLEMENTED rather than an active default lane.
+
+6. **I-022 itself had reached a natural closeout.** Stage A exact-source audit and Stage B comparative matrix are complete. No implementation was authorized. The current roadmap should therefore present principal selection or ordinary use as the next boundary rather than invent a default feature.
+
+7. **Common Cause competitive play was misclassified as planned development.** The game artifact is verified play-ready, but competitive play depends on separate principal authorization and is ordinary product use, not current development work.
+
+8. **The identifier index had stale ownership pointers.** P0-P3, EF-1-EF-3, A1/A2, and several closed I-items still pointed to Development Control even though their durable records now live in the Decision/Evidence registers and Repository & Operations.
+
+9. **Repository PR hygiene had two false active signals.** PR #91 was an older I-015 Stage B2 attempt superseded by merged PR #92 and Stage B3 PR #93. PR #121 was an older BCTX-3 attempt superseded by merged PR #122, followed by PR #123 closeout and PR #124 BCTX-4. Both were commented with their supersession and closed during the audit.
+
+10. **Remote branch residue remains but is not roadmap authority.** Non-`main` branches include old unmerged/superseded attempts such as `a-b-peer-role-normalization`, `bctx-3-grace-history`, `docs-i015-stage-a-verification`, `i015-stage-b2-structured-evidence`, and `i019-status-tools-v2`. Their existence does not mean the work is active. GitHub's connected mutation surface used here does not provide a delete-ref action, so this audit does not rewrite or move those refs merely for cosmetic cleanup.
+
+### Maintenance changes
+
+- Development Control was consolidated to approximately 11.8 KB / 181 lines, retaining only current/deferred/monitor state, compact recent-completion pointers, the QoL wishlist, and open questions.
+- I-022 is now COMPLETE / audit-only / no implementation authorized.
+- I-021 is DEFERRED pending separate principal selection and re-evaluation of native Desktop-managed plugin administration versus a Room mutation bridge.
+- The stale ordered post-I-018 roadmap and duplicated historical narratives were removed from volatile work control.
+- Common Cause competitive play is explicitly identified as non-development pending principal activity.
+- Historical identifier pointers were repaired to their actual durable owners.
+- Architecture & Current State and Repository & Operations synthesis dates were refreshed to 2026-09-20; Architecture now records E-160's no-runtime-change/no-selection boundary.
+
+**Assessment:** after these changes, no active implementation feature is selected by default. Ordinary Codex Room use is unblocked. The next development item should arise from explicit principal selection or demonstrated ordinary-use evidence, not from stale roadmap sequence or leftover PR/branch state.
+
