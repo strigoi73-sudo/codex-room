@@ -23,7 +23,7 @@ def test_every_pbm_v1_grader_executes_on_untouched_fixture(tmp_path: Path) -> No
     for task in manifest["tasks"]:
         workspace = tmp_path / task["id"]
         shutil.copytree(root / task["fixture_dir"], workspace)
-        grade = pbm._run_grader(task["id"], workspace)
+        grade = pbm._run_grader(task["id"], workspace, "v1")
 
         assert isinstance(grade["pass"], bool)
         assert 0 <= grade["score"] <= 100
@@ -33,7 +33,7 @@ def test_every_pbm_v1_grader_executes_on_untouched_fixture(tmp_path: Path) -> No
 
 def test_prepare_and_grade_mechanical_task(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(pbm, "OUTPUT_ROOT", tmp_path / "runs")
-    run = pbm.new_run("pbm-test")
+    run = pbm.new_run("pbm-test", "v1")
     evidence = Path(run["run_root"]) / "t01-mechanical-change" / "desktop"
     workspace = evidence / "workspace"
 
@@ -52,7 +52,7 @@ def test_prepare_and_grade_mechanical_task(monkeypatch, tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    grade = pbm._run_grader("t01-mechanical-change", workspace)
+    grade = pbm._run_grader("t01-mechanical-change", workspace, "v1")
 
     assert prepared["benchmark_version"] == "v1"
     assert grade["pass"] is True
@@ -196,3 +196,8 @@ def test_context_summary_surfaces_run_boundary_availability(tmp_path: Path) -> N
     assert summary["run_start"]["rate_limits_status"] == "available"
     assert summary["run_start"]["account_usage_status"] == "available"
     assert summary["run_end"]["repository_head"] == "abc123"
+
+
+def test_current_pbm_is_v2() -> None:
+    assert pbm.current_version() == "v2"
+    assert pbm.load_manifest()["schema_version"] == 2
