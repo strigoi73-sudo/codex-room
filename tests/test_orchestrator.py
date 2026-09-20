@@ -1786,6 +1786,14 @@ async def test_agent_prompt_prefers_continuation_economy_before_registry_overhea
     assert "Batch related independent reads/searches" in prompt
     assert "do not batch speculative dependent follow-ups" in prompt
     assert "stop retrieving once evidence is sufficient" in prompt
+    assert "Use an existing enabled Codex skill when it materially fits the work" in prompt
+    assert "heavyweight skill workflow merely because a skill exists" in prompt
+    assert "Before inventing a new reusable workflow or custom deterministic software" in prompt
+    assert "native Skill Creator" in prompt
+    assert "Room-local under '.agents/skills/' by default" in prompt
+    assert "user-global or administrator-scope skills without explicit principal authorization" in prompt
+    assert "do not enable Codex built-in subagents through a skill" in prompt
+    assert "lineage continuity" in prompt
     assert "codex-room-cap list" in prompt
     assert "only when a needed capability identity is unknown" in prompt
     assert "codex-room-cap inspect CAPABILITY_ID" in prompt
