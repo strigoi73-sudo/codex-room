@@ -41,7 +41,7 @@ E-160 then compared those families by current Room status, principal value, inhe
 
 **Scope:** [CORE + ROOM UI, reusing native Codex/App Server plugin facilities]
 
-**Work state:** DEFERRED
+**Work state:** IN PROGRESS
 
 **Reality / evidence:** DECIDED-NOT IMPLEMENTED / Stage A VERIFIED
 
@@ -49,7 +49,7 @@ E-160 then compared those families by current Room status, principal value, inhe
 
 Stage A verified that exact Codex 0.154 exposes the native plugin/configuration contracts needed for install/enable/disable and live refresh. It also proved on the principal's Windows runtime that an A/B/C-equivalent `:workspace` sandbox can reach Codex Room's loopback API, so localhost is not a principal-only authority boundary.
 
-No state-changing Room mutation bridge is currently authorized. Before I-021 resumes, re-evaluate the simpler possibility that the principal manages plugins through native Codex/Desktop configuration while Room merely discovers and uses the resulting native capabilities. If a Room-side mutation path is still selected, it requires a separate mechanical principal-proof boundary and must reuse native Codex plugin/configuration operations rather than create a parallel registry, marketplace, installer, credentials store, or generic config editor.
+No state-changing Room mutation bridge is currently selected. I-021 remains open because the principal previously selected plugin administration as a development topic, but Stage B must first choose between the simpler possibility that the principal manages plugins through native Codex/Desktop configuration while Room merely discovers/uses the resulting capabilities, and a Room-side principal mutation surface. If the Room-side path is selected, it requires a separate mechanical principal-proof boundary and must reuse native Codex plugin/configuration operations rather than create a parallel registry, marketplace, installer, credentials store, or generic config editor.
 
 ## Approved or deferred work
 
