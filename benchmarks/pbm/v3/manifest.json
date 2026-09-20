@@ -101,6 +101,8 @@
     "codex_room/pbm.py",
     "codex_room/pbm_context.py",
     "codex_room/pbm_onepaste.py",
+    "codex_room/pbm_onepaste_room.py",
+    "codex_room/pbm_onepaste_server.py",
     "pbm_desktop_controller/DRIVER.md",
     "pbm_desktop_controller/.gitignore",
     "benchmarks/pbm/v3/room-driver.md"
