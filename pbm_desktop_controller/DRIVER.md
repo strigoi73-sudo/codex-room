@@ -30,9 +30,9 @@ Rename this current native task to `PBM v3 Desktop Controller — <run_id>` usin
 
 Immediately tell the principal:
 
-**Open the Codex Room named “PBM v3 Controller — ACTIVE” and paste exactly: `Read PBM_ROOM_DRIVER.md and execute it exactly.`**
+**Open the Codex Room named “PBM v3 Controller — ACTIVE”. Agent C will be waiting in a private principal consultation. Reply to that consultation with exactly: `Read PBM_ROOM_DRIVER.md and execute it exactly.`**
 
-Then continue without requiring further benchmark prompts.
+That private reply is the principal's single Room paste. Then continue without requiring further benchmark prompts.
 
 ## 2. Desktop task loop
 
