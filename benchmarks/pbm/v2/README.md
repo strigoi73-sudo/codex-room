@@ -2,6 +2,18 @@
 
 PBM v2 preserves the **same eight task prompts, fixtures, graders, task order, and naturalistic product comparison as PBM v1**. It changes the measurement protocol by adding standardized contextual baseline snapshots.
 
+### Naturalistic Room cognition
+
+PBM must not pin the Room to a single model or reasoning effort.
+
+- The Room arm retains the normal D-039 dynamic-cognition behavior.
+- C may choose among the ordinary admitted Luna, Terra, and Sol configurations at Low, Medium, or High reasoning effort for itself and bounded peer Assignments, using normal Room policy.
+- The Terra/high compatibility/default configuration is only a starting/default condition, not a benchmark constraint.
+- PBM does not override Room cognition choices merely to make Desktop and Room internally symmetrical.
+- Actual model and reasoning-effort choices are preserved in Room execution provenance and are part of the measured operating behavior.
+- Existing D-039 boundaries still apply: PBM does not silently authorize otherwise exceptional cognition or prohibited models.
+
+
 ## Asset inheritance
 
 PBM v2 references the frozen PBM v1 task assets rather than copying them. The v2 benchmark fingerprint covers both:
