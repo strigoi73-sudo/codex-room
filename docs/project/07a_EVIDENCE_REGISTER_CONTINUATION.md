@@ -1078,7 +1078,7 @@ Canonical Room source established that:
 - Room session overrides set the model/reasoning defaults and explicitly disable `agents.enabled` and `features.multi_agent_v2.enabled`; no blanket override disables ordinary file/shell, web-search, skill, MCP, or app facilities;
 - the adapter recognizes native Codex activity including command execution, file change, MCP tool calls, dynamic tool calls, web search, image view/generation, and context compaction;
 - `codex_room/orchestrator.py` explicitly instructs agents to use native workspace tools for ordinary one-off reads/searches/inspection/simple commands and adds Room deterministic capabilities/EVIDENCE/HISTORY for bounded organizational use;
-- `codex_room/static/app.js` sends the observer composer through the Room message API and contains no slash-command parser; `codex_room/main.py` accepts those ordinary observer messages through `/api/rooms/{room_id}/messages`.
+- `codex_room/static/app.js` sends the observer composer through the Room message API and contains no host-command parser; `codex_room/main.py` accepts those ordinary observer messages through `/api/rooms/{room_id}/messages`.
 
 Current official OpenAI Codex documentation established that:
 
@@ -1086,7 +1086,7 @@ Current official OpenAI Codex documentation established that:
 - Codex configuration is layered: session/`--config` overrides take precedence while user `~/.codex/config.toml` and trusted project `.codex/config.toml` remain part of the effective configuration;
 - web search defaults to cached mode unless disabled or changed by configuration;
 - MCP configuration is shared by local Codex clients through the normal Codex configuration files;
-- the ChatGPT desktop app's slash palette is a host/composer interface for product actions such as plan, goal, review, status, compact, fork, and worktree-related flows;
+- the ChatGPT desktop app's command palette is a host/composer interface for product actions such as plan, goal, review, status, compact, fork, and worktree-related flows;
 - the Desktop built-in browser, integrated terminal, worktree manager, diff/review surface, attachment/editor surfaces, and authentication UI are host features rather than properties automatically supplied to every App Server embedding.
 
 No model-driven acceptance Room was run because source plus current official protocol/configuration documentation resolved the product-level mechanism without buying additional cognition. Account-specific configured MCP servers, installed apps/plugins, enabled skills, OAuth state, and admin policy remain environment-dependent and are not claimed as universally present.
@@ -1120,7 +1120,7 @@ No model-driven acceptance Room was run because source plus current official pro
 | Desktop-managed Git worktrees | **GENUINELY MISSING / CODING-SPECIFIC** | Room uses its shared workspace model and does not create/manage Desktop-style isolated worktrees for parallel chats. |
 | `/init` | **INHERITED AS ORDINARY WORK** | Creating an `AGENTS.md` or equivalent file needs no special Room command; an agent can create it through normal file work if requested. |
 | `/feedback`, `/pet`, other host utilities | **OUT OF SCOPE** | Product-host conveniences do not add organizational capability. |
-| Slash-command syntax itself | **OUT OF SCOPE / NOT A CAPABILITY** | The Room has no slash parser. Copying command syntax without a demonstrated product need would add UI ceremony, not agent power. |
+| Host-command syntax itself | **OUT OF SCOPE / NOT A CAPABILITY** | The Room has no Codex host-command parser. Copying command syntax without a demonstrated product need would add UI ceremony, not agent power. |
 
 ### Findings
 
@@ -1128,7 +1128,7 @@ No model-driven acceptance Room was run because source plus current official pro
 2. **The largest actual gap is the observer host layer.** Desktop gives the human rich control/inspection surfaces around the same class of agent runtime; Room currently exposes mostly its transcript and Room lifecycle controls.
 3. **Web search and visual browser are different capabilities.** The former belongs to the Codex runtime/configuration and is available subject to effective config; the latter is a Desktop host feature and is absent from Room.
 4. **MCP/skills/apps are not best treated as a new Room tool architecture.** The underlying App Server already exposes these ecosystems. If ordinary use needs them, the economical direction is to expose/configure/interact with the inherited surface rather than build a competing registry. Room's own deterministic capability registry remains appropriate for Room-owned repeatable local procedures.
-5. **Slash-command parity is the wrong target.** Several commands duplicate settled Room semantics; others are shortcuts to Desktop-host functions. Product work should expose useful underlying capability or state, not copy syntax.
+5. **Host-command parity is the wrong target.** Several commands duplicate settled Room semantics; others are shortcuts to Desktop-host functions. Product work should expose useful underlying capability or state, not copy syntax.
 6. **No synthetic capability benchmark was warranted.** The audit is about available mechanisms and host surfaces, and the decisive facts were mechanically available from source/protocol/config documentation.
 
 ### Candidate gaps worth principal consideration
@@ -1147,12 +1147,14 @@ No model-driven acceptance Room was run because source plus current official pro
 
 ## E-150 — I-019 exact-runtime command catalog foundation exact-head verification
 
+**Current status:** HISTORICAL / SUPERSEDED BY D-041. The verified catalog implementation below is retained as provenance but is being removed from the current Codex Room product surface.
+
 **Date:** 2026-09-19  
 **Kind:** [CORE implementation / deterministic verification / source provenance]  
 **Related work:** I-019 / D-040  
 **Exact implementation head verified:** `466fdb39cc60dd99fd3cd690061ab2feaea67c8d`
 
-The first bounded I-019 implementation slice established a read-only authority layer for the Codex slash-command inventory before any command dropdown or dispatcher is built.
+The first bounded I-019 implementation slice established a read-only authority layer for the Codex host-command inventory before any command dropdown or dispatcher is built.
 
 Implemented behavior on the exact verified head:
 
@@ -1180,6 +1182,8 @@ The principal then ran deterministic verification on Windows/WSL against exact h
 
 ## E-151 — I-019 Status & Tools exact-head and natural rendered-UI acceptance
 
+**Current status:** HISTORICAL FOR THE REMOVED CATALOG PORTION. The broader Status & Tools acceptance remains relevant; D-041 supersedes the catalog-specific product behavior described below.
+
 **Date:** 2026-09-19  
 **Kind:** [CORE + ROOM UI implementation / deterministic verification / live runtime check / natural rendered-UI acceptance]  
 **Related work:** I-019 / D-040  
@@ -1199,7 +1203,7 @@ The initial rendered UI check used existing Room `room_a7012ca175104f9aa52c1a640
 - Refresh was read-only: the Room remained paused at 59 turns / 249 events with the same active Round, Task, assignments, and idle A/B/C state;
 - the browser console reported zero errors.
 
-That run correctly **failed** acceptance because the rendered Exact Codex slash catalog showed Unknown / 0 built-ins. The underlying endpoint returned `runtime_version_unavailable`: the running runtime identity could be displayed, but the strict catalog validator rejected the SDK-supplied version string as an unsafe release identifier.
+That run correctly **failed** acceptance because the rendered Exact Codex host-command catalog showed Unknown / 0 built-ins. The underlying endpoint returned `runtime_version_unavailable`: the running runtime identity could be displayed, but the strict catalog validator rejected the SDK-supplied version string as an unsafe release identifier.
 
 ### Defect diagnosis and repair
 
@@ -1226,7 +1230,7 @@ The principal synchronized to exact repaired head `cc785e34d9332e479e4e8b62af7ca
 A deliberately bounded second browser check did not repeat the already-passed wider acceptance campaign. On the same exact repaired head, the actual Status & Tools dialog visibly showed:
 
 - runtime `0.154.0`;
-- Exact Codex slash catalog **Available**;
+- Exact Codex host-command catalog **Available**;
 - **60** built-in commands;
 - source `rust-v0.154.0`.
 
@@ -1234,4 +1238,28 @@ After one Refresh, those values remained visible. The Room remained paused at 59
 
 The first natural browser campaign consumed roughly **6% of the principal's five-hour Codex allowance**. That cost is process evidence, not a product defect: future verification should keep deterministic Git/test/API checks mechanical and use Codex for browser/UI or multi-step local work where that interactive capability earns its model cost.
 
-**Assessment:** I-019 is **COMPLETE / IMPLEMENTED / VERIFIED** on exact implementation bytes `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`. The intended first-release Status & Tools surface satisfies its deterministic and natural rendered-UI acceptance target. This closeout does not authorize slash-command dispatch, OAuth/elicitation bridges, attachments, browser/computer-use integration, or any later roadmap stage.
+**Assessment:** I-019 is **COMPLETE / IMPLEMENTED / VERIFIED** on exact implementation bytes `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`. The intended first-release Status & Tools surface satisfies its deterministic and natural rendered-UI acceptance target. This closeout does not authorize host-command dispatch, OAuth/elicitation bridges, attachments, browser/computer-use integration, or any later roadmap stage.
+
+## E-152 — Post-I-019 Codex host-command catalog removal exact-head verification
+
+**Date:** 2026-09-19
+**Kind:** [CORE + ROOM UI cleanup / deterministic verification / exact-diff review]
+**Related work:** D-041 / post-I-019 cleanup
+**Exact implementation head verified:** `d77e020588cf548580937a146877a15e7a76f5f4`
+
+The principal synchronized the local `i019-remove-slash-command-surface` branch to the exact candidate head above with a clean tracked tree and ran the repository-standard fast verification gate after `git diff --check`.
+
+Results:
+
+- `git diff --check origin/main...HEAD`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed, 2 existing deprecation warnings**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **9 passed**;
+- repository fast verifier: **RESULT: PASS**;
+- tracked worktree after verification: **clean**.
+
+Exact-diff review confirmed that the cleanup removes the Codex host-command catalog parser/cache module, dedicated catalog API endpoint, Status & Tools catalog payload/card, browser fixture content, and catalog-specific tests. General App Server runtime identity provenance is preserved by retaining `sdk_server_identity()` in `codex_room/agent.py`, with its normalization/fail-closed regression coverage moved into the remaining Status & Tools test module.
+
+The reviewed cleanup also updates current Project documentation so D-040 and the catalog-specific portions of E-150/E-151 remain historical provenance while D-041 governs current product behavior. Skills remain deferred and no replacement command surface or dispatch mechanism is introduced.
+
+**Assessment:** the D-041 cleanup implementation is **IMPLEMENTED / VERIFIED** on exact source/test bytes `d77e020588cf548580937a146877a15e7a76f5f4`. A later documentation-only closeout commit may record this result without changing the verified source/test bytes.

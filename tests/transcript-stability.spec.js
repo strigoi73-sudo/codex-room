@@ -196,7 +196,6 @@ test('Status & Tools shows current work and truthful inherited capability states
     ],
     codex: {
       runtime: { name: 'codex-app-server', version: '0.154.0' },
-      commands: { status: 'available', summary: '60 exact-runtime built-in command(s) synchronized.', command_count: 60, source_ref: 'rust-v0.154.0' },
       tools: {
         workspace_files: { status: 'available', summary: 'Room workspace is writable.', items: [] },
         command_execution: { status: 'available', summary: 'Local commands are available.', items: [] },
@@ -220,7 +219,6 @@ test('Status & Tools shows current work and truthful inherited capability states
   await expect(page.locator('[data-status-tool="web_search"] .status-badge')).toHaveText('Available');
   await expect(page.locator('[data-status-tool="mcp"] .status-badge')).toHaveText('Auth / interaction required');
   await expect(page.locator('[data-status-tool="plugins"] .status-badge')).toHaveText('Unknown / not inspectable');
-  await expect(page.locator('[data-status-tool="commands"]')).toContainText('60');
   await expect(page.locator('#status-tools-content')).toContainText('inspect_source');
   await expect(page.locator('#status-tools-content')).not.toContainText('secret');
 });

@@ -668,21 +668,40 @@ This decision narrows the previously deferred “dynamic model routing” questi
 
 ### D-040 — Human-facing Codex command inventory follows the exact running runtime and fails closed on mismatch
 **Date:** 2026-09-19  
-**Status:** ACTIVE
+**Status:** SUPERSEDED BY D-041
 
 The principal authorized a trustworthy command-surface foundation before any Codex Room command-selection UI is built.
 
 Settled boundary:
 
 - the authoritative built-in command inventory must be bound to the **actual running Codex App Server version**, not merely Codex Room's Python dependency declaration;
-- when App Server exposes no native slash-command catalog API, Codex Room may derive the built-in inventory from the exact matching official `openai/codex` release source and cache it with runtime version plus upstream source provenance;
+- when App Server exposes no native host-command catalog API, Codex Room may derive the built-in inventory from the exact matching official `openai/codex` release source and cache it with runtime version plus upstream source provenance;
 - a cached catalog from another runtime version must never be silently displayed as current;
 - if exact-version authority cannot be established, the command catalog must fail closed as unavailable rather than presenting stale commands;
 - dynamic command families such as model service-tier commands remain live runtime/model-catalog overlays and must not be falsely frozen into the static built-in manifest;
 - if App Server later exposes a native authoritative command-catalog API, prefer that capability over maintaining a parallel source parser;
 - **current in Codex** and **appropriate/executable in Codex Room** are separate questions. Future UI/dispatch work must preserve Room governance rather than assume every Codex host command should execute unchanged;
-- this decision does not authorize blanket Codex Desktop slash-command parity. It establishes freshness/provenance for whatever command surface Codex Room deliberately exposes.
+- this decision does not authorize blanket Codex Desktop host-command parity. It establishes freshness/provenance for whatever command surface Codex Room deliberately exposes.
 
 The first CORE slice implementing this rule was exact-head verified at `466fdb39cc60dd99fd3cd690061ab2feaea67c8d`; see E-150. UI and dispatch remain separate unfinished work.
 
 **Principle:** **Never present a command catalog from a different Codex runtime as though it describes the one actually running.**
+
+### D-041 — Codex host-command catalog is not a Codex Room product surface
+**Date:** 2026-09-19
+**Status:** ACTIVE
+
+After reviewing the official Codex host-command inventory against Codex Room's product model, the principal reversed the earlier command-catalog direction.
+
+Settled boundary:
+
+- Codex Room does not expose an exact-runtime Codex host-command catalog in Status & Tools or through a dedicated public API;
+- the source parser, runtime cache, catalog endpoint, Status & Tools catalog card/payload, and dedicated catalog tests are removed rather than hidden behind a flag;
+- Codex Desktop/TUI command parity is not a Codex Room objective. Host-specific controls should not be surfaced merely because they exist in Codex;
+- App Server runtime identity may remain available where it serves generally useful runtime provenance independent of any command catalog;
+- inherited Codex capabilities may still be inspected or used through their underlying App Server/runtime facilities when they are genuinely useful and compatible with Room governance;
+- further work on Codex skills is deferred for later evaluation rather than coupled to this cleanup.
+
+D-040 remains historical provenance for the earlier experiment but no longer governs current product behavior.
+
+**Principle:** **Expose useful underlying capability, not another host's command surface.**

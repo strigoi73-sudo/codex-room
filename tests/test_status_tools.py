@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
 
-from codex_room.agent import CodexAgentAdapter
+from codex_room.agent import CodexAgentAdapter, sdk_server_identity
 from codex_room.main import create_app
 from codex_room.status_tools import (
     AVAILABLE,
@@ -28,24 +28,42 @@ class _VersionedFakeAdapter(FakeAgentAdapter):
         }
 
 
-class _StubCatalog:
-    def resolve(self, version):
-        assert version == "0.154.0"
-        return {
-            "status": "current",
-            "runtime_version": version,
-            "source_ref": "rust-v0.154.0",
-            "source_blob_sha": "a" * 40,
-            "command_count": 60,
-            "commands": [{"command": "status"}] * 60,
-            "dynamic_overlays": [
-                {
-                    "kind": "model_service_tiers",
-                    "source": "live_model_catalog",
-                    "included": False,
-                }
-            ],
-        }
+def test_sdk_server_identity_reads_camel_case_sdk_metadata():
+    metadata = SimpleNamespace(
+        serverInfo=SimpleNamespace(name="codex-app-server", version="0.154.0")
+    )
+
+    assert sdk_server_identity(metadata) == {
+        "name": "codex-app-server",
+        "version": "0.154.0",
+    }
+
+
+def test_sdk_server_identity_normalizes_sdk_backfilled_user_agent_version():
+    metadata = SimpleNamespace(
+        serverInfo=SimpleNamespace(
+            name="codex_cli_rs",
+            version="0.154.0 (Windows 11 10.0.26100; x86_64) codex_python_sdk/0.154.0",
+        ),
+        userAgent=(
+            "codex_cli_rs/0.154.0 (Windows 11 10.0.26100; x86_64) "
+            "codex_python_sdk/0.154.0"
+        ),
+    )
+
+    assert sdk_server_identity(metadata) == {
+        "name": "codex_cli_rs",
+        "version": "0.154.0",
+    }
+
+
+def test_sdk_server_identity_fails_closed_when_user_agent_disagrees():
+    metadata = SimpleNamespace(
+        serverInfo=SimpleNamespace(name="codex_cli_rs", version="unsafe runtime identity"),
+        userAgent="different-runtime/0.154.0 (Windows 11; x86_64)",
+    )
+
+    assert sdk_server_identity(metadata) is None
 
 
 def test_codex_adapter_inspects_exact_app_server_inventory_methods(tmp_path):
@@ -340,7 +358,6 @@ def test_status_tools_api_is_read_only_compact_and_no_store(tmp_path):
         database_path=tmp_path / "status-tools.db",
         data_root=tmp_path / "data",
         adapter=adapter,
-        command_catalog=_StubCatalog(),
     )
 
     with TestClient(app) as client:
@@ -366,8 +383,6 @@ def test_status_tools_api_is_read_only_compact_and_no_store(tmp_path):
         "name": "codex-app-server",
         "version": "0.154.0",
     }
-    assert payload["codex"]["commands"]["status"] == AVAILABLE
-    assert payload["codex"]["commands"]["command_count"] == 60
     assert payload["codex"]["tools"]["mcp"]["status"] == INTERACTION_REQUIRED
     assert payload["room_capabilities"]
     assert {item["id"] for item in payload["room_capabilities"]} >= {
