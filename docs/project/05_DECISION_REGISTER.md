@@ -688,7 +688,7 @@ The first CORE slice implementing this rule was exact-head verified at `466fdb39
 **Principle:** **Never present a command catalog from a different Codex runtime as though it describes the one actually running.**
 
 ### D-041 — Codex host-command catalog is not a Codex Room product surface
-**Date:** 2026-09-19  
+**Date:** 2026-09-19
 **Status:** ACTIVE
 
 After reviewing the official Codex host-command inventory against Codex Room's product model, the principal reversed the earlier command-catalog direction.
@@ -705,4 +705,3 @@ Settled boundary:
 D-040 remains historical provenance for the earlier experiment but no longer governs current product behavior.
 
 **Principle:** **Expose useful underlying capability, not another host's command surface.**
-
