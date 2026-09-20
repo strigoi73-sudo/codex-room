@@ -1,0 +1,14 @@
+Repair reserve() in reservations.py.
+
+Bug report:
+- Some failed reservation attempts reduce inventory anyway.
+- Callers sometimes provide SKU text with different letter casing.
+
+Required externally visible behavior:
+- Match an existing stock key case-insensitively while preserving the original dictionary key.
+- quantity must be a positive integer; booleans are not valid quantities.
+- Unknown SKU raises KeyError.
+- Invalid quantity or insufficient stock raises ValueError.
+- Any failing call must leave the stock dictionary unchanged.
+- A successful call decrements exactly the matched stock entry and returns its remaining quantity.
+- Do not add dependencies.
