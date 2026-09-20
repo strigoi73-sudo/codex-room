@@ -1239,3 +1239,27 @@ After one Refresh, those values remained visible. The Room remained paused at 59
 The first natural browser campaign consumed roughly **6% of the principal's five-hour Codex allowance**. That cost is process evidence, not a product defect: future verification should keep deterministic Git/test/API checks mechanical and use Codex for browser/UI or multi-step local work where that interactive capability earns its model cost.
 
 **Assessment:** I-019 is **COMPLETE / IMPLEMENTED / VERIFIED** on exact implementation bytes `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`. The intended first-release Status & Tools surface satisfies its deterministic and natural rendered-UI acceptance target. This closeout does not authorize host-command dispatch, OAuth/elicitation bridges, attachments, browser/computer-use integration, or any later roadmap stage.
+
+## E-152 — Post-I-019 Codex host-command catalog removal exact-head verification
+
+**Date:** 2026-09-19  
+**Kind:** [CORE + ROOM UI cleanup / deterministic verification / exact-diff review]  
+**Related work:** D-041 / post-I-019 cleanup  
+**Exact implementation head verified:** `d77e020588cf548580937a146877a15e7a76f5f4`
+
+The principal synchronized the local `i019-remove-slash-command-surface` branch to the exact candidate head above with a clean tracked tree and ran the repository-standard fast verification gate after `git diff --check`.
+
+Results:
+
+- `git diff --check origin/main...HEAD`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed, 2 existing deprecation warnings**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **9 passed**;
+- repository fast verifier: **RESULT: PASS**;
+- tracked worktree after verification: **clean**.
+
+Exact-diff review confirmed that the cleanup removes the Codex host-command catalog parser/cache module, dedicated catalog API endpoint, Status & Tools catalog payload/card, browser fixture content, and catalog-specific tests. General App Server runtime identity provenance is preserved by retaining `sdk_server_identity()` in `codex_room/agent.py`, with its normalization/fail-closed regression coverage moved into the remaining Status & Tools test module.
+
+The reviewed cleanup also updates current Project documentation so D-040 and the catalog-specific portions of E-150/E-151 remain historical provenance while D-041 governs current product behavior. Skills remain deferred and no replacement command surface or dispatch mechanism is introduced.
+
+**Assessment:** the D-041 cleanup implementation is **IMPLEMENTED / VERIFIED** on exact source/test bytes `d77e020588cf548580937a146877a15e7a76f5f4`. A later documentation-only closeout commit may record this result without changing the verified source/test bytes.
