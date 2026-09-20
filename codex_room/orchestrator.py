@@ -71,6 +71,7 @@ from .models import (
     UpdateRoomRequest,
 )
 from .runtime_info import collect_runtime_provenance
+from .room_skills import inherit_room_local_skills, summarize_room_local_skills
 from .transaction_evidence import execute_source_evidence
 
 
@@ -441,7 +442,9 @@ class RoomRuntime:
                 item["thread_id"] for item in agents if item.get("thread_id")
             }
             try:
-                self._materialize_rollover_workspace(operation_id, successor_id, release)
+                self._materialize_rollover_workspace(
+                    operation_id, source_room_id, successor_id, release
+                )
                 inherit_room_custom_capabilities(
                     self.data_root,
                     source_room_id,
@@ -730,6 +733,9 @@ class RoomRuntime:
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         successor = await self._required_room(successor_room_id)
         institutional_release = successor.get("metadata", {}).get("institutional_release")
+        room_local_skills = summarize_room_local_skills(
+            self.workspace(successor_room_id)
+        )
         completed = await self.db.create_event(
             source_room_id,
             "rollover_completed",
@@ -741,6 +747,7 @@ class RoomRuntime:
                 "successor_room_id": successor_room_id,
                 "checkpoint_sha256": checkpoint_hash,
                 "institutional_release": institutional_release,
+                "room_local_skills": room_local_skills,
             },
             event_id=f"event_{operation_id}_source",
         )
@@ -756,6 +763,7 @@ class RoomRuntime:
                 "checkpoint_sha256": checkpoint_hash,
                 "stored_only": True,
                 "institutional_release": institutional_release,
+                "room_local_skills": room_local_skills,
             },
             event_id=f"event_{operation_id}_successor",
         )
@@ -764,6 +772,7 @@ class RoomRuntime:
     def _materialize_rollover_workspace(
         self,
         operation_id: str,
+        source_room_id: str,
         successor_room_id: str,
         release: InstitutionalRelease | None,
     ) -> None:
@@ -785,6 +794,9 @@ class RoomRuntime:
             )
             verify_materialized_release(
                 release, staging_workspace, require_exact_inventory=True
+            )
+            inherit_room_local_skills(
+                self.workspace(source_room_id), staging_workspace
             )
             os.replace(staging_workspace, successor_workspace)
             stage_root.rmdir()

@@ -10,7 +10,7 @@
 - **What just changed?** A natural three-agent Room demonstrated runtime discovery of `skill-creator`, `spreadsheets`, and `documents`; autonomous spreadsheet-skill selection; explicit document-skill use; Room-local Skill Creator authoring with a deterministic helper; runtime discovery of the created skill; and cross-agent reuse. See E-153.
 - **Verification state:** Stage A natural Room evidence is **VERIFIED** (E-153). Stage B exact implementation head `5b97c584ef30bcfa167e2337f59c09ee55ed7ebd` is **VERIFIED** and merged through PR #157 as canonical squash commit `70cb80ee25281f5217213953e40b7657e68148f2` (E-154). The Stage A Room also exposed severe execution cost: about 5.28M recorded execution tokens total.
 - **What is blocked?** Nothing blocks ordinary Codex Room use. Skill use is functionally available natively; the current work is policy and persistence discipline, not a missing invocation mechanism.
-- **What is next?** Proceed to I-020 Stage D: decide and implement the smallest safe persistence mechanism for selected Room-local skills across Room rollover. Stage C's explicit SkillInput bridge remains unneeded unless later evidence shows a real reliability/latency gap.
+- **What is next?** Exact-head verify the bounded I-020 Stage D candidate on PR #159. It carries direct Room-local skill packages under `.agents/skills/<name>/SKILL.md` across rollover with exact-byte/tree-hash provenance while continuing to exclude unrelated workspace state.
 - **What are we deliberately not doing?** No Codex Desktop/TUI command palette, no parallel Room skill registry, no automatic global/user-scope skill writes, no SkillInput bridge without evidence, no immediate rewrite of D-022, no fourth persistent agent, and no Codex built-in subagents.
 
 ## Current focus
@@ -21,7 +21,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** Stages A-B IMPLEMENTED / VERIFIED; Stage C NOT WARRANTED; Stage D PLANNED / NEEDS VERIFICATION
+**Reality / evidence:** Stages A-B IMPLEMENTED / VERIFIED; Stage C NOT WARRANTED; Stage D IMPLEMENTATION IN PROGRESS / NEEDS EXACT-HEAD VERIFICATION
 
 **Origin:** principal selection after I-019 / D-041 cleanup
 
@@ -45,7 +45,7 @@
 
 **Stage C — Explicit invocation bridge. NOT WARRANTED BY CURRENT EVIDENCE.** Stage A showed successful autonomous selection, explicit named-skill use, Skill Creator authoring, runtime discovery, and cross-agent reuse without a Room-specific bridge. Keep the official Python SDK `SkillInput(name, path)` path as a future fallback only if later evidence exposes a real reliability or latency gap. Do not build a slash-command parser or copy the Desktop/TUI popup.
 
-**Stage D — Skill persistence decision.** Test whether Room-local skills remain available across the work lifecycle that matters in practice. If rollover continuity is required, choose the smallest safe mechanism after evidence: exact-byte lineage carry of selected Room-local skills, or deliberate principal-approved promotion to a broader Codex skill scope. Do not silently make a Room-created skill global. Preserve exact provenance if Codex Room itself carries skill bytes across lineage.
+**Stage D — Skill persistence. IN PROGRESS.** The bounded candidate treats direct packages under `.agents/skills/<name>/SKILL.md` as lineage-local Room skills and carries them through the existing atomic rollover staging path. Only package files are copied; unrelated workspace files, unrelated `.agents` state, and directories under `.agents/skills` without a direct regular `SKILL.md` remain excluded. Source and destination skill trees reject symlinks/special entries, inheritance is bounded to 1,024 files / 64 MiB, copied bytes are rehashed before exposure, and rollover events record skill names/counts plus a deterministic tree SHA-256. Skills remain Room-lineage scope; no global promotion occurs automatically.
 
 **Stage E — Reconcile D-022 after evidence.** Only after Stages A-D establish the real boundary, decide whether D-022 needs an additive/superseding decision. The likely hierarchy to evaluate is: **use existing Codex skill → create skill with Skill Creator → use skill-local deterministic script when sufficient → promote to registered Codex Room capability only for stronger institutional guarantees**. Do not alter D-022 merely from architectural analogy.
 
