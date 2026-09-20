@@ -1,7 +1,7 @@
 # Codex Room — Decision Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-19  
+**Last updated:** 2026-09-20  
 **Scope:** Settled architectural, governance, product-direction, and development-order decisions.  
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
@@ -28,13 +28,11 @@ Temporary experimental participants do not themselves expand the production arch
 
 ### D-003 — A/B/C role differentiation and peer status
 **Date:** 2026-09-08 or earlier  
-**Status:** ACTIVE
+**Status:** SUPERSEDED
 
-- A — Implementer
-- B — Verifier
-- C — Integrator
+The early formulation assigned occupational labels to A, B, and C. D-023 and D-024 superseded those permanent-role labels. Current Personal design treats A and B as operationally equivalent persistent epistemic peers with the same neutral default profile and no protected occupational or cognitive specialization. C is also an epistemic peer and retains protected coordination responsibilities.
 
-A/B/C are epistemic peers. C may coordinate without gaining superior judgment.
+The enduring principle survives in later active decisions:
 
 **Principle:** **C controls coordination, not judgment.**
 
@@ -219,7 +217,7 @@ Codex Room Personal should align runtime behavior with the settled three-agent p
 
 Settled architecture and behavior:
 
-- every new Personal Room contains A — Implementer, B — Verifier, and C — Integrator from creation; C is not optional for new Personal Rooms;
+- every new Personal Room contains Agent A, Agent B, and Agent C from creation; A and B have no permanent occupational specialization, and C is not optional for new Personal Rooms;
 - historical two-agent Rooms remain valid historical state and must not be silently mutated merely because the new architecture is mandatory; an explicit upgrade/migration path may add C while preserving A/B identities and provenance;
 - C is the human principal's default initial agent contact and the ordinary default Round starter;
 - C decides the initial conversation dynamics and may selectively invoke A, B, both, or neither according to the work;
@@ -294,7 +292,7 @@ Settled design:
 - C's organizer status grants no superior judgment or authority over A or B;
 - exact default-personality wording is deliberately below the Charter/Constitution level and may be refined empirically without reopening the three-agent architecture.
 
-This decision supersedes D-020 only where D-020 names **Implementer / Verifier / Integrator** as permanent agent-role descriptors. D-020's permanent-triad, C-first coordination, direct peer communication, selective invocation, and integration-before-closure requirements remain active.
+This decision supersedes the historical occupational-role labels in D-003 and D-020. D-020's permanent-triad, C-first coordination, direct peer communication, selective invocation, and integration-before-closure requirements remain active.
 
 **Implementation status:** the protected-instruction / replaceable-profile composition model is **IMPLEMENTED / VERIFIED** by PR #28 and E-041. D-024 subsequently established neutral/empty standard profile bodies for A/B/C; occupational labels are not startup cognitive specializations.
 
@@ -542,7 +540,7 @@ Settled coordination policy:
 - before delegating multiple assignments concurrently, C must determine whether each assignment can produce a useful result without another assignment's output;
 - genuinely independent work should remain parallel;
 - work whose useful completion depends on a prerequisite artifact, evidence, or result should be sequenced after that prerequisite exists;
-- verification of an artifact should not be treated as concurrent with creation or modification of that same artifact unless the verifier has meaningful independent work it can complete before the artifact exists;
+- verification of an artifact should not be treated as concurrent with creation or modification of that same artifact unless the peer assigned verification has meaningful independent work it can complete before the artifact exists;
 - when delegated implementation, correction, or investigation fails to produce needed work, **or when fallback work reaches C because another assignment failed or settled without producing it**, C should normally place substantial tool-heavy execution in a fresh bounded peer assignment rather than perform it itself;
 - that fallback rule applies whether C is acting in its root coordination assignment or in a child assignment created by a peer;
 - when choosing where fallback should run, prefer the capable assignment with the least unnecessary accumulated context rather than automatically using the coordinator's already-large context;
