@@ -6,14 +6,70 @@
 
 ## Operator summary
 
-- **Where are we?** I-020 — Codex skill integration and Skill Creator adoption — is **COMPLETE / IMPLEMENTED / VERIFIED**. Native Codex skills are the first-line reusable workflow layer; Room-local Skill Creator outputs persist across rollover; D-042 preserves Codex Room registered capabilities as the stronger governed tier.
-- **What just changed?** I-020 closed using existing exact evidence rather than another model-heavy test. E-153 supplies naturalistic skill discovery/use/creation/reuse evidence; E-154 verifies the protected skill-policy implementation; E-155 verifies exact Room-local skill rollover; D-042 settles the resulting architecture; E-156 records the final acceptance mapping.
-- **Verification state:** I-020 is **VERIFIED** by the combined E-153 through E-156 evidence set. Stage A naturalistic behavior, Stage B exact protected-policy implementation, Stage D exact rollover implementation, and the Stage F acceptance mapping are all recorded. The Stage A exercise also remains an execution-economics warning at about 5.28M recorded execution tokens.
-- **What is blocked?** Nothing in I-020 blocks ordinary Codex Room use. Stage C remains an intentionally unimplemented fallback unless future evidence shows native skill invocation is unreliable.
-- **What is next?** I-020 has no remaining work. Return to the principal-approved post-I-018 roadmap or another explicitly selected objective; do not automatically launch another implementation merely because I-020 closed.
-- **What are we deliberately not doing?** No Codex Desktop/TUI command palette, no parallel Room skill registry, no automatic global/user-scope skill writes, no SkillInput bridge without evidence, no immediate rewrite of D-022, no fourth persistent agent, and no Codex built-in subagents.
+- **Where are we?** I-021 — Principal-controlled Codex plugin management — is **PLANNED / DECIDED-NOT IMPLEMENTED / NEEDS VERIFICATION**. The principal selected a bounded host-surface objective: allow plugin install/enable/disable from Codex Room by reusing native Codex/App Server mechanisms rather than requiring a separate trip through another Codex host.
+- **What just changed?** Planning only. No runtime code or plugin state has changed. The plan makes plugin-state mutation a principal-controlled host action, not an autonomous A/B/C capability, and preserves Codex as the authoritative plugin/catalog/configuration substrate.
+- **Verification state:** Current Codex Room already inspects installed plugin, skill, MCP, and app state through App Server for Status & Tools. Current upstream Codex exposes native plugin installation and configuration-write mechanisms, but exact compatibility and semantics of the Codex Room runtime must be verified before any mutation path is implemented.
+- **What is blocked?** Nothing blocks Stage A. Any authentication/account-selection bridge remains evidence-gated: implement only the smallest native handoff a real plugin activation demonstrates is necessary.
+- **What is next?** Execute I-021 Stage A only: verify the exact local App Server/SDK plugin mutation contracts, scope, policy responses, refresh semantics, and principal-only enforcement requirements before writing the mutation bridge.
+- **What are we deliberately not doing?** No parallel plugin registry or marketplace, no arbitrary Codex config editor, no autonomous agent plugin install/enable/disable, no secret capture, no prebuilt generic OAuth/elicitation subsystem, no copied Desktop/TUI plugin manager, and no adjacent host-parity work.
 
 ## Current focus
+
+### I-021 — Principal-controlled Codex plugin management
+
+**Scope:** [CORE + ROOM UI, reusing native Codex/App Server plugin facilities]
+
+**Work state:** PLANNED
+
+**Reality / evidence:** DECIDED-NOT IMPLEMENTED / NEEDS VERIFICATION
+
+**Origin:** explicit principal selection on 2026-09-20 after confirming that Codex Room currently inherits plugin-derived capabilities but does not provide a principal-facing mutation path.
+
+**Objective:** let the principal install, enable, and disable supported Codex plugins from Codex Room without constructing a second plugin system. Codex/App Server remains authoritative for marketplace/catalog state, installation, enablement, authentication status, contributed skills/MCP/apps, and configuration persistence.
+
+**Governing boundaries:**
+
+- plugin-state mutation is a **principal action**. A/B/C may identify a useful plugin, inspect safely exposed status, and recommend a change, but they must not autonomously install, enable, disable, or reconfigure plugins;
+- principal control must be enforced mechanically, not only by prompt guidance. A shell-capable Room agent must not be able to reproduce the principal mutation action merely by calling an unauthenticated local endpoint;
+- reuse native App Server plugin/configuration operations when the exact active runtime supports them. Do not write Codex plugin configuration files directly as a fallback and do not build a parallel Room plugin catalog, installer, or package format;
+- the first release must operate only on plugin identities/sources returned by native Codex inventory/marketplace surfaces. No arbitrary filesystem plugin path, arbitrary package source, or generic config-key editing belongs in the principal UI;
+- every state-changing action must make its scope clear: the change affects the underlying Codex plugin configuration and may outlive the current Room;
+- Codex Room must not collect, proxy, persist, log, or display third-party credentials or tokens. If a plugin requires OAuth, account selection, approval, or elicitation, use an existing native interaction path if available; otherwise stop and implement only the smallest principal handoff demonstrated necessary by the selected plugin;
+- after a successful mutation, refresh authoritative plugin/skill/MCP/app state from App Server rather than predicting contributed capabilities;
+- built-in Codex subagents remain disabled and no plugin may silently relax that boundary;
+- installation/enablement authority is separate from later **use** of plugin-contributed capabilities. I-021 does not by itself settle the skill/capability admission-economics policy.
+
+**Implementation sequence:**
+
+**Stage A — Exact-runtime contract and authority audit. PLANNED.** On the currently supported Codex Room runtime, verify the generated SDK/App Server contracts and behavior for installed-plugin inventory, marketplace/plugin discovery needed for safe selection, plugin/install, plugin enable/disable through native configuration writes, policy/admin-disabled responses, authentication status, refresh/reload behavior, and persistence scope. Establish whether plugin changes take effect on existing Room threads or require a bounded refresh/restart. Confirm the threat model for localhost/API access and choose a principal-proof mechanism that agents cannot reproduce from their workspace shell. **No user plugin state is changed in Stage A unless the principal separately authorizes a specific bounded probe.**
+
+**Stage B — Principal-only mutation bridge. PLANNED, gated by Stage A.** Add the smallest host-side adapter around the verified native App Server operations. Expose narrow typed actions for supported install, enable, and disable operations; reject unknown plugin identities, unsupported sources, arbitrary config paths, stale state where relevant, and calls lacking valid principal proof. Return normalized native results/errors without exposing secrets. Do not grant these operations to agent tool surfaces.
+
+**Stage C — Status & Tools principal controls. PLANNED, gated by Stage B.** Extend the existing plugin inventory card rather than creating a new plugin manager. Show installed/enabled/availability/auth state already reported by Codex and only the mutation controls valid for that item. State-changing controls require an explicit principal gesture and confirmation that the change affects underlying Codex configuration. After mutation, refresh the existing inherited capability inventory.
+
+**Stage D — Real plugin interaction proof. PLANNED, gated by Stages B/C.** Use one principal-selected real plugin, initially Google Drive if available in the native marketplace/runtime, to prove the end-to-end path. Verify install/enable/disable and resulting inventory changes. If authentication is already satisfied, stop there. If Codex reports interaction required, characterize the exact native requirement before adding any auth/account-selection UI.
+
+**Stage E — Bounded interaction bridge only if demonstrated necessary. CONDITIONAL.** If Stage D proves that a useful plugin cannot become callable without a principal OAuth/approval/account-selection/elicitation step that Codex Room cannot currently surface, expose only the existing native interaction required by that case. Never ask A/B/C to handle credentials. If the native Codex host must remain the authentication authority and App Server exposes no safe handoff, document that boundary instead of copying another host's auth implementation.
+
+**Stage F — Acceptance, economics, and closeout. PLANNED.** Verify deterministic principal-only enforcement, exact plugin-state mutation, authoritative post-change inventory refresh, persistence semantics, error handling, no secret leakage, and no regression to existing Status & Tools or A/B/C execution. Record any meaningful execution-economics evidence, update Architecture & Current State only for behavior actually implemented, and close I-021 only on exact-version verification.
+
+**Acceptance target:**
+
+- the principal can install a supported native Codex plugin from Codex Room when native policy permits;
+- the principal can enable and disable an installed supported plugin from Codex Room;
+- A/B/C can recommend a plugin change but cannot cause the mutation without a mechanically valid principal action;
+- Codex/App Server remains the authoritative plugin/catalog/configuration source; Codex Room keeps no competing plugin registry;
+- successful mutation is followed by authoritative refreshed plugin plus contributed skill/MCP/app visibility;
+- policy-disabled, unavailable, unauthenticated, stale, and failed operations are reported truthfully without unsafe fallback;
+- no third-party credentials/tokens enter Room transcripts, logs, exports, or Codex Room persistence;
+- if Google Drive or another selected plugin requires additional principal interaction, only the demonstrated missing interaction is added.
+
+**Stop conditions:**
+
+- if the exact supported App Server/runtime does not expose a safe native mutation contract, stop rather than directly editing Codex configuration files;
+- if principal-only enforcement would require a broad general-purpose security subsystem, stop and narrow the design before implementation;
+- if a real plugin works after native mutation without additional auth UI, do not build a generic OAuth/elicitation bridge;
+- do not expand I-021 into general Codex settings management, marketplace reproduction, skill invocation policy, or Desktop/TUI parity.
 
 ### I-020 — Codex skill integration and Skill Creator adoption
 

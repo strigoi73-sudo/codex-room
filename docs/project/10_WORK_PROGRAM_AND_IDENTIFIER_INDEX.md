@@ -68,6 +68,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-018` | Codex Desktop ↔ Codex Room capability audit | Development Control |
 | `I-019` | Human-facing capability visibility | Development Control / E-149 |
 | `I-020` | Codex skill integration and Skill Creator adoption | Development Control |
+| `I-021` | Principal-controlled Codex plugin management | Development Control |
 
 ## 4. Decision and evidence identifiers
 
