@@ -1790,3 +1790,75 @@ PBM v1 now includes:
 
 **Assessment:** I-023 PBM v1 is **IMPLEMENTED / EXACT-HEAD VERIFIED** and may be used for its first live benchmark run. This evidence does **not** claim that a Desktop-vs-Room PBM run has yet occurred, that the live integration path has been behaviorally exercised end-to-end, or that either product has any measured performance advantage.
 
+---
+
+### E-164 — PBM v2 contextual baseline exact-head verification and non-cognitive native preflight
+**Date:** 2026-09-20  
+**Kind:** [deterministic exact-head verification / read-only native runtime preflight / benchmark protocol verification / Git provenance]  
+**Related work:** I-024 / D-046 / D-039  
+**Runtime/model benchmark traffic changed:** none  
+**Evidence state:** VERIFIED for PBM v2 implementation bytes and read-only context-snapshot behavior; no live paid PBM result is claimed
+
+PBM v2 was verified on exact feature head:
+
+`b69cf713657d7ad3f742f657f70002a61ea4eecd`
+
+The principal ran the exact-head verification against a clean detached checkout. Deterministic verification observed:
+
+- exact HEAD matched the expected feature SHA;
+- tracked working tree was clean;
+- `git diff --check origin/main...HEAD`: PASS;
+- `pbm-desktop.ps1` PowerShell parser: no errors;
+- `pbm-room.ps1` PowerShell parser: no errors;
+- focused PBM + usage tests: **16 passed**;
+- `verify-fast.cmd`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **9 passed**;
+- only the already-known FastAPI/Starlette dependency deprecation warnings appeared.
+
+A first verification-block attempt stopped before context collection because the helper parameter name `$Home` collided case-insensitively with PowerShell's read-only `$HOME` variable. This was a verification-script defect, not a PBM implementation failure. The principal then reran only the corrected read-only preflight and final exact-head/tree checks; the already-passed deterministic suite was not needlessly repeated.
+
+The corrected PBM v2 context preflight observed:
+
+- PBM version: `v2`;
+- `openai-codex` package version: `0.154.0`;
+- native runtime version: `0.154.0`;
+- Room runtime version: `0.154.0`;
+- native `account/rateLimits/read`: **available**;
+- native `account/usage/read`: **available**;
+- native effective config read: **available**;
+- Room-effective config read: **available**;
+- no new or modified Codex rollout JSONL appeared during snapshot collection;
+- no PBM task execution directory/state was created;
+- persisted snapshot passed the sensitive-key scan;
+- final HEAD still matched the exact verified feature SHA;
+- final tracked working tree remained clean.
+
+The preflight also demonstrated that the contextual data is materially useful. At the snapshot taken on 2026-09-20, the native Codex response reported:
+
+- ordinary usage allowed: true;
+- plan type: Plus;
+- primary 300-minute window: **0% used**;
+- secondary 10,080-minute window: **9% used**;
+- purchased-credit balance: **0** / no credits;
+- daily account usage and lifetime-token summary were readable through the native account-usage surface.
+
+Those values are evidence about that exact snapshot only; PBM v2 records corresponding start/end and per-task-pair snapshots so later performance results can be interpreted against changing provider/account state.
+
+PBM v2 also preserves naturalistic Room cognition under D-039. The benchmark records the Room defaults and actual execution model/reasoning provenance, but does not pin C/A/B to one model/effort configuration. Ordinary C-controlled dynamic allocation among admitted Luna/Terra/Sol × Low/Medium/High configurations remains part of the Room behavior being measured.
+
+PR #178 was merged with expected-head protection. Canonical merge commit:
+
+`33b0dd7af38c2d84e3cbf2babedc4ac78410d5ce`
+
+Git object verification after merge established:
+
+- tested feature-head tree SHA: `ec90a8344f3dc451b2817c422f0816ce6086520a`;
+- canonical merge-commit tree SHA: `ec90a8344f3dc451b2817c422f0816ce6086520a`;
+- the canonical merge commit directly lists the tested feature head as one of its parents.
+
+Therefore the canonical merged PBM v2 implementation bytes are exactly the bytes that passed the deterministic verification and read-only context preflight.
+
+**Assessment:** I-024 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / READ-ONLY PREFLIGHT VERIFIED**. `benchmarks/pbm/CURRENT` now selects PBM v2 for the unqualified **“Run PBM”** invocation. PBM v1 remains frozen and explicitly reproducible. No live paid Desktop-versus-Room PBM task has yet been run and no product-performance conclusion is claimed by this evidence.
+
