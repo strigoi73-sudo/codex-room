@@ -1,0 +1,13 @@
+Repair normalize_slug in slug.py.
+
+Observed defect: accented Latin text is losing letters instead of being normalized to an ASCII slug.
+
+Required behavior:
+- Trim surrounding whitespace.
+- Lowercase text.
+- Transliterate accented Latin characters by removing combining marks where possible.
+- Replace runs of non-ASCII-alphanumeric characters with a single hyphen.
+- Remove leading/trailing hyphens.
+- Preserve the existing function name.
+- Raise TypeError when value is not a string.
+- Use only the Python standard library.

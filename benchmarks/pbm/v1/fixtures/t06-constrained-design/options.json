@@ -1,0 +1,31 @@
+[
+  {
+    "id": "sqlite-single-file",
+    "monthly_cost_usd": 0,
+    "satisfies": [
+      "no_external_service",
+      "retention_30_days",
+      "recovery_point_5_minutes"
+    ]
+  },
+  {
+    "id": "segmented-jsonl",
+    "monthly_cost_usd": 15,
+    "satisfies": [
+      "no_external_service",
+      "append_only",
+      "human_inspectable",
+      "retention_30_days",
+      "recovery_point_5_minutes"
+    ]
+  },
+  {
+    "id": "managed-postgres",
+    "monthly_cost_usd": 120,
+    "satisfies": [
+      "append_only",
+      "retention_30_days",
+      "recovery_point_5_minutes"
+    ]
+  }
+]
