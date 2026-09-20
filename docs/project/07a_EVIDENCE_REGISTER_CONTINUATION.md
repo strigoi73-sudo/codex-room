@@ -1657,7 +1657,7 @@ The audit began from canonical `main` at `bb1d057e698909c2212663181b73cdc72f67bc
 
 4. **I-019 contained stale closeout wording.** The current file simultaneously marked the D-041 catalog cleanup COMPLETE / VERIFIED and retained an older sentence saying the cleanup still required fresh exact-byte verification. E-152 had already supplied that verification. The same area also called skills evaluation back-burnered even though I-020 later completed and D-042 settled the native-skill hierarchy.
 
-5. **I-021 no longer represented active implementation.** Stage A plugin-contract/authority evidence remains verified (E-157/E-158), but no state-changing mutation bridge is currently selected after the principal explicitly corrected the assumption that the capability audit implied moving directly into a feature build. I-021 is therefore retained as DEFERRED / DECIDED-NOT IMPLEMENTED rather than an active default lane.
+5. **I-021 remains an open development topic but has no selected Stage-B path.** Stage A plugin-contract/authority evidence remains verified (E-157/E-158). The principal had selected plugin administration before I-022, so the audit does not revoke that choice. However, no state-changing mutation bridge is currently selected as the automatic next implementation; Stage B must first resolve native/Desktop-managed administration versus a Room-side principal mutation surface.
 
 6. **I-022 itself had reached a natural closeout.** Stage A exact-source audit and Stage B comparative matrix are complete. No implementation was authorized. The current roadmap should therefore present principal selection or ordinary use as the next boundary rather than invent a default feature.
 
@@ -1673,7 +1673,7 @@ The audit began from canonical `main` at `bb1d057e698909c2212663181b73cdc72f67bc
 
 - Development Control was consolidated to approximately 11.8 KB / 181 lines, retaining only current/deferred/monitor state, compact recent-completion pointers, the QoL wishlist, and open questions.
 - I-022 is now COMPLETE / audit-only / no implementation authorized.
-- I-021 is DEFERRED pending separate principal selection and re-evaluation of native Desktop-managed plugin administration versus a Room mutation bridge.
+- I-021 remains IN PROGRESS at the topic level with Stage A complete; its Stage-B administration path remains unselected pending re-evaluation of native Desktop-managed plugin administration versus a Room mutation bridge.
 - The stale ordered post-I-018 roadmap and duplicated historical narratives were removed from volatile work control.
 - Common Cause competitive play is explicitly identified as non-development pending principal activity.
 - Historical identifier pointers were repaired to their actual durable owners.
