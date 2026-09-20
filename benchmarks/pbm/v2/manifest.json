@@ -1,0 +1,90 @@
+{
+  "schema": "pbm-manifest-v2",
+  "version": "v2",
+  "mode": "naturalistic",
+  "tasks": [
+    {
+      "id": "t01-mechanical-change",
+      "title": "Trivial mechanical change",
+      "category": "mechanical",
+      "prompt_file": "prompts/t01-mechanical-change.txt",
+      "fixture_dir": "fixtures/t01-mechanical-change",
+      "grader_file": "graders/t01-mechanical-change.py",
+      "room_max_turns": 6
+    },
+    {
+      "id": "t02-bounded-investigation",
+      "title": "Bounded repository investigation",
+      "category": "investigation",
+      "prompt_file": "prompts/t02-bounded-investigation.txt",
+      "fixture_dir": "fixtures/t02-bounded-investigation",
+      "grader_file": "graders/t02-bounded-investigation.py",
+      "room_max_turns": 8
+    },
+    {
+      "id": "t03-localized-bug",
+      "title": "Localized Unicode slug bug",
+      "category": "bugfix",
+      "prompt_file": "prompts/t03-localized-bug.txt",
+      "fixture_dir": "fixtures/t03-localized-bug",
+      "grader_file": "graders/t03-localized-bug.py",
+      "room_max_turns": 12
+    },
+    {
+      "id": "t04-small-feature",
+      "title": "Transaction summary feature",
+      "category": "feature",
+      "prompt_file": "prompts/t04-small-feature.txt",
+      "fixture_dir": "fixtures/t04-small-feature",
+      "grader_file": "graders/t04-small-feature.py",
+      "room_max_turns": 14
+    },
+    {
+      "id": "t05-state-mutation-bug",
+      "title": "Atomic inventory reservation repair",
+      "category": "diagnosis-and-repair",
+      "prompt_file": "prompts/t05-state-mutation-bug.txt",
+      "fixture_dir": "fixtures/t05-state-mutation-bug",
+      "grader_file": "graders/t05-state-mutation-bug.py",
+      "room_max_turns": 14
+    },
+    {
+      "id": "t06-constrained-design",
+      "title": "Evidence-backed storage choice",
+      "category": "design",
+      "prompt_file": "prompts/t06-constrained-design.txt",
+      "fixture_dir": "fixtures/t06-constrained-design",
+      "grader_file": "graders/t06-constrained-design.py",
+      "room_max_turns": 10
+    },
+    {
+      "id": "t07-spec-repair",
+      "title": "Escaped-field codec specification repair",
+      "category": "specification-repair",
+      "prompt_file": "prompts/t07-spec-repair.txt",
+      "fixture_dir": "fixtures/t07-spec-repair",
+      "grader_file": "graders/t07-spec-repair.py",
+      "room_max_turns": 16
+    },
+    {
+      "id": "t08-integrated-cli",
+      "title": "Integrated order-report CLI feature",
+      "category": "integrated",
+      "prompt_file": "prompts/t08-integrated-cli.txt",
+      "fixture_dir": "fixtures/t08-integrated-cli",
+      "grader_file": "graders/t08-integrated-cli.py",
+      "room_max_turns": 20
+    }
+  ],
+  "schema_version": 2,
+  "asset_version": "v1",
+  "context_snapshot_protocol": {
+    "required": true,
+    "run_start": true,
+    "run_end": true,
+    "task_pair_pre": true,
+    "task_pair_post": true,
+    "primary_accounting": "rollout_and_room_execution_usage",
+    "contextual_accounting": "native_account_rate_limits_and_usage"
+  }
+}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import hashlib
 import json
 import os
@@ -16,7 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from . import codex_usage
+from . import codex_usage, pbm_context
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PBM_ROOT = PROJECT_ROOT / "benchmarks" / "pbm"
@@ -65,19 +66,28 @@ def load_manifest(version: str | None = None) -> dict[str, Any]:
 
 def benchmark_fingerprint(version: str | None = None) -> str:
     root = version_root(version)
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    roots = [root]
+    asset_version = manifest.get("asset_version")
+    if isinstance(asset_version, str) and asset_version and asset_version != root.name:
+        roots.append(version_root(asset_version))
+
     digest = hashlib.sha256()
-    for path in sorted(item for item in root.rglob("*") if item.is_file()):
-        rel = path.relative_to(root).as_posix()
-        digest.update(rel.encode("utf-8"))
-        digest.update(b"\0")
-        digest.update(path.read_bytes())
-        digest.update(b"\0")
+    for source_root in roots:
+        prefix = source_root.name
+        for path in sorted(item for item in source_root.rglob("*") if item.is_file()):
+            rel = f"{prefix}/{path.relative_to(source_root).as_posix()}"
+            digest.update(rel.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(path.read_bytes())
+            digest.update(b"\0")
     return digest.hexdigest()
 
 
 def task_info(task_id: str, version: str | None = None) -> dict[str, Any]:
     manifest = load_manifest(version)
-    root = version_root(manifest["version"])
+    asset_version = manifest.get("asset_version") or manifest["version"]
+    root = version_root(str(asset_version))
     for task in manifest["tasks"]:
         if task["id"] != task_id:
             continue
@@ -91,6 +101,8 @@ def task_info(task_id: str, version: str | None = None) -> dict[str, Any]:
         return {
             **task,
             "version": manifest["version"],
+            "asset_version": str(asset_version),
+            "schema_version": int(manifest.get("schema_version") or 1),
             "prompt": guard + prompt,
             "benchmark_fingerprint": benchmark_fingerprint(manifest["version"]),
         }
@@ -125,8 +137,10 @@ def new_run(run_id: str | None = None, version: str | None = None) -> dict[str, 
                 "first_arm": "desktop" if index % 2 else "room",
             }
         )
+    schema_version = int(manifest.get("schema_version") or 1)
     payload = {
-        "schema": "pbm-run-v1",
+        "schema": f"pbm-run-v{schema_version}",
+        "schema_version": schema_version,
         "run_id": run_id,
         "benchmark_version": manifest["version"],
         "benchmark_fingerprint": benchmark_fingerprint(manifest["version"]),
@@ -167,15 +181,15 @@ def prepare_task(
 ) -> dict[str, Any]:
     if arm not in {"desktop", "room"}:
         raise PBMError("PBM arm must be desktop or room")
-    info = task_info(task_id)
-    root = version_root(info["version"])
-    fixture = root / info["fixture_dir"]
-    if not fixture.is_dir():
-        raise PBMError(f"fixture directory not found: {fixture}")
     expected_run = run_root(run_id) / "run.json"
     if not expected_run.is_file():
         raise PBMError(f"PBM run not found: {run_id}")
     run_meta = json.loads(expected_run.read_text(encoding="utf-8"))
+    info = task_info(task_id, run_meta["benchmark_version"])
+    root = version_root(info["asset_version"])
+    fixture = root / info["fixture_dir"]
+    if not fixture.is_dir():
+        raise PBMError(f"fixture directory not found: {fixture}")
     if run_meta.get("benchmark_fingerprint") != info["benchmark_fingerprint"]:
         raise PBMError("PBM benchmark bytes changed after this run was created")
     _copy_fixture(fixture, workspace, allow_existing=allow_existing)
@@ -183,7 +197,7 @@ def prepare_task(
     prompt_path = evidence_dir / "prompt.txt"
     prompt_path.write_text(info["prompt"], encoding="utf-8")
     prepared = {
-        "schema": "pbm-prepared-v1",
+        "schema": f"pbm-prepared-v{info['schema_version']}",
         "run_id": run_id,
         "task_id": task_id,
         "arm": arm,
@@ -200,9 +214,11 @@ def prepare_task(
     return prepared
 
 
-def _run_grader(task_id: str, workspace: Path) -> dict[str, Any]:
-    info = task_info(task_id)
-    grader = version_root(info["version"]) / info["grader_file"]
+def _run_grader(
+    task_id: str, workspace: Path, version: str | None = None
+) -> dict[str, Any]:
+    info = task_info(task_id, version)
+    grader = version_root(info["asset_version"]) / info["grader_file"]
     process = subprocess.run(
         [sys.executable, str(grader), str(workspace.resolve())],
         cwd=str(PROJECT_ROOT),
@@ -315,7 +331,7 @@ def desktop_complete(
         (codex_home or codex_usage.default_codex_home()).expanduser(),
     )
     usage = codex_usage.analyze_rollout(rollout)
-    grade = _run_grader(task_id, workspace)
+    grade = _run_grader(task_id, workspace, prepared["benchmark_version"])
     protocol_warnings: list[str] = []
     user_turns = usage["counts"]["user_turns"]
     if user_turns != 1:
@@ -339,7 +355,7 @@ def desktop_complete(
         "context_compactions": usage["counts"]["context_compactions"],
     }
     result = {
-        "schema": "pbm-result-v1",
+        "schema": f"pbm-result-v{int(load_manifest(prepared['benchmark_version']).get('schema_version') or 1)}",
         "run_id": run_id,
         "task_id": task_id,
         "arm": "desktop",
@@ -475,7 +491,9 @@ def room_complete(
         raise PBMError("PBM benchmark bytes changed after Room preparation")
     export = json.loads(export_path.read_text(encoding="utf-8-sig"))
     aggregate = aggregate_room_export(export, round_id)
-    grade = _run_grader(task_id, Path(prepared["workspace"]))
+    grade = _run_grader(
+        task_id, Path(prepared["workspace"]), prepared["benchmark_version"]
+    )
     executions = _room_execution_provenance(database, room_id, round_id)
     result = {
         "schema": "pbm-result-v1",
@@ -520,6 +538,8 @@ def build_report(run_id: str) -> dict[str, Any]:
     root = run_root(run_id)
     run_meta = json.loads((root / "run.json").read_text(encoding="utf-8"))
     manifest = load_manifest(run_meta["benchmark_version"])
+    schema_version = int(manifest.get("schema_version") or 1)
+    context = pbm_context.context_summary(root) if schema_version >= 2 else None
     pairs: list[dict[str, Any]] = []
     aggregate = {
         "desktop_total_tokens": 0,
@@ -556,12 +576,13 @@ def build_report(run_id: str) -> dict[str, Any]:
                 aggregate[f"{arm}_quality_passes"] += 1
         pairs.append(entry)
     report = {
-        "schema": "pbm-report-v1",
+        "schema": f"pbm-report-v{schema_version}",
         "run_id": run_id,
         "benchmark_version": run_meta["benchmark_version"],
         "benchmark_fingerprint": run_meta["benchmark_fingerprint"],
         "generated_at": utc_now(),
         "aggregate": aggregate,
+        "context": context,
         "pairs": pairs,
     }
     (root / "pbm-report.json").write_text(
@@ -574,10 +595,24 @@ def build_report(run_id: str) -> dict[str, Any]:
         f"- Complete pairs: {aggregate['complete_pairs']} / {len(manifest['tasks'])}",
         f"- Desktop quality passes: {aggregate['desktop_quality_passes']} / {len(manifest['tasks'])}",
         f"- Room quality passes: {aggregate['room_quality_passes']} / {len(manifest['tasks'])}",
+    ]
+    if context is not None:
+        lines.extend(
+            [
+                f"- Context snapshots: {context['snapshot_count']}",
+                f"- Run-start rate limits: {((context.get('run_start') or {}).get('rate_limits_status') or 'unavailable')}",
+                f"- Run-start account usage: {((context.get('run_start') or {}).get('account_usage_status') or 'unavailable')}",
+                f"- Run-end rate limits: {((context.get('run_end') or {}).get('rate_limits_status') or 'not yet captured')}",
+                f"- Run-end account usage: {((context.get('run_end') or {}).get('account_usage_status') or 'not yet captured')}",
+            ]
+        )
+    lines.extend(
+        [
         "",
         "| Task | Desktop score | Desktop tokens | Room score | Room tokens | Room/Desktop |",
         "|---|---:|---:|---:|---:|---:|",
-    ]
+        ]
+    )
     for pair in pairs:
         desktop = pair["results"].get("desktop") or {}
         room = pair["results"].get("room") or {}
@@ -606,10 +641,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     command = sub.add_parser("new-run")
     command.add_argument("--run-id")
+    command.add_argument("--version")
     command.add_argument("--json", action="store_true")
 
     command = sub.add_parser("task")
     command.add_argument("--task-id", required=True)
+    command.add_argument("--version")
     command.add_argument("--json", action="store_true")
 
     command = sub.add_parser("prepare")
@@ -639,6 +676,11 @@ def build_parser() -> argparse.ArgumentParser:
     command = sub.add_parser("report")
     command.add_argument("--run-id", required=True)
 
+    command = sub.add_parser("context-snapshot")
+    command.add_argument("--run-id", required=True)
+    command.add_argument("--label", required=True)
+    command.add_argument("--if-missing", action="store_true")
+
     command = sub.add_parser("list")
     command.add_argument("--json", action="store_true")
     return parser
@@ -648,9 +690,9 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         if args.command == "new-run":
-            value = new_run(args.run_id)
+            value = new_run(args.run_id, args.version)
         elif args.command == "task":
-            value = task_info(args.task_id)
+            value = task_info(args.task_id, args.version)
         elif args.command == "prepare":
             value = prepare_task(
                 run_id=args.run_id,
@@ -678,6 +720,23 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.command == "report":
             value = build_report(args.run_id)
+        elif args.command == "context-snapshot":
+            root = run_root(args.run_id)
+            run_meta = json.loads((root / "run.json").read_text(encoding="utf-8"))
+            if int(run_meta.get("schema_version") or 1) < 2:
+                raise PBMError("context snapshots are not part of this PBM version")
+            current_fingerprint = benchmark_fingerprint(run_meta["benchmark_version"])
+            if run_meta.get("benchmark_fingerprint") != current_fingerprint:
+                raise PBMError("PBM benchmark bytes changed after this run was created")
+            value = asyncio.run(
+                pbm_context.capture_snapshot(
+                    run_root=root,
+                    label=args.label,
+                    project_root=PROJECT_ROOT,
+                    captured_at=utc_now(),
+                    if_missing=args.if_missing,
+                )
+            )
         elif args.command == "list":
             manifest = load_manifest()
             value = {
@@ -687,7 +746,7 @@ def main(argv: list[str] | None = None) -> int:
             }
         else:
             raise PBMError("unsupported PBM command")
-    except (PBMError, OSError, json.JSONDecodeError, subprocess.SubprocessError) as exc:
+    except (PBMError, ValueError, OSError, json.JSONDecodeError, subprocess.SubprocessError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     _json_out(value)

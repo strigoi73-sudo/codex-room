@@ -37,10 +37,66 @@ if (-not $RunId) {
     $RunId = [string]$run.run_id
 }
 
-$ArmDir = Join-Path $Root ("output\pbm\runs\{0}\{1}\desktop" -f $RunId, $TaskId)
+$RunRoot = Join-Path $Root ("output\pbm\runs\{0}" -f $RunId)
+$RunMetaPath = Join-Path $RunRoot 'run.json'
+
+if (-not (Test-Path -LiteralPath $RunMetaPath)) {
+    throw "PBM run metadata not found: $RunMetaPath"
+}
+
+$RunMeta = Get-Content -LiteralPath $RunMetaPath -Raw | ConvertFrom-Json
+$ContextSnapshots = ([int]$RunMeta.schema_version -ge 2)
+
+function Invoke-PBMContextSnapshot {
+    param([Parameter(Mandatory = $true)][string]$Label)
+
+    if (-not $ContextSnapshots) {
+        return
+    }
+
+    & $Python -m codex_room.pbm context-snapshot --run-id $RunId --label $Label --if-missing | Out-Null
+    $snapshotExit = $LASTEXITCODE
+    if ($snapshotExit -ne 0) {
+        throw "PBM context snapshot '$Label' failed with exit code $snapshotExit."
+    }
+}
+
+function Refresh-PBMReport {
+    & $Python -m codex_room.pbm report --run-id $RunId | Out-Null
+    $reportExit = $LASTEXITCODE
+    if ($reportExit -ne 0) {
+        throw "PBM report refresh failed with exit code $reportExit."
+    }
+}
+
+function Complete-PBMContextIfReady {
+    if (-not $ContextSnapshots) {
+        return
+    }
+
+    $desktopResult = Join-Path $RunRoot ("{0}\desktop\result.json" -f $TaskId)
+    $roomResult = Join-Path $RunRoot ("{0}\room\result.json" -f $TaskId)
+
+    if ((Test-Path -LiteralPath $desktopResult) -and (Test-Path -LiteralPath $roomResult)) {
+        Invoke-PBMContextSnapshot -Label ("task-{0}-post" -f $TaskId)
+        Refresh-PBMReport
+
+        $reportPath = Join-Path $RunRoot 'pbm-report.json'
+        $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
+        if ([int]$report.aggregate.complete_pairs -eq @($report.pairs).Count) {
+            Invoke-PBMContextSnapshot -Label 'run-end'
+            Refresh-PBMReport
+        }
+    }
+}
+
+$ArmDir = Join-Path $RunRoot ("{0}\desktop" -f $TaskId)
 $Workspace = Join-Path $ArmDir 'workspace'
 
 if ($Phase -eq 'Prepare') {
+    Invoke-PBMContextSnapshot -Label 'run-start'
+    Invoke-PBMContextSnapshot -Label ("task-{0}-pre" -f $TaskId)
+
     New-Item -ItemType Directory -Force -Path $ArmDir | Out-Null
 
     & $Python -m codex_room.pbm prepare --run-id $RunId --task-id $TaskId --arm desktop --workspace $Workspace --evidence-dir $ArmDir
@@ -56,8 +112,12 @@ if ($Phase -eq 'Prepare') {
     Write-Host ''
     Write-Host '=== PBM DESKTOP ARM PREPARED ===' -ForegroundColor Cyan
     Write-Host "Run ID:    $RunId"
+    Write-Host "PBM:       $($RunMeta.benchmark_version)"
     Write-Host "Task:      $TaskId"
     Write-Host "Workspace: $Workspace"
+    if ($ContextSnapshots) {
+        Write-Host "Context:   run-start + task-pre captured"
+    }
     Write-Host ''
     Write-Host 'In Codex Desktop:' -ForegroundColor Yellow
     Write-Host '1. Open a NEW Codex local chat.'
@@ -87,16 +147,16 @@ if ($Phase -eq 'Complete') {
         throw "PBM Desktop completion failed with exit code $completeExit."
     }
 
-    & $Python -m codex_room.pbm report --run-id $RunId | Out-Null
-    $reportExit = $LASTEXITCODE
-    if ($reportExit -ne 0) {
-        throw "PBM report refresh failed with exit code $reportExit."
-    }
+    Refresh-PBMReport
+    Complete-PBMContextIfReady
 
     Write-Host ''
     Write-Host '=== PBM DESKTOP ARM CAPTURED ===' -ForegroundColor Green
     Write-Host "Run ID: $RunId"
     Write-Host "Task:   $TaskId"
     Write-Host "Result: $(Join-Path $ArmDir 'result.json')"
-    Write-Host "Report: $(Join-Path $Root ("output\pbm\runs\{0}\pbm-report.md" -f $RunId))"
+    Write-Host "Report: $(Join-Path $RunRoot 'pbm-report.md')"
+    if ($ContextSnapshots) {
+        Write-Host "Context: $(Join-Path $RunRoot 'context')"
+    }
 }

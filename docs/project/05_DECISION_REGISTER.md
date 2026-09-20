@@ -786,7 +786,29 @@ Settled invocation contract:
 - PBM should use deterministic setup, usage capture, aggregation, acceptance checks, and reporting wherever practical; paid model cognition should be reserved for the benchmark tasks themselves;
 - PBM execution is split by product surface: a dedicated Desktop script prepares/captures the native Codex Desktop arm, a dedicated Room script prepares/drives/captures the Codex Room arm, and shared deterministic code may handle only common manifest/fixture/grading/accounting/reporting mechanics; the Desktop arm must not be replaced by CLI execution and the Room arm must not be impersonated by Desktop;
 - PBM compares Codex Room and ordinary Codex Desktop under standardized paired conditions and must preserve quality/correctness alongside usage, rather than declaring a cheaper failed result more efficient;
-- until PBM v1 is implemented and verified, the invocation contract is settled but the benchmark itself remains under development.
+- implementation/verification status for each PBM version belongs in Development Control and Evidence; the naming/invocation contract remains stable across versions.
 
 **Principle:** **“Run PBM” invokes a versioned standard; it does not redesign the test.**
+
+### D-046 — PBM v2 adds contextual baseline snapshots while preserving v1 task assets and primary accounting
+**Date:** 2026-09-20
+**Status:** ACTIVE
+
+Before the first live PBM run, the principal required standardized baseline information that would make final performance results easier to interpret.
+
+PBM v2 therefore changes the **measurement/context protocol**, not the task workload:
+
+- PBM v1 remains frozen and reproducible as an explicit historical version;
+- PBM v2 inherits the exact eight v1 prompts, fixtures, graders, paired order, and naturalistic Desktop-versus-Room comparison;
+- the v2 fingerprint binds both the v2 protocol bytes and the referenced frozen v1 asset bytes;
+- v2 captures read-only **run-start**, **task-pair pre**, **task-pair post**, and **run-end** context snapshots;
+- snapshots record repository/environment provenance, safe Codex runtime/config/capability state, native `account/rateLimits/read`, and native `account/usage/read` when available;
+- sensitive account identity and credential fields are removed before snapshot persistence;
+- unavailable native context reads are recorded as unavailable with an error type rather than fabricated;
+- rollout-derived Desktop usage and durable Room execution-economics remain the **primary performance accounting**; account/rate-limit snapshots are contextual/corroborating evidence only;
+- PBM's naturalistic Room arm must preserve D-039 dynamic cognition: the benchmark may record Room defaults and actual execution choices but must not pin C/A/B to one model/effort merely for symmetry with Desktop; ordinary D-039 model/effort switching remains part of the product behavior being measured;
+- snapshot collection must not purchase model cognition;
+- the unqualified **“Run PBM”** invocation resolves `benchmarks/pbm/CURRENT`; once v2 is verified and promoted, that invocation uses v2.
+
+**Principle:** **Measure the work directly; snapshot the surrounding account and environment state so the direct measurement can be interpreted.**
 
