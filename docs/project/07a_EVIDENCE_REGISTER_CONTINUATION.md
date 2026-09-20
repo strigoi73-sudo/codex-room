@@ -1263,3 +1263,82 @@ Exact-diff review confirmed that the cleanup removes the Codex host-command cata
 The reviewed cleanup also updates current Project documentation so D-040 and the catalog-specific portions of E-150/E-151 remain historical provenance while D-041 governs current product behavior. Skills remain deferred and no replacement command surface or dispatch mechanism is introduced.
 
 **Assessment:** the D-041 cleanup implementation is **IMPLEMENTED / VERIFIED** on exact source/test bytes `d77e020588cf548580937a146877a15e7a76f5f4`. A later documentation-only closeout commit may record this result without changing the verified source/test bytes.
+
+
+## E-153 — I-020 Stage A native Codex skills and Skill Creator proof
+
+**Date:** 2026-09-20
+**Kind:** [ROOM naturalistic capability evidence / execution economics]
+**Related work:** I-020
+**CORE changes during exercise:** none
+
+A fresh production work-model-v2 Room ran the bounded I-020 Stage A exercise with C coordinating A and B. C assigned A `terra-medium` for the autonomous spreadsheet leg and B `sol-medium` for the explicit document-skill + Skill Creator leg.
+
+### Capability results
+
+The active runtime exposed the relevant predefined skills, including:
+
+- `skill-creator`;
+- `spreadsheets:Spreadsheets`;
+- `documents:documents`.
+
+Agent A received a workbook assignment that deliberately did not name or suggest a skill. A reported independently selecting the predefined spreadsheet workflow and created `i020-stage-a/autonomous-skill-test.xlsx`. Direct artifact inspection confirmed the required Data and Summary sheets, formula-derived row totals, formula-derived grand total 15.5, and no formula errors. No separate durable native skill-invocation event was exposed, so autonomous skill choice is agent self-report corroborated by the observed workflow/artifact rather than independently provable from the artifact alone.
+
+Agent B explicitly used `documents:documents` to create and render/inspect `i020-stage-a/explicit-skill-test/tiny-workspace-note.docx`. The workflow loaded the skill instructions, performed render/visual QA, corrected a presentation defect, and re-rendered the result. Again, no separate durable `SkillInput`/dispatch audit event was exposed.
+
+Agent B explicitly used `skill-creator` to create exactly one Room-local skill at `.agents/skills/i020-line-normalizer/` with:
+
+- `SKILL.md`;
+- `agents/openai.yaml`;
+- `scripts/normalize_lines.py`.
+
+Skill Creator's structural validator returned `Skill is valid!`. The deterministic helper accepts input/output paths, removes blank lines, trims surrounding whitespace, sorts case-insensitively, uses no network access, and emits `I020_LINE_NORMALIZER_V1`. A direct helper test succeeded.
+
+After creation, the resumed runtime listed `i020-line-normalizer` from the Room-local skill root. C then delegated the required cross-agent reuse to A. A read the created skill instructions, invoked the supplied helper rather than reimplementing it, and produced the expected normalized output:
+
+`Apple`
+`apple`
+`banana`
+`Cherry`
+`zebra`
+
+The adjacent evidence file recorded `I020_LINE_NORMALIZER_V1`. No CORE, global-skill, or Codex Room deterministic-capability registration change occurred during the exercise.
+
+### Boundary result
+
+Stage A demonstrates that Codex Room agents can already:
+
+- discover relevant native/predefined Codex skills;
+- select a relevant skill autonomously;
+- follow a principal/coordinator request to use a named skill;
+- use Skill Creator to create a Room-local skill with a deterministic helper;
+- have a different agent discover and reuse that new skill.
+
+Therefore a Room-specific native `SkillInput` invocation bridge is **not currently justified**. The missing property is stronger durable, independently auditable skill-invocation provenance; that is a provenance limitation, not a functional blocker.
+
+### Execution economics
+
+The exercise was far more expensive than the small artifacts imply.
+
+Recorded execution-token deltas sum to approximately **5,278,785** across the Room:
+
+- C: approximately **92,599**;
+- A: approximately **764,011**;
+- B: approximately **4,422,175**.
+
+The dominant event was B's first `sol-medium` assignment for explicit document-skill use plus Skill Creator:
+
+- **61 tool calls**;
+- **4,326,764 execution tokens**;
+- **11 failed tool calls**;
+- about **70,931 tokens/tool call**.
+
+A's main `terra-medium` spreadsheet execution used:
+
+- **13 tool calls**;
+- **534,421 execution tokens**;
+- **1 failed tool call**.
+
+The principal independently observed that this Room consumed roughly **30% of the five-hour Codex allowance** before the approaching refresh. The provider meter is aggregate and should not be treated as exact per-Room attribution; it is retained as corroborating operational evidence.
+
+**Assessment:** Stage A is **COMPLETE / VERIFIED** for functional native-skill use. It simultaneously establishes a serious economics warning: skill workflows can trigger very large model/tool execution costs even for tiny artifacts. I-020 Stage B should therefore add a policy hierarchy and an explicit cost guard, while Stage C remains unwarranted absent a demonstrated native-invocation reliability gap.
