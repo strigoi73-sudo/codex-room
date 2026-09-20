@@ -8,9 +8,9 @@
 
 - **Where are we?** I-018, I-019, and the D-041 host-command cleanup are complete. The principal has selected **I-020 — Codex skill integration** as the next bounded work item; implementation has not started.
 - **What just changed?** Current Codex/App Server and Python SDK surfaces were reviewed. Codex already provides skill discovery (`skills/list`), progressive skill loading, system/predefined skills including Skill Creator, and structured `SkillInput` support. Codex Room already inspects the inherited skill inventory in Status & Tools but does not add a Room-specific skill invocation or creation layer.
-- **Verification state:** I-020 is **PLANNED / NEEDS VERIFICATION**. No new skill behavior is claimed until natural Room evidence demonstrates it.
+- **Verification state:** I-020 Stage A is **IN PROGRESS / NEEDS VERIFICATION**. No new skill behavior is claimed until natural Room evidence demonstrates it.
 - **What is blocked?** Nothing blocks ordinary Codex Room use. I-020 begins with a no-CORE-change empirical gate specifically to avoid rebuilding native Codex behavior unnecessarily.
-- **What is next?** Run I-020 Stage A: verify predefined-skill discovery/use and Skill Creator behavior inside an ordinary Room before changing CORE.
+- **What is next?** Complete I-020 Stage A natural Room evidence: verify predefined-skill discovery/use, explicit named-skill use, Skill Creator Room-local authoring, and cross-agent reuse before changing CORE.
 - **What are we deliberately not doing?** No Codex Desktop/TUI command palette, no parallel Room skill registry, no automatic global/user-scope skill writes, no immediate rewrite of D-022, no fourth persistent agent, and no Codex built-in subagents.
 
 ## Current focus
@@ -19,7 +19,7 @@
 
 **Scope:** [CORE + ROOM behavior, only where native Codex support proves insufficient]
 
-**Work state:** PLANNED
+**Work state:** IN PROGRESS
 
 **Reality / evidence:** EXPLORATORY / NEEDS VERIFICATION
 
