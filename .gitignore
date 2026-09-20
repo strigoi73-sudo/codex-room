@@ -6,14 +6,5 @@ __pycache__/
 node_modules/
 output/
 *.py[cod]
-data/*.db
-data/*.db-*
-data/rooms/
-data/backups/
-data/cache/
-data/identity-recovery-*/
-data/.rollover-staging/
-data/*-result.json
-data/institutional/.publishing/
-data/institutional/releases/
+data/
 Codex Git Transfer/

@@ -152,20 +152,17 @@ By default the data root is `C:\Codex Room\data`. A different root may be suppli
 
 The canonical repository tracks application source, tests, root scripts/configuration, and static assets.
 
-The established `.gitignore` excludes major runtime/generated material, including:
+The established `.gitignore` excludes runtime/generated material, including:
 
 - `.venv/`, `venv/`
 - `__pycache__/`, `.pytest_cache/`
 - `.playwright-cli/`, `node_modules/`
 - `output/`
 - Python bytecode
-- runtime database files under `data/`
-- `data/rooms/`
-- `data/backups/`
-- identity-recovery directories
-- rollover staging/result files
-- institutional publishing/generated release registry
+- the complete runtime data root `data/`
 - `Codex Git Transfer/`
+
+The `data/` boundary is intentionally coarse. Codex Room may add new runtime subdirectories beneath that root without requiring a new Git ignore rule; canonical source, tests, configuration, and maintained documentation do not live there.
 
 No filesystem reorganization was required to establish this boundary.
 
