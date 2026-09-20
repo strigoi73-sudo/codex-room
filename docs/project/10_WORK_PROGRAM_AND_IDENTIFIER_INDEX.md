@@ -67,6 +67,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-017` | Dynamic C cognition and Task-scoped exceptional approval | Development Control / D-039 |
 | `I-018` | Codex Desktop ↔ Codex Room capability audit | Development Control |
 | `I-019` | Human-facing capability visibility | Development Control / E-149 |
+| `I-020` | Codex skill integration and Skill Creator adoption | Development Control |
 
 ## 4. Decision and evidence identifiers
 
