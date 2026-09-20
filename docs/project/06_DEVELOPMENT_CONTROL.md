@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** I-018 and the useful core of I-019 are complete. A principal-directed post-I-019 cleanup is now **IN PROGRESS** to remove the Codex host-command catalog from the Room product surface.
-- **What just changed?** Review of the official Codex command inventory showed that it is primarily a Codex Desktop/TUI control surface rather than a general-purpose Room capability set. The principal therefore reversed the earlier catalog direction. The cleanup removes the parser/cache, dedicated catalog API, Status & Tools catalog card/payload, and dedicated catalog tests while preserving the rest of Status & Tools and general App Server runtime provenance.
-- **Verification state:** the pre-cleanup I-019 bytes remain historically verified at `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`. The cleanup candidate is **NEEDS VERIFICATION** until the repository-standard local gate passes on its exact bytes.
-- **What is blocked?** Nothing blocks ordinary Codex Room use. This cleanup should be verified and merged before starting another product-development stage.
-- **What is next?** Run the normal deterministic verification gate on the cleanup candidate, review the exact diff, then close the follow-up if it passes.
-- **What are we deliberately not doing?** No Codex Desktop/TUI command parity work; no skills work in this cleanup; no new Objective entity; no broad transaction rewrite; no fourth persistent agent; no automatic model router; no adjacent maintenance investigation.
+- **Where are we?** I-018, the useful core of I-019, and the principal-directed post-I-019 command-catalog cleanup are **COMPLETE / IMPLEMENTED / VERIFIED**.
+- **What just changed?** D-041 removed the Codex host-command catalog from the Room product surface: the parser/cache, dedicated catalog API, Status & Tools catalog card/payload, and dedicated catalog tests are gone. The broader Status & Tools surface and general App Server runtime provenance remain.
+- **Verification state:** exact cleanup implementation bytes `d77e020588cf548580937a146877a15e7a76f5f4` passed `git diff --check`, 63 Linux focused tests, 118 Windows focused portability tests, 9 browser transcript tests, and the repository fast verifier with a clean tracked tree. Exact-diff review confirmed no replacement command surface or dispatcher. See E-152.
+- **What is blocked?** Nothing blocks ordinary Codex Room use.
+- **What is next?** Stop at this boundary. If the principal chooses to continue the approved sequence, the next available bounded stage is an ordinary-use inherited-tool exercise that lets C use existing tools naturally and records what actually works without manufacturing benchmark traffic.
+- **What are we deliberately not doing?** No Codex Desktop/TUI command parity work; skills remain back-burnered; no new Objective entity; no broad transaction rewrite; no fourth persistent agent; no automatic model router; no adjacent maintenance investigation.
 
 ## Current focus
 
@@ -19,17 +19,19 @@
 
 **Scope:** [CORE + ROOM UI]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** DECIDED / IMPLEMENTATION CANDIDATE / NEEDS VERIFICATION
+**Reality / evidence:** IMPLEMENTED / VERIFIED
 
 **Decision:** D-041
 
-The principal reviewed the official Codex command inventory and concluded that it is primarily specific to Codex Desktop/TUI and coding/session management rather than a useful Codex Room product surface. The current cleanup removes the exact-runtime command-catalog parser/cache, its dedicated API endpoint, its Status & Tools payload/card, and catalog-specific tests. The broader Status & Tools surface remains: current work, A/B/C state/economics/context guidance, Room-native deterministic capabilities, inherited workspace/command execution, and safely inspectable web-search, skills, MCP, apps/connectors, and plugins.
+The principal reviewed the official Codex command inventory and concluded that it is primarily specific to Codex Desktop/TUI and coding/session management rather than a useful Codex Room product surface. The completed cleanup removes the exact-runtime command-catalog parser/cache, its dedicated API endpoint, its Status & Tools payload/card, and catalog-specific tests. The broader Status & Tools surface remains: current work, A/B/C state/economics/context guidance, Room-native deterministic capabilities, inherited workspace/command execution, and safely inspectable web-search, skills, MCP, apps/connectors, and plugins.
 
 App Server runtime identity normalization remains because runtime provenance is useful independently of any command catalog. Skills evaluation is explicitly back-burnered and is not part of this cleanup.
 
-**Stop condition:** exact cleanup bytes pass the repository-standard local verification gate and the diff confirms no catalog product surface remains.
+**Verification closeout:** exact implementation head `d77e020588cf548580937a146877a15e7a76f5f4` passed the repository-standard fast gate and exact-diff review. See E-152.
+
+**Stop condition:** met. The catalog product surface is removed and no replacement command surface or dispatcher was introduced.
 
 ### I-019 — Human-facing capability visibility
 
