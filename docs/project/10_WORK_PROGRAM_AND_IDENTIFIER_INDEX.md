@@ -70,6 +70,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-020` | Codex skill integration and Skill Creator adoption | Development Control |
 | `I-021` | Principal-controlled Codex plugin management | Development Control |
 | `I-022` | Native Codex capability exposure and execution-economics audit | Development Control / E-159 / E-160 |
+| `I-023` | PBM (Performance Benchmark) — standardized Codex Room vs Codex Desktop benchmark | Development Control / D-045 |
 
 ## 4. Decision and evidence identifiers
 
