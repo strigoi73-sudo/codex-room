@@ -27,15 +27,15 @@ This table preserves names and navigation only. Read Development Control for cur
 
 | ID | Title | Owner |
 |---|---|---|
-| `P0` | Selective invocation | Development Control |
-| `P1` | Operational token/usage-efficiency doctrine | Development Control |
-| `P2` | Persistent-context / compaction economics | Development Control |
-| `P3` | Usage-wall delayed continuation | Development Control |
-| `EF-1` | Reproducible dependency/environment setup | Development Control |
-| `EF-2` | Canonical full-test command | Development Control |
-| `EF-3` | Minimal GitHub CI | Development Control |
-| `A1` | Assurance Pass 1 | Development Control / Evidence Register |
-| `A2` | Assurance Pass 2 | Development Control / Evidence Register |
+| `P0` | Selective invocation | Decision Register / Evidence Register |
+| `P1` | Operational token/usage-efficiency doctrine | Decision Register / Evidence Register |
+| `P2` | Persistent-context / compaction economics | Evidence Register |
+| `P3` | Usage-wall delayed continuation | Decision Register / Evidence Register / Repository & Operations |
+| `EF-1` | Reproducible dependency/environment setup | Evidence Register |
+| `EF-2` | Canonical full-test command | Evidence Register / Repository & Operations |
+| `EF-3` | Minimal GitHub CI | Evidence Register / Repository & Operations |
+| `A1` | Assurance Pass 1 | Evidence Register |
+| `A2` | Assurance Pass 2 | Evidence Register |
 | `A3` | Whole-system housekeeping, efficiency, and operational assurance audit | Development Control / Evidence Register |
 | `P4` | Deterministic Room and agent capabilities | Development Control / Product Vision |
 | `BCTX-1` | Task-bounded continuous lifecycle and coordinator continuity | Development Control / D-037 |
@@ -49,19 +49,19 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 
 | ID | Title | Owner |
 |---|---|---|
-| `I-001` | 2,000-event snapshot/export cutoff | Development Control |
+| `I-001` | 2,000-event snapshot/export cutoff | Evidence Register |
 | `I-003` | Provider-side instruction adoption after same-thread profile rebind | Development Control |
-| `I-004` | README conflicts with settled architecture | Development Control / historical evidence after closure |
-| `I-005` | legacy `Agent Personalities.txt` dependency question | Development Control / historical evidence after closure |
-| `I-006` | Early-triad default profiles missed D-020 migration | Development Control |
-| `I-007` | Environment and documentation truth drift | Development Control |
-| `I-008` | Repository branch hygiene | Development Control |
-| `I-009` | Runtime provenance and maintenance health | Development Control |
-| `I-010` | Persistent-data operational maintenance | Development Control |
-| `I-011` | Verification-platform and dependency assurance | Development Control |
-| `I-012` | Authorized CORE and cross-Room read inspection | Development Control |
-| `I-013` | SDK-internal subagent bypass | Development Control |
-| `I-014` | Deterministic retrieval economy | Development Control |
+| `I-004` | README conflicts with settled architecture | Evidence Register (historical) |
+| `I-005` | legacy `Agent Personalities.txt` dependency question | Evidence Register (historical) |
+| `I-006` | Early-triad default profiles missed D-020 migration | Evidence Register |
+| `I-007` | Environment and documentation truth drift | Evidence Register |
+| `I-008` | Repository branch hygiene | Evidence Register / Repository & Operations |
+| `I-009` | Runtime provenance and maintenance health | Evidence Register / Architecture & Current State |
+| `I-010` | Persistent-data operational maintenance | Evidence Register / Repository & Operations |
+| `I-011` | Verification-platform and dependency assurance | Evidence Register / Repository & Operations |
+| `I-012` | Authorized CORE and cross-Room read inspection | Decision Register / Evidence Register |
+| `I-013` | SDK-internal subagent bypass | Evidence Register / Architecture & Current State |
+| `I-014` | Deterministic retrieval economy | Evidence Register / Architecture & Current State |
 | `I-015` | Task-transaction stabilization redesign | Development Control |
 | `I-016` | Private Principal Channel | Development Control / D-038 |
 | `I-017` | Dynamic C cognition and Task-scoped exceptional approval | Development Control / D-039 |
@@ -69,7 +69,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-019` | Human-facing capability visibility | Development Control / E-149 |
 | `I-020` | Codex skill integration and Skill Creator adoption | Development Control |
 | `I-021` | Principal-controlled Codex plugin management | Development Control |
-| `I-022` | Native Codex capability exposure and execution-economics audit | Development Control / E-159 |
+| `I-022` | Native Codex capability exposure and execution-economics audit | Development Control / E-159 / E-160 |
 
 ## 4. Decision and evidence identifiers
 

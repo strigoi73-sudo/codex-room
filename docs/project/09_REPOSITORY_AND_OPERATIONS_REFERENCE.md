@@ -1,6 +1,6 @@
 # Codex Room — Repository & Operations Reference
 
-**Last synthesized:** 2026-09-19  
+**Last synthesized:** 2026-09-20  
 **Scope:** Compact technical reference for source/runtime layout, maintenance boundaries, source-control workflow, recovery, and verification practices.  
 **Freshness:** Repository details are time-bounded. Prefer current live source and Git state when available.
 
