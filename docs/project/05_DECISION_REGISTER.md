@@ -806,6 +806,7 @@ PBM v2 therefore changes the **measurement/context protocol**, not the task work
 - sensitive account identity and credential fields are removed before snapshot persistence;
 - unavailable native context reads are recorded as unavailable with an error type rather than fabricated;
 - rollout-derived Desktop usage and durable Room execution-economics remain the **primary performance accounting**; account/rate-limit snapshots are contextual/corroborating evidence only;
+- PBM's naturalistic Room arm must preserve D-039 dynamic cognition: the benchmark may record Room defaults and actual execution choices but must not pin C/A/B to one model/effort merely for symmetry with Desktop; ordinary D-039 model/effort switching remains part of the product behavior being measured;
 - snapshot collection must not purchase model cognition;
 - the unqualified **“Run PBM”** invocation resolves `benchmarks/pbm/CURRENT`; once v2 is verified and promoted, that invocation uses v2.
 
