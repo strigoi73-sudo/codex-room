@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-020 Stages A and B are **COMPLETE / VERIFIED**. Native Codex skills work inside Rooms, and the protected policy now tells A/B/C how to use existing skills, Skill Creator, and Codex Room deterministic capabilities economically.
+- **Where are we?** I-020 Stages A, B, and D are **COMPLETE / VERIFIED**. Native Codex skills work inside Rooms, the protected policy governs economical skill use, and Room-local skills now survive Room rollover with exact-byte/tree-hash provenance.
 - **What just changed?** A natural three-agent Room demonstrated runtime discovery of `skill-creator`, `spreadsheets`, and `documents`; autonomous spreadsheet-skill selection; explicit document-skill use; Room-local Skill Creator authoring with a deterministic helper; runtime discovery of the created skill; and cross-agent reuse. See E-153.
-- **Verification state:** Stage A natural Room evidence is **VERIFIED** (E-153). Stage B exact implementation head `5b97c584ef30bcfa167e2337f59c09ee55ed7ebd` is **VERIFIED** and merged through PR #157 as canonical squash commit `70cb80ee25281f5217213953e40b7657e68148f2` (E-154). The Stage A Room also exposed severe execution cost: about 5.28M recorded execution tokens total.
+- **Verification state:** Stage A natural Room evidence is **VERIFIED** (E-153). Stage B is **VERIFIED / MERGED** (E-154). Stage D exact implementation head `e4391ec18daca81038bf2d8d3e50c78ca3b22ddf` is **VERIFIED** and merged through PR #159 as canonical squash commit `7740067fcecf31c0cf7b417365a47a0814a6bef5` (E-155). The Stage A Room also exposed severe execution cost: about 5.28M recorded execution tokens total.
 - **What is blocked?** Nothing blocks ordinary Codex Room use. Skill use is functionally available natively; the current work is policy and persistence discipline, not a missing invocation mechanism.
-- **What is next?** Exact-head verify the bounded I-020 Stage D candidate on PR #159. It carries direct Room-local skill packages under `.agents/skills/<name>/SKILL.md` across rollover with exact-byte/tree-hash provenance while continuing to exclude unrelated workspace state.
+- **What is next?** Proceed to I-020 Stage E: reconcile D-022 against the now-verified native-skill + Skill Creator + lineage-persistence boundary, changing the settled decision only if the evidence requires an additive or superseding clarification.
 - **What are we deliberately not doing?** No Codex Desktop/TUI command palette, no parallel Room skill registry, no automatic global/user-scope skill writes, no SkillInput bridge without evidence, no immediate rewrite of D-022, no fourth persistent agent, and no Codex built-in subagents.
 
 ## Current focus
@@ -21,7 +21,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** Stages A-B IMPLEMENTED / VERIFIED; Stage C NOT WARRANTED; Stage D IMPLEMENTATION IN PROGRESS / NEEDS EXACT-HEAD VERIFICATION
+**Reality / evidence:** Stages A-B-D IMPLEMENTED / VERIFIED; Stage C NOT WARRANTED; Stage E PLANNED
 
 **Origin:** principal selection after I-019 / D-041 cleanup
 
@@ -34,7 +34,7 @@
 - The current Python SDK also supports structured `SkillInput(name, path)`, and App Server recommends a structured `skill` input for explicit invocation; plain `$skill-name` text remains a supported fallback.
 - Skill Creator can create a skill containing `SKILL.md`, optional references/assets, and deterministic helper scripts. Its packaging/structural validation is not equivalent to Codex Room's registered-capability verification/provenance contract.
 - A Room agent runs with `workspace_write`, so Room-local skill creation should be bounded to the Room workspace (for example `.agents/skills/...`) unless the principal separately authorizes broader user/global scope.
-- Current Room rollover does not automatically preserve arbitrary Room-workspace skills; custom deterministic capabilities have a separate explicit inheritance path. Skill continuity therefore remains a deliberate design checkpoint rather than an assumed property.
+- Room rollover preserves valid Room-local Codex skill packages under `.agents/skills/<name>/SKILL.md` through the existing atomic staging path. Inheritance is lineage-local, exact-byte/tree-hash verified, bounded, and excludes unrelated workspace or `.agents` state; no automatic user/global promotion occurs.
 - Codex built-in subagents remain disabled. Any Skill Creator recommendation for independent agent review must map to the existing A/B/C organization rather than re-enabling Codex subagents.
 
 **Implementation sequence:**
@@ -45,7 +45,7 @@
 
 **Stage C — Explicit invocation bridge. NOT WARRANTED BY CURRENT EVIDENCE.** Stage A showed successful autonomous selection, explicit named-skill use, Skill Creator authoring, runtime discovery, and cross-agent reuse without a Room-specific bridge. Keep the official Python SDK `SkillInput(name, path)` path as a future fallback only if later evidence exposes a real reliability or latency gap. Do not build a slash-command parser or copy the Desktop/TUI popup.
 
-**Stage D — Skill persistence. IN PROGRESS.** The bounded candidate treats direct packages under `.agents/skills/<name>/SKILL.md` as lineage-local Room skills and carries them through the existing atomic rollover staging path. Only package files are copied; unrelated workspace files, unrelated `.agents` state, and directories under `.agents/skills` without a direct regular `SKILL.md` remain excluded. Source and destination skill trees reject symlinks/special entries, inheritance is bounded to 1,024 files / 64 MiB, copied bytes are rehashed before exposure, and rollover events record skill names/counts plus a deterministic tree SHA-256. Skills remain Room-lineage scope; no global promotion occurs automatically.
+**Stage D — Skill persistence. COMPLETE / IMPLEMENTED / VERIFIED (E-155).** Valid direct packages under `.agents/skills/<name>/SKILL.md` are now lineage-local Room skills carried through the existing atomic rollover staging path. Only package files are copied; unrelated workspace files, unrelated `.agents` state, and directories under `.agents/skills` without a direct regular `SKILL.md` remain excluded. Source and destination skill trees reject symlinks/special entries, inheritance is bounded to 1,024 files / 64 MiB, copied bytes are rehashed before exposure, and rollover events record skill names/counts plus a deterministic tree SHA-256. Skills remain Room-lineage scope; no global promotion occurs automatically.
 
 **Stage E — Reconcile D-022 after evidence.** Only after Stages A-D establish the real boundary, decide whether D-022 needs an additive/superseding decision. The likely hierarchy to evaluate is: **use existing Codex skill → create skill with Skill Creator → use skill-local deterministic script when sufficient → promote to registered Codex Room capability only for stronger institutional guarantees**. Do not alter D-022 merely from architectural analogy.
 
