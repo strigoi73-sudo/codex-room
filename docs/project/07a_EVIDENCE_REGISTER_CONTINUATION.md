@@ -1862,3 +1862,81 @@ Therefore the canonical merged PBM v2 implementation bytes are exactly the bytes
 
 **Assessment:** I-024 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / READ-ONLY PREFLIGHT VERIFIED**. `benchmarks/pbm/CURRENT` now selects PBM v2 for the unqualified **“Run PBM”** invocation. PBM v1 remains frozen and explicitly reproducible. No live paid Desktop-versus-Room PBM task has yet been run and no product-performance conclusion is claimed by this evidence.
 
+---
+
+### E-165 — PBM v3 one-paste exact-head verification, controller preflights, launcher repair, and canonical merge equivalence
+**Date:** 2026-09-20  
+**Kind:** [deterministic exact-head verification / native Desktop controller preflight / Room controller preflight / defect repair / Git provenance]  
+**Related work:** I-025 / D-047 / D-039  
+**Runtime/model benchmark traffic changed:** controller-only cognition was used for bounded preflights; **zero PBM benchmark tasks were executed**  
+**Evidence state:** VERIFIED for PBM v3 implementation bytes and both controller mechanics; no live paid PBM performance result is claimed
+
+PBM v3 preserves the frozen PBM v1 eight-task workload, PBM v2 contextual snapshot/accounting semantics, alternating arm order, and D-039 naturalistic Room cognition while changing the operator workflow to one initial principal instruction per platform.
+
+The first final-candidate controller-preflight head before the launcher repair was:
+
+`19dc9b2427ed82cc5092cc36fb18aee7b36bbf64`
+
+At that head, the native Codex Desktop controller preflight passed. It demonstrated that a coordination-only Desktop controller could use native fresh-task management to create one harmless child task, wait for that exact task, obtain its exact thread id, and complete without Codex CLI fallback, benchmark fixtures, graders, results, or benchmark task execution.
+
+The first Room-controller preflight exposed one implementation defect while also confirming the intended private-controller handshake:
+
+- controller Room creation and file staging occurred before Round start;
+- C entered the private `CONSULT_PRINCIPAL` wait;
+- the principal's exact private reply was recorded and resumed C;
+- C read the staged driver and invoked `PBM_ROOM_CLIENT.ps1`;
+- the launcher recorded a detached child PID, but that process exited immediately;
+- no worker log or completion marker appeared;
+- the failure was isolated to PowerShell `Start-Process -ArgumentList` handling of the worker script path under `C:\Codex Room\...`, where the unquoted path could be split at the space.
+
+The repair changed the launcher to pass an explicitly quoted worker-script argument and added a regression assertion for that construction. Comparing the Desktop-preflight head to the repaired head shows only two changed files:
+
+- `codex_room/pbm_onepaste_room.py`;
+- `tests/test_pbm_onepaste.py`.
+
+Therefore the previously passed Desktop-controller implementation bytes were unchanged by the Room-launch repair.
+
+The repaired exact feature head was:
+
+`e655f36141fba9a77b69cc04147a5bd13b728135`
+
+The principal verified that exact head from a clean tracked checkout. Observed deterministic results:
+
+- focused PBM v3 tests: **8 passed**;
+- `verify-fast.cmd`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **9 passed**;
+- only the already-known FastAPI/Starlette dependency deprecation warnings appeared.
+
+The bounded repaired Room-controller preflight then passed all intended mechanics:
+
+- exact repaired HEAD: PASS;
+- controller Room creation: PASS;
+- files staged before Round start: PASS;
+- Round start: PASS;
+- private `CONSULT_PRINCIPAL` wait: PASS;
+- exact private principal reply: PASS;
+- repaired PBM v3 launcher execution: PASS;
+- detached deterministic worker: PASS;
+- worker PID continuity between launcher record and worker marker: PASS;
+- completion marker: PASS;
+- Agent A/B activity: NONE;
+- Agent A/B assignments: NONE;
+- PBM benchmark tasks executed: **0**;
+- preflight Room archived: PASS.
+
+PR #180 was merged with expected-head protection. Canonical merge commit:
+
+`556e92946d1d6c9f2b10e15b1d303cad0cd05b63`
+
+Git comparison from the exact tested feature head to the canonical merge commit established:
+
+- merge-base is the tested feature head;
+- canonical merge is exactly one commit ahead;
+- there are **zero file differences** between the tested head and canonical merge commit.
+
+Thus the canonical merged PBM v3 implementation bytes are the exact bytes that passed the repaired deterministic verification and Room-controller preflight. `benchmarks/pbm/CURRENT` now selects v3 for the unqualified **“Run PBM”** invocation. PBM v1 and v2 remain frozen and explicitly reproducible.
+
+**Assessment:** I-025 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED**. PBM v3 is ready for its first live Desktop-versus-Room benchmark run. No such benchmark run has yet occurred, and this evidence makes no claim about relative product performance.
+
