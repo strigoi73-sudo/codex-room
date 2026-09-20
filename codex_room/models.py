@@ -6,12 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
 
-from .personalities import (
-    AGENT_A_IMPLEMENTER_INSTRUCTIONS,
-    AGENT_B_VERIFIER_INSTRUCTIONS,
-    AGENT_C_INTEGRATOR_INSTRUCTIONS,
-    default_agent_instructions,
-)
+from .personalities import default_agent_instructions
 
 class RoomStatus(StrEnum):
     CREATING = "creating"
