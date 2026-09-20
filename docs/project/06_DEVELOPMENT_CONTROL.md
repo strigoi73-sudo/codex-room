@@ -6,10 +6,10 @@
 
 ## Operator summary
 
-- **Where are we?** I-023 — **PBM (Performance Benchmark)** — is the selected development item. Its purpose is to create a repeatable, versioned Codex Room versus Codex Desktop operating-economics/performance benchmark. I-021 and I-022 remain complete.
-- **What just changed?** PBM v1 now has an implementation candidate on the I-023 feature branch: separate native Desktop and Room scripts, shared deterministic harness machinery, a frozen eight-task naturalistic suite, task graders, and report generation. No paid PBM task has been run.
-- **Verification state:** PBM v1 remains IN PROGRESS / NEEDS VERIFICATION. Repository review and deterministic exact-head verification are still required before the v1 harness is merged or any paid pilot is authorized.
-- **What is next?** Review and deterministically verify the PBM v1 candidate, then merge/freeze it. Only after that exact version is verified may the principal start the paid PBM pilot.
+- **Where are we?** I-023 — **PBM (Performance Benchmark)** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED**. PBM v1 is frozen and ready for its first live benchmark run; no PBM performance result has been produced yet. No feature implementation is currently selected.
+- **What just changed?** PR #176 merged the exact locally verified PBM v1 candidate. The canonical merge commit preserves the tested head as a parent and has the identical Git tree, so the verified bytes are the canonical bytes. No paid PBM task has been run.
+- **Verification state:** E-163 records exact-head verification of `7b7cbfdfcea8617f8885676df2a257ce299e4657`: `git diff --check` PASS; both PBM PowerShell scripts parse; focused PBM/usage tests 11 PASS; `verify-fast.cmd` PASS with 63 Linux Python tests, 118 Windows portability tests, and 9 browser transcript tests; final tree clean. PR #176 merged as `c0fe5f6600fb12f039b7e3d4bd26e67a64795a23` with the same tree SHA as the tested head.
+- **What is next?** Principal choice. Saying **“Run PBM”** now initiates the frozen canonical PBM v1 procedure. A live PBM run is product use/evidence generation, not a prerequisite to claiming the harness implementation itself.
 - **What is blocked?** No high-priority conceptual blocker prevents ordinary use or further development. Individual deferred items retain their own gates.
 - **What are we deliberately not doing?** No Room-local plugin mutation endpoint, principal-proof security subsystem solely for plugin administration, generic config editor, copied marketplace/plugin manager, built-in Codex subagents, autonomous fan-out, automatic model router, or speculative host-parity project.
 
@@ -19,9 +19,9 @@
 
 **Scope:** [benchmark tooling + paired Codex Desktop / Codex Room execution]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** IMPLEMENTATION CANDIDATE / NEEDS VERIFICATION
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / LIVE PBM RUN NOT YET EXECUTED
 
 **Decision:** D-045
 
@@ -41,12 +41,14 @@ PBM v1 should establish:
 
 **Implementation boundary:** benchmark definition/harness comes first. Do not spend the paid PBM pilot until the procedure, fixtures, measurement semantics, and reporting contract are frozen and mechanically inspectable.
 
-Current candidate architecture separates the product arms mechanically:
+PBM v1 separates the product arms mechanically:
 
 - `pbm-desktop.ps1` prepares a fresh Desktop workspace/prompt and captures the matching native Desktop rollout only after the principal runs the task in a fresh Codex Desktop chat;
 - `pbm-room.ps1` prepares a fresh Room without starting cognition, stages the same fixture, then separately starts/waits/exports/captures the Room arm;
 - `codex_room/pbm.py` owns only shared deterministic manifest, fixture, grader, accounting, and report logic;
 - `benchmarks/pbm/CURRENT` resolves the canonical benchmark version, and PBM v1 freezes eight synthetic standard-library-only tasks with deterministic graders.
+
+**Verification:** E-163. The tested PR head and canonical merge commit have the same Git tree. No live PBM task execution is claimed by this verification.
 
 ### I-022 — Native Codex capability exposure and execution-economics audit
 
@@ -158,6 +160,7 @@ Detailed rationale, exact commits, tests, benchmarks, and historical narrative b
 
 | Work | Current disposition | Durable references |
 |---|---|---|
+| I-023 — PBM (Performance Benchmark) | COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / first live run pending | D-045; E-163 |
 | I-021 — Principal-controlled Codex plugin management | COMPLETE / native-host administration selected / no Room bridge | D-043; E-157–E-158; E-162 |
 | I-020 — Codex skill integration / Skill Creator | COMPLETE / IMPLEMENTED / VERIFIED | D-042; E-153–E-156 |
 | Post-I-019 host-command catalog cleanup | COMPLETE / IMPLEMENTED / VERIFIED | D-041; E-152 |
@@ -213,4 +216,4 @@ Current unresolved questions are feature-local rather than roadmap-global:
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
 - if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
-PBM is the currently selected development item. Other deferred or audited capability families remain unselected unless the principal changes direction.
+No feature implementation is currently selected. PBM v1 is available for live use through the canonical **“Run PBM”** invocation. Other deferred or audited capability families remain unselected unless the principal changes direction.
