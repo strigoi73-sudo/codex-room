@@ -39,6 +39,7 @@ from codex_room.models import (
     UpdateRoomRequest,
 )
 from codex_room.orchestrator import RoomRuntime
+from codex_room.room_skills import summarize_room_local_skills
 
 from .fakes import FakeAgentAdapter, wait_until
 
@@ -412,6 +413,83 @@ async def test_rollover_inherits_exact_custom_capability_binding_and_preserves_p
         assert result["ok"] is True
         assert result["text"] == "successor-use"
         assert result["registration_sha256"] == source_binding.registration.registration_sha256
+    finally:
+        await runtime.close()
+
+
+@pytest.mark.asyncio
+async def test_rollover_inherits_room_local_skills_exactly_and_excludes_other_state(
+    tmp_path,
+):
+    adapter = FakeAgentAdapter({"agent_a": [(Outcome.PASS, "")]})
+    runtime = RoomRuntime(Database(tmp_path / "skill-lineage.db"), adapter, tmp_path / "data")
+    await runtime.initialize()
+    try:
+        source = await _finished_source(runtime)
+        workspace = runtime.workspace(source["id"])
+        skill = workspace / ".agents" / "skills" / "line-normalizer"
+        scripts = skill / "scripts"
+        scripts.mkdir(parents=True)
+        skill_md = b"---\nname: line-normalizer\ndescription: Normalize lines.\n---\n"
+        helper = (
+            b"from pathlib import Path\n"
+            b"def normalize(source, target):\n"
+            b"    rows = [line.strip() for line in Path(source).read_text().splitlines() if line.strip()]\n"
+            b"    Path(target).write_text('\\n'.join(sorted(rows, key=str.casefold)) + '\\n')\n"
+        )
+        (skill / "SKILL.md").write_bytes(skill_md)
+        (scripts / "normalize.py").write_bytes(helper)
+        (workspace / ".agents" / "notes.txt").write_text(
+            "not lineage skill state", encoding="utf-8"
+        )
+        ignored = workspace / ".agents" / "skills" / "scratch"
+        ignored.mkdir()
+        (ignored / "notes.txt").write_text("no SKILL.md", encoding="utf-8")
+        (workspace / "runtime.log").write_text("not inherited", encoding="utf-8")
+
+        source_summary = summarize_room_local_skills(workspace)
+        assert source_summary["skill_names"] == ["line-normalizer"]
+        assert source_summary["file_count"] == 2
+        assert source_summary["total_bytes"] == len(skill_md) + len(helper)
+
+        successor = await runtime.rollover(
+            source["id"], RolloverRoomRequest(checkpoint="carry Room-local skill")
+        )
+        successor_workspace = runtime.workspace(successor["id"])
+        assert (
+            successor_workspace
+            / ".agents"
+            / "skills"
+            / "line-normalizer"
+            / "SKILL.md"
+        ).read_bytes() == skill_md
+        assert (
+            successor_workspace
+            / ".agents"
+            / "skills"
+            / "line-normalizer"
+            / "scripts"
+            / "normalize.py"
+        ).read_bytes() == helper
+        assert not (successor_workspace / ".agents" / "notes.txt").exists()
+        assert not (successor_workspace / ".agents" / "skills" / "scratch").exists()
+        assert not (successor_workspace / "runtime.log").exists()
+
+        successor_summary = summarize_room_local_skills(successor_workspace)
+        assert successor_summary == source_summary
+
+        source_events = await runtime.db.get_events(source["id"])
+        completed = next(
+            item for item in source_events if item["event_type"] == "rollover_completed"
+        )
+        successor_events = await runtime.db.get_events(successor["id"])
+        inherited = next(
+            item
+            for item in successor_events
+            if item["event_type"] == "rollover_checkpoint"
+        )
+        assert completed["metadata"]["room_local_skills"] == source_summary
+        assert inherited["metadata"]["room_local_skills"] == source_summary
     finally:
         await runtime.close()
 
