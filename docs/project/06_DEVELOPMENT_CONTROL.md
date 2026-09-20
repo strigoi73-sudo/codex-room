@@ -6,10 +6,10 @@
 
 ## Operator summary
 
-- **Where are we?** I-025 — **PBM v3 one-paste workflow** — is the selected development item. PBM v2 remains COMPLETE / VERIFIED and no live paid PBM benchmark has run.
-- **What just changed?** D-047 selects PBM v3: one initial principal instruction in Desktop and one in a controller Room, while preserving fresh native Desktop child tasks, fresh benchmark Rooms, the eight frozen task assets, v2 context snapshots, alternating arm order, and D-039 naturalistic Room cognition. The feature branch contains an implementation candidate; no paid benchmark task has run.
-- **Verification state:** PBM v2 remains verified under E-164. PBM v3 is IMPLEMENTATION CANDIDATE / NEEDS VERIFICATION. It requires deterministic exact-head verification plus a bounded native Desktop controller preflight proving fresh-task creation/wait/thread-id capture and a Room-controller launch preflight before v3 may replace v2 on canonical `main`.
-- **What is next?** Finish/review the PBM v3 candidate, run exact-head deterministic verification, then perform the cheapest bounded controller preflight that proves one-paste mechanics without executing the eight benchmark tasks.
+- **Where are we?** I-025 — **PBM v3 one-paste workflow** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED**. PBM v3 is now the canonical version selected by `benchmarks/pbm/CURRENT`; no live paid PBM benchmark has run yet. No feature implementation is currently selected.
+- **What just changed?** PR #180 merged the exact repaired PBM v3 candidate after the principal completed bounded Desktop- and Room-controller live preflights. The Room preflight exposed one path-quoting defect in the detached worker launch; the repair was re-verified at exact head and the repaired Room preflight then passed without executing any benchmark task.
+- **Verification state:** E-165 records the PBM v3 closeout. Exact repaired head `e655f36141fba9a77b69cc04147a5bd13b728135` passed 8 focused PBM v3 tests and `verify-fast.cmd` (63 Linux Python, 118 Windows portability, 9 browser transcript). The Desktop native-task preflight passed, and the repaired Room-controller preflight passed the private consultation, detached-launch, PID-continuity, completion-marker, no-A/B, and zero-benchmark-task checks. PR #180 merged as `556e92946d1d6c9f2b10e15b1d303cad0cd05b63`; comparison from the tested head to the merge commit shows one commit ahead with zero file differences.
+- **What is next?** Principal choice. Saying **“Run PBM”** now invokes canonical PBM v3. The first live PBM run will generate the first Desktop-versus-Room performance evidence; none exists yet.
 - **What is blocked?** No high-priority conceptual blocker prevents ordinary use or further development. Individual deferred items retain their own gates.
 - **What are we deliberately not doing?** No Room-local plugin mutation endpoint, principal-proof security subsystem solely for plugin administration, generic config editor, copied marketplace/plugin manager, built-in Codex subagents, autonomous fan-out, automatic model router, or speculative host-parity project.
 
@@ -19,17 +19,19 @@
 
 **Scope:** [benchmark operator workflow / native Desktop task controller / deterministic Room controller]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** IMPLEMENTATION CANDIDATE / NEEDS VERIFICATION
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED / LIVE PAID PBM NOT YET EXECUTED
 
 **Decision:** D-047
 
+**Evidence:** E-165
+
 PBM v3 preserves the frozen PBM workload and measurement semantics while removing repeated human prompt/command choreography.
 
-Candidate behavior:
+Implemented behavior:
 
-- `benchmarks/pbm/CURRENT` resolves to v3 on the feature branch;
+- `benchmarks/pbm/CURRENT` resolves to v3 on canonical `main`;
 - the principal opens Desktop on `pbm_desktop_controller` and supplies one instruction: read/execute `DRIVER.md`;
 - the Desktop controller performs coordination only and uses native fresh-task management for each Desktop arm; there is no Codex CLI fallback;
 - exactly one current Desktop task is staged at a time under the controller folder, while graders/oracles and historical results remain outside the intended child workspace;
@@ -43,7 +45,7 @@ Candidate behavior:
 - native approval dialogs may still require principal action and are not treated as new benchmark prompts;
 - the v3 fingerprint binds orchestration code and driver files in addition to the inherited task assets.
 
-**Verification gate:** before merge/promotion, exact-head deterministic tests must pass and a bounded controller-only preflight must establish that the actual Desktop surface can create/wait on a fresh native task and return its thread id, while the controller Room can launch its deterministic worker. Do not spend the eight-task PBM run merely to verify orchestration mechanics.
+**Verification:** E-165. The final repaired implementation head passed exact-head deterministic verification. The native Desktop controller preflight proved fresh-task creation/wait/thread-id capture, and the repaired Room-controller preflight proved the private consultation handshake plus detached deterministic worker launch. No benchmark task was executed during either controller preflight.
 
 ### I-024 — PBM v2 contextual baseline
 
@@ -61,7 +63,7 @@ PBM v2 keeps the PBM v1 workload unchanged while adding interpretive context bef
 
 Implemented behavior:
 
-- `benchmarks/pbm/CURRENT` resolves to v2;
+- PBM v2 remains explicitly reproducible; canonical `benchmarks/pbm/CURRENT` now resolves to v3;
 - the v2 manifest inherits v1 task assets and fingerprints both version trees;
 - v1 can still be explicitly reproduced through `--version v1`;
 - each v2 run captures `run-start` and `run-end` snapshots;
@@ -105,7 +107,7 @@ PBM v1 separates the product arms mechanically:
 - `pbm-desktop.ps1` prepares a fresh Desktop workspace/prompt and captures the matching native Desktop rollout only after the principal runs the task in a fresh Codex Desktop chat;
 - `pbm-room.ps1` prepares a fresh Room without starting cognition, stages the same fixture, then separately starts/waits/exports/captures the Room arm;
 - `codex_room/pbm.py` owns only shared deterministic manifest, fixture, grader, accounting, and report logic;
-- PBM v1 remains frozen and explicitly reproducible; `benchmarks/pbm/CURRENT` now resolves the canonical live-use version, PBM v2, which inherits those exact eight v1 task assets and adds the verified contextual snapshot protocol.
+- PBM v1 and v2 remain frozen and explicitly reproducible; `benchmarks/pbm/CURRENT` now resolves the canonical live-use version, PBM v3, which preserves those exact eight v1 task assets, v2 contextual snapshots, and the verified one-paste orchestration protocol.
 
 **Verification:** E-163. The tested PR head and canonical merge commit have the same Git tree. No live PBM task execution is claimed by this verification.
 
@@ -219,6 +221,7 @@ Detailed rationale, exact commits, tests, benchmarks, and historical narrative b
 
 | Work | Current disposition | Durable references |
 |---|---|---|
+| I-025 — PBM v3 one-paste workflow | COMPLETE / IMPLEMENTED / EXACT-HEAD + CONTROLLER-PREFLIGHT VERIFIED / first live PBM pending | D-047; E-165 |
 | I-024 — PBM v2 contextual baseline | COMPLETE / IMPLEMENTED / EXACT-HEAD + READ-ONLY PREFLIGHT VERIFIED / first live PBM pending | D-046; E-164 |
 | I-023 — PBM (Performance Benchmark) | COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / first live run pending | D-045; E-163 |
 | I-021 — Principal-controlled Codex plugin management | COMPLETE / native-host administration selected / no Room bridge | D-043; E-157–E-158; E-162 |
@@ -276,4 +279,4 @@ Current unresolved questions are feature-local rather than roadmap-global:
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
 - if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
-I-025 PBM v3 one-paste workflow is the selected development item. Until v3 is exact-head and controller-preflight verified on canonical `main`, PBM v2 remains the last verified live-use version.
+No feature implementation is currently selected. PBM v3 is the canonical live-use benchmark through **“Run PBM”**; PBM v1 and v2 remain explicitly reproducible as frozen historical versions.
