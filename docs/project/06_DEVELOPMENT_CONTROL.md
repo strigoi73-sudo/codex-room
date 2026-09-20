@@ -6,10 +6,10 @@
 
 ## Operator summary
 
-- **Where are we?** I-024 — **PBM v2 contextual baseline** — is the selected development item. PBM v1 remains COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED and has not been run live.
-- **What just changed?** D-046 defines PBM v2: the same frozen v1 task workload plus standardized run/task-pair context snapshots for provider usage/rate-limit state and environment/capability provenance. `benchmarks/pbm/CURRENT` is updated to v2 on the implementation branch; no paid PBM task has been run.
-- **Verification state:** PBM v1 remains verified under E-163. PBM v2 is an implementation candidate / NEEDS VERIFICATION; exact-head deterministic tests plus a read-only native context-snapshot preflight are required before merge/promotion.
-- **What is next?** Review and exact-head verify PBM v2, including proof that native rate-limit/account-usage context reads succeed or fail closed without model traffic. Only then run the first paid PBM benchmark.
+- **Where are we?** I-024 — **PBM v2 contextual baseline** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / READ-ONLY PREFLIGHT VERIFIED**. PBM v2 is now the canonical version selected by `benchmarks/pbm/CURRENT`; no live paid PBM benchmark has been run yet. No feature implementation is currently selected.
+- **What just changed?** PR #178 merged the exact locally verified PBM v2 candidate. The merge preserves the tested head as a parent and has the identical Git tree. The read-only preflight proved native rate-limit/account-usage/config snapshots succeed without creating model rollout traffic or task execution state.
+- **Verification state:** E-164 records PBM v2 exact-head verification of `b69cf713657d7ad3f742f657f70002a61ea4eecd`: focused PBM/usage tests 16 PASS; `verify-fast.cmd` PASS with 63 Linux Python tests, 118 Windows portability tests, and 9 browser transcript tests; both PBM PowerShell scripts parse; read-only context preflight PASS; no rollout traffic; no task execution state; sensitive-key scan PASS. PR #178 merged as `33b0dd7af38c2d84e3cbf2babedc4ac78410d5ce` with the same tree SHA.
+- **What is next?** Principal choice. Saying **“Run PBM”** now invokes canonical PBM v2. The first live PBM run will generate the first Desktop-versus-Room performance evidence; none exists yet.
 - **What is blocked?** No high-priority conceptual blocker prevents ordinary use or further development. Individual deferred items retain their own gates.
 - **What are we deliberately not doing?** No Room-local plugin mutation endpoint, principal-proof security subsystem solely for plugin administration, generic config editor, copied marketplace/plugin manager, built-in Codex subagents, autonomous fan-out, automatic model router, or speculative host-parity project.
 
@@ -19,15 +19,17 @@
 
 **Scope:** [benchmark measurement protocol / read-only native account + environment context]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** IMPLEMENTATION CANDIDATE / NEEDS VERIFICATION
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / READ-ONLY PREFLIGHT VERIFIED / LIVE PAID PBM NOT YET EXECUTED
 
 **Decision:** D-046
 
+**Evidence:** E-164
+
 PBM v2 keeps the PBM v1 workload unchanged while adding interpretive context before and after benchmark work.
 
-Candidate behavior:
+Implemented behavior:
 
 - `benchmarks/pbm/CURRENT` resolves to v2;
 - the v2 manifest inherits v1 task assets and fingerprints both version trees;
@@ -40,7 +42,7 @@ Candidate behavior:
 - primary Desktop/Room usage accounting and deterministic quality graders remain unchanged from v1.
 - the Room arm remains naturalistic under D-039: C may dynamically allocate ordinary model/reasoning configurations for itself and peers, and PBM records rather than suppresses those choices.
 
-**Implementation boundary:** snapshot reads must remain non-cognitive and read-only. They may provide context for interpreting PBM results but must not become an alternate usage ledger or pacing policy.
+**Implementation boundary:** satisfied for v2. Snapshot reads are non-cognitive and read-only; the preflight produced no Codex rollout traffic and no task-execution state. They provide interpretive context only and do not replace rollout/Room execution accounting.
 
 ### I-023 — PBM (Performance Benchmark)
 
@@ -73,7 +75,7 @@ PBM v1 separates the product arms mechanically:
 - `pbm-desktop.ps1` prepares a fresh Desktop workspace/prompt and captures the matching native Desktop rollout only after the principal runs the task in a fresh Codex Desktop chat;
 - `pbm-room.ps1` prepares a fresh Room without starting cognition, stages the same fixture, then separately starts/waits/exports/captures the Room arm;
 - `codex_room/pbm.py` owns only shared deterministic manifest, fixture, grader, accounting, and report logic;
-- `benchmarks/pbm/CURRENT` resolves the canonical benchmark version, and PBM v1 freezes eight synthetic standard-library-only tasks with deterministic graders.
+- PBM v1 remains frozen and explicitly reproducible; `benchmarks/pbm/CURRENT` now resolves the canonical live-use version, PBM v2, which inherits those exact eight v1 task assets and adds the verified contextual snapshot protocol.
 
 **Verification:** E-163. The tested PR head and canonical merge commit have the same Git tree. No live PBM task execution is claimed by this verification.
 
@@ -187,6 +189,7 @@ Detailed rationale, exact commits, tests, benchmarks, and historical narrative b
 
 | Work | Current disposition | Durable references |
 |---|---|---|
+| I-024 — PBM v2 contextual baseline | COMPLETE / IMPLEMENTED / EXACT-HEAD + READ-ONLY PREFLIGHT VERIFIED / first live PBM pending | D-046; E-164 |
 | I-023 — PBM (Performance Benchmark) | COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / first live run pending | D-045; E-163 |
 | I-021 — Principal-controlled Codex plugin management | COMPLETE / native-host administration selected / no Room bridge | D-043; E-157–E-158; E-162 |
 | I-020 — Codex skill integration / Skill Creator | COMPLETE / IMPLEMENTED / VERIFIED | D-042; E-153–E-156 |
@@ -243,4 +246,4 @@ Current unresolved questions are feature-local rather than roadmap-global:
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
 - if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
-I-024 PBM v2 contextual baseline is the selected development item. No live PBM benchmark should begin until the v2 candidate is exact-head verified or the principal explicitly chooses to run the older v1.
+No feature implementation is currently selected. PBM v2 is the canonical live-use benchmark through **“Run PBM”**; PBM v1 remains reproducible explicitly as a frozen historical version.
