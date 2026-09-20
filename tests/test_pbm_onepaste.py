@@ -129,3 +129,71 @@ def test_room_driver_is_coordination_only() -> None:
     assert "coordination-only PBM controller" in driver
     assert "PBM_ROOM_CLIENT.ps1" in driver
     assert "Do not solve" in driver
+
+
+def test_room_controller_enters_principal_wait_after_staging(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    version = tmp_path / "v3"
+    version.mkdir()
+    (version / "room-driver.md").write_text(
+        "# test room driver\n",
+        encoding="utf-8",
+    )
+    workspace = tmp_path / "room-shared"
+    captured: dict[str, object] = {}
+    calls: list[tuple[str, str]] = []
+
+    def fake_create_room(
+        base: str,
+        *,
+        title: str,
+        topic: str,
+        max_turns: int,
+    ) -> dict[str, object]:
+        captured.update(
+            base=base,
+            title=title,
+            topic=topic,
+            max_turns=max_turns,
+        )
+        return {"id": "room-preflight", "active_round_id": "round-preflight"}
+
+    def fake_http_json(
+        method: str,
+        url: str,
+        payload: dict[str, object] | None = None,
+        *,
+        timeout: float = 30.0,
+    ) -> dict[str, object]:
+        assert (workspace / "PBM_ROOM_DRIVER.md").is_file()
+        assert (workspace / "PBM_ROOM_CLIENT.ps1").is_file()
+        assert (workspace / "PBM_ROOM_WORKER.ps1").is_file()
+        calls.append((method, url))
+        return {"ok": True}
+
+    monkeypatch.setattr(room_control, "create_room", fake_create_room)
+    monkeypatch.setattr(
+        room_control,
+        "room_workspace",
+        lambda room_id: workspace,
+    )
+    monkeypatch.setattr(pbm, "version_root", lambda version_name=None: version)
+    monkeypatch.setattr(room_control, "http_json", fake_http_json)
+
+    result = room_control.make_controller_room(
+        base="http://127.0.0.1:8765",
+        coordinator_url="http://127.0.0.1:9999",
+        token="test-token",
+    )
+
+    assert "CONSULT_PRINCIPAL" in str(captured["topic"])
+    assert result["room_id"] == "room-preflight"
+    assert calls == [
+        (
+            "POST",
+            "http://127.0.0.1:8765/api/rooms/room-preflight/"
+            "rounds/round-preflight/start",
+        )
+    ]
