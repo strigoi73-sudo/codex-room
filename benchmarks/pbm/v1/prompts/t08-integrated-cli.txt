@@ -1,0 +1,12 @@
+Extend the order-report program with an optional region filter.
+
+Required behavior:
+- report.py keeps its existing required --input argument.
+- Add optional --region REGION.
+- Region matching is case-insensitive, but the output region value must use the canonical spelling found in the input data.
+- Without --region, include all rows and emit region = "ALL".
+- With a known region, include only matching rows.
+- With an unknown region, exit non-zero and write an error containing "unknown region" to stderr.
+- Output remains JSON with exactly these keys: region, order_count, total_amount.
+- total_amount is a JSON number rounded to exactly the mathematically correct cent value; do not introduce binary-float summation error.
+- Preserve the existing CSV column contract and use only the Python standard library.
