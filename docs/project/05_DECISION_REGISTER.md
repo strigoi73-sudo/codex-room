@@ -540,7 +540,7 @@ Settled coordination policy:
 - before delegating multiple assignments concurrently, C must determine whether each assignment can produce a useful result without another assignment's output;
 - genuinely independent work should remain parallel;
 - work whose useful completion depends on a prerequisite artifact, evidence, or result should be sequenced after that prerequisite exists;
-- verification of an artifact should not be treated as concurrent with creation or modification of that same artifact unless the verifier has meaningful independent work it can complete before the artifact exists;
+- verification of an artifact should not be treated as concurrent with creation or modification of that same artifact unless the peer assigned verification has meaningful independent work it can complete before the artifact exists;
 - when delegated implementation, correction, or investigation fails to produce needed work, **or when fallback work reaches C because another assignment failed or settled without producing it**, C should normally place substantial tool-heavy execution in a fresh bounded peer assignment rather than perform it itself;
 - that fallback rule applies whether C is acting in its root coordination assignment or in a child assignment created by a peer;
 - when choosing where fallback should run, prefer the capable assignment with the least unnecessary accumulated context rather than automatically using the coordinator's already-large context;
