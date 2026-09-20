@@ -33,8 +33,9 @@ Candidate behavior:
 - the principal opens Desktop on `pbm_desktop_controller` and supplies one instruction: read/execute `DRIVER.md`;
 - the Desktop controller performs coordination only and uses native fresh-task management for each Desktop arm; there is no Codex CLI fallback;
 - exactly one current Desktop task is staged at a time under the controller folder, while graders/oracles and historical results remain outside the intended child workspace;
-- PBM creates one controller Room; the principal supplies one instruction to read/execute `PBM_ROOM_DRIVER.md`;
-- that controller Room launches a detached deterministic worker, which creates a fresh ordinary Room for every Room benchmark arm;
+- PBM creates one controller Room, stages its files, starts its Round, and has C enter a private principal-consultation wait before any benchmark work;
+- the principal's one Room paste is the private reply instructing C to read/execute `PBM_ROOM_DRIVER.md`;
+- that controller Room then launches a detached deterministic worker, which creates a fresh ordinary Room for every Room benchmark arm;
 - the original sixteen-arm alternating sequence remains authoritative;
 - v2 run/task-pair contextual snapshots remain in force;
 - D-039 dynamic Room model/reasoning allocation remains part of the measured product behavior;
