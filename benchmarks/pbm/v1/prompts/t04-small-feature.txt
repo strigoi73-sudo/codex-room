@@ -1,0 +1,13 @@
+Implement summarize_transactions(rows) in ledger.py.
+
+Contract:
+- rows is an iterable of dictionaries with non-empty category and amount fields.
+- amount is a decimal-dollar value accepted by the existing dollars_to_cents helper.
+- Return a dictionary with:
+  - count: number of rows
+  - total_cents: integer total
+  - by_category_cents: mapping of category to integer total
+- Categories are case-sensitive and must be preserved exactly.
+- Invalid/missing/blank category or invalid amount must raise ValueError.
+- Do not mutate the input rows.
+- Preserve dollars_to_cents and use only the Python standard library.
