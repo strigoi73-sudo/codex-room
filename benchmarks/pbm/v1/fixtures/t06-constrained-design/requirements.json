@@ -1,0 +1,9 @@
+{
+  "must": [
+    "no_external_service",
+    "append_only",
+    "human_inspectable",
+    "retention_30_days",
+    "recovery_point_5_minutes"
+  ]
+}
