@@ -1419,3 +1419,33 @@ The principal verified exact head `e4391ec18daca81038bf2d8d3e50c78ca3b22ddf` wit
 The focused rollover cases covered exact Room-local skill inheritance plus exclusion of unrelated state, exact registered custom-capability inheritance, verified institutional-release materialization, and stable configuration/checkpoint rollover behavior. PR #159 then squash-merged the exact verified Stage D candidate to canonical `main` as `7740067fcecf31c0cf7b417365a47a0814a6bef5`.
 
 **Assessment:** I-020 Stage D is **COMPLETE / IMPLEMENTED / VERIFIED / MERGED**. Stage C remains unwarranted by current evidence. The next bounded work is Stage E: reconcile D-022 with the now-demonstrated native-skill / Skill Creator / lineage-persistence hierarchy.
+
+
+## E-156 — I-020 Stage F consolidated acceptance and closeout
+
+**Date:** 2026-09-20
+**Kind:** [acceptance synthesis / closeout]
+**Related work:** I-020
+**New model-heavy Room run:** none
+
+Stage F reviewed the I-020 acceptance target against the already-recorded exact evidence rather than purchasing another naturalistic skill exercise. No acceptance requirement remained materially unproven.
+
+Acceptance mapping:
+
+1. **A/B/C can use a relevant predefined Codex skill without user micromanagement when the task naturally calls for it — VERIFIED.** E-153 records A receiving a workbook task whose assignment deliberately did not name or suggest a skill; A independently selected the predefined spreadsheet workflow and produced the required workbook. Native invocation provenance is weaker than Codex Room capability provenance, but the behavior itself was demonstrated.
+
+2. **The principal can direct a specific skill without a copied Desktop/TUI command palette — VERIFIED TO THE I-020 PRODUCT REQUIREMENT.** The Stage A Room was launched from a principal-authored directive requiring explicit use of an exact discovered predefined skill; C then explicitly assigned the exact `documents:documents` skill to B and the task completed through ordinary Room/Codex prompting. This establishes that named-skill direction works without a copied host command surface or Room-specific `SkillInput` bridge. It does not create a separate durable native-skill invocation audit event.
+
+3. **Skill Creator can produce a bounded Room-local skill with a deterministic helper that another Room agent can use — VERIFIED.** E-153 records `.agents/skills/i020-line-normalizer/` with `SKILL.md`, `agents/openai.yaml`, and `scripts/normalize_lines.py`; Skill Creator validation passed, the deterministic helper emitted `I020_LINE_NORMALIZER_V1`, and a different peer later discovered and used the skill/helper to produce the exact expected normalized output.
+
+4. **Skill creation does not silently escape Room scope or enable Codex built-in subagents — VERIFIED TO THE IMPLEMENTED POLICY/BOUNDARY.** E-153 created the skill only in the Room workspace and made no global-skill or CORE registration change. E-154's protected policy requires explicit principal authorization for user-global/administrator-scope skill changes and forbids enabling Codex built-in subagents through skills. E-155 preserves the skill only within Room lineage during rollover rather than promoting it globally.
+
+5. **Existing deterministic capabilities remain the stronger governed tier rather than being duplicated by default — VERIFIED / DECIDED.** E-154 implements the policy boundary and D-042 settles it: existing suitable native skill first, Skill Creator for a missing reusable workflow, bounded skill-local deterministic helper when sufficient, then Codex Room capability registration only when stronger typed contracts, permissions/side effects, exact identity, verification/provenance, independent reusable invocation, or institutional continuity justify the added governance cost. No parallel skill catalog or invocation subsystem was built.
+
+6. **Implemented rollover continuity preserves exact intended skill bytes/provenance — VERIFIED.** E-155 records exact-head deterministic tests proving Room-local skill packages survive rollover through the atomic staging path, copied bytes are rehashed, a deterministic tree SHA-256 is recorded in rollover events, unsafe filesystem structures fail closed, and unrelated workspace/.agents state remains excluded.
+
+Stage C's structured `SkillInput` bridge remains **NOT WARRANTED BY CURRENT EVIDENCE**. It remains a future fallback if native invocation later demonstrates a concrete reliability or latency gap.
+
+The Stage A economics warning remains material: the bounded naturalistic exercise recorded about **5.28 million execution-token deltas**, dominated by the Sol/Medium document + Skill Creator assignment. Repeating that exercise solely for closeout would add cost without materially improving confidence.
+
+**Assessment:** I-020 is **COMPLETE / IMPLEMENTED / VERIFIED**. The acceptance target is satisfied by E-153 through E-156 plus D-042. No further I-020 implementation or dedicated naturalistic testing is authorized absent new evidence of a specific skill-integration defect or gap.
