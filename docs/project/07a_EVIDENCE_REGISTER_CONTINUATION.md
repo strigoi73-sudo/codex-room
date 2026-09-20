@@ -1242,9 +1242,9 @@ The first natural browser campaign consumed roughly **6% of the principal's five
 
 ## E-152 — Post-I-019 Codex host-command catalog removal exact-head verification
 
-**Date:** 2026-09-19  
-**Kind:** [CORE + ROOM UI cleanup / deterministic verification / exact-diff review]  
-**Related work:** D-041 / post-I-019 cleanup  
+**Date:** 2026-09-19
+**Kind:** [CORE + ROOM UI cleanup / deterministic verification / exact-diff review]
+**Related work:** D-041 / post-I-019 cleanup
 **Exact implementation head verified:** `d77e020588cf548580937a146877a15e7a76f5f4`
 
 The principal synchronized the local `i019-remove-slash-command-surface` branch to the exact candidate head above with a clean tracked tree and ran the repository-standard fast verification gate after `git diff --check`.
