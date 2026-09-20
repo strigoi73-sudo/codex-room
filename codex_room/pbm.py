@@ -725,6 +725,9 @@ def main(argv: list[str] | None = None) -> int:
             run_meta = json.loads((root / "run.json").read_text(encoding="utf-8"))
             if int(run_meta.get("schema_version") or 1) < 2:
                 raise PBMError("context snapshots are not part of this PBM version")
+            current_fingerprint = benchmark_fingerprint(run_meta["benchmark_version"])
+            if run_meta.get("benchmark_fingerprint") != current_fingerprint:
+                raise PBMError("PBM benchmark bytes changed after this run was created")
             value = asyncio.run(
                 pbm_context.capture_snapshot(
                     run_root=root,
