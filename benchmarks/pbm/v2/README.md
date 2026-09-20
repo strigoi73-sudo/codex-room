@@ -33,11 +33,12 @@ When available, each snapshot records:
 - timestamp and benchmark version/fingerprint;
 - canonical repository HEAD, branch/detached state, and working-tree cleanliness;
 - OS/platform, Python version, CPU count, free disk space, and installed `openai-codex` package version;
-- Codex/App Server runtime identity and authenticated account-type metadata after sensitive identity fields are removed;
+- pinned native Codex/App Server runtime identity and authenticated account-type metadata after sensitive identity fields are removed;
 - native `account/rateLimits/read` response;
 - native `account/usage/read` response;
-- effective model/reasoning/sandbox/approval/web-search configuration fields;
-- safe inherited tool inventory for web search, skills, MCP servers, apps, and plugins;
+- native base model/reasoning/sandbox/approval/web-search configuration without Room overrides;
+- Room-effective model/reasoning/sandbox/approval/web-search configuration with the actual Room overrides applied;
+- safe inherited Room tool inventory for web search, skills, MCP servers, apps, and plugins;
 - Codex Room's configured default model and reasoning effort.
 
 Sensitive account identity/credential fields are stripped before persistence. If a native context read is unavailable, PBM records that fact and the error type rather than failing or fabricating a value.
