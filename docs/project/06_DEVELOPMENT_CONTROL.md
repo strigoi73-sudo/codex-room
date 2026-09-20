@@ -6,14 +6,44 @@
 
 ## Operator summary
 
-- **Where are we?** I-024 — **PBM v2 contextual baseline** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / READ-ONLY PREFLIGHT VERIFIED**. PBM v2 is now the canonical version selected by `benchmarks/pbm/CURRENT`; no live paid PBM benchmark has been run yet. No feature implementation is currently selected.
-- **What just changed?** PR #178 merged the exact locally verified PBM v2 candidate. The merge preserves the tested head as a parent and has the identical Git tree. The read-only preflight proved native rate-limit/account-usage/config snapshots succeed without creating model rollout traffic or task execution state.
-- **Verification state:** E-164 records PBM v2 exact-head verification of `b69cf713657d7ad3f742f657f70002a61ea4eecd`: focused PBM/usage tests 16 PASS; `verify-fast.cmd` PASS with 63 Linux Python tests, 118 Windows portability tests, and 9 browser transcript tests; both PBM PowerShell scripts parse; read-only context preflight PASS; no rollout traffic; no task execution state; sensitive-key scan PASS. PR #178 merged as `33b0dd7af38c2d84e3cbf2babedc4ac78410d5ce` with the same tree SHA.
-- **What is next?** Principal choice. Saying **“Run PBM”** now invokes canonical PBM v2. The first live PBM run will generate the first Desktop-versus-Room performance evidence; none exists yet.
+- **Where are we?** I-025 — **PBM v3 one-paste workflow** — is the selected development item. PBM v2 remains COMPLETE / VERIFIED and no live paid PBM benchmark has run.
+- **What just changed?** D-047 selects PBM v3: one initial principal instruction in Desktop and one in a controller Room, while preserving fresh native Desktop child tasks, fresh benchmark Rooms, the eight frozen task assets, v2 context snapshots, alternating arm order, and D-039 naturalistic Room cognition. The feature branch contains an implementation candidate; no paid benchmark task has run.
+- **Verification state:** PBM v2 remains verified under E-164. PBM v3 is IMPLEMENTATION CANDIDATE / NEEDS VERIFICATION. It requires deterministic exact-head verification plus a bounded native Desktop controller preflight proving fresh-task creation/wait/thread-id capture and a Room-controller launch preflight before v3 may replace v2 on canonical `main`.
+- **What is next?** Finish/review the PBM v3 candidate, run exact-head deterministic verification, then perform the cheapest bounded controller preflight that proves one-paste mechanics without executing the eight benchmark tasks.
 - **What is blocked?** No high-priority conceptual blocker prevents ordinary use or further development. Individual deferred items retain their own gates.
 - **What are we deliberately not doing?** No Room-local plugin mutation endpoint, principal-proof security subsystem solely for plugin administration, generic config editor, copied marketplace/plugin manager, built-in Codex subagents, autonomous fan-out, automatic model router, or speculative host-parity project.
 
 ## Current development state
+
+### I-025 — PBM v3 one-paste workflow
+
+**Scope:** [benchmark operator workflow / native Desktop task controller / deterministic Room controller]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** IMPLEMENTATION CANDIDATE / NEEDS VERIFICATION
+
+**Decision:** D-047
+
+PBM v3 preserves the frozen PBM workload and measurement semantics while removing repeated human prompt/command choreography.
+
+Candidate behavior:
+
+- `benchmarks/pbm/CURRENT` resolves to v3 on the feature branch;
+- the principal opens Desktop on `pbm_desktop_controller` and supplies one instruction: read/execute `DRIVER.md`;
+- the Desktop controller performs coordination only and uses native fresh-task management for each Desktop arm; there is no Codex CLI fallback;
+- exactly one current Desktop task is staged at a time under the controller folder, while graders/oracles and historical results remain outside the intended child workspace;
+- PBM creates one controller Room, stages its files, starts its Round, and has C enter a private principal-consultation wait before any benchmark work;
+- the principal's one Room paste is the private reply instructing C to read/execute `PBM_ROOM_DRIVER.md`;
+- that controller Room then launches a detached deterministic worker, which creates a fresh ordinary Room for every Room benchmark arm;
+- the original sixteen-arm alternating sequence remains authoritative;
+- v2 run/task-pair contextual snapshots remain in force;
+- D-039 dynamic Room model/reasoning allocation remains part of the measured product behavior;
+- Desktop-controller and Room-controller usage are recorded separately from task execution usage, with an all-in view also produced;
+- native approval dialogs may still require principal action and are not treated as new benchmark prompts;
+- the v3 fingerprint binds orchestration code and driver files in addition to the inherited task assets.
+
+**Verification gate:** before merge/promotion, exact-head deterministic tests must pass and a bounded controller-only preflight must establish that the actual Desktop surface can create/wait on a fresh native task and return its thread id, while the controller Room can launch its deterministic worker. Do not spend the eight-task PBM run merely to verify orchestration mechanics.
 
 ### I-024 — PBM v2 contextual baseline
 
@@ -246,4 +276,4 @@ Current unresolved questions are feature-local rather than roadmap-global:
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
 - if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
-No feature implementation is currently selected. PBM v2 is the canonical live-use benchmark through **“Run PBM”**; PBM v1 remains reproducible explicitly as a frozen historical version.
+I-025 PBM v3 one-paste workflow is the selected development item. Until v3 is exact-head and controller-preflight verified on canonical `main`, PBM v2 remains the last verified live-use version.

@@ -203,6 +203,6 @@ def test_context_summary_surfaces_run_boundary_availability(tmp_path: Path) -> N
     assert summary["run_end"]["repository_head"] == "abc123"
 
 
-def test_current_pbm_is_v2() -> None:
-    assert pbm.current_version() == "v2"
-    assert pbm.load_manifest()["schema_version"] == 2
+def test_current_pbm_is_v3() -> None:
+    assert pbm.current_version() == "v3"
+    assert pbm.load_manifest()["schema_version"] == 3

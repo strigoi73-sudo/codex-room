@@ -81,6 +81,18 @@ def benchmark_fingerprint(version: str | None = None) -> str:
             digest.update(b"\0")
             digest.update(path.read_bytes())
             digest.update(b"\0")
+
+    implementation_files = manifest.get("implementation_files") or []
+    if not isinstance(implementation_files, list):
+        raise PBMError("PBM implementation_files must be a list when present")
+    for rel in sorted(str(item) for item in implementation_files):
+        path = PROJECT_ROOT / rel
+        if not path.is_file():
+            raise PBMError(f"PBM implementation file not found: {rel}")
+        digest.update(f"implementation/{rel}".encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
     return digest.hexdigest()
 
 
