@@ -751,3 +751,23 @@ This decision deliberately accepts a host transition for infrequent administrati
 
 **Principle:** **Administer plugins where Codex already owns them; let the Room inherit, inspect, and use the resulting capability state.**
 
+### D-044 — Canonical GPT Project runtime instructions live in the repository
+**Date:** 2026-09-20
+**Status:** ACTIVE
+
+The principal moved Codex Room's maintained ChatGPT Project operating instructions from the size-constrained GPT Project UI field into the canonical repository.
+
+Settled boundary:
+
+- `docs/project/01_GPT_PROJECT_RUNTIME_INSTRUCTIONS.md` on canonical `main` is the maintained authority for Codex Room's project-specific ChatGPT runtime guidance;
+- the GPT Project UI custom-instructions field becomes a compact bootstrap/fail-safe whose primary duty is to retrieve and follow `01` at the first substantive Codex Room turn in each new chat;
+- the UI bootstrap preserves only enough invariant guidance to fail safely if repository retrieval is unavailable; it is not a second independently maintained full instruction set;
+- `01` owns stable operating rules such as source loading, A/B/C identity, evidence discipline, development governance, token economics, repository workflow, and principal command procedures;
+- volatile priority/status remains in Development Control and must not migrate into `01`;
+- stale attachments, memories, exports, handoffs, summaries, and prior-chat copies do not replace canonical repo instructions when repository access exists;
+- changes to Project runtime guidance are made in the repository first, reviewed/versioned there, and then reflected in the UI bootstrap only when the bootstrap itself must change.
+
+This removes the recurring need to compress or reconstruct the full instruction set in every chat and makes instruction changes reviewable through ordinary Git/GitHub provenance.
+
+**Principle:** **Bootstrap from the UI; maintain the real instructions once, in the canonical repository.**
+
