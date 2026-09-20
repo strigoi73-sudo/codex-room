@@ -10,7 +10,6 @@ from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .agent import AgentAdapter, CodexAgentAdapter
-from .codex_commands import CodexCommandCatalog
 from .capabilities import list_capabilities
 from .db import Database
 from .exporter import as_json, as_markdown
@@ -39,14 +38,10 @@ def create_app(
     database_path: Path | None = None,
     data_root: Path | None = None,
     adapter: AgentAdapter | None = None,
-    command_catalog: CodexCommandCatalog | None = None,
 ) -> FastAPI:
     root = data_root or PROJECT_ROOT / "data"
     db = Database(database_path or root / "codex-room.db")
     runtime = RoomRuntime(db, adapter or CodexAgentAdapter(), root)
-    catalog = command_catalog or CodexCommandCatalog(
-        root / "cache" / "codex-command-catalog"
-    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -65,7 +60,6 @@ def create_app(
             "/index.html",
             "/app.js",
             "/styles.css",
-            "/api/codex/commands",
         } or request.url.path.endswith("/status-tools"):
             response.headers["Cache-Control"] = "no-store"
         return response
@@ -74,16 +68,6 @@ def create_app(
     async def health() -> dict[str, Any]:
         return runtime.health_status()
 
-    @app.get("/api/codex/commands")
-    async def get_codex_commands() -> dict[str, Any]:
-        runtime_identity = runtime.auth_info.get("runtime")
-        runtime_version = (
-            runtime_identity.get("version")
-            if isinstance(runtime_identity, dict)
-            else None
-        )
-        return await asyncio.to_thread(catalog.resolve, runtime_version)
-
     @app.get("/api/rooms/{room_id}/status-tools")
     async def get_status_tools(room_id: str) -> dict[str, Any]:
         room = await runtime.snapshot(room_id)
@@ -91,11 +75,6 @@ def create_app(
             raise HTTPException(status_code=404, detail="Room not found")
 
         runtime_identity = runtime.auth_info.get("runtime")
-        runtime_version = (
-            runtime_identity.get("version")
-            if isinstance(runtime_identity, dict)
-            else None
-        )
         coordinator = next(
             (agent for agent in room.get("agents") or [] if agent.get("agent_key") == "agent_c"),
             None,
@@ -115,20 +94,16 @@ def create_app(
                 return baseline
             return {**baseline, **inspected}
 
-        coordinator_context, capability_registry, command_state, inherited_tools = (
-            await asyncio.gather(
-                runtime.coordinator_context_status(room),
-                asyncio.to_thread(list_capabilities, runtime.workspace(room_id)),
-                asyncio.to_thread(catalog.resolve, runtime_version),
-                inherited_inventory(),
-            )
+        coordinator_context, capability_registry, inherited_tools = await asyncio.gather(
+            runtime.coordinator_context_status(room),
+            asyncio.to_thread(list_capabilities, runtime.workspace(room_id)),
+            inherited_inventory(),
         )
         return build_status_tools_payload(
             room,
             coordinator_context=coordinator_context,
             capability_registry=capability_registry,
             inherited_tools=inherited_tools,
-            command_catalog=command_state,
             runtime_identity=runtime_identity if isinstance(runtime_identity, dict) else None,
         )
 
