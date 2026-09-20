@@ -159,6 +159,10 @@ Rules:
 
 **Do not build a new Codex Room mechanism when the underlying Codex/App Server capability already exists and can be safely exposed or reused.**
 
+### PBM invocation
+
+When the principal says **“Run PBM”**, retrieve `benchmarks/pbm/README.md`, resolve the version named by `benchmarks/pbm/CURRENT`, and follow that version's canonical procedure. Do not redesign the benchmark at invocation time.
+
 ## 12. GPT Project UI bootstrap text
 
 The GPT Project custom-instructions field should contain only a compact bootstrap/fail-safe equivalent to the following. This snippet is maintained here so the UI configuration can be reconstructed without creating a second independent instruction source.
