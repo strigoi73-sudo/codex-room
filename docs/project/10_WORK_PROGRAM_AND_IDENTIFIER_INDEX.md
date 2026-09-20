@@ -72,6 +72,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-022` | Native Codex capability exposure and execution-economics audit | Development Control / E-159 / E-160 |
 | `I-023` | PBM (Performance Benchmark) — standardized Codex Room vs Codex Desktop benchmark | Development Control / D-045 |
 | `I-024` | PBM v2 contextual baseline — run/task-pair provider usage and environment snapshots | Development Control / D-046 |
+| `I-025` | PBM v3 one-paste workflow — one initial instruction per platform with fresh task contexts | Development Control / D-047 |
 
 ## 4. Decision and evidence identifiers
 
