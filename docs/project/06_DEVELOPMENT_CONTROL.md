@@ -8,8 +8,8 @@
 
 - **Where are we?** I-022 — Native Codex capability exposure and execution-economics audit — is **IN PROGRESS / EXPLORATORY**. Its purpose is to identify exact 0.154 Codex/App Server primitives that Codex Room can expose or adapt without inheriting expensive native orchestration.
 - **What just changed?** PR #167 fixed the repository's runtime-data ignore boundary, and PR #168 normalized A/B as operationally equivalent neutral peers. Exact 0.154 source inspection now confirms that several high-value primitives already exist in the pinned runtime, including active-turn steering/interruption, model discovery, thread lifecycle controls, image inputs, native review, rate-limit/usage reads, permission profiles, approval requests, and user-input elicitation.
-- **Verification state:** E-159 is a source-level exact-version audit. It verifies the listed protocol/SDK contracts and current Room host gaps, but does **not** yet claim principal-facing runtime acceptance for newly exposed features.
-- **What is next?** Complete the comparative capability/economics matrix across the verified native primitives. No feature implementation or feature-specific runtime probe is selected merely by appearing in that matrix; the principal selects any subsequent implementation direction.
+- **Verification state:** E-159 verifies the exact 0.154 source/SDK contracts; E-160 completes the Stage B comparative capability/economics matrix. Neither record claims principal-facing runtime acceptance for an unimplemented feature.
+- **What is next?** Principal review of the completed matrix. No implementation, feature-specific probe, or revived deferred feature is selected by the audit itself.
 - **What remains open?** I-021 plugin management remains unresolved. Its native contracts are verified, but no Room mutation bridge is authorized while the simpler Desktop-managed/inherited-plugin path remains unproven.
 - **What are we deliberately not doing?** No built-in Codex subagents, autonomous fan-out, automatic model router, screen-for-screen Desktop clone, generic config editor, or broad host rewrite merely for parity.
 
@@ -38,11 +38,26 @@
 
 **Stage A — exact 0.154 source/SDK audit. COMPLETE / VERIFIED (E-159).** Exact upstream `rust-v0.154.0` protocol plus Python SDK source confirms native support for `turn/steer`, `turn/interrupt`, `model/list`, thread list/read/fork/archive/unarchive, `review/start`, `account/rateLimits/read`, `account/usage/read`, `permissionProfile/list`, command/file/permission approval requests, tool user-input requests, and structured image/local-image turn inputs. The Python SDK directly wraps steer, interrupt, model-list, and core thread lifecycle operations; generated 0.154 models also cover review, usage/rate-limit, and permission-profile responses. Current Room source already uses interruption internally for lifecycle control, while observer input remains text-only.
 
-**Stage B — candidate classification and economics comparison. IN PROGRESS.** Build a neutral comparison matrix for the verified primitive families: usage/rate-limit visibility; active-turn steering; principal interrupt control; image/file input; native review; permission/approval/user-input interaction; model/thread discovery and lifecycle controls; worktrees; browser/computer use; remote control; and any other exact-runtime primitive that materially belongs in the comparison. For each, record current Room status, principal value, whether extra model cognition is inherently required, likely context/continuation effects, implementation/authority cost, overlap with existing Room mechanisms, and whether native reuse could delete custom machinery.
+**Stage B — candidate classification and economics comparison. COMPLETE / VERIFIED (E-160).** The completed matrix compares current Room status, exact 0.154 substrate, inherent model-cognition cost, Room overlap, and integration/authority surface. It distinguishes read-only metadata/control primitives, transaction-aware turn controls, cognition-producing primitives, and Desktop-host capabilities.
 
-Stage B is an **audit, not a default implementation sequence**. Matrix ordering must not be treated as a recommendation or authorization to build the first item. Do not run feature-specific empirical probes unless (a) a material comparison fact cannot be established deterministically from source/current evidence, or (b) the principal selects that feature for deeper investigation or implementation.
+Key Stage B findings:
 
-**Selection boundary:** after the comparison is complete, present the tradeoffs to the principal. Any implementation slice, feature-specific runtime acceptance test, or revival of a deferred feature such as D-019 requires a separate selection based on that comparison.
+- usage/rate-limit reads, model discovery, and many thread metadata/lifecycle reads require no model cognition themselves;
+- active-turn steering and interruption can alter or stop current spend without starting another model turn, but Room must preserve exact Assignment/transaction provenance and terminal-state semantics;
+- image/local-image input is natively supported without a separate model turn, while generic principal attachment/import UX remains a Room host concern;
+- native review starts model cognition and substantially overlaps task-specific peer verification; it is not intrinsically a free or independent review path;
+- permission/approval/user-input requests can unblock an existing turn without adding a separate model turn, but require a trustworthy principal-authority/interaction bridge;
+- model and raw provider-thread controls overlap D-039 and Room context lifecycle; native discovery may be useful, but raw provider controls must not bypass Room governance;
+- managed worktrees exist in exact 0.154 but are experimental and disabled by default; they add environment isolation, not cognition savings, and conflict with Room's shared-workspace default if applied indiscriminately;
+- Browser Use and Computer Use are stable/default-enabled 0.154 feature/configuration concepts, but current Room does not provide the Desktop host execution surface; exact App Server presence alone does not establish Room availability;
+- remote environments have experimental App Server contracts and could provide alternate execution substrates; they do not by themselves equal Desktop cloud execution;
+- remote-control pairing/transport machinery exists in 0.154, but the compatibility feature flag is removed and Room has no integration; treat it as a separate host/security investigation if ever selected;
+- Desktop local automation/dictation/browser panes are host features; no corresponding ordinary App Server request surface was established for Room parity;
+- built-in subagents/collaboration orchestration remain deliberately superseded by A/B/C and Room transaction/context economics.
+
+Stage B is an **audit, not a default implementation sequence**. Matrix ordering is not a recommendation. Feature-specific empirical probes are warranted only when a material comparison fact cannot be established deterministically or after principal selection.
+
+**Selection boundary:** present the completed matrix to the principal. Any implementation slice, feature-specific runtime acceptance test, or revival of a deferred feature such as D-019 requires a separate selection based on that comparison.
 
 **Stop conditions:** do not implement a primitive merely because 0.154 exposes it; do not enable native subagents; do not duplicate an existing Room mechanism unless the native primitive demonstrably replaces custom complexity without weakening economics, provenance, safety, continuity, or institutional semantics.
 
