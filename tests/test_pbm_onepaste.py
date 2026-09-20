@@ -35,6 +35,7 @@ def test_v3_fingerprint_binds_controller_implementation() -> None:
     assert "codex_room/pbm_onepaste.py" in implementation
     assert "codex_room/pbm_onepaste_room.py" in implementation
     assert "codex_room/pbm_onepaste_server.py" in implementation
+    assert "pbm_desktop_controller/PBM.ps1" in implementation
     assert pbm.benchmark_fingerprint("v3") != pbm.benchmark_fingerprint("v2")
 
 
@@ -118,9 +119,24 @@ def test_desktop_driver_requires_native_tasks_and_forbids_cli_fallback() -> None
 
     assert "native fresh-task creation" in driver
     assert "Do not substitute Codex CLI" in driver
+    assert "PBM.ps1" in driver
+    assert ".venv\\Scripts\\python.exe' -m codex_room.pbm_onepaste" not in driver
     assert "desktop-next" in driver
     assert "desktop-finish" in driver
     assert "finalize" in driver
+
+
+def test_desktop_wrapper_resolves_repo_root_and_preserves_shell() -> None:
+    wrapper = (
+        pbm.PROJECT_ROOT / "pbm_desktop_controller" / "PBM.ps1"
+    ).read_text(encoding="utf-8")
+
+    assert "Split-Path -Parent $PSScriptRoot" in wrapper
+    assert "Push-Location $RepoRoot" in wrapper
+    assert "$pbmExit = $LASTEXITCODE" in wrapper
+    assert "finally {" in wrapper
+    assert "Pop-Location" in wrapper
+    assert "exit $pbmExit" not in wrapper
 
 
 def test_room_driver_is_coordination_only() -> None:

@@ -14,10 +14,10 @@ The principal deliberately requested one initial Desktop instruction. Execute th
 
 ## 1. Initialize
 
-Run this deterministic command from this controller workspace:
+Run this deterministic wrapper from this controller workspace. The wrapper temporarily executes the PBM Python module from the repository root, then returns without changing the controller task's native working directory:
 
 ```powershell
-& 'C:\Codex Room\.venv\Scripts\python.exe' -m codex_room.pbm_onepaste init --controller-cwd (Get-Location).Path
+& .\PBM.ps1 init --controller-cwd (Get-Location).Path
 ```
 
 Parse the returned JSON. Record `run_id`.
@@ -25,7 +25,7 @@ Parse the returned JSON. Record `run_id`.
 Rename this current native task to `PBM v3 Desktop Controller — <run_id>` using the native task-title tool. Capture the exact thread id returned by that native tool, then register it:
 
 ```powershell
-& 'C:\Codex Room\.venv\Scripts\python.exe' -m codex_room.pbm_onepaste register-desktop-controller --run-id '<run_id>' --thread-id '<controller-thread-id>'
+& .\PBM.ps1 register-desktop-controller --run-id '<run_id>' --thread-id '<controller-thread-id>'
 ```
 
 Immediately tell the principal:
@@ -39,7 +39,7 @@ That private reply is the principal's single Room paste. Then continue without r
 Run:
 
 ```powershell
-& 'C:\Codex Room\.venv\Scripts\python.exe' -m codex_room.pbm_onepaste desktop-next --run-id '<run_id>' --wait
+& .\PBM.ps1 desktop-next --run-id '<run_id>' --wait
 ```
 
 If the returned action is `run_task`:
@@ -50,7 +50,7 @@ If the returned action is `run_task`:
 4. Run:
 
 ```powershell
-& 'C:\Codex Room\.venv\Scripts\python.exe' -m codex_room.pbm_onepaste desktop-finish --run-id '<run_id>' --task-id '<task_id>' --thread-id '<child-thread-id>'
+& .\PBM.ps1 desktop-finish --run-id '<run_id>' --task-id '<task_id>' --thread-id '<child-thread-id>'
 ```
 
 5. Repeat the `desktop-next --wait` command.
@@ -58,7 +58,7 @@ If the returned action is `run_task`:
 If the returned action is `complete`, run:
 
 ```powershell
-& 'C:\Codex Room\.venv\Scripts\python.exe' -m codex_room.pbm_onepaste finalize --run-id '<run_id>'
+& .\PBM.ps1 finalize --run-id '<run_id>'
 ```
 
 Report that PBM is complete and give the principal the final report paths and the task-only/controller-overhead/all-in totals returned by finalize.
