@@ -284,26 +284,6 @@ def summarize_capabilities(registry: dict[str, Any]) -> list[dict[str, Any]]:
     return capabilities
 
 
-def summarize_command_catalog(catalog: dict[str, Any]) -> dict[str, Any]:
-    if catalog.get("status") != "current":
-        return {
-            "status": UNKNOWN,
-            "summary": "The exact-runtime command catalog is unavailable.",
-            "runtime_version": catalog.get("runtime_version"),
-            "command_count": 0,
-        }
-    count = int(catalog.get("command_count") or 0)
-    return {
-        "status": AVAILABLE,
-        "summary": f"{count} exact-runtime built-in command(s) synchronized.",
-        "runtime_version": catalog.get("runtime_version"),
-        "command_count": count,
-        "source_ref": catalog.get("source_ref"),
-        "source_blob_sha": catalog.get("source_blob_sha"),
-        "dynamic_overlays": catalog.get("dynamic_overlays") or [],
-    }
-
-
 def _latest_economics(room: dict[str, Any]) -> dict[str, dict[str, Any]]:
     agents = {item.get("agent_key") for item in room.get("agents") or []}
     latest: dict[str, dict[str, Any]] = {}
@@ -422,7 +402,6 @@ def build_status_tools_payload(
     coordinator_context: dict[str, Any] | None,
     capability_registry: dict[str, Any],
     inherited_tools: dict[str, Any],
-    command_catalog: dict[str, Any],
     runtime_identity: dict[str, Any] | None,
 ) -> dict[str, Any]:
     runtime = runtime_identity if isinstance(runtime_identity, dict) else {}
@@ -437,7 +416,6 @@ def build_status_tools_payload(
                 "name": runtime.get("name"),
                 "version": runtime.get("version"),
             },
-            "commands": summarize_command_catalog(command_catalog),
             "tools": inherited_tools,
         },
     }
