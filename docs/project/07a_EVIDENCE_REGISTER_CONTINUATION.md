@@ -1940,3 +1940,74 @@ Thus the canonical merged PBM v3 implementation bytes are the exact bytes that p
 
 **Assessment:** I-025 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED**. PBM v3 is ready for its first live Desktop-versus-Room benchmark run. No such benchmark run has yet occurred, and this evidence makes no claim about relative product performance.
 
+---
+
+### E-166 — PBM v3 first-live initialization failure and Desktop controller import-path repair
+**Date:** 2026-09-20  
+**Kind:** [first-live workflow evidence / fail-closed launch defect / deterministic repair / exact-head verification / Git provenance]  
+**Related work:** I-025 / D-047  
+**Runtime/model benchmark traffic changed:** one Desktop controller conversation was opened for the requested live PBM invocation; **PBM initialization failed before any benchmark task executed**  
+**Evidence state:** VERIFIED for the launch-path defect and repair; no Desktop-versus-Room performance result is claimed
+
+The principal invoked the canonical **“Run PBM”** workflow after E-165 closeout. A fresh Codex Desktop controller task was opened at:
+
+`C:\Codex Room\pbm_desktop_controller`
+
+and received the single prescribed instruction:
+
+`Read DRIVER.md and execute it exactly.`
+
+The controller failed closed before PBM initialization and reported that `codex_room.pbm_onepaste` was not installed/importable through `C:\Codex Room\.venv`. No benchmark task was started.
+
+Repository inspection established the cause. `codex-room` is a normal repo-local package defined by `pyproject.toml`. The PBM Desktop controller deliberately runs from the isolated `pbm_desktop_controller` working directory, but the original driver directly invoked:
+
+`C:\Codex Room\.venv\Scripts\python.exe -m codex_room.pbm_onepaste ...`
+
+without either installing the local project into that venv for ordinary runtime use, changing the command working directory to the repository root, or supplying the repository root on `PYTHONPATH`. The repository verifier succeeds under its own controlled environment because it either installs the project into its verification environment or sets `PYTHONPATH` to the repository root. Thus the controller preflight had proven native task-management mechanics but had not behaviorally exercised this exact live initialization command from the controller subdirectory.
+
+PR #181 repairs the launch path without weakening Desktop child isolation:
+
+- adds tracked `pbm_desktop_controller/PBM.ps1`;
+- the wrapper resolves the repository root from `$PSScriptRoot`;
+- it resolves the existing repository `.venv\Scripts\python.exe`;
+- it temporarily `Push-Location`s to the repository root only for the deterministic PBM Python invocation;
+- it captures `$LASTEXITCODE` immediately after that native command;
+- it always `Pop-Location`s in `finally`;
+- it throws on nonzero PBM exit rather than terminating the principal/controller shell;
+- `DRIVER.md` routes all five PBM deterministic commands through the wrapper;
+- the v3 manifest fingerprints `PBM.ps1`, so this orchestration change cannot silently reuse the prior v3 fingerprint;
+- focused tests assert the wrapper/driver contract.
+
+Exact repair head:
+
+`e1a047dbe483598a8b800f5293d614fba9cb208b`
+
+The principal verified that exact head from a clean tracked checkout. Observed results:
+
+- PowerShell wrapper parse: PASS;
+- controller-directory `PBM.ps1 --help` smoke test: PASS;
+- the smoke test displayed the expected `pbm-onepaste` CLI and `desktop-next` command;
+- caller working directory preservation: PASS;
+- PBM benchmark tasks executed by the smoke test: **0**;
+- focused PBM v3 tests: **9 passed**;
+- `verify-fast.cmd`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **9 passed**;
+- final HEAD remained the exact expected repair SHA;
+- final tracked tree remained clean.
+
+An initial smoke-verification script incorrectly searched the valid argparse output for `pbm_onepaste` with an underscore rather than the actual program name `pbm-onepaste` with a hyphen. That script therefore reported a false FAIL after the module had already imported and printed valid CLI help. The corrected continuation check passed and then ran the focused and routine verification suites. This was a verification-script defect, not an implementation failure.
+
+PR #181 was merged with expected-head protection. Canonical merge commit:
+
+`133ac4d0a2192189756fa8e12acd912b2ffbaca1`
+
+Git comparison from the exact tested feature head to the canonical merge commit established:
+
+- merge-base is the tested feature head;
+- canonical merge is exactly one commit ahead;
+- there are **zero file differences** between the tested head and canonical merge commit.
+
+**Assessment:** the first live PBM attempt produced useful workflow evidence but **no benchmark result**. PBM v3 remains the canonical workflow, now with the Desktop controller import path repaired and exact-head verified. The correct next action is a fresh live PBM invocation from a new Desktop controller conversation so controller-context measurement starts cleanly.
+
