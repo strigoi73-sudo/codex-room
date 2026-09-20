@@ -6,10 +6,10 @@
 
 ## Operator summary
 
-- **Where are we?** I-025 — **PBM v3 one-paste workflow** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED**. PBM v3 is now the canonical version selected by `benchmarks/pbm/CURRENT`; no live paid PBM benchmark has run yet. No feature implementation is currently selected.
-- **What just changed?** PR #180 merged the exact repaired PBM v3 candidate after the principal completed bounded Desktop- and Room-controller live preflights. The Room preflight exposed one path-quoting defect in the detached worker launch; the repair was re-verified at exact head and the repaired Room preflight then passed without executing any benchmark task.
-- **Verification state:** E-165 records the PBM v3 closeout. Exact repaired head `e655f36141fba9a77b69cc04147a5bd13b728135` passed 8 focused PBM v3 tests and `verify-fast.cmd` (63 Linux Python, 118 Windows portability, 9 browser transcript). The Desktop native-task preflight passed, and the repaired Room-controller preflight passed the private consultation, detached-launch, PID-continuity, completion-marker, no-A/B, and zero-benchmark-task checks. PR #180 merged as `556e92946d1d6c9f2b10e15b1d303cad0cd05b63`; comparison from the tested head to the merge commit shows one commit ahead with zero file differences.
-- **What is next?** Principal choice. Saying **“Run PBM”** now invokes canonical PBM v3. The first live PBM run will generate the first Desktop-versus-Room performance evidence; none exists yet.
+- **Where are we?** I-025 — **PBM v3 one-paste workflow** — remains **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED** after a first-live-attempt launch repair. PBM v3 remains canonical; no PBM benchmark task has yet executed and no Desktop-versus-Room performance result exists. No feature implementation is currently selected.
+- **What just changed?** The principal invoked **“Run PBM”** for the first time. The Desktop controller failed closed before PBM initialization because the repo-local `codex_room` package was not importable when the prescribed venv Python command ran from `pbm_desktop_controller`. PR #181 added a tracked repo-root execution wrapper, bound it into the v3 fingerprint, and updated the driver. Exact-head smoke/focused/routine verification passed; zero benchmark tasks executed.
+- **Verification state:** E-165 records the original PBM v3 implementation/controller closeout. E-166 records the first-live-attempt discovery and repair. Exact repair head `e1a047dbe483598a8b800f5293d614fba9cb208b` passed the controller-directory import smoke test, 9 focused PBM tests, and `verify-fast.cmd` (63 Linux Python, 118 Windows portability, 9 browser transcript). PR #181 merged as `133ac4d0a2192189756fa8e12acd912b2ffbaca1`; comparison from tested head to merge commit shows one commit ahead with zero file differences.
+- **What is next?** Retry **“Run PBM”** from a fresh Codex Desktop controller conversation rooted at `C:\Codex Room\pbm_desktop_controller`. The failed first attempt is not a benchmark result because initialization never completed and no benchmark task ran.
 - **What is blocked?** No high-priority conceptual blocker prevents ordinary use or further development. Individual deferred items retain their own gates.
 - **What are we deliberately not doing?** No Room-local plugin mutation endpoint, principal-proof security subsystem solely for plugin administration, generic config editor, copied marketplace/plugin manager, built-in Codex subagents, autonomous fan-out, automatic model router, or speculative host-parity project.
 
@@ -25,7 +25,7 @@
 
 **Decision:** D-047
 
-**Evidence:** E-165
+**Evidence:** E-165, E-166
 
 PBM v3 preserves the frozen PBM workload and measurement semantics while removing repeated human prompt/command choreography.
 
@@ -45,7 +45,7 @@ Implemented behavior:
 - native approval dialogs may still require principal action and are not treated as new benchmark prompts;
 - the v3 fingerprint binds orchestration code and driver files in addition to the inherited task assets.
 
-**Verification:** E-165. The final repaired implementation head passed exact-head deterministic verification. The native Desktop controller preflight proved fresh-task creation/wait/thread-id capture, and the repaired Room-controller preflight proved the private consultation handshake plus detached deterministic worker launch. No benchmark task was executed during either controller preflight.
+**Verification:** E-165 and E-166. The original final implementation head passed exact-head deterministic verification plus bounded Desktop- and Room-controller preflights. The first live invocation then exposed a controller-directory Python import-path defect before initialization; PR #181 repaired that path with a tracked repo-root wrapper. The exact repair head passed a controller-directory import smoke test, 9 focused PBM tests, and the repository fast verifier. No benchmark task executed during the failed live attempt or the repair verification.
 
 ### I-024 — PBM v2 contextual baseline
 
@@ -221,7 +221,7 @@ Detailed rationale, exact commits, tests, benchmarks, and historical narrative b
 
 | Work | Current disposition | Durable references |
 |---|---|---|
-| I-025 — PBM v3 one-paste workflow | COMPLETE / IMPLEMENTED / EXACT-HEAD + CONTROLLER-PREFLIGHT VERIFIED / first live PBM pending | D-047; E-165 |
+| I-025 — PBM v3 one-paste workflow | COMPLETE / IMPLEMENTED / EXACT-HEAD + CONTROLLER-PREFLIGHT VERIFIED / first benchmark-task execution pending after launch-path repair | D-047; E-165–E-166 |
 | I-024 — PBM v2 contextual baseline | COMPLETE / IMPLEMENTED / EXACT-HEAD + READ-ONLY PREFLIGHT VERIFIED / first live PBM pending | D-046; E-164 |
 | I-023 — PBM (Performance Benchmark) | COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / first live run pending | D-045; E-163 |
 | I-021 — Principal-controlled Codex plugin management | COMPLETE / native-host administration selected / no Room bridge | D-043; E-157–E-158; E-162 |
