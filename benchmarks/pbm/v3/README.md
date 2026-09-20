@@ -12,7 +12,7 @@ The single Desktop instruction is:
 
 `Read DRIVER.md and execute it exactly.`
 
-PBM then creates a dedicated controller Room named **PBM v3 Controller — ACTIVE**. The single Room instruction is:
+PBM then creates a dedicated controller Room named **PBM v3 Controller — ACTIVE**. After its files are staged, the controller Round starts and C is instructed to enter a private `CONSULT_PRINCIPAL` wait without doing benchmark work. The principal's single Room paste is the private reply:
 
 `Read PBM_ROOM_DRIVER.md and execute it exactly.`
 
@@ -38,7 +38,7 @@ The native task-creation primitive inherits the controller task's working direct
 
 ## Room isolation
 
-The special PBM controller Room is coordination-only. It launches a deterministic background PBM worker and then does no benchmark reasoning.
+The special PBM controller Room is coordination-only. Its first C execution exists only to establish the durable private principal wait. After the principal's single private reply, C launches a deterministic background PBM worker and then does no benchmark reasoning.
 
 The worker follows the same alternating PBM schedule and, when Room is next, creates a **fresh ordinary production Room** for that task, stages the fixture, starts the Round, waits for terminal state, exports it, captures execution economics/model-effort provenance, grades externally, and advances.
 
