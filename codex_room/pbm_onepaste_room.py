@@ -116,10 +116,12 @@ if (-not (Test-Path -LiteralPath $Worker)) {
     throw "PBM Room worker not found: $Worker"
 }
 
+$WorkerArgument = '"' + $Worker + '"'
+
 $process = Start-Process -FilePath 'powershell.exe' -ArgumentList @(
     '-NoProfile',
     '-ExecutionPolicy', 'Bypass',
-    '-File', $Worker
+    '-File', $WorkerArgument
 ) -WindowStyle Hidden -PassThru
 
 "Started PBM Room worker PID $($process.Id) at $([DateTime]::UtcNow.ToString('o'))" |
