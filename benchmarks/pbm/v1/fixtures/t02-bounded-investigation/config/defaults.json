@@ -1,0 +1,5 @@
+{
+  "connect_timeout_seconds": 4,
+  "read_timeout_seconds": 11,
+  "max_retries": 2
+}
