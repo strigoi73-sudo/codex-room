@@ -743,7 +743,7 @@ def main(argv: list[str] | None = None) -> int:
             }
         else:
             raise PBMError("unsupported PBM command")
-    except (PBMError, OSError, json.JSONDecodeError, subprocess.SubprocessError) as exc:
+    except (PBMError, ValueError, OSError, json.JSONDecodeError, subprocess.SubprocessError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     _json_out(value)
