@@ -1382,3 +1382,40 @@ The principal then verified exact head `5b97c584ef30bcfa167e2337f59c09ee55ed7ebd
 PR #157 then merged that exact reviewed candidate by squash to canonical `main` as `70cb80ee25281f5217213953e40b7657e68148f2`.
 
 **Assessment:** I-020 Stage B is **COMPLETE / IMPLEMENTED / VERIFIED / MERGED**. Current evidence does not justify Stage C's explicit skill-invocation bridge. The next bounded work is Stage D: persistence of selected Room-local skills across Room rollover.
+
+
+## E-155 — I-020 Stage D Room-local skill rollover exact-head verification and merge
+
+**Date:** 2026-09-20
+**Kind:** [CORE rollover persistence / exact-head deterministic verification]
+**Related work:** I-020 Stage D
+**Exact implementation head verified:** `e4391ec18daca81038bf2d8d3e50c78ca3b22ddf`
+**Canonical squash merge:** `7740067fcecf31c0cf7b417365a47a0814a6bef5`
+
+Stage D implements lineage-local persistence for native Codex skills created inside a Room. Direct valid packages under `.agents/skills/<name>/SKILL.md` are copied into the successor Room through the existing atomic rollover staging path. The implementation does not copy arbitrary predecessor workspace state and does not promote Room-created skills into user/global scope.
+
+The inherited skill path is deliberately bounded and fail-closed:
+
+- only direct skill-package directories with a regular `SKILL.md` are treated as lineage skills;
+- unrelated workspace files and unrelated `.agents` state remain excluded;
+- directories under `.agents/skills` without a direct regular `SKILL.md` are not inherited;
+- source and destination skill trees reject symlinks and unsupported filesystem entries;
+- inheritance is bounded to 1,024 files and 64 MiB total;
+- copied files are rehashed before the staged workspace is exposed;
+- rollover events record inherited skill names/counts, file/byte counts, and a deterministic tree SHA-256;
+- no automatic user/global skill promotion occurs.
+
+The principal verified exact head `e4391ec18daca81038bf2d8d3e50c78ca3b22ddf` with a clean tracked tree:
+
+- `git diff --check origin/main...HEAD`: **PASS**;
+- focused I-020 Stage D rollover tests: **4 passed, 2 existing deprecation warnings**;
+- Linux Python 3.12 focused core: **63 passed, 2 existing deprecation warnings**;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **9 passed**;
+- repository fast verifier: **RESULT: PASS**;
+- final HEAD remained exactly `e4391ec18daca81038bf2d8d3e50c78ca3b22ddf`;
+- tracked tree remained clean.
+
+The focused rollover cases covered exact Room-local skill inheritance plus exclusion of unrelated state, exact registered custom-capability inheritance, verified institutional-release materialization, and stable configuration/checkpoint rollover behavior. PR #159 then squash-merged the exact verified Stage D candidate to canonical `main` as `7740067fcecf31c0cf7b417365a47a0814a6bef5`.
+
+**Assessment:** I-020 Stage D is **COMPLETE / IMPLEMENTED / VERIFIED / MERGED**. Stage C remains unwarranted by current evidence. The next bounded work is Stage E: reconcile D-022 with the now-demonstrated native-skill / Skill Creator / lineage-persistence hierarchy.
