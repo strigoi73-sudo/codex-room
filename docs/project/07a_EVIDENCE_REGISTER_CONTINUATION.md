@@ -1537,3 +1537,59 @@ with sandbox command exit code **0**.
 
 This result closes the sole pending Stage A runtime fact identified by E-157. Stage A is **COMPLETE / VERIFIED** for the bounded contract-and-authority audit. I-021 remains **DECIDED-NOT IMPLEMENTED** until later stages implement and verify the mutation path.
 
+## E-159 — I-022 exact Codex 0.154 native-capability source audit
+
+**Date:** 2026-09-20
+**Kind:** [exact upstream source/SDK audit / capability exposure economics]
+**Related work:** I-022 Stage A
+**Runtime version audited:** Codex / openai-codex **0.154.0**, upstream tag `rust-v0.154.0`
+**Room runtime behavior changed:** none
+**Evidence state:** VERIFIED for source-level contracts and current Room host/source gaps; NEEDS VERIFICATION for any future principal-facing exposure
+
+The audit compared the exact upstream Codex 0.154 App Server protocol and Python SDK against current Codex Room source. It deliberately distinguishes three facts: a native primitive exists in 0.154; Codex Room's SDK/runtime can call it; Codex Room currently exposes it to the principal. The first two do not imply the third.
+
+### Exact 0.154 native primitives verified
+
+The App Server protocol registers these relevant routes:
+
+- `turn/steer`;
+- `turn/interrupt`;
+- `review/start`;
+- `model/list`;
+- `thread/list`, `thread/read`, `thread/fork`, `thread/archive`, and `thread/unarchive`;
+- `account/rateLimits/read`;
+- `account/usage/read`;
+- `permissionProfile/list`;
+- server requests `item/commandExecution/requestApproval`, `item/fileChange/requestApproval`, `item/permissions/requestApproval`, and `item/tool/requestUserInput`.
+
+The 0.154 turn protocol accepts structured `UserInput` variants including remote image and local-image input in addition to text, skill, mention, audio, and local-audio forms.
+
+The exact 0.154 Python SDK directly exposes high-level client methods for:
+
+- `turn_interrupt(...)`;
+- `turn_steer(...)`;
+- `model_list(...)`;
+- thread start/resume/list/read/fork/archive/unarchive/name/compact and goal operations.
+
+The generated 0.154 Python types also include typed response models for `ReviewStartResponse`, `GetAccountRateLimitsResponse`, `GetAccountTokenUsageResponse`, `PermissionProfileListResponse`, `ModelListResponse`, `TurnSteerResponse`, and `TurnInterruptResponse`. Codex Room already uses the SDK's lower-level request path for exact App Server calls in Status & Tools, so absence of a convenience wrapper is not itself a substrate blocker.
+
+### Current Room-side observations
+
+Current Codex Room source already uses active-turn interruption internally through the SDK turn handle for lifecycle cancellation/Stop and recovery. Therefore a future principal-facing interrupt control would primarily be a host/authority/product-surface decision rather than a new Codex substrate integration.
+
+The current observer message model remains text-only (`content: str`) and the observer message endpoint accepts that text model. Thus image/file input is currently a genuine Room host/input gap even though the pinned Codex turn protocol already accepts image/local-image input.
+
+Current Room architecture deliberately substitutes its own mechanisms for native multi-agent orchestration: A/B/C transactions, assignment-scoped contexts, D-039 model allocation, Round/Task state, and REFRESH remain authoritative. This audit does not justify enabling Codex built-in subagents or autonomous fan-out.
+
+### 0.154 release evidence relevant to the audit
+
+The upstream 0.154 release notes additionally identify release-level work for inline user questions while Codex continues, usage-capability reads, experimental managed worktrees, durable reasoning configuration updates, managed Windows App Server lifecycle, and plugin refresh across existing sessions. Release-note presence is useful orientation but does not by itself establish a Codex Room product surface.
+
+### Economics interpretation
+
+The highest-value candidates are native **primitives** that add control or information without independently purchasing additional model cognition. Read-only usage/model/thread metadata and interruption are especially cheap. Steering may save tokens when it redirects an already-running turn instead of requiring cancellation plus replacement work. Image input can reduce textual transcription but still participates in model context. Native review and approval/elicitation paths may be valuable, but they require Room-semantic and authority analysis before use because they can introduce additional cognition or human-interaction state.
+
+Native orchestration remains categorically different. Built-in subagents, autonomous fan-out, and provider-controlled delegation can add model executions/context duplication outside Room's explicit economics and provenance controls. They remain disabled.
+
+**Assessment:** I-022 Stage A is **COMPLETE / VERIFIED** as an exact-source contract audit. The evidence establishes a larger immediately available native primitive surface than the older Desktop↔Room audit captured. It does not authorize implementation. Stage B should rank these candidates by principal value, Room-semantic fit, implementation/authority cost, and expected model-token impact, then use the smallest necessary runtime probes before implementation.
+
