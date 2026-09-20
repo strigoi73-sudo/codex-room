@@ -65,7 +65,7 @@ def sdk_server_identity(metadata: Any) -> dict[str, str] | None:
     if not isinstance(user_agent, str):
         return None
     match = re.match(
-        r"^(?P<name>[0-9A-Za-z._-]+)/(?P<version>[0-9A-Za-z][0-9A-Za-z.+-]{0,63})(?:\\s|$)",
+        r"^(?P<name>[0-9A-Za-z._-]+)/(?P<version>[0-9A-Za-z][0-9A-Za-z.+-]{0,63})(?:\s|$)",
         user_agent.strip(),
     )
     if match is None:
