@@ -117,6 +117,13 @@ async def test_transaction_dual_delegation_releases_c_once_after_both_peers(
     assert "Analyze the implementation path." in agent_b_prompt
     assert "sibling results remain independent until the join resolves" in agent_a_prompt
     assert "sibling results remain independent until the join resolves" in agent_b_prompt
+    for prompt in (agent_a_prompt, agent_b_prompt):
+        assert "use an existing enabled codex skill when it materially fits" in prompt.lower()
+        assert "native Skill Creator" in prompt
+        assert "Room-local under '.agents/skills/' by default" in prompt
+        assert "user-global or administrator-scope skills without explicit principal authorization" in prompt
+        assert "do not enable Codex built-in subagents through a skill" in prompt
+        assert "lineage continuity" in prompt
     assert "A implementation result" in adapter.calls["agent_c"][1]["prompt"]
     assert "B failure-mode result" in adapter.calls["agent_c"][1]["prompt"]
     assert "<unread_room_events>" not in adapter.calls["agent_c"][1]["prompt"]

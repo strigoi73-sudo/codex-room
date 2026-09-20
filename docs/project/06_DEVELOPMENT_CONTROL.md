@@ -1,17 +1,17 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-19
+**Last updated:** 2026-09-20
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
-- **Where are we?** I-018, I-019, and the D-041 host-command cleanup are complete. The principal has selected **I-020 — Codex skill integration** as the next bounded work item; implementation has not started.
-- **What just changed?** Current Codex/App Server and Python SDK surfaces were reviewed. Codex already provides skill discovery (`skills/list`), progressive skill loading, system/predefined skills including Skill Creator, and structured `SkillInput` support. Codex Room already inspects the inherited skill inventory in Status & Tools but does not add a Room-specific skill invocation or creation layer.
-- **Verification state:** I-020 Stage A is **IN PROGRESS / NEEDS VERIFICATION**. No new skill behavior is claimed until natural Room evidence demonstrates it.
-- **What is blocked?** Nothing blocks ordinary Codex Room use. I-020 begins with a no-CORE-change empirical gate specifically to avoid rebuilding native Codex behavior unnecessarily.
-- **What is next?** Complete I-020 Stage A natural Room evidence: verify predefined-skill discovery/use, explicit named-skill use, Skill Creator Room-local authoring, and cross-agent reuse before changing CORE.
-- **What are we deliberately not doing?** No Codex Desktop/TUI command palette, no parallel Room skill registry, no automatic global/user-scope skill writes, no immediate rewrite of D-022, no fourth persistent agent, and no Codex built-in subagents.
+- **Where are we?** I-020 Stage A is **COMPLETE / VERIFIED** by natural Room evidence. Stage B is **IN PROGRESS** as a small protected-policy change; no SkillInput bridge is currently justified.
+- **What just changed?** A natural three-agent Room demonstrated runtime discovery of `skill-creator`, `spreadsheets`, and `documents`; autonomous spreadsheet-skill selection; explicit document-skill use; Room-local Skill Creator authoring with a deterministic helper; runtime discovery of the created skill; and cross-agent reuse. See E-153.
+- **Verification state:** Stage A is **VERIFIED**. Stage B source/test edits are not yet exact-head verified. The Stage A Room also exposed severe execution cost: about 5.28M recorded execution tokens total, with Agent B's Sol/Medium explicit-skill + Skill Creator assignment alone using about 4.33M tokens and 61 tool calls.
+- **What is blocked?** Nothing blocks ordinary Codex Room use. Skill use is functionally available natively; the current work is policy and persistence discipline, not a missing invocation mechanism.
+- **What is next?** Exact-head verify the Stage B protected skill-policy change. If it passes, proceed to Stage D's persistence decision; Stage C's explicit SkillInput bridge remains unneeded unless later evidence shows a real reliability/latency gap.
+- **What are we deliberately not doing?** No Codex Desktop/TUI command palette, no parallel Room skill registry, no automatic global/user-scope skill writes, no SkillInput bridge without evidence, no immediate rewrite of D-022, no fourth persistent agent, and no Codex built-in subagents.
 
 ## Current focus
 
@@ -21,7 +21,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** EXPLORATORY / NEEDS VERIFICATION
+**Reality / evidence:** Stage A VERIFIED; Stage B IMPLEMENTATION IN PROGRESS / NEEDS EXACT-HEAD VERIFICATION
 
 **Origin:** principal selection after I-019 / D-041 cleanup
 
@@ -39,11 +39,11 @@
 
 **Implementation sequence:**
 
-**Stage A — Native capability proof, no CORE changes.** Use one bounded ordinary Room exercise to establish what already works. Confirm the active runtime discovers representative predefined skills including Skill Creator; have an agent use a predefined skill without the principal naming it when the task clearly matches; separately direct a named skill explicitly; then ask C to use Skill Creator to create one harmless Room-local test skill under `.agents/skills` with a tiny deterministic helper. Have another Room agent use the newly created skill. Prefer direct observable artifacts/tool effects over agent self-report.
+**Stage A — Native capability proof, no CORE changes. COMPLETE / VERIFIED (E-153).** The natural Room demonstrated representative predefined-skill discovery, autonomous `spreadsheets` selection, explicit `documents` use, Skill Creator authoring of Room-local `.agents/skills/i020-line-normalizer/` with a deterministic helper, resumed-runtime discovery of that skill, and cross-agent reuse by a different peer. No CORE bridge was needed. Native invocation provenance remains weaker than Codex Room deterministic-capability provenance, but that did not block successful use. The exercise was operationally expensive: about 5.28M recorded execution tokens total, dominated by a 4.33M-token Sol/Medium Skill Creator/document assignment.
 
-**Stage B — Agent policy only if Stage A demonstrates the native mechanism is usable.** Add the smallest protected guidance necessary: prefer an existing enabled Codex skill before inventing a new workflow; use Skill Creator when a reusable workflow is warranted; keep agent-created skills Room-local by default; allow skill-local scripts when deterministic execution earns its cost; require explicit principal authorization before creating/modifying user-global skills; and promote machinery into the Codex Room deterministic registry only when its stronger guarantees are actually needed. Do not duplicate the skill catalog in CORE.
+**Stage B — Agent policy. IN PROGRESS.** Stage A satisfied the gate. The bounded candidate adds protected guidance to use an existing enabled Codex skill when it materially fits, check existing skills before inventing reusable workflow/software, use native Skill Creator for genuinely missing reusable workflows, keep agent-created skills Room-local by default, allow bounded skill-local deterministic helpers, require explicit principal authorization for user-global/administrator-scope skill changes, preserve the ban on Codex built-in subagents, and promote machinery into the Codex Room deterministic registry only when its stronger guarantees earn the added governance cost. A cost guard explicitly says a heavyweight skill workflow must earn its cost unless the principal requests it. Do not duplicate the skill catalog in CORE.
 
-**Stage C — Explicit invocation bridge only if Stage A exposes a real reliability or latency gap.** If plain native skill selection / `$skill-name` behavior is insufficient, use the official Python SDK `SkillInput(name, path)` and the existing `skills/list` inventory to bind a selected skill to a turn. Do not build a slash-command parser or copy the Desktop/TUI popup. The bridge should accept only a skill resolved from the active runtime inventory and preserve current Room authority/sandbox rules.
+**Stage C — Explicit invocation bridge. NOT WARRANTED BY CURRENT EVIDENCE.** Stage A showed successful autonomous selection, explicit named-skill use, Skill Creator authoring, runtime discovery, and cross-agent reuse without a Room-specific bridge. Keep the official Python SDK `SkillInput(name, path)` path as a future fallback only if later evidence exposes a real reliability or latency gap. Do not build a slash-command parser or copy the Desktop/TUI popup.
 
 **Stage D — Skill persistence decision.** Test whether Room-local skills remain available across the work lifecycle that matters in practice. If rollover continuity is required, choose the smallest safe mechanism after evidence: exact-byte lineage carry of selected Room-local skills, or deliberate principal-approved promotion to a broader Codex skill scope. Do not silently make a Room-created skill global. Preserve exact provenance if Codex Room itself carries skill bytes across lineage.
 
