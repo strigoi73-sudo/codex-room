@@ -142,7 +142,9 @@ def make_controller_room(
         title=title,
         topic=(
             "PBM v3 coordination-only controller. Do not solve benchmark tasks here. "
-            "Wait for the principal's driver instruction."
+            "Immediately use CONSULT_PRINCIPAL to ask the human principal for the "
+            "single PBM Room controller instruction, then wait. Do not invoke A or B "
+            "and do not perform benchmark work before that private reply."
         ),
         max_turns=4,
     )
@@ -161,6 +163,11 @@ def make_controller_room(
     )
     (workspace / "PBM_ROOM_CLIENT.ps1").write_text(
         controller_launcher_text(), encoding="utf-8"
+    )
+    http_json(
+        "POST",
+        f"{base}/api/rooms/{room_id}/rounds/{round_id}/start",
+        {},
     )
     return {
         "room_id": room_id,
