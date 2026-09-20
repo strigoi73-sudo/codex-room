@@ -18,9 +18,11 @@ The system should be capable of helping formalize goals progressively instead of
 
 The foreseeable Personal architecture centers on the fixed A/B/C triad:
 
-- A — Implementer
-- B — Verifier
-- C — Integrator
+- **Agent A** — neutral persistent peer;
+- **Agent B** — neutral persistent peer;
+- **Agent C** — epistemic peer with protected coordination responsibilities.
+
+A and B are operationally equivalent by default: they begin from the same neutral profile and acquire temporary implementation, verification, investigation, critique, or other responsibilities from the work assigned to them rather than from persistent occupational roles. C's coordination responsibility is structural and does not grant superior judgment.
 
 The goal is a capable organization with disciplined operating economics, durable continuity, inspectable work, and adaptable division of labor.
 
