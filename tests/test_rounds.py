@@ -11,9 +11,9 @@ import codex_room.db as db_module
 from codex_room.db import Database, new_id, utc_now
 from codex_room.exporter import as_json
 from codex_room.models import (
-    AGENT_A_IMPLEMENTER_INSTRUCTIONS,
-    AGENT_B_VERIFIER_INSTRUCTIONS,
-    AGENT_C_INTEGRATOR_INSTRUCTIONS,
+    AGENT_A_DEFAULT_INSTRUCTIONS,
+    AGENT_B_DEFAULT_INSTRUCTIONS,
+    AGENT_C_DEFAULT_INSTRUCTIONS,
     CreateRoomRequest,
     ObserverMessageRequest,
     Outcome,
@@ -436,8 +436,8 @@ async def test_known_pair_profile_migration_repairs_only_live_unmodified_snapsho
     assert defaults["agent_a"]["developer_instructions"] == AGENT_A_DEFAULT_PERSONALITY
     assert defaults["agent_b"]["developer_instructions"] == AGENT_B_DEFAULT_PERSONALITY
     active = {item["agent_key"]: item for item in await database.get_agents(active_id)}
-    assert active["agent_a"]["profile_snapshot"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
-    assert active["agent_b"]["profile_snapshot"] == AGENT_B_VERIFIER_INSTRUCTIONS
+    assert active["agent_a"]["profile_snapshot"] == AGENT_A_DEFAULT_INSTRUCTIONS
+    assert active["agent_b"]["profile_snapshot"] == AGENT_B_DEFAULT_INSTRUCTIONS
     archived = {item["agent_key"]: item for item in await database.get_agents(archived_id)}
     assert archived["agent_a"]["profile_snapshot"] == stale["agent_a"]
     assert archived["agent_b"]["profile_snapshot"] == stale["agent_b"]
@@ -447,8 +447,8 @@ async def test_known_pair_profile_migration_repairs_only_live_unmodified_snapsho
     null_snapshot = {
         item["agent_key"]: item for item in await database.get_agents(null_snapshot_id)
     }
-    assert null_snapshot["agent_a"]["profile_snapshot"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
-    assert null_snapshot["agent_b"]["profile_snapshot"] == AGENT_B_VERIFIER_INSTRUCTIONS
+    assert null_snapshot["agent_a"]["profile_snapshot"] == AGENT_A_DEFAULT_INSTRUCTIONS
+    assert null_snapshot["agent_b"]["profile_snapshot"] == AGENT_B_DEFAULT_INSTRUCTIONS
     active_room = await database.get_room(active_id)
     assert active_room is not None
     assert [item["id"] for item in active_room["metadata"]["profile_migrations"]] == [
@@ -531,9 +531,9 @@ async def test_early_triad_profile_migration_repairs_exact_observed_builtins(
     assert c_default["developer_instructions"] == AGENT_C_DEFAULT_PERSONALITY
 
     active = {item["agent_key"]: item for item in await database.get_agents(active_id)}
-    assert active["agent_a"]["profile_snapshot"] == AGENT_A_IMPLEMENTER_INSTRUCTIONS
-    assert active["agent_b"]["profile_snapshot"] == AGENT_B_VERIFIER_INSTRUCTIONS
-    assert active["agent_c"]["profile_snapshot"] == AGENT_C_INTEGRATOR_INSTRUCTIONS
+    assert active["agent_a"]["profile_snapshot"] == AGENT_A_DEFAULT_INSTRUCTIONS
+    assert active["agent_b"]["profile_snapshot"] == AGENT_B_DEFAULT_INSTRUCTIONS
+    assert active["agent_c"]["profile_snapshot"] == AGENT_C_DEFAULT_INSTRUCTIONS
 
     archived = {item["agent_key"]: item for item in await database.get_agents(archived_id)}
     sealed = {item["agent_key"]: item for item in await database.get_agents(sealed_id)}
