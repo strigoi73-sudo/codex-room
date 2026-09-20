@@ -812,3 +812,27 @@ PBM v2 therefore changes the **measurement/context protocol**, not the task work
 
 **Principle:** **Measure the work directly; snapshot the surrounding account and environment state so the direct measurement can be interpreted.**
 
+### D-047 — PBM v3 uses one initial principal instruction per platform while preserving fresh task contexts
+**Date:** 2026-09-20
+**Status:** ACTIVE
+
+The principal selected a lower-friction PBM operating model: one initial instruction in Codex Desktop and one initial instruction in a dedicated Codex Room controller, rather than repeated prompt/PowerShell choreography for all sixteen benchmark arms.
+
+Settled PBM v3 boundary:
+
+- PBM v1 and v2 remain frozen and explicitly reproducible;
+- PBM v3 inherits the exact frozen v1 eight-task workload and v2 contextual snapshot/accounting semantics;
+- the principal opens Codex Desktop on the dedicated `pbm_desktop_controller` folder and gives one instruction to read/execute `DRIVER.md`;
+- Desktop's controller conversation is coordination-only and must create a **fresh separate native Codex task** for every Desktop benchmark arm;
+- exact Codex 0.154 task creation inherits the controller working directory, so only one current task fixture/instruction is staged in that dedicated controller folder at a time;
+- the Desktop controller must use native task management. PBM v3 has **no Codex CLI fallback** and fails closed before paid task execution if native fresh-task creation/wait functionality is unavailable;
+- native approval dialogs remain ordinary platform controls and may require human approval without counting as new benchmark prompts;
+- PBM creates one dedicated controller Room. The principal gives it one instruction to read/execute `PBM_ROOM_DRIVER.md`;
+- that Room is coordination-only. It launches deterministic background orchestration which creates a **fresh ordinary Room** for every Room benchmark arm;
+- each benchmark Room retains D-039 naturalistic dynamic cognition; PBM records rather than pins C/A/B model/reasoning choices;
+- the v1/v2 alternating Desktop-first/Room-first task order is preserved exactly;
+- controller cognition is reported separately from task execution usage, and an all-in usage view is also retained;
+- v3's benchmark fingerprint binds both the inherited task assets and the v3 orchestration implementation so controller-mechanics changes cannot silently change historical v3 semantics.
+
+**Principle:** **One human instruction per platform; fresh measured task context per arm; controller overhead visible, never hidden.**
+
