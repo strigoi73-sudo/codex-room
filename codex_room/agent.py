@@ -4,17 +4,17 @@ import asyncio
 import json
 import os
 import shlex
+import re
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Any, Protocol
 
 from .custom_capability_registration import (
     CustomCapabilityVerificationError,
     VerificationReceipt,
 )
-from .codex_commands import sdk_server_identity
 from .models import (
     AgentDecision,
     DECISION_SCHEMA,
@@ -26,6 +26,61 @@ from .models import (
 ROOM_MODEL = "gpt-5.6-terra"
 ROOM_REASONING_EFFORT = "high"
 PROHIBITED_ROOM_MODELS = frozenset({"gpt-6-astra"})
+_SDK_VERSION_RE = re.compile(r"^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$")
+
+
+def sdk_server_identity(metadata: Any) -> dict[str, str] | None:
+    """Return a safe App Server release identity exposed by the official Codex SDK."""
+    if metadata is None:
+        return None
+    if isinstance(metadata, Mapping):
+        server_info = metadata.get("serverInfo") or metadata.get("server_info")
+        user_agent = metadata.get("userAgent") or metadata.get("user_agent")
+    else:
+        server_info = getattr(metadata, "serverInfo", None)
+        if server_info is None:
+            server_info = getattr(metadata, "server_info", None)
+        user_agent = getattr(metadata, "userAgent", None)
+        if user_agent is None:
+            user_agent = getattr(metadata, "user_agent", None)
+
+    name: Any = None
+    version: Any = None
+    if server_info is not None:
+        if isinstance(server_info, Mapping):
+            name = server_info.get("name")
+            version = server_info.get("version")
+        else:
+            name = getattr(server_info, "name", None)
+            version = getattr(server_info, "version", None)
+
+    clean_name = name.strip() if isinstance(name, str) and name.strip() else None
+    clean_version = version.strip() if isinstance(version, str) and version.strip() else None
+    if clean_version is not None and _SDK_VERSION_RE.fullmatch(clean_version):
+        identity = {"version": clean_version}
+        if clean_name is not None:
+            identity["name"] = clean_name
+        return identity
+
+    if not isinstance(user_agent, str):
+        return None
+    match = re.match(
+        r"^(?P<name>[0-9A-Za-z._-]+)/(?P<version>[0-9A-Za-z][0-9A-Za-z.+-]{0,63})(?:\\s|$)",
+        user_agent.strip(),
+    )
+    if match is None:
+        return None
+    agent_name = match.group("name")
+    agent_version = match.group("version")
+    if clean_name is not None and clean_name != agent_name:
+        return None
+    if clean_version is not None and not (
+        clean_version == agent_version
+        or clean_version.startswith(agent_version + " ")
+        or clean_version.startswith(agent_version + "(")
+    ):
+        return None
+    return {"name": agent_name, "version": agent_version}
 
 
 def _assert_room_model_allowed(model: str) -> None:
