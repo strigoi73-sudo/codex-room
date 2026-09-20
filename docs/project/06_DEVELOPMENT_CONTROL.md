@@ -9,7 +9,7 @@
 - **Where are we?** I-022 — Native Codex capability exposure and execution-economics audit — is **IN PROGRESS / EXPLORATORY**. Its purpose is to identify exact 0.154 Codex/App Server primitives that Codex Room can expose or adapt without inheriting expensive native orchestration.
 - **What just changed?** PR #167 fixed the repository's runtime-data ignore boundary, and PR #168 normalized A/B as operationally equivalent neutral peers. Exact 0.154 source inspection now confirms that several high-value primitives already exist in the pinned runtime, including active-turn steering/interruption, model discovery, thread lifecycle controls, image inputs, native review, rate-limit/usage reads, permission profiles, approval requests, and user-input elicitation.
 - **Verification state:** E-159 is a source-level exact-version audit. It verifies the listed protocol/SDK contracts and current Room host gaps, but does **not** yet claim principal-facing runtime acceptance for newly exposed features.
-- **What is next?** Rank the verified native primitives by usefulness, implementation cost, token impact, and Room-semantic fit; then perform only the smallest runtime probes needed before selecting implementation slices.
+- **What is next?** Complete the comparative capability/economics matrix across the verified native primitives. No feature implementation or feature-specific runtime probe is selected merely by appearing in that matrix; the principal selects any subsequent implementation direction.
 - **What remains open?** I-021 plugin management remains unresolved. Its native contracts are verified, but no Room mutation bridge is authorized while the simpler Desktop-managed/inherited-plugin path remains unproven.
 - **What are we deliberately not doing?** No built-in Codex subagents, autonomous fan-out, automatic model router, screen-for-screen Desktop clone, generic config editor, or broad host rewrite merely for parity.
 
@@ -38,18 +38,11 @@
 
 **Stage A — exact 0.154 source/SDK audit. COMPLETE / VERIFIED (E-159).** Exact upstream `rust-v0.154.0` protocol plus Python SDK source confirms native support for `turn/steer`, `turn/interrupt`, `model/list`, thread list/read/fork/archive/unarchive, `review/start`, `account/rateLimits/read`, `account/usage/read`, `permissionProfile/list`, command/file/permission approval requests, tool user-input requests, and structured image/local-image turn inputs. The Python SDK directly wraps steer, interrupt, model-list, and core thread lifecycle operations; generated 0.154 models also cover review, usage/rate-limit, and permission-profile responses. Current Room source already uses interruption internally for lifecycle control, while observer input remains text-only.
 
-**Stage B — candidate classification and economics ranking. IN PROGRESS.** Classify each verified primitive as already inherited, easy to surface, requiring Room adaptation, host-only/larger integration, or deliberately superseded. Give priority to capabilities that improve principal control or reduce uncertainty without triggering extra model work.
+**Stage B — candidate classification and economics comparison. IN PROGRESS.** Build a neutral comparison matrix for the verified primitive families: usage/rate-limit visibility; active-turn steering; principal interrupt control; image/file input; native review; permission/approval/user-input interaction; model/thread discovery and lifecycle controls; worktrees; browser/computer use; remote control; and any other exact-runtime primitive that materially belongs in the comparison. For each, record current Room status, principal value, whether extra model cognition is inherently required, likely context/continuation effects, implementation/authority cost, overlap with existing Room mechanisms, and whether native reuse could delete custom machinery.
 
-**Initial candidate order for investigation:**
+Stage B is an **audit, not a default implementation sequence**. Matrix ordering must not be treated as a recommendation or authorization to build the first item. Do not run feature-specific empirical probes unless (a) a material comparison fact cannot be established deterministically from source/current evidence, or (b) the principal selects that feature for deeper investigation or implementation.
 
-1. **Usage/rate-limit visibility** — low model cost; may materially inform D-019 once pool semantics are understood.
-2. **Active-turn steering** — potentially high value because it can redirect ongoing cognition without cancelling/restarting a turn.
-3. **Principal interrupt control** — substrate already exists internally; likely a small host-surface adaptation.
-4. **Image/file input** — protocol supports images now; Room needs principal-facing input/attachment semantics.
-5. **Native review** — useful primitive, but must preserve assignment-level independence and avoid turning review into a hidden fourth agent.
-6. **Permission/approval/user-input interaction** — high capability/security value; requires a precise principal-authority bridge.
-7. **Model/thread discovery controls** — reuse selectively behind existing D-039 and Room lifecycle semantics, not as raw provider UI.
-8. **Worktrees / browser / computer use / remote** — investigate separately because host/runtime integration and authority costs are materially larger.
+**Selection boundary:** after the comparison is complete, present the tradeoffs to the principal. Any implementation slice, feature-specific runtime acceptance test, or revival of a deferred feature such as D-019 requires a separate selection based on that comparison.
 
 **Stop conditions:** do not implement a primitive merely because 0.154 exposes it; do not enable native subagents; do not duplicate an existing Room mechanism unless the native primitive demonstrably replaces custom complexity without weakening economics, provenance, safety, continuity, or institutional semantics.
 
