@@ -130,8 +130,11 @@ def audit_assets() -> dict[str, Any]:
     fixture = root / manifest["tasks"][0]["fixture_dir"]
     reference = root / "reference" / TASK_ID
     spec = (fixture / "CODEC_SPEC.md").read_text(encoding="utf-8")
+    mission = (fixture / "BENCHMARK.md").read_text(encoding="utf-8")
     if "encode([])" not in spec or "raises `ValueError`" not in spec:
         raise PBMV4Error("Codec specification does not explicitly resolve the empty-list case")
+    if "non-empty JSON list" not in mission:
+        raise PBMV4Error("Integrated CLI contract must explicitly reject the empty order list")
 
     with tempfile.TemporaryDirectory(prefix="pbm-v4-audit-") as temp_dir:
         workspace = Path(temp_dir) / "workspace"
