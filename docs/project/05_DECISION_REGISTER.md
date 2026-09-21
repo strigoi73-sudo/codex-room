@@ -837,3 +837,26 @@ Settled PBM v3 boundary:
 
 **Principle:** **One human instruction per platform; fresh measured task context per arm; controller overhead visible, never hidden.**
 
+### D-048 — PBM v4 uses two independent complementary one-paste harnesses
+**Date:** 2026-09-20
+**Status:** ACTIVE
+
+The principal superseded PBM v3's cross-platform alternating controller after the first substantial live run exposed protocol and benchmark-integrity failures. The next canonical PBM version must use **two independent complementary one-paste harnesses**: one native Codex Desktop benchmark and one ordinary Codex Room benchmark.
+
+Settled boundary:
+
+- PBM v1, v2, and v3 remain frozen historical versions; v3 is not approved for another live performance run;
+- Desktop and Room do **not** coordinate with, wait for, wake, or control one another during measurement;
+- each platform receives exactly **one principal benchmark instruction** in one fresh measured execution context;
+- Desktop uses one fresh top-level native Codex Desktop task rooted at its prepared benchmark workspace;
+- Room uses one fresh ordinary production Room with C as coordinator and the normal Personal A/B/C architecture;
+- both platforms receive the same frozen integrated mission, equivalent starting fixture, and the same external deterministic grader;
+- the integrated mission must exercise a representative mix of repository investigation, bug diagnosis/repair, feature implementation, specification/constraint handling, evidence-backed design judgment, verification, and final synthesis without depending on an internally contradictory requirement;
+- Room retains ordinary naturalistic coordination and D-039 cognition behavior; C may delegate to A/B as normal, but the measured Room must not consult the principal for substantive benchmark guidance;
+- no follow-up human guidance is permitted during either measured execution. Native approval dialogs may remain ordinary platform controls when they do not supply benchmark substance;
+- deterministic preparation, capture, grading, validity classification, status, abort, evidence bundling, and comparison happen outside the measured cognition sessions;
+- each platform result is classified explicitly as **VALID**, **INVALID**, or **FAILED**. Human benchmark intervention, substantive principal consultation, protocol deviation, or disallowed terminal state must not silently enter comparative aggregates;
+- Desktop and Room results are compared only after both independent runs are complete and share the exact benchmark fingerprint;
+- before any full paid v4 comparison, the mission/specification and grader must be audited together for satisfiability and coverage, and a real end-to-end delayed canary must exercise the actual native execution boundaries rather than only unit-testing the state machine.
+
+**Principle:** **One frozen mission; one paste into Desktop; one paste into Room; no live cross-platform orchestration; deterministic comparison afterward.**
