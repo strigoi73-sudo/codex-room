@@ -2,6 +2,8 @@
 
 PBM is the canonical versioned Codex Room versus Codex Desktop performance benchmark.
 
+> **LIVE EXECUTION SUSPENDED (2026-09-20):** PBM v3's first substantial live run exposed end-to-end protocol, validity-enforcement, and workload/grader defects recorded in E-167. Do **not** run v3 for another Desktop-versus-Room performance comparison. Historical v1-v3 assets remain frozen. I-026 / D-048 is the active successor work: two independent complementary one-paste harnesses for v4. Unqualified **Run PBM** remains suspended until v4 passes its promotion gate and `CURRENT` is deliberately advanced.
+
 The current canonical version is resolved from `CURRENT`. PBM v3 preserves the frozen eight-task workload and v2 contextual snapshots while changing the operator workflow to one initial instruction in Codex Desktop and one in a dedicated Codex Room controller.
 
 The principal phrase **Run PBM** means: load this file, resolve the version named by `CURRENT`, and follow that version's protocol without redesigning the benchmark.
