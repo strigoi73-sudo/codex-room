@@ -213,21 +213,44 @@ def audit_assets() -> dict[str, Any]:
         raise PBMV4Error("PBM v4 must pair independent platform arms without principal relay")
 
     v1_root = pbm.version_root("v1")
+    reference_root = pbm.version_root(VERSION) / "reference" / "battery"
     task_inventory: list[dict[str, str]] = []
-    for task_id in BATTERY_TASK_IDS:
-        info = pbm.task_info(task_id, "v1")
-        prompt = v1_root / str(info["prompt_file"])
-        fixture = v1_root / str(info["fixture_dir"])
-        grader = v1_root / str(info["grader_file"])
-        if not prompt.is_file() or not fixture.is_dir() or not grader.is_file():
-            raise PBMV4Error(f"PBM v4 battery asset is incomplete for {task_id}")
-        task_inventory.append(
-            {
-                "id": task_id,
-                "category": str(info.get("category") or ""),
-                "title": str(info.get("title") or ""),
-            }
-        )
+    reference_scores: dict[str, int | float] = {}
+
+    with tempfile.TemporaryDirectory(prefix="pbm-v4-battery-audit-") as temp_dir:
+        audit_root = Path(temp_dir)
+
+        for task_id in BATTERY_TASK_IDS:
+            info = pbm.task_info(task_id, "v1")
+            prompt = v1_root / str(info["prompt_file"])
+            fixture = v1_root / str(info["fixture_dir"])
+            grader = v1_root / str(info["grader_file"])
+            reference = reference_root / task_id
+            if (
+                not prompt.is_file()
+                or not fixture.is_dir()
+                or not grader.is_file()
+                or not reference.is_dir()
+            ):
+                raise PBMV4Error(f"PBM v4 battery asset is incomplete for {task_id}")
+
+            workspace = audit_root / task_id
+            shutil.copytree(fixture, workspace)
+            _overlay_reference(reference, workspace)
+            grade = pbm._run_grader(task_id, workspace, "v1")
+            if grade.get("pass") is not True or grade.get("score") != 100:
+                raise PBMV4Error(
+                    f"PBM v4 known-good reference does not earn full credit for {task_id}"
+                )
+            reference_scores[task_id] = grade["score"]
+
+            task_inventory.append(
+                {
+                    "id": task_id,
+                    "category": str(info.get("category") or ""),
+                    "title": str(info.get("title") or ""),
+                }
+            )
 
     return {
         "ok": True,
@@ -236,6 +259,11 @@ def audit_assets() -> dict[str, Any]:
         "coverage_requirements": list(BATTERY_TASK_IDS),
         "task_count": len(BATTERY_TASK_IDS),
         "tasks": task_inventory,
+        "reference_score": round(
+            sum(float(value) for value in reference_scores.values())
+            / len(reference_scores)
+        ),
+        "reference_scores": reference_scores,
     }
 
 
