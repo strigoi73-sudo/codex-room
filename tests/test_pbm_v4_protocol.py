@@ -1,0 +1,93 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from codex_room import pbm, pbm_v4, pbm_v4_protocol
+
+
+def test_protocol_runner_uses_one_shared_active_pair(tmp_path, monkeypatch) -> None:
+    active = tmp_path / "active.json"
+    monkeypatch.setattr(pbm_v4_protocol, "ACTIVE_POINTER", active)
+
+    state_root = tmp_path / "run"
+
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_state_path",
+        lambda _run_id: state_root / "v4-protocol" / "state.json",
+    )
+
+    state = {
+        "run_id": "pbm-v4-canary-protocol-test",
+        "mode": "canary",
+        "benchmark_fingerprint": "fingerprint",
+        "repo": {"head": "abc"},
+        "complete": False,
+        "aborted": False,
+    }
+    pbm_v4_protocol._write_json(
+        state_root / "v4-protocol" / "state.json",
+        state,
+    )
+    pbm_v4_protocol._write_json(
+        active,
+        {
+            "run_id": state["run_id"],
+            "mode": "canary",
+            "benchmark_fingerprint": "fingerprint",
+            "repo_head": "abc",
+        },
+    )
+
+    pointer = pbm_v4_protocol._active_run()
+
+    assert pointer is not None
+    assert pointer["run_id"] == state["run_id"]
+
+
+def test_desktop_adapter_requires_native_child_and_no_room_wait() -> None:
+    text = (
+        pbm.PROJECT_ROOT / "pbm_desktop_controller" / "V4_PROTOCOL.md"
+    ).read_text(encoding="utf-8")
+
+    assert "native Codex fresh-task creation mechanism" in text
+    assert "Do not substitute Codex CLI" in text
+    assert "Do not wait for Room" in text
+    assert "Do not ask the principal to run PBM preparation" in text
+
+
+def test_room_adapter_launches_detached_worker_and_does_not_poll() -> None:
+    text = (pbm.version_root("v4") / "ROOM_PROTOCOL.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "deterministic PBM v4 Room worker" in text
+    assert "do not poll the measured Room" in text
+    assert "Do not invoke A or B" in text
+
+
+def test_protocol_wrappers_preserve_shell() -> None:
+    for path in (
+        pbm.PROJECT_ROOT / "pbm-v4-protocol.ps1",
+        pbm.PROJECT_ROOT / "pbm_desktop_controller" / "PBM-V4.ps1",
+    ):
+        text = path.read_text(encoding="utf-8")
+        assert "$LASTEXITCODE" in text
+        assert "finally {" in text
+        assert "Pop-Location" in text
+        assert "exit " not in text
+
+
+def test_canary_and_benchmark_share_frozen_measured_prompt() -> None:
+    assert pbm_v4_protocol.PASTE == pbm_v4.PASTE
+
+
+def test_manifest_binds_protocol_implementation_files() -> None:
+    files = set(pbm.load_manifest("v4")["implementation_files"])
+
+    assert "codex_room/pbm_v4_protocol.py" in files
+    assert "pbm-v4-protocol.ps1" in files
+    assert "pbm_desktop_controller/V4_PROTOCOL.md" in files
+    assert "benchmarks/pbm/v4/PROTOCOL.md" in files
+    assert "benchmarks/pbm/v4/ROOM_PROTOCOL.md" in files
