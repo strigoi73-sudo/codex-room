@@ -2576,3 +2576,35 @@ Exact repair head `6ef357f512b1ff8b5f485212485c40249dd7fb7a` passed:
 PR #205 merged as `e0897b692aa985c6aa676a63a55df4cfe247ca17`. GitHub comparison from the exact verified feature head to the merge commit reported zero file differences.
 
 **Assessment:** The failed first O1 launch consumed no measured benchmark work and exposed a reusable launcher-readiness defect. Canonical restart now has a deterministic API-readiness contract, and OUB v1/O1 remains ready for its first measured comparison.
+
+
+### E-179 — OUB live Room workspace preparation repair
+**Date:** 2026-09-21  
+**Status:** VERIFIED
+
+The second attempted live OUB v1/O1 launch passed canonical-main synchronization, Room API readiness, and stale-run checks, then failed during Room workspace preparation with Windows `WinError 32` on the newly created Room's `shared` directory. No measured OUB turn had started.
+
+Root cause was a harness lifecycle mismatch. Room creation already creates the `shared` workspace and binds all three persistent Codex threads to that directory before OUB fixture installation. OUB's original `_prepare_workspace()` then attempted to `shutil.rmtree()` the workspace root and replace it wholesale. On Windows, the live Codex processes holding that directory as their current working directory made the root undeletable.
+
+PR #207 repairs the harness by matching the already-proven PBM Room preparation pattern:
+
+- Desktop preparation may still replace its private benchmark workspace;
+- Room preparation never deletes the live `shared` root;
+- OUB verifies that the live Room workspace contains no unexpected pre-existing files;
+- fixture directories/files are copied into the existing empty workspace in place;
+- any path collision is treated as a preparation failure rather than overwritten;
+- if a Room has been created but preparation fails before measurement begins, the harness archives that Room automatically, with Stop as a fallback, and removes the incomplete local run root.
+
+Exact repair head `0eb91145f5eb75237b9dcc4fba1a03620fb971cb` passed:
+
+- 17 focused OUB asset/harness/PBM measurement tests;
+- a Windows regression that held the target workspace root open as another process's working directory while OUB populated it successfully in place;
+- frozen OUB v1 fingerprint `d6ec60fca42c6dd436b15d4f8621bb711056b1da5aa93f5a6ecaee2188ba4835`;
+- frozen PBM v5 fingerprint `492f8ce7d2cc49094abe993db7a20cad2a355ef277a90efd41fe26697b0cbc1b`;
+- exact two-file scope and clean-head checks.
+
+The orphan Room from the failed attempt was already archived when verification began.
+
+PR #207 merged as `4b8d9a4335fd3abddd02b7ba36a90b20c685a13e`. GitHub comparison from the exact verified feature head to the merge commit reported zero file differences.
+
+**Assessment:** Both observed O1 launch-path defects are now repaired without changing frozen benchmark assets. The first measured OUB v1/O1 comparison remains pending; no paid benchmark model work was consumed by either failed launch.

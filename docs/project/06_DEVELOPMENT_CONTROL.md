@@ -23,7 +23,7 @@
 
 **Reality / evidence:** OUB v1/O1 ASSET + HARNESS IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED; FIRST MEASURED O1 COMPARISON PENDING
 
-**Evidence basis:** E-174, E-175, E-176, E-177, E-178
+**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179
 
 Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
 
@@ -57,6 +57,7 @@ Current implementation slice: **OUB v1 / O1 — Competing root causes**.
 - Exact harness head `9790c736ba695b8cc127b19ea45b480eb0713867` passed the frozen-asset invariant, harness audit, 14 focused OUB/PBM tests, unchanged PBM v5 fingerprint, repository fast verifier (64 Linux / 118 Windows / 9 browser), and exact scope/head checks. PR #203 merged byte-identically as `21b427a68a582ce3f717f4c64759bebd0c710edc`; see E-177.
 - No measured OUB model work has run yet. The first O1 Desktop↔Room comparison is the next explicit usage-consuming step.
 - The first O1 launch attempt exposed a launcher race before any measured arm was created: `Restart-Codex-Room.bat` returned after process launch but before the API accepted connections, causing `oub-v1.ps1 prepare` to fail at `/api/health`. PR #205 adds a post-launch readiness gate that polls `/api/health` for up to 30 seconds and cleans up on failure. Exact head `6ef357f512b1ff8b5f485212485c40249dd7fb7a` passed 9 launcher tests, frozen OUB/PBM fingerprint checks, a live restart-readiness probe, no-active-OUB confirmation, and exact scope/head checks; it merged byte-identically as `e0897b692aa985c6aa676a63a55df4cfe247ca17`. See E-178.
+- The second O1 launch attempt reached Room creation but still failed before any measured turn began: OUB tried to delete the newly created live Room `shared` workspace before copying the fixture, but the persistent Codex threads already used that directory as their working directory, producing Windows `WinError 32`. PR #207 aligns OUB with PBM's proven pattern by populating the existing empty Room workspace in place, rejects unexpected pre-existing files, and archives a newly created Room automatically if preparation fails before measurement. Exact head `0eb91145f5eb75237b9dcc4fba1a03620fb971cb` passed 17 focused OUB/PBM tests, a Windows live-workspace lock regression, frozen OUB/PBM fingerprint checks, and exact scope/head checks; it merged byte-identically as `4b8d9a4335fd3abddd02b7ba36a90b20c685a13e`. See E-179.
 
 ### I-027 — PBM v5 platform-outcome benchmark
 
