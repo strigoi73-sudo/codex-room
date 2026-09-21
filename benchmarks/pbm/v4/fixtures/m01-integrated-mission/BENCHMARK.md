@@ -60,7 +60,7 @@ The input JSON object has:
 
 - `inventory`: inventory dictionary;
 - `reservations`: reservation rows for `reserve_inventory`;
-- `orders`: order rows for `summarize_orders`.
+- `orders`: a **non-empty JSON list** of order rows for `summarize_orders`. The CLI rejects an empty order list because the frozen escaped-field wire format deliberately has no representation for an empty field list.
 
 On success output exactly one JSON object with keys:
 
