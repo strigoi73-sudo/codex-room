@@ -1,6 +1,6 @@
 # Codex Room — Architecture & Current State
 
-**Last synthesized:** 2026-09-20  
+**Last synthesized:** 2026-09-21  
 **Scope:** Best current technical synthesis from canonical source, dated implementation/test evidence, and current repository state.  
 **Freshness:** Moderate to high volatility. Verify consequential current-state claims against newer source, tests, runtime evidence, and `06_DEVELOPMENT_CONTROL.md`.
 
@@ -230,20 +230,23 @@ SQLite uses WAL/foreign-key/transactional safeguards and durable execution/work-
 The Room UI exposes the persistent Room ID and current/last execution model/effort. `Restart-Codex-Room.bat` preserves the existing browser tab/window and restarts the server with `--no-browser`; the retained tab reconnects through the existing WebSocket retry path. See E-089 and E-091.
 
 
-### PBM benchmark harness and one-paste orchestration
+### PBM benchmark harness and common-protocol orchestration
 
-**IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED**
+**IMPLEMENTED / EXACT-HEAD VERIFIED / LIVE CANARY VERIFIED / PRODUCTION DEFAULT**
 
-PBM is the versioned Codex Desktop-versus-Codex Room performance harness. PBM v1 owns the frozen eight-task workload and deterministic graders; PBM v2 adds read-only run/task-pair context snapshots; PBM v3 preserves both and changes the operator surface to one initial principal instruction per platform.
+PBM is the versioned Codex Desktop-versus-Codex Room performance harness. Historical PBM v1-v3 assets remain frozen for explicit reproduction, but canonical `benchmarks/pbm/CURRENT` now resolves to **v4**.
 
-Canonical `benchmarks/pbm/CURRENT` now resolves to v3. The Desktop side uses a coordination-only controller rooted at `pbm_desktop_controller`; its tracked `PBM.ps1` wrapper temporarily invokes the deterministic PBM Python module from the repository root so the repo-local `codex_room` package is importable, then restores the controller working directory. For every Desktop benchmark arm the controller stages only the current task and uses native Codex fresh-task management, with no Codex CLI fallback. The Room side uses one coordination-only controller Room whose files are staged before the Round starts. C enters a private `CONSULT_PRINCIPAL` wait, then the principal's single private reply instructs C to run the staged driver. That driver launches a detached deterministic worker which creates a fresh ordinary Room for each measured Room arm.
+PBM v4 replaces v3's alternating cross-platform controller with one common deterministic protocol and thin platform-native adapters. The principal initiates one non-measured Desktop controller and one persistent non-measured Room Runner; each adapter independently joins the same active PBM pair, launches one fresh measured execution, and returns. Deterministic protocol code owns fingerprint binding, fixture preparation, validity classification, capture, grading, automatic pairing, comparison, status/abort, and evidence bundling. There is no model conversation acting as a durable cross-platform polling loop and no principal run-id shuttling.
 
-The measured task contexts remain fresh and separate from controller contexts. The original alternating sixteen-arm schedule remains authoritative, D-039 naturalistic dynamic Room cognition remains part of the measured product behavior, and controller cognition is reported separately from task execution usage as well as in an all-in view. The v3 fingerprint binds orchestration implementation files in addition to inherited benchmark assets.
+The production v4 workload is a frozen seven-task cross-domain battery covering mechanical change, bounded investigation, localized bug repair, small feature work, state-mutation repair, constrained design, and integrated CLI work. Desktop and Room receive equivalent fixtures/prompts/graders but may organize execution through their native capabilities. The known-inconsistent historical `t07-spec-repair` task is excluded. Every retained task has a deterministic known-good reference that must earn full credit in the v4 audit.
 
-Exact repaired feature head `e655f36141fba9a77b69cc04147a5bd13b728135` passed focused and routine deterministic verification plus the repaired Room-controller live preflight; the earlier Desktop-controller preflight remained applicable because that repair changed only the Room launcher helper and its regression test. PR #180 merged those tested bytes. The first live PBM invocation then failed closed before initialization because the original Desktop driver invoked the repo-local Python module from the controller subdirectory without making the repository package importable. PR #181 added the tracked repo-root wrapper and fingerprint binding; exact repair head `e1a047dbe483598a8b800f5293d614fba9cb208b` passed the controller-directory import smoke test, 9 focused PBM tests, and the routine fast verifier, and merged with zero file differences from the tested head. See D-045 through D-047 and E-163 through E-166.
+Desktop uses native fresh-task creation from `pbm_desktop_controller`; the adapter accepts either a persisted rollout/session id or a provisional `client-new-thread:<uuid>` identity returned by Desktop. Provisional ids are resolved fail-closed to the unique persisted rollout created after PBM preparation with the exact controller cwd, then rebound to the durable rollout thread id. Child `user.text` records are treated as post-launch substantive intervention; zero is the normal native delegated-child baseline.
 
-No live paid PBM Desktop-versus-Room run has yet occurred. Verification of the harness must not be mistaken for a performance result.
+Room uses the persistent `PBM v4 Room Runner`. C launches a detached deterministic worker that creates one fresh ordinary measured Room. The measured Room retains ordinary A/B/C coordination and D-039 cognition, while substantive principal consultation or abnormal settlement invalidates/fails the arm rather than being silently accepted.
 
+PR #190 introduced the seven-task battery and corrected Desktop child-message validity semantics. Exact feature head `5e367513e9331a09c768aad377b5924b274b5e16` passed the seven-task reference audit at 100/100 for every task, 55 focused PBM tests, and the routine fast verifier; merge #190 preserved those exact implementation bytes. PR #192 then repaired provisional Desktop task-id resolution and stranded deterministic finalization. Exact feature head `c5efa3ce144b3cbc5b731fb363f1871c2d67e661` passed Python compilation, **26 focused PBM v4 tests**, and the routine fast verifier (**63 Linux / 118 Windows / 9 browser**), then merged as `97da426e8b7cc7f19226299fa6dd19a0dd1d418e` with zero file differences from the verified head.
+
+The final merged-bytes canary `pbm-v4-canary-protocol-20260921T085358797378Z` completed with Desktop **VALID / 100**, Room **VALID / 100**, matching benchmark and canary fingerprints, `comparable: true`, no finalization error, and the active pair cleared. This satisfies the live promotion gate. No paid seven-task Desktop-versus-Room performance comparison has yet been run, so verification of PBM v4 must not be mistaken for a product-performance result.
 
 ## 12. Current known limits / deferred items
 

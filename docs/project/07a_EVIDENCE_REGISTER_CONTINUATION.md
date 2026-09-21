@@ -2255,3 +2255,81 @@ Git comparison from the exact tested feature head to that canonical merge establ
 
 **Assessment:** PBM v4 is **IMPLEMENTED / SEVEN-TASK BATTERY EXACT-HEAD DETERMINISTICALLY VERIFIED / NOT YET PROMOTED**. The remaining promotion gate is one final common-protocol canary pair on the merged repaired bytes, plus final automatic status/evidence-bundle confirmation. `benchmarks/pbm/CURRENT` remains `v3`; do not run the paid seven-task comparison until promotion.
 
+---
+
+### E-172 — PBM v4 provisional Desktop-id repair, final merged-bytes canary pass, and canonical promotion
+**Date:** 2026-09-21  
+**Kind:** [live canary evidence / native Desktop identity repair / exact-head verification / repository verification / benchmark promotion]  
+**Related work:** I-026 / D-049  
+**Evidence state:** VERIFIED for repaired implementation, final common-protocol canary, and PBM v4 promotion
+
+After E-171, the final merged-bytes canary exposed one additional native Desktop boundary: fresh-task creation could return a provisional UI identity of the form `client-new-thread:<uuid>` rather than the durable rollout/session thread id. The detached PBM monitor originally passed that provisional identifier directly to rollout lookup and therefore remained in `monitoring` even though the measured Desktop child had executed.
+
+PR #192 repaired that boundary without weakening validity:
+
+- persisted rollout/session ids continue to resolve directly;
+- provisional `client-new-thread:<uuid>` identities are resolved only to a **unique** persisted rollout created after PBM preparation with the exact `pbm_desktop_controller` cwd;
+- zero candidates means the monitor keeps waiting;
+- multiple candidates fail closed as ambiguous;
+- successful resolution rebinds protocol state to the durable rollout thread id while preserving the provisional id as provenance;
+- `status` can deterministically recover a finished provisional Desktop child when the completion marker and stable rollout already exist;
+- `status` also completes stranded deterministic pair finalization when both platform result files exist.
+
+The principal verified exact PR #192 head:
+
+`c5efa3ce144b3cbc5b731fb363f1871c2d67e661`
+
+from a clean tracked checkout. Observed results:
+
+- Python syntax compilation: **PASS**;
+- focused PBM v4 tests: **26 passed**;
+- `verify-fast.cmd`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **9 passed**;
+- final tracked tree remained clean;
+- final feature HEAD remained exact.
+
+PR #192 was merged with expected-head protection. Canonical implementation merge commit:
+
+`97da426e8b7cc7f19226299fa6dd19a0dd1d418e`
+
+Git comparison from the exact tested feature head to that canonical merge established:
+
+- merge-base is the exact tested feature head;
+- canonical merge is exactly one commit ahead;
+- there are **zero file differences** between the tested feature head and canonical implementation merge.
+
+A fresh canary pair was then run on the merged repaired bytes:
+
+`pbm-v4-canary-protocol-20260921T085358797378Z`
+
+Final deterministic protocol state:
+
+- `complete: true`;
+- `aborted: false`;
+- `active: false`;
+- `finalization_error: null`;
+- Desktop status: `complete`;
+- Desktop classification: **VALID**;
+- Desktop quality: **PASS / 100**;
+- Desktop durable thread id: `01a0c32c-a9e2-7481-9598-230bec40e382`;
+- Desktop measured usage: **126,873 total tokens**;
+- Desktop measured duration: **20.859 seconds**;
+- Room status: `complete`;
+- Room classification: **VALID**;
+- Room quality: **PASS / 100**;
+- Room measured usage: **144,863 total tokens**;
+- Room measured duration: **44.911 seconds**;
+- Room peer invocations: **1**;
+- benchmark fingerprint matched across arms: **true**;
+- canary fingerprint matched across arms: **true**;
+- comparison `comparable: true`;
+- observed canary Room/Desktop total-token ratio: **1.1418**.
+
+The token and duration values above are **canary protocol evidence only**. They do not constitute a PBM product-performance result and must not be generalized to the seven-task benchmark.
+
+All I-026 promotion gates are therefore satisfied. Canonical `benchmarks/pbm/CURRENT` is promoted from `v3` to **`v4`**. Unqualified **Run PBM** now resolves to the v4 common protocol and seven-task cross-domain battery. PBM v3 remains frozen for history and must not be used for another live comparison.
+
+**Assessment:** I-026 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / LIVE CANARY VERIFIED / PROMOTED**. No paid seven-task Desktop-versus-Room comparison has yet occurred.
+
