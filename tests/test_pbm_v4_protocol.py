@@ -164,3 +164,97 @@ def test_battery_task_quality_reports_each_task_without_token_guessing() -> None
     assert list(summary) == list(pbm_v4.BATTERY_TASK_IDS)
     assert all(item == {"pass": True, "score": 100} for item in summary.values())
 
+def test_status_recovers_ready_unfinalized_pair(tmp_path, monkeypatch) -> None:
+    run_id = "pbm-v4-canary-protocol-finalization-recovery"
+    state_path = tmp_path / "state.json"
+    desktop_result = tmp_path / "desktop-result.json"
+    room_result = tmp_path / "room-result.json"
+
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_state_path",
+        lambda _run_id: state_path,
+    )
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_result_path",
+        lambda _state, arm: desktop_result if arm == "desktop" else room_result,
+    )
+
+    pbm_v4_protocol._write_json(
+        state_path,
+        {
+            "run_id": run_id,
+            "mode": "canary",
+            "benchmark_fingerprint": "benchmark",
+            "canary_fingerprint": "canary",
+            "desktop": {"status": "complete", "classification": "VALID"},
+            "room": {"status": "complete", "classification": "VALID"},
+            "complete": False,
+            "aborted": False,
+        },
+    )
+    pbm_v4_protocol._write_json(desktop_result, {"classification": "VALID"})
+    pbm_v4_protocol._write_json(room_result, {"classification": "VALID"})
+
+    finalized = []
+
+    def fake_finalize(candidate_run_id):
+        finalized.append(candidate_run_id)
+        state = pbm_v4_protocol._read_json(state_path)
+        state["complete"] = True
+        state["comparison"] = {"comparable": True}
+        pbm_v4_protocol._write_json(state_path, state)
+        return {"run_id": candidate_run_id, "complete": True}
+
+    monkeypatch.setattr(pbm_v4_protocol, "_finalize_if_ready", fake_finalize)
+
+    result = pbm_v4_protocol.status(run_id)
+
+    assert finalized == [run_id]
+    assert result["complete"] is True
+    assert result["active"] is False
+    assert result["comparison"] == {"comparable": True}
+
+
+def test_status_does_not_finalize_without_both_results(tmp_path, monkeypatch) -> None:
+    run_id = "pbm-v4-canary-protocol-not-ready"
+    state_path = tmp_path / "state.json"
+    desktop_result = tmp_path / "desktop-result.json"
+    room_result = tmp_path / "room-result.json"
+
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_state_path",
+        lambda _run_id: state_path,
+    )
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_result_path",
+        lambda _state, arm: desktop_result if arm == "desktop" else room_result,
+    )
+    pbm_v4_protocol._write_json(
+        state_path,
+        {
+            "run_id": run_id,
+            "mode": "canary",
+            "benchmark_fingerprint": "benchmark",
+            "canary_fingerprint": "canary",
+            "desktop": {"status": "complete", "classification": "VALID"},
+            "room": {"status": "running"},
+            "complete": False,
+            "aborted": False,
+        },
+    )
+    pbm_v4_protocol._write_json(desktop_result, {"classification": "VALID"})
+
+    def fail_finalize(_run_id):
+        raise AssertionError("status must not finalize before both results exist")
+
+    monkeypatch.setattr(pbm_v4_protocol, "_finalize_if_ready", fail_finalize)
+
+    result = pbm_v4_protocol.status(run_id)
+
+    assert result["complete"] is False
+    assert result["active"] is True
+
