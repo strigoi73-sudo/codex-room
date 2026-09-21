@@ -139,3 +139,13 @@ def test_canary_fixture_has_explicit_protocol_identity() -> None:
 
     assert len(fingerprint) == 64
     assert fingerprint != pbm.benchmark_fingerprint("v4")
+
+def test_desktop_native_delegation_expects_no_child_user_message() -> None:
+    assert pbm_v4_protocol._desktop_intervention_reasons([]) == []
+
+
+def test_desktop_child_user_message_is_post_launch_intervention() -> None:
+    assert pbm_v4_protocol._desktop_intervention_reasons(["follow-up guidance"]) == [
+        "Desktop measured child received post-launch user guidance: observed 1 user message(s)"
+    ]
+
