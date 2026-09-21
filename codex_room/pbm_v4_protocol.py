@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
-import signal
 import subprocess
 import sys
 import time
@@ -180,9 +180,19 @@ def _ensure_run(mode: str) -> dict[str, Any]:
 
 def _copy_canary_fixture(workspace: Path) -> None:
     source = pbm_v4_canary.CANARY_ROOT
-    if workspace.exists():
-        shutil.rmtree(workspace)
-    shutil.copytree(source, workspace)
+    workspace.mkdir(parents=True, exist_ok=True)
+    for source_path in sorted(source.rglob("*")):
+        rel = source_path.relative_to(source)
+        destination = workspace / rel
+        if source_path.is_dir():
+            destination.mkdir(parents=True, exist_ok=True)
+            continue
+        if destination.exists():
+            raise PBMV4ProtocolError(
+                f"Canary fixture would overwrite existing path: {destination}"
+            )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_path, destination)
 
 
 def _canary_marker_ok(workspace: Path) -> bool:
@@ -302,7 +312,7 @@ def desktop_prepare(mode: str) -> dict[str, Any]:
         "status": "prepared",
         "workspace": str(workspace.resolve()),
         "delegated_prompt": delegated_prompt,
-        "delegated_prompt_sha256": __import__("hashlib").sha256(
+        "delegated_prompt_sha256": hashlib.sha256(
             delegated_prompt.encode("utf-8")
         ).hexdigest(),
         "prepared_at": pbm.utc_now(),
