@@ -22,8 +22,8 @@ def run_payload(payload: dict) -> dict:
         raise ValueError("inventory is required")
     if reservations is None:
         raise ValueError("reservations are required")
-    if orders is None:
-        raise ValueError("orders are required")
+    if not isinstance(orders, list) or not orders:
+        raise ValueError("orders must be a non-empty list")
     reserve_inventory(inventory, reservations)
     summary = summarize_orders(orders)
     ids = [row["id"] for row in orders]
