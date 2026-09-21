@@ -2143,3 +2143,46 @@ More importantly, the live canary workflow required the principal to prepare a p
 
 **Assessment:** the no-cognition recovery path is behaviorally verified, but the manual v4 operator workflow is superseded before promotion. D-049 governs the replacement: one common protocol, thin Desktop/Room adapters, one principal initiation per platform, automatic pairing/capture/grading/bundling, and schema-tolerant Desktop prompt evidence.
 
+---
+
+### E-170 — PBM v4 D-049 common protocol exact-head verification and Room-history collision repair
+**Date:** 2026-09-21  
+**Kind:** [benchmark implementation / exact-head verification / CORE regression repair / repository verification / Git provenance]  
+**Related work:** I-026 / D-049  
+**Runtime/model benchmark traffic changed:** **NONE**; this verification did not execute a Desktop or Room canary/benchmark cognition session  
+**Evidence state:** VERIFIED for deterministic D-049 implementation and merge provenance; live common-protocol canaries remain pending
+
+During exact-head verification of PR #188, the repository fast verifier intermittently failed the existing assignment-thread Room-history SEARCH test. Repeated isolated execution reproduced the failure outside the PBM verifier. A controlled diagnostic then forced two consecutive Rounds to share the same millisecond `created_at` timestamp and deterministically reproduced the exact missing-history assertion.
+
+Root cause: Room-history eligibility used strict timestamp ordering for earlier Rounds and earlier same-Round Tasks while `utc_now()` stores millisecond precision. Equal timestamps could therefore make a genuinely earlier durable result invisible.
+
+The bounded CORE repair preserves timestamp ordering and uses SQLite insertion order (`rowid`) only as the deterministic tie-break when timestamps are equal. Regression coverage now forces equal timestamps for both same-Round Task retrieval and prior-Round retrieval.
+
+The principal verified exact feature head:
+
+`c151367b5b50f17395b255386e9c1741c1cb5471`
+
+from a clean tracked checkout. Observed results:
+
+- forced timestamp-collision history regressions: **2 passed**;
+- `verify-fast.cmd`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **9 passed**;
+- final tracked working tree entries: **0**;
+- final HEAD remained the exact expected feature SHA.
+
+PR #188 was merged with expected-head protection. Canonical merge commit:
+
+`da76831e1971936b730b95feff1745e634c230c8`
+
+Git comparison from the exact tested feature head to the canonical merge commit established:
+
+- merge-base is the tested feature head;
+- canonical merge is exactly one commit ahead;
+- there are **zero file differences** between the tested feature head and canonical merge commit.
+
+The merged D-049 implementation provides the common PBM v4 protocol, thin Desktop/Room adapters, automatic pairing/capture/grading/bundling, schema-tolerant Desktop user-message extraction, detached native-platform monitors/workers, and one principal controller initiation per platform.
+
+**Assessment:** the revised PBM v4 D-049 implementation is **IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / NOT YET PROMOTED**. The next gate is one-initiation live canary execution through the exact Desktop and persistent Room-runner adapter paths, followed by inspection of deterministic canary state/evidence and any remaining live recovery-path verification. `benchmarks/pbm/CURRENT` remains `v3` until the full promotion gate passes.
+
