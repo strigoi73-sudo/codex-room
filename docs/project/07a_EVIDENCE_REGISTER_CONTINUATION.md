@@ -2011,3 +2011,39 @@ Git comparison from the exact tested feature head to the canonical merge commit 
 
 **Assessment:** the first live PBM attempt produced useful workflow evidence but **no benchmark result**. PBM v3 remains the canonical workflow, now with the Desktop controller import path repaired and exact-head verified. The correct next action is a fresh live PBM invocation from a new Desktop controller conversation so controller-context measurement starts cleanly.
 
+---
+
+### E-167 — PBM v3 first substantial live run aborted after protocol and benchmark-integrity failures
+**Date:** 2026-09-20  
+**Kind:** [live benchmark postmortem / orchestration failure / validity failure / workload defect / principal abort]  
+**Related work:** I-025 / I-026 / D-047 / D-048  
+**Run:** `pbm-v3-20260920T234823Z`  
+**Evidence state:** VERIFIED for the observed failure modes; **NO VALID DESKTOP-VERSUS-ROOM PERFORMANCE RESULT**
+
+The first substantial live PBM v3 run initialized successfully after the E-166 import-path repair. The coordinator, controller Room, detached Room worker, native Desktop child-task creation, benchmark fingerprinting, and early task execution all operated far enough to exercise the real end-to-end workflow.
+
+The run then exposed three independent defects.
+
+**1. Desktop controller liveness violated the one-paste protocol.**
+
+After a Desktop arm completed, the v3 Desktop controller used blocking `desktop-next --wait` calls while the alternating schedule belonged to Room. In live native Codex Desktop execution, those waits repeatedly returned at the tool/turn boundary after roughly thirty seconds without a new Desktop action. After several empty waits the controller turn ended. The principal had to send repeated continuation instructions to resume the same controller. The state machine generally avoided repeating completed task arms, but the promised one-instruction Desktop protocol was not preserved.
+
+This was an architectural mismatch: a model conversation was being used as though it were a durable event-loop process capable of sleeping across arbitrarily long asynchronous work on another platform.
+
+**2. Room terminal/validity semantics could advance after human-aborted work.**
+
+The v3 Room helper classified `finished`, `error`, `stopped`, and `paused` as terminal statuses for capture. Room-result validity was primarily tied to usage completeness rather than clean autonomous benchmark completion. During t07 the principal deliberately stopped the measured Room rather than supply privileged substantive guidance. The detached worker subsequently advanced and created the t08 Room.
+
+Thus existence of a captured result was not sufficient evidence that a Room arm completed autonomously under benchmark protocol. Observer stop, pause, error, principal consultation, and other abnormal endpoints require explicit validity semantics in the successor benchmark.
+
+**3. Frozen t07 is internally inconsistent and its grader does not cover that inconsistency.**
+
+The t07 escaped-field codec specification requires empty fields to be preserved and explicitly requires `decode("") == [""]`, while also requiring encoding/decoding to recover the original list. There is no wire-format representation that can distinguish `[]` from `[""]` under those constraints. Agent C correctly identified the contradiction and entered a substantive `CONSULT_PRINCIPAL` wait.
+
+The external t07 grader does not test the empty-list case and can award full credit to an implementation that cannot satisfy the complete written contract. Therefore t07 is not a sound comparative benchmark task as frozen in v1-v3.
+
+The principal aborted the live run. The Room worker and PBM coordinator were stopped, the active run pointer was removed, and run evidence was preserved where available. No completed PBM comparison report is accepted from this run.
+
+Postmortem review also identified an evidence-discipline issue: earlier exact-head and controller-preflight verification correctly established the components it exercised, but those tests did not behaviorally validate the complete native one-paste protocol across real cross-platform delays. The readiness inference was therefore too broad.
+
+**Assessment:** PBM v3 is **HISTORICALLY IMPLEMENTED / LIVE-END-TO-END FAILED / NOT APPROVED FOR ANOTHER PERFORMANCE RUN**. D-048 supersedes its operating architecture for future benchmark work. The successor must use two independent complementary one-paste harnesses, explicit VALID/INVALID/FAILED semantics, audited mission/grader consistency, first-class status/abort/evidence-bundle operations, and a real delayed end-to-end canary before paid full execution.
