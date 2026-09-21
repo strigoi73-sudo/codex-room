@@ -19,6 +19,7 @@
       "supports": ["stdlib_only", "offline", "atomic_commits", "concurrent_readers"],
       "evidence": [
         {"code": "stdlib", "fact": "Python includes sqlite3 in the standard library."},
+        {"code": "offline", "fact": "SQLite is embedded and requires no network service."},
         {"code": "transactions", "fact": "SQLite provides commit/rollback transaction boundaries."},
         {"code": "concurrent_readers", "fact": "SQLite supports multiple concurrent readers."}
       ]
