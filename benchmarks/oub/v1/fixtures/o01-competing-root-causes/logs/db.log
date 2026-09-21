@@ -1,0 +1,6 @@
+2026-09-18T09:41:55.000Z [D301] pool=invoices checked_out=7 limit=20 wait_ms_p95=4
+2026-09-18T09:42:12.730Z [D302] job=job-701 update=completed rows=1
+2026-09-18T09:42:23.615Z [D303] job=job-702 update=completed rows=1
+2026-09-18T09:43:40.000Z [D304] pool=invoices checked_out=20 limit=20 wait_ms_p95=760 warning=pool_saturation
+2026-09-18T09:43:41.000Z [D305] pool=reporting checked_out=20 limit=20 wait_ms_p95=810 warning=pool_saturation
+2026-09-18T09:44:10.000Z [D306] pool=invoices checked_out=9 limit=20 wait_ms_p95=8 recovery=true
