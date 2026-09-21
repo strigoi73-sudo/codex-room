@@ -35,7 +35,7 @@ Revised architecture under D-049:
 
 - one frozen integrated benchmark mission and equivalent prepared starting fixture for both products;
 - **common protocol:** one normative procedure owns fingerprint binding, mission/fixture equivalence, validity, grading, capture, bundling, automatic pairing, and comparison;
-- **Desktop adapter:** one principal instruction to a non-measured Desktop controller; it uses native fresh-task creation for one fresh measured child and waits only for that child;
+- **Desktop adapter:** one principal instruction to a non-measured Desktop controller; it uses native fresh-task creation for one fresh measured child, hands the exact child thread id to a detached deterministic monitor, and returns without becoming a durable polling loop;
 - **Room adapter:** one principal instruction to C in the persistent non-measured PBM Room Runner; C launches a detached deterministic worker that creates and waits only for one fresh measured ordinary Room;
 - measured Room work retains normal A/B/C coordination and D-039 cognition, with no substantive `CONSULT_PRINCIPAL` during the measured mission;
 - no cross-platform controller, alternating-arm schedule, platform wait loop, wake-up dependency, controller Room, or detached worker coordinating the two products;
