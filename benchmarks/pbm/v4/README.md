@@ -26,7 +26,7 @@ Give it exactly one controller instruction:
 
 `Read V4_PROTOCOL.md and execute it exactly.`
 
-The Desktop adapter prepares the measured workspace, creates one fresh native child task with the deterministic delegated prompt, waits only for that child, captures and grades it, bundles evidence, and stops. It never waits for Room.
+The Desktop adapter prepares the measured workspace and creates one fresh native child task with the deterministic delegated prompt. It immediately hands the returned child thread id to a detached deterministic Desktop monitor and stops. The monitor waits only for that child's completion evidence, captures and grades it, bundles evidence, and closes the pair if Room is already complete. Neither the controller nor the monitor waits for Room.
 
 For bounded protocol validation before promotion, use:
 
