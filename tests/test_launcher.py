@@ -66,3 +66,16 @@ def test_restart_script_preserves_browser_and_restarts_without_new_tab() -> None
     assert 'Start-Codex-Room.cmd" --no-browser' in restart
     assert restart.index("Kill-Codex-Room.bat") < restart.index("timeout /t 5 /nobreak")
     assert restart.index("timeout /t 5 /nobreak") < restart.index("Start-Codex-Room.cmd")
+
+
+def test_restart_script_waits_for_api_readiness_before_success() -> None:
+    restart = (ROOT / "Restart-Codex-Room.bat").read_text(encoding="utf-8")
+
+    assert "Waiting for Codex Room API readiness..." in restart
+    assert "http://127.0.0.1:8765/api/health" in restart
+    assert "Invoke-RestMethod" in restart
+    assert "$health.ok -eq $true" in restart
+    assert "AddSeconds(30)" in restart
+    assert "Codex Room API is ready." in restart
+    assert "Restart failed because Codex Room API readiness was not confirmed." in restart
+    assert restart.count("Kill-Codex-Room.bat") >= 2
