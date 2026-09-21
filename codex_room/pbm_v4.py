@@ -396,7 +396,6 @@ def complete_room(run_id: str) -> dict[str, Any]:
         round_id,
     )
 
-    invalid = room_intervention_reasons(round_item)
     failed: list[str] = []
     if round_status != "finished" or round_item.get("close_reason") != "transaction_settled":
         failed.append(
