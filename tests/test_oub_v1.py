@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from codex_room import oub_v1
 
 
@@ -38,6 +40,69 @@ def test_oub_v1_fixture_integrity_detects_mutation(tmp_path: Path) -> None:
     ok, changed = oub_v1._fixture_unchanged(workspace, expected)
     assert ok is False
     assert changed == ["logs/worker.log"]
+
+
+def test_oub_v1_live_room_workspace_is_populated_without_removing_root(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    workspace = tmp_path / "shared"
+    workspace.mkdir()
+
+    def forbidden_rmtree(*_args, **_kwargs):
+        raise AssertionError("live Room workspace root must not be removed")
+
+    monkeypatch.setattr(oub_v1.shutil, "rmtree", forbidden_rmtree)
+
+    hashes = oub_v1._prepare_workspace(
+        workspace,
+        allow_existing_root=True,
+    )
+
+    assert len(hashes) == 10
+    assert (workspace / "BENCHMARK.md").is_file()
+    assert (workspace / "src" / "billing_worker.py").is_file()
+
+
+def test_oub_v1_live_room_workspace_rejects_preexisting_files(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "shared"
+    workspace.mkdir()
+    (workspace / "unexpected.txt").write_text("unexpected\n", encoding="utf-8")
+
+    with pytest.raises(
+        oub_v1.OUBV1Error,
+        match="pre-existing files",
+    ):
+        oub_v1._prepare_workspace(
+            workspace,
+            allow_existing_root=True,
+        )
+
+
+def test_oub_v1_failed_room_preparation_archives_room(monkeypatch) -> None:
+    calls = []
+
+    def fake_http(method, url, payload=None, **_kwargs):
+        calls.append((method, url, payload))
+        return {}
+
+    monkeypatch.setattr(oub_v1.pbm_v4, "_http_json", fake_http)
+
+    result = oub_v1._cleanup_failed_room_preparation(
+        "http://127.0.0.1:8765",
+        "room_test",
+    )
+
+    assert result == "archived"
+    assert calls == [
+        (
+            "POST",
+            "http://127.0.0.1:8765/api/rooms/room_test/archive",
+            {},
+        )
+    ]
 
 
 def test_oub_v1_room_payload_preserves_naturalistic_orchestration() -> None:
