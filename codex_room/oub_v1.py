@@ -376,14 +376,15 @@ def prepare(room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str, Any]:
             f"{room_base}/api/rooms",
             _room_payload(run_id),
         )
+        if isinstance(room, dict) and room.get("id"):
+            room_id = str(room["id"])
         if (
             not isinstance(room, dict)
-            or not room.get("id")
+            or room_id is None
             or not room.get("active_round_id")
         ):
             raise OUBV1Error("Measured Room creation returned incomplete identifiers")
 
-        room_id = str(room["id"])
         round_id = str(room["active_round_id"])
         room_workspace = oub.PROJECT_ROOT / "data" / "rooms" / room_id / "shared"
         room_hashes = _prepare_workspace(
@@ -392,7 +393,7 @@ def prepare(room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str, Any]:
         )
         if desktop_hashes != room_hashes:
             raise OUBV1Error("Desktop and Room prepared fixture hashes differ")
-    except BaseException as exc:
+    except Exception as exc:
         cleanup = (
             _cleanup_failed_room_preparation(room_base, room_id)
             if room_id is not None
