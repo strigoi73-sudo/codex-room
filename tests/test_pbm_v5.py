@@ -244,3 +244,32 @@ def test_protocol_text_does_not_prescribe_desktop_subagent_choreography() -> Non
     assert "does **not** prescribe either platform's internal workflow" in protocol
     assert "Any native descendant tasks created by Desktop are part of Desktop's platform execution" in protocol
     assert "PBM does not direct or message those descendants" in protocol
+
+
+def test_worker_registration_does_not_clobber_terminal_state(
+    tmp_path, monkeypatch
+) -> None:
+    run_id = "pbm-v5-worker-race"
+    state_path = tmp_path / "state.json"
+    lock = tmp_path / "lock"
+
+    monkeypatch.setattr(pbm_v5, "_state_path", lambda _run_id: state_path)
+    monkeypatch.setattr(pbm_v5, "LOCK_DIR", lock)
+
+    pbm_v5._write_json(
+        state_path,
+        {
+            "run_id": run_id,
+            "desktop": {"status": "complete"},
+            "room": {"status": "worker_error"},
+        },
+    )
+
+    pbm_v5._record_worker_started(run_id, "desktop", 11, "monitoring")
+    pbm_v5._record_worker_started(run_id, "room", 22, "running")
+
+    state = pbm_v5._read_json(state_path)
+    assert state["desktop"]["status"] == "complete"
+    assert state["desktop"]["worker_pid"] == 11
+    assert state["room"]["status"] == "worker_error"
+    assert state["room"]["worker_pid"] == 22
