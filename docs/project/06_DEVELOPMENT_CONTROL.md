@@ -6,12 +6,13 @@
 
 ## Operator summary
 
-- **Where are we?** I-027 — **PBM v5 platform-outcome benchmark** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED** under D-050.
-- **What just changed?** The benchmark boundary was corrected from prescribed Desktop child-task choreography to platform-level outcomes. Desktop and Room now receive equivalent starting state, mission, success criteria, and grading while each platform controls its own native internal orchestration.
-- **Verification state:** exact feature head `098e4b1cb8a77a0dd440a1f4cad30ee935440280` passed 26 focused PBM tests, the frozen seven-task/reference audit, and the routine fast verifier (**63 Linux / 118 Windows / 9 browser**). PR #195 merged as `893f6bd673174168ba9fc5da16866a0fbcf8c3ff`; merge-to-tested-head comparison showed zero file differences. See E-173.
-- **What is next?** PBM v5 is canonical via `benchmarks/pbm/CURRENT`. The next selected action is the first real seven-task Desktop-versus-Room comparison under the v5 platform-outcome protocol.
+- **Where are we?** I-027 — **PBM v5 platform-outcome benchmark** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED / FIRST LIVE COMPARISON COMPLETE** under D-050.
+- **What just happened?** The first real PBM v5 run, `pbm-v5-benchmark-20260921T130735334526Z`, completed with Desktop **VALID / 100** and Room **VALID / 100**, every retained task scoring 100 on both platforms, matching benchmark fingerprints, `comparable: true`, and no finalization error.
+- **Measured result on the frozen seven-task battery:** Desktop used **371,378 tokens in 292.069 s** with one measured top-level thread and zero descendants. Room used **1,473,150 tokens in 628.984 s** across 32 measured executions with 6 peer invocations. Room/Desktop measured-token ratio was **3.9667**.
+- **Interpretation boundary:** This is a result for the frozen PBM v5 workload, not a universal product ranking. It demonstrates equal full-credit correctness under the benchmark while Desktop was materially more token- and time-efficient on this run.
+- **What is next?** No PBM repair or rerun is required. Preserve this run as the first v5 performance baseline and return to ordinary roadmap selection unless the principal explicitly requests additional benchmark analysis.
 - **What is blocked?** Nothing is blocked in I-027.
-- **What are we deliberately not doing?** We are not adding another canary gate, prescribing Desktop subagent topology, prescribing Room peer topology, or treating PBM v4's controller/child choreography as the current comparison contract.
+- **What are we deliberately not doing?** We are not adding another benchmark run merely to manufacture confidence, prescribing either platform's internal topology, or treating the account-level usage meter as the primary token measurement.
 
 ## Current development state
 
@@ -21,11 +22,11 @@
 
 **Work state:** COMPLETE
 
-**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED / FIRST LIVE COMPARISON PENDING
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED / FIRST LIVE COMPARISON COMPLETE
 
 **Decision:** D-050
 
-**Evidence:** E-173
+**Evidence:** E-173, E-174
 
 PBM v5 corrects the benchmark abstraction boundary while preserving the frozen seven-task battery and graders.
 
@@ -44,7 +45,7 @@ Current architecture:
 - `benchmarks/pbm/CURRENT` resolves to **v5**;
 - PBM v4 is frozen as the promoted predecessor and is superseded for new live comparisons; no paid seven-task v4 comparison completed.
 
-The first paid seven-task v5 comparison is pending principal execution.
+The first paid seven-task v5 comparison completed successfully as `pbm-v5-benchmark-20260921T130735334526Z`: Desktop VALID/100 at 371,378 measured tokens and 292.069 seconds; Room VALID/100 at 1,473,150 measured tokens and 628.984 seconds; Room/Desktop token ratio 3.9667. See E-174.
 
 
 ### I-026 — PBM v4 common protocol with thin platform adapters
