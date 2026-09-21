@@ -2047,3 +2047,72 @@ The principal aborted the live run. The Room worker and PBM coordinator were sto
 Postmortem review also identified an evidence-discipline issue: earlier exact-head and controller-preflight verification correctly established the components it exercised, but those tests did not behaviorally validate the complete native one-paste protocol across real cross-platform delays. The readiness inference was therefore too broad.
 
 **Assessment:** PBM v3 is **HISTORICALLY IMPLEMENTED / LIVE-END-TO-END FAILED / NOT APPROVED FOR ANOTHER PERFORMANCE RUN**. D-048 supersedes its operating architecture for future benchmark work. The successor must use two independent complementary one-paste harnesses, explicit VALID/INVALID/FAILED semantics, audited mission/grader consistency, first-class status/abort/evidence-bundle operations, and a real delayed end-to-end canary before paid full execution.
+
+---
+
+### E-168 — PBM v4 exact-head deterministic implementation verification
+**Date:** 2026-09-20  
+**Kind:** [benchmark implementation / exact-head verification / mission-grader audit / repository verification / Git provenance]  
+**Related work:** I-026 / D-048  
+**Runtime/model benchmark traffic changed:** **NONE**; this verification did not execute a Desktop or Room benchmark cognition session  
+**Evidence state:** VERIFIED for deterministic implementation and merge provenance; live one-paste canaries remain pending
+
+PBM v4 was implemented on feature branch `i026-pbm-v4-implementation` as the D-048 replacement for v3's live alternating cross-platform controller. The implementation provides:
+
+- one frozen integrated mission shared by Desktop and Room;
+- one exact principal paste per platform;
+- no live Desktop↔Room coordination, alternating wait loop, controller Room, or persistent benchmark controller model turn;
+- equivalent prepared starting fixtures and one external deterministic grader;
+- explicit **VALID / INVALID / FAILED** classification separate from quality score;
+- exact Desktop user-message verification from rollout evidence;
+- fail-closed Room checks for observer intervention, substantive `CONSULT_PRINCIPAL`, clean settlement, usage completeness, and completion marker;
+- deterministic `status`, `abort`, evidence `bundle`, and post-run `compare` operations;
+- a hidden reference solution used only for preflight satisfiability and grader-coverage audit;
+- an explicit resolution of the prior empty-list codec contradiction;
+- `benchmarks/pbm/CURRENT` deliberately left at v3 pending promotion gates.
+
+The principal verified exact feature head:
+
+`3074984340777ed906edf643c8deb2358c701827`
+
+from a clean tracked checkout. Observed deterministic verification results:
+
+- exact expected feature HEAD: PASS;
+- Python syntax compilation for the v4 harness, grader, and reference implementation: PASS;
+- mission/grader satisfiability audit: PASS;
+- v4 benchmark fingerprint: `fc505df8c0578308f594e20c27d5a5e0ce68fa078a7c7c5935abc211550bec93`;
+- hidden reference solution score: **100**;
+- grader coverage requirements present and matched:
+  - `public_tests`
+  - `codec_contract`
+  - `inventory_atomicity`
+  - `summary_contract`
+  - `payload_integration`
+  - `cli_stdout`
+  - `cli_output_file`
+  - `cli_error_atomicity`
+  - `storage_decision`
+  - `completion_artifacts`;
+- focused PBM v4 tests: **7 passed**;
+- `verify-fast.cmd`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability tests: **118 passed**;
+- browser transcript stability: **9 passed**;
+- `benchmarks/pbm/CURRENT`: still **v3**;
+- final HEAD remained exact;
+- final working tree remained clean.
+
+The first focused run exposed one documentation-test wording mismatch: the README said “Open a fresh top-level native Codex Desktop task” while the test asserted the exact substring “one fresh top-level native Codex Desktop task.” No benchmark implementation or asset defect was involved. The repair changed exactly one assertion line in `tests/test_pbm_v4.py`; the continuation verification then passed all checks above.
+
+PR #183 was merged with expected-head protection. Canonical merge commit:
+
+`a1144f27cc2fe196ed0ecd2935a30c76989a3f35`
+
+Git comparison from the exact tested feature head to the canonical merge commit established:
+
+- merge-base is the tested feature head;
+- canonical merge is exactly one commit ahead;
+- there are **zero file differences** between the tested feature head and canonical merge commit.
+
+**Assessment:** PBM v4 is **IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / NOT YET PROMOTED**. The next gate is bounded real one-paste canary execution on Desktop and Room plus live-path verification of status/abort/evidence bundling. No full Desktop-versus-Room performance comparison is authorized yet.
+
