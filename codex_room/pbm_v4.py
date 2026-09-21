@@ -250,22 +250,7 @@ def prepare_pair(room_base: str = DEFAULT_ROOM_BASE) -> dict[str, Any]:
 
 
 def _desktop_user_messages(path: Path) -> list[str]:
-    messages: list[str] = []
-    with path.open("r", encoding="utf-8-sig") as handle:
-        for raw in handle:
-            try:
-                record = json.loads(raw)
-            except json.JSONDecodeError:
-                continue
-            if record.get("type") != "event_msg":
-                continue
-            payload = record.get("payload")
-            if not isinstance(payload, dict) or payload.get("type") != "user_message":
-                continue
-            message = payload.get("message")
-            if isinstance(message, str):
-                messages.append(message)
-    return messages
+    return codex_usage.extract_user_messages(path)
 
 
 def _marker_ok(workspace: Path) -> bool:
