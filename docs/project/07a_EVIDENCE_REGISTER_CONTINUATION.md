@@ -2116,3 +2116,30 @@ Git comparison from the exact tested feature head to the canonical merge commit 
 
 **Assessment:** PBM v4 is **IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / NOT YET PROMOTED**. The next gate is bounded real one-paste canary execution on Desktop and Room plus live-path verification of status/abort/evidence bundling. No full Desktop-versus-Room performance comparison is authorized yet.
 
+---
+
+### E-169 — PBM v4 manual canary exposed operator-choreography and Desktop evidence-parser defects
+**Date:** 2026-09-21  
+**Kind:** [live canary evidence / operator-workflow defect / evidence-parser defect / no-cognition operations verification]  
+**Related work:** I-026 / D-049  
+**Evidence state:** VERIFIED for the observed operations-probe and Desktop-capture behavior; no valid Desktop-versus-Room canary pair is claimed
+
+After E-168 deterministic implementation verification, the bounded v4 canary exercised real operating boundaries.
+
+The deterministic no-cognition operations probe initially failed because canary context capture expected `run.json` while the canary runner had created only `state.json`. A localized repair added compatible run metadata before context capture. Focused tests then passed (**7 passed**), the production v4 fingerprint remained unchanged, and a repeated live operations probe passed:
+
+- prepared Room status was `preparing`;
+- deterministic `abort` stopped the Room;
+- post-abort status reported `stopped` and `aborted: true`;
+- a real evidence ZIP was created at the reported bundle path;
+- the repository working tree remained clean;
+- no model cognition was started by that operations probe.
+
+The subsequent live Desktop canary executed in the correct prepared workspace and produced provider usage, but deterministic capture classified it **INVALID** solely because the v4 prompt parser observed zero principal messages. Captured provenance showed one matching rollout candidate, the exact expected workspace cwd, a concrete Desktop thread id, three tool calls, and nonzero provider usage. Repository inspection then established that the v4 prompt parser recognized only the legacy `event_msg / user_message` record representation even though the usage tooling already encounters newer `response_item` records elsewhere. Therefore the zero-message classification did not provide sufficient evidence that the principal failed the one-paste protocol; the parser itself was too schema-specific.
+
+The principal had also already executed the Room canary by the time the Desktop invalidity was surfaced. No validated Room capture/result from that execution is claimed here.
+
+More importantly, the live canary workflow required the principal to prepare a pair, copy workspace/Room identifiers, launch each product, run separate capture commands, and shuttle outputs back for next-step instructions. The principal rejected that choreography and clarified the desired operator contract: point each platform to its protocol once and let it perform preparation through finalization itself.
+
+**Assessment:** the no-cognition recovery path is behaviorally verified, but the manual v4 operator workflow is superseded before promotion. D-049 governs the replacement: one common protocol, thin Desktop/Room adapters, one principal initiation per platform, automatic pairing/capture/grading/bundling, and schema-tolerant Desktop prompt evidence.
+
