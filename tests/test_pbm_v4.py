@@ -10,12 +10,18 @@ def test_v4_manifest_is_one_integrated_independent_mission() -> None:
     assert [item["id"] for item in manifest["tasks"]] == [
         "m01-integrated-mission"
     ]
-    assert manifest["v4_protocol"]["desktop_principal_pastes"] == 1
-    assert manifest["v4_protocol"]["room_principal_pastes"] == 1
-    assert manifest["v4_protocol"]["cross_platform_coordination"] is False
-    assert manifest["v4_protocol"]["same_fixture"] is True
-    assert manifest["v4_protocol"]["same_grader"] is True
-    assert manifest["v4_protocol"]["result_classifications"] == [
+    protocol = manifest["v4_protocol"]
+    assert protocol["principal_initiations_per_platform"] == 1
+    assert protocol["common_protocol"] == "PROTOCOL.md"
+    assert protocol["controller_is_measured"] is False
+    assert protocol["measured_execution_is_fresh"] is True
+    assert protocol["measured_prompt_injected_by_adapter"] is True
+    assert protocol["automatic_pairing"] is True
+    assert protocol["automatic_capture_grading_bundle"] is True
+    assert protocol["cross_platform_coordination"] is False
+    assert protocol["same_fixture"] is True
+    assert protocol["same_grader"] is True
+    assert protocol["result_classifications"] == [
         "VALID",
         "INVALID",
         "FAILED",
@@ -82,11 +88,17 @@ def test_v4_wrapper_preserves_principal_shell_and_captures_native_exit() -> None
     assert "exit $pbmExit" not in wrapper
 
 
-def test_v4_readme_keeps_current_promotion_explicit() -> None:
-    readme = (pbm.version_root("v4") / "README.md").read_text(encoding="utf-8")
+def test_v4_common_protocol_keeps_principal_out_of_choreography() -> None:
+    protocol = (pbm.version_root("v4") / "PROTOCOL.md").read_text(encoding="utf-8")
+    desktop = (
+        pbm.PROJECT_ROOT / "pbm_desktop_controller" / "V4_PROTOCOL.md"
+    ).read_text(encoding="utf-8")
+    room = (pbm.version_root("v4") / "ROOM_PROTOCOL.md").read_text(encoding="utf-8")
 
-    assert "fresh top-level native Codex Desktop task" in readme
-    assert "Click **New round**" in readme
-    assert "Do not send observer messages" in readme
-    assert "CURRENT" in readme
-    assert "remains unchanged" in readme
+    assert "Normal benchmark operation requires no principal-run preparation" in protocol
+    assert "Join the same active PBM v4 pair automatically" in protocol
+    assert "Do not coordinate with, wait for, wake, or control the other platform" in protocol
+    assert "PROTOCOL.md" in desktop
+    assert "PBM_COMMON_PROTOCOL.md" in room
+    assert "Do not wait for Room" in desktop
+    assert "deterministic PBM v4 Room worker" in room
