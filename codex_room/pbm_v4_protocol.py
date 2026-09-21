@@ -108,6 +108,26 @@ def _set_platform_state(
         return latest
 
 
+def _mark_platform_worker_started(
+    run_id: str,
+    platform: str,
+    pid: int,
+) -> dict[str, Any]:
+    """Record a detached worker without overwriting a faster terminal update."""
+
+    with _protocol_lock():
+        latest = _load_state(run_id)
+        current = latest.get(platform)
+        if not isinstance(current, dict):
+            raise PBMV4ProtocolError(f"{platform} protocol arm is not prepared")
+        merged = {**current, "worker_pid": pid}
+        if current.get("status") == "prepared":
+            merged["status"] = "monitoring" if platform == "desktop" else "running"
+        latest[platform] = merged
+        _save_state(run_id, latest)
+        return latest
+
+
 def _result_path(state: dict[str, Any], platform: str) -> Path:
     root = pbm.run_root(str(state["run_id"]))
     if state["mode"] == "benchmark":
@@ -406,13 +426,180 @@ def _normalized_usage(usage: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _spawn_desktop_worker(run_id: str) -> int:
+    log_path = pbm.run_root(run_id) / PROTOCOL_STATE_DIR / "desktop-worker.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_handle = log_path.open("ab")
+    kwargs: dict[str, Any] = {
+        "cwd": str(pbm.PROJECT_ROOT),
+        "stdin": subprocess.DEVNULL,
+        "stdout": log_handle,
+        "stderr": subprocess.STDOUT,
+        "close_fds": True,
+    }
+    if os.name == "nt":
+        kwargs["creationflags"] = (
+            getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+            | getattr(subprocess, "DETACHED_PROCESS", 0)
+        )
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "codex_room.pbm_v4_protocol",
+            "desktop-worker",
+            "--run-id",
+            run_id,
+        ],
+        **kwargs,
+    )
+    log_handle.close()
+    return int(process.pid)
+
+
+def desktop_monitor_start(run_id: str, thread_id: str) -> dict[str, Any]:
+    state = _load_state(run_id)
+    desktop = state.get("desktop")
+    if not isinstance(desktop, dict) or desktop.get("status") != "prepared":
+        raise PBMV4ProtocolError("Desktop protocol arm is not prepared")
+
+    monitoring = {
+        **desktop,
+        "status": "prepared",
+        "thread_id": thread_id,
+        "monitor_started_at": pbm.utc_now(),
+        "worker_pid": None,
+    }
+    _set_platform_state(run_id, "desktop", monitoring)
+    pid = _spawn_desktop_worker(run_id)
+    state = _mark_platform_worker_started(run_id, "desktop", pid)
+    return {
+        "action": "monitoring",
+        "run_id": run_id,
+        "mode": state["mode"],
+        "thread_id": thread_id,
+        "worker_pid": pid,
+        "note": (
+            "Detached deterministic Desktop monitor started. The controller does not "
+            "need to wait for the measured child or for Room."
+        ),
+    }
+
+
+def _rollout_stable_for(
+    path: Path,
+    *,
+    prior_signature: tuple[int, int] | None,
+    stable_since: float | None,
+) -> tuple[tuple[int, int], float | None]:
+    stat = path.stat()
+    signature = (stat.st_size, stat.st_mtime_ns)
+    now = time.time()
+    if signature != prior_signature:
+        return signature, now
+    return signature, stable_since
+
+
+def desktop_worker(run_id: str, timeout_seconds: int = 3600) -> dict[str, Any]:
+    state = _load_state(run_id)
+    desktop = state.get("desktop")
+    if not isinstance(desktop, dict):
+        raise PBMV4ProtocolError("Desktop protocol arm is not prepared")
+    thread_id = desktop.get("thread_id")
+    if not isinstance(thread_id, str) or not thread_id:
+        raise PBMV4ProtocolError("Desktop measured child thread id is unavailable")
+    workspace = Path(str(desktop["workspace"]))
+
+    deadline = time.time() + timeout_seconds
+    rollout: Path | None = None
+    signature: tuple[int, int] | None = None
+    stable_since: float | None = None
+
+    try:
+        while time.time() < deadline:
+            latest = _load_state(run_id)
+            if latest.get("aborted"):
+                return {
+                    "run_id": run_id,
+                    "aborted": True,
+                    "platform": "desktop",
+                }
+
+            try:
+                rollout = codex_usage.select_rollout(
+                    codex_home=codex_usage.default_codex_home(),
+                    thread_id=thread_id,
+                    include_archived=True,
+                )
+            except codex_usage.RolloutUsageError:
+                rollout = None
+
+            if rollout is not None and _marker_ok(str(state["mode"]), workspace):
+                signature, stable_since = _rollout_stable_for(
+                    rollout,
+                    prior_signature=signature,
+                    stable_since=stable_since,
+                )
+                if (
+                    stable_since is not None
+                    and time.time() - stable_since >= 3.0
+                ):
+                    return desktop_finish(run_id, thread_id)
+            else:
+                signature = None
+                stable_since = None
+
+            time.sleep(1)
+
+        if rollout is not None:
+            # Preserve a deterministic FAILED/INVALID result on timeout when
+            # rollout evidence exists, rather than requiring principal capture.
+            return desktop_finish(run_id, thread_id)
+        raise PBMV4ProtocolError(
+            f"Desktop measured child {thread_id} produced no rollout within "
+            f"{timeout_seconds} seconds"
+        )
+    except Exception as exc:
+        error = {
+            "schema": "pbm-v4-protocol-desktop-worker-error-v1",
+            "run_id": run_id,
+            "recorded_at": pbm.utc_now(),
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+        }
+        _write_json(
+            pbm.run_root(run_id) / PROTOCOL_STATE_DIR / "desktop-worker-error.json",
+            error,
+        )
+        latest = _load_state(run_id)
+        current = latest.get("desktop")
+        if isinstance(current, dict):
+            _set_platform_state(
+                run_id,
+                "desktop",
+                {
+                    **current,
+                    "status": "worker_error",
+                    "worker_error": error,
+                },
+            )
+        try:
+            bundle(run_id)
+        except Exception:
+            pass
+        raise
+
+
 def desktop_finish(run_id: str, thread_id: str) -> dict[str, Any]:
     state = _load_state(run_id)
     if state.get("benchmark_fingerprint") != pbm.benchmark_fingerprint(VERSION):
         raise PBMV4ProtocolError("PBM v4 fingerprint changed after Desktop preparation")
     desktop = state.get("desktop")
-    if not isinstance(desktop, dict) or desktop.get("status") != "prepared":
-        raise PBMV4ProtocolError("Desktop protocol arm is not prepared")
+    if (
+        not isinstance(desktop, dict)
+        or desktop.get("status") not in {"prepared", "monitoring"}
+    ):
+        raise PBMV4ProtocolError("Desktop protocol arm is not prepared or monitoring")
 
     rollout = codex_usage.select_rollout(
         codex_home=codex_usage.default_codex_home(),
@@ -605,12 +792,7 @@ def room_start(mode: str, room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str
     _set_platform_state(run_id, "room", room_state)
 
     pid = _spawn_room_worker(run_id)
-    room_state = {
-        **room_state,
-        "worker_pid": pid,
-        "status": "running",
-    }
-    state = _set_platform_state(run_id, "room", room_state)
+    state = _mark_platform_worker_started(run_id, "room", pid)
     return {
         "action": "started",
         "run_id": run_id,
@@ -1140,6 +1322,13 @@ def build_parser() -> argparse.ArgumentParser:
     command = sub.add_parser("desktop-prepare")
     command.add_argument("--mode", choices=["benchmark", "canary"], default="benchmark")
 
+    command = sub.add_parser("desktop-monitor-start")
+    command.add_argument("--run-id", required=True)
+    command.add_argument("--thread-id", required=True)
+
+    command = sub.add_parser("desktop-worker")
+    command.add_argument("--run-id", required=True)
+
     command = sub.add_parser("desktop-finish")
     command.add_argument("--run-id", required=True)
     command.add_argument("--thread-id", required=True)
@@ -1170,6 +1359,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "desktop-prepare":
             value = desktop_prepare(args.mode)
+        elif args.command == "desktop-monitor-start":
+            value = desktop_monitor_start(args.run_id, args.thread_id)
+        elif args.command == "desktop-worker":
+            value = desktop_worker(args.run_id)
         elif args.command == "desktop-finish":
             value = desktop_finish(args.run_id, args.thread_id)
         elif args.command == "room-start":
