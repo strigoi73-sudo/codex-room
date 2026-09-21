@@ -2460,3 +2460,39 @@ Interpretation:
 5. The account-level usage meter again remained corroborating only; primary comparison remains measured execution usage.
 
 **Assessment:** The controlled C-only experiment isolates two separable efficiency penalties: a large coordination/delegation penalty in ordinary three-agent Room operation, plus a smaller but still material single-agent execution/context penalty versus Desktop. No PBM redesign is indicated by this result.
+
+
+### E-176 — Assignment-thread context-economy repair exact-head verification
+**Date:** 2026-09-21  
+**Status:** VERIFIED
+
+Follow-up investigation of E-175 traced the dominant C-only residual to provider-thread input replay rather than output verbosity. Two concrete mechanisms were identified in production work-model-v2 assignment-thread execution:
+
+1. coordinator refresh guidance compared the latest execution's input delta to the 64K/96K advisory bands even when the exact provider thread had accumulated materially more input spend across prior continuations; and
+2. established provider-context lineages replayed the large immutable transaction/evidence/history/capability instruction contract on later executions even though the exact provider thread already retained that static contract.
+
+The observed PBM C-only shape that motivated the repair was approximately 124K cumulative provider-thread input spend before the final tool-bearing execution, while the immediately preceding execution delta was only about 41K. The former would cross the strong-preference band; the latter did not.
+
+PR #200 implemented a bounded repair:
+
+- refresh pressure uses the stronger of cumulative provider-thread input spend or latest-execution input spend;
+- fresh assignment threads and post-`REFRESH` threads still receive the full transaction/evidence/history/capability contract;
+- later executions on an already-established provider-context lineage receive a compact continuation delta instead of replaying that full immutable contract;
+- the compact continuation explicitly preserves bounded `HISTORY` semantics for continuous-mode successor Tasks that intentionally reuse the same provider thread;
+- current dynamic Room/Task/Assignment/Join/Evidence state remains rebuilt authoritatively by CORE;
+- C retains judgment over `REFRESH`; CORE does not auto-refresh.
+
+The first exact-head verification at `22540ef5cdc05a94c5c37913635e629e7b41ba11` exposed one legitimate regression: the compact continuation omitted an explicit same-Round prior-Task `HISTORY` reminder required at a continuous successor-Task boundary. That verification correctly failed one focused test. The repair was revised rather than weakening the test.
+
+Revised exact head `4434ac711bf3d8a90e7dba2c183ca7e11dc8a75d` then passed:
+
+- targeted regression checks for same-Round successor-Task HISTORY continuity, cumulative-spend refresh pressure, and same-thread evidence continuation;
+- the full focused assignment-context / transaction / transaction-evidence suite;
+- Python syntax checks;
+- the canonical PBM v5 fingerprint invariant (`492f8ce7d2cc49094abe993db7a20cad2a355ef277a90efd41fe26697b0cbc1b`);
+- the repository-standard fast verifier;
+- clean exact-head / expected-diff checks.
+
+PR #200 merged as `f09a575881915256c0f7311f4bcce152bd18aeed`. GitHub comparison from the verified feature head to the merge commit reported zero file differences.
+
+**Assessment:** The demonstrated context-economy defect is repaired in canonical production bytes. This does not establish a measured post-repair savings rate; no additional PBM run is required merely to prove implementation. Product-value validation is now a separate question from execution-efficiency repair.
