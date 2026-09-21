@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from codex_room import pbm, pbm_v4, pbm_v4_protocol
+from codex_room import pbm, pbm_context, pbm_v4, pbm_v4_protocol
 
 
 def test_protocol_runner_uses_one_shared_active_pair(tmp_path, monkeypatch) -> None:
@@ -402,4 +402,193 @@ def test_status_can_recover_provisional_desktop_before_pair_finalization(
     assert result["complete"] is True
     assert result["desktop"]["thread_id"] == "019f-real-thread"
     assert result["desktop"]["provisional_thread_id"] == "client-new-thread:temporary"
+
+def test_protocol_usage_meter_summary_reports_before_after_and_deltas(tmp_path) -> None:
+    context = tmp_path / "context"
+    context.mkdir()
+
+    before = {
+        "captured_at": "2026-09-21T10:00:00Z",
+        "native_codex": {
+            "native_base": {
+                "account_usage": {
+                    "status": "available",
+                    "data": {
+                        "summary": {"lifetimeTokens": 1000},
+                        "dailyUsageBuckets": [
+                            {"startDate": "2026-09-21", "tokens": 400}
+                        ],
+                    },
+                },
+                "rate_limits": {
+                    "status": "available",
+                    "data": {
+                        "rateLimits": {
+                            "limitId": "codex",
+                            "limitName": "Codex",
+                            "primary": {
+                                "usedPercent": 20.0,
+                                "windowDurationMins": 300,
+                                "resetsAt": 2000,
+                            },
+                            "secondary": None,
+                        }
+                    },
+                },
+            }
+        },
+    }
+    after = {
+        "captured_at": "2026-09-21T10:30:00Z",
+        "native_codex": {
+            "native_base": {
+                "account_usage": {
+                    "status": "available",
+                    "data": {
+                        "summary": {"lifetimeTokens": 1300},
+                        "dailyUsageBuckets": [
+                            {"startDate": "2026-09-21", "tokens": 700}
+                        ],
+                    },
+                },
+                "rate_limits": {
+                    "status": "available",
+                    "data": {
+                        "rateLimits": {
+                            "limitId": "codex",
+                            "limitName": "Codex",
+                            "primary": {
+                                "usedPercent": 27.5,
+                                "windowDurationMins": 300,
+                                "resetsAt": 2000,
+                            },
+                            "secondary": None,
+                        }
+                    },
+                },
+            }
+        },
+    }
+
+    (context / "protocol-start.json").write_text(json.dumps(before), encoding="utf-8")
+    (context / "protocol-complete.json").write_text(json.dumps(after), encoding="utf-8")
+
+    result = pbm_context.protocol_usage_meter_summary(tmp_path)
+
+    assert result["before"]["account_usage"]["summary"]["lifetime_tokens"] == 1000
+    assert result["after"]["account_usage"]["summary"]["lifetime_tokens"] == 1300
+    assert result["delta"]["lifetime_tokens_delta"] == 300
+    assert result["delta"]["daily_usage_bucket_deltas"] == [
+        {
+            "start_date": "2026-09-21",
+            "before_tokens": 400,
+            "after_tokens": 700,
+            "delta_tokens": 300,
+        }
+    ]
+    assert result["delta"]["rate_limit_window_deltas"][0][
+        "delta_percentage_points"
+    ] == 7.5
+
+
+def test_protocol_usage_meter_delta_does_not_cross_rate_limit_reset(tmp_path) -> None:
+    context = tmp_path / "context"
+    context.mkdir()
+
+    def snapshot(used_percent, resets_at):
+        return {
+            "captured_at": "2026-09-21T10:00:00Z",
+            "native_codex": {
+                "native_base": {
+                    "account_usage": {"status": "unavailable"},
+                    "rate_limits": {
+                        "status": "available",
+                        "data": {
+                            "rateLimits": {
+                                "limitId": "codex",
+                                "primary": {
+                                    "usedPercent": used_percent,
+                                    "windowDurationMins": 300,
+                                    "resetsAt": resets_at,
+                                },
+                                "secondary": None,
+                            }
+                        },
+                    },
+                }
+            },
+        }
+
+    (context / "protocol-start.json").write_text(
+        json.dumps(snapshot(98.0, 2000)),
+        encoding="utf-8",
+    )
+    (context / "protocol-complete.json").write_text(
+        json.dumps(snapshot(2.0, 3000)),
+        encoding="utf-8",
+    )
+
+    result = pbm_context.protocol_usage_meter_summary(tmp_path)
+    window = result["delta"]["rate_limit_window_deltas"][0]
+
+    assert window["reset_changed"] is True
+    assert window["delta_percentage_points"] is None
+
+
+def test_comparison_markdown_surfaces_provider_meter() -> None:
+    comparison = {
+        "run_id": "pbm-v4-benchmark-protocol-test",
+        "comparable": True,
+        "same_fingerprint": True,
+        "desktop": {
+            "classification": "VALID",
+            "score": 100,
+            "total_tokens": 100,
+            "duration_seconds": 1.0,
+        },
+        "room": {
+            "classification": "VALID",
+            "score": 100,
+            "total_tokens": 120,
+            "duration_seconds": 2.0,
+        },
+        "room_to_desktop_total_token_ratio": 1.2,
+        "provider_usage_meter": {
+            "before": {
+                "captured_at": "before",
+                "account_usage": {
+                    "status": "available",
+                    "summary": {"lifetime_tokens": 1000},
+                },
+            },
+            "after": {
+                "captured_at": "after",
+                "account_usage": {
+                    "status": "available",
+                    "summary": {"lifetime_tokens": 1300},
+                },
+            },
+            "delta": {
+                "lifetime_tokens_delta": 300,
+                "rate_limit_window_deltas": [
+                    {
+                        "limit_name": "Codex",
+                        "window": "primary",
+                        "window_duration_mins": 300,
+                        "before_used_percent": 20.0,
+                        "after_used_percent": 27.5,
+                        "delta_percentage_points": 7.5,
+                        "reset_changed": False,
+                    }
+                ],
+                "daily_usage_bucket_deltas": [],
+            },
+        },
+    }
+
+    text = pbm_v4_protocol._comparison_markdown(comparison)
+
+    assert "## Provider usage meter" in text
+    assert "1000 → 1300 (Δ 300)" in text
+    assert "| Codex | primary (300 min) | 20.0 | 27.5 | 7.5 | false |" in text
 
