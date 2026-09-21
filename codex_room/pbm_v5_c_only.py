@@ -143,9 +143,9 @@ def _baseline_result() -> dict[str, Any]:
     return result
 
 
-def _require_environment() -> dict[str, str]:
+def _require_environment(*, require_main: bool = True) -> dict[str, str]:
     repo = pbm_v4._require_clean_tree()
-    if repo["branch"] != "main":
+    if require_main and repo["branch"] != "main":
         raise PBMV5COnlyError(f"C-only PBM requires canonical main; found {repo['branch']}")
     if pbm.current_version() != VERSION:
         raise PBMV5COnlyError(f"PBM CURRENT must be {VERSION}")
@@ -657,7 +657,7 @@ def abort(run_id: str | None = None) -> dict[str, Any]:
 
 
 def audit() -> dict[str, Any]:
-    _require_environment()
+    _require_environment(require_main=False)
     baseline = _baseline_result()
     return {
         "ok": True,
