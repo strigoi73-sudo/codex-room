@@ -83,3 +83,27 @@ def test_canary_pair_verification_requires_both_valid_results(tmp_path, monkeypa
     )
     result = pbm_v4_canary.verify_pair(run_id)
     assert result["passed"] is False
+
+
+def test_canary_context_snapshot_contract_uses_run_metadata(tmp_path, monkeypatch) -> None:
+    run_id = "pbm-v4-canary-context-test"
+    root = tmp_path / run_id
+    root.mkdir()
+    monkeypatch.setattr(pbm_v4_canary, "OUTPUT_ROOT", tmp_path)
+
+    run_meta = {
+        "schema": "pbm-v4-canary-run-v1",
+        "run_id": run_id,
+        "benchmark_version": "v4",
+        "benchmark_fingerprint": VERIFIED_V4_FINGERPRINT,
+        "created_at": "2026-09-21T00:00:00Z",
+    }
+    (root / "run.json").write_text(
+        json.dumps(run_meta) + "\n",
+        encoding="utf-8",
+    )
+
+    loaded = json.loads((root / "run.json").read_text(encoding="utf-8"))
+    assert loaded["run_id"] == run_id
+    assert loaded["benchmark_version"] == "v4"
+    assert loaded["benchmark_fingerprint"] == VERIFIED_V4_FINGERPRINT
