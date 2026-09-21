@@ -8,7 +8,7 @@ The principal does not orchestrate preparation, capture, grading, bundling, or c
 
 The normative shared procedure is `PROTOCOL.md`.
 
-Both platforms bind the same v4 fingerprint, prepare equivalent copies of the seven-task battery, launch the same frozen measured instruction, forbid substantive follow-up principal guidance, classify results as VALID / INVALID / FAILED, capture evidence deterministically, and auto-bundle. The independent arms never wait for or control one another. When both results exist for the active fingerprint, deterministic comparison closes the pair automatically.
+Both platforms bind the same v4 fingerprint, prepare equivalent copies of the seven-task battery, launch the same frozen measured instruction, forbid substantive follow-up principal guidance, classify results as VALID / INVALID / FAILED, capture evidence deterministically, and auto-bundle. The protocol also captures the read-only Codex provider usage/rate-limit meter at protocol start and protocol completion; the final comparison surfaces before/after values and deltas alongside the primary rollout/Room token accounting. The independent arms never wait for or control one another. When both results exist for the active fingerprint, deterministic comparison closes the pair automatically.
 
 The measured battery instruction remains exactly:
 
