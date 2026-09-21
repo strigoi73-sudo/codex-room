@@ -1273,7 +1273,16 @@ def status(run_id: str | None = None) -> dict[str, Any]:
         if pointer is None:
             return {"active": False}
         run_id = str(pointer["run_id"])
+
     state = _load_state(run_id)
+    if (
+        not state.get("complete")
+        and not state.get("aborted")
+        and all(_result_path(state, arm).is_file() for arm in ("desktop", "room"))
+    ):
+        _finalize_if_ready(run_id)
+        state = _load_state(run_id)
+
     value = {
         "active": not state.get("complete") and not state.get("aborted"),
         "run_id": run_id,
@@ -1284,6 +1293,8 @@ def status(run_id: str | None = None) -> dict[str, Any]:
         "room": state.get("room"),
         "complete": state.get("complete"),
         "aborted": state.get("aborted"),
+        "comparison": state.get("comparison"),
+        "finalization_error": state.get("finalization_error"),
     }
     return value
 
