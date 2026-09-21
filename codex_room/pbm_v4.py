@@ -123,8 +123,16 @@ def audit_assets() -> dict[str, Any]:
     protocol = manifest.get("v4_protocol") or {}
     if protocol.get("cross_platform_coordination") is not False:
         raise PBMV4Error("PBM v4 must forbid live cross-platform coordination")
-    if protocol.get("desktop_principal_pastes") != 1 or protocol.get("room_principal_pastes") != 1:
-        raise PBMV4Error("PBM v4 requires exactly one principal paste per platform")
+    if protocol.get("principal_initiations_per_platform") != 1:
+        raise PBMV4Error("PBM v4 requires exactly one principal initiation per platform")
+    if protocol.get("common_protocol") != "PROTOCOL.md":
+        raise PBMV4Error("PBM v4 must bind the shared common protocol")
+    if protocol.get("controller_is_measured") is not False:
+        raise PBMV4Error("PBM v4 controller cognition must stay outside measured execution")
+    if protocol.get("measured_execution_is_fresh") is not True:
+        raise PBMV4Error("PBM v4 must use a fresh measured execution per platform")
+    if protocol.get("automatic_pairing") is not True:
+        raise PBMV4Error("PBM v4 must pair independent platform arms without principal relay")
 
     root = pbm.version_root(VERSION)
     fixture = root / manifest["tasks"][0]["fixture_dir"]
