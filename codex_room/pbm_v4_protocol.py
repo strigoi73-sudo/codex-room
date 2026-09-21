@@ -150,6 +150,17 @@ def _validate_mode(mode: str) -> str:
     return mode
 
 
+def _tree_fingerprint(root: Path) -> str:
+    digest = hashlib.sha256()
+    for path in sorted(item for item in root.rglob("*") if item.is_file()):
+        rel = path.relative_to(root).as_posix()
+        digest.update(rel.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def _require_protocol_repo(mode: str) -> dict[str, str]:
     repo = pbm_v4._require_clean_tree()
     if repo["branch"] != "main":
@@ -192,6 +203,11 @@ def _ensure_run(mode: str) -> dict[str, Any]:
     repo = _require_protocol_repo(mode)
     audit = pbm_v4.audit_assets()
     fingerprint = str(audit["benchmark_fingerprint"])
+    canary_fingerprint = (
+        _tree_fingerprint(pbm_v4_canary.CANARY_ROOT)
+        if mode == "canary"
+        else None
+    )
 
     created_run_id: str | None = None
     with _protocol_lock():
@@ -215,6 +231,10 @@ def _ensure_run(mode: str) -> dict[str, Any]:
                     raise PBMV4ProtocolError(
                         "Repository HEAD changed while a protocol run is active"
                     )
+                if state.get("canary_fingerprint") != canary_fingerprint:
+                    raise PBMV4ProtocolError(
+                        "PBM v4 canary fixture changed while a protocol run is active"
+                    )
                 return state
 
         run_id = _new_run_id(mode)
@@ -225,6 +245,7 @@ def _ensure_run(mode: str) -> dict[str, Any]:
             "mode": mode,
             "benchmark_version": VERSION,
             "benchmark_fingerprint": fingerprint,
+            "canary_fingerprint": canary_fingerprint,
             "created_at": pbm.utc_now(),
             "repo": repo,
             "audit": audit,
@@ -240,6 +261,7 @@ def _ensure_run(mode: str) -> dict[str, Any]:
                 "run_id": run_id,
                 "mode": mode,
                 "benchmark_fingerprint": fingerprint,
+                "canary_fingerprint": canary_fingerprint,
                 "repo_head": repo["head"],
             },
         )
@@ -643,6 +665,7 @@ def desktop_finish(run_id: str, thread_id: str) -> dict[str, Any]:
         "mode": state["mode"],
         "benchmark_version": VERSION,
         "benchmark_fingerprint": state["benchmark_fingerprint"],
+        "canary_fingerprint": state.get("canary_fingerprint"),
         "completed_at": pbm.utc_now(),
         "classification": pbm_v4._classification(invalid, failed),
         "invalid_reasons": invalid,
@@ -892,6 +915,7 @@ def _capture_room(run_id: str) -> dict[str, Any]:
         "mode": state["mode"],
         "benchmark_version": VERSION,
         "benchmark_fingerprint": state["benchmark_fingerprint"],
+        "canary_fingerprint": state.get("canary_fingerprint"),
         "completed_at": pbm.utc_now(),
         "classification": pbm_v4._classification(invalid, failed),
         "invalid_reasons": invalid,
@@ -1100,6 +1124,7 @@ def bundle(run_id: str) -> dict[str, Any]:
                 f"run_id: {run_id}\n"
                 f"mode: {state['mode']}\n"
                 f"benchmark_fingerprint: {state['benchmark_fingerprint']}\n"
+                f"canary_fingerprint: {state.get('canary_fingerprint')}\n"
             ),
         )
     return {
@@ -1152,6 +1177,7 @@ def status(run_id: str | None = None) -> dict[str, Any]:
         "run_id": run_id,
         "mode": state["mode"],
         "benchmark_fingerprint": state["benchmark_fingerprint"],
+        "canary_fingerprint": state.get("canary_fingerprint"),
         "desktop": state.get("desktop"),
         "room": state.get("room"),
         "complete": state.get("complete"),
