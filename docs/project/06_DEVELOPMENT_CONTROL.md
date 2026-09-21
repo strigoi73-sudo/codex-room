@@ -50,7 +50,11 @@ Current implementation slice: **OUB v1 / O1 — Competing root causes**.
 - O1's design budget is **10–15 minutes per platform**, with a manifest target of 12 minutes, at most ten fixture files, and at most 30 KB of starting fixture content.
 - The deterministic 100-point grader separately scores root cause, trigger, exact causal ordering, source/operational evidence, rejection of duplicate-ingress / concurrent-claim / database-pool alternatives, and recurrence controls.
 - Reference artifacts and an asset audit are included so satisfiability and grading can be verified before any measured platform run.
-- Current feature branch: `oub-v1-o01`. Exact-head verification and promotion remain pending; no paid OUB arm should run before that gate passes.
+- O1 asset head `266481fa1d66571e250d588c3eba2c2b0f430348` passed exact-head verification: reference score 100, 10 fixture files / 9,840 bytes, focused OUB tests 3/3, unchanged PBM v5 fingerprint, repository fast verifier 64 Linux / 118 Windows / 9 browser, clean scope/head checks. PR #202 merged byte-identically as `7d7d3342432908a553c6456d358d819ab8548079`.
+- The frozen O1 fingerprint is `d6ec60fca42c6dd436b15d4f8621bb711056b1da5aa93f5a6ecaee2188ba4835`.
+- The thin measurement harness is now implemented on feature branch `oub-v1-harness`: one prepare operation creates equivalent Desktop/Room workspaces, starts the ordinary Room arm plus detached monitors, discovers exactly one fresh Desktop root by workspace, aggregates Desktop native descendants and all Room executions, enforces no-substantive-principal-intervention plus frozen-fixture integrity, grades both final workspaces, and reports quality/cost/duration/orchestration separately without declaring a winner.
+- Harness implementation uses a 30-minute safety ceiling while retaining the 10–15 minute / 12-minute target as the intended task budget.
+- Exact-head verification and promotion of the harness remain pending. No paid OUB arm should run before that gate passes.
 
 ### I-027 — PBM v5 platform-outcome benchmark
 
