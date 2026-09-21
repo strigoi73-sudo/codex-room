@@ -94,7 +94,13 @@ def _active_run() -> str | None:
 
 
 def _clear_active_if(run_id: str) -> None:
-    if _active_run() == run_id:
+    if not ACTIVE_POINTER.is_file():
+        return
+    try:
+        value = _read_json(ACTIVE_POINTER)
+    except (OSError, json.JSONDecodeError):
+        return
+    if value.get("run_id") == run_id:
         ACTIVE_POINTER.unlink(missing_ok=True)
 
 
@@ -244,7 +250,7 @@ def prepare(room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str, Any]:
         }
     )
     _write_json(run_path, run_meta)
-    pbm_v4._capture_context(run_id, "c-only-start")
+    pbm_v4._capture_context(run_id, "protocol-start")
 
     room = pbm_v4._http_json("POST", f"{room_base}/api/rooms", _room_payload(run_id))
     if not isinstance(room, dict) or not room.get("id") or not room.get("active_round_id"):
@@ -491,7 +497,7 @@ def _finish(run_id: str) -> dict[str, Any]:
     state["completed_at"] = pbm.utc_now()
     state["comparison"] = comparison
     _save_state(run_id, state)
-    pbm_v4._capture_context(run_id, "c-only-complete")
+    pbm_v4._capture_context(run_id, "protocol-complete")
     # Refresh the comparison's meter after the final capture.
     comparison["provider_usage_meter"] = pbm_context.protocol_usage_meter_summary(
         pbm.run_root(run_id)
