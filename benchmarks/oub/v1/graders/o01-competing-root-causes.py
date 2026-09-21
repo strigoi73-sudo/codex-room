@@ -118,7 +118,7 @@ add(
 controls = code_set(findings.get("recommended_controls"))
 add(
     "stable_idempotency_control",
-    7,
+    5,
     "STABLE_PAYMENT_INTENT_IDEMPOTENCY_KEY" in controls,
 )
 add(
@@ -143,7 +143,7 @@ report_codes = {
 }
 add(
     "incident_report",
-    8,
+    5,
     all(heading in report_text for heading in headings)
     and len(report_codes) >= 6,
 )
