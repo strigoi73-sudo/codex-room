@@ -23,7 +23,7 @@
 
 **Reality / evidence:** OUB v1/O1 ASSET + HARNESS IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED; FIRST MEASURED O1 COMPARISON PENDING
 
-**Evidence basis:** E-174, E-175, E-176, E-177
+**Evidence basis:** E-174, E-175, E-176, E-177, E-178
 
 Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
 
@@ -56,6 +56,7 @@ Current implementation slice: **OUB v1 / O1 — Competing root causes**.
 - Harness implementation uses a 30-minute safety ceiling while retaining the 10–15 minute / 12-minute target as the intended task budget.
 - Exact harness head `9790c736ba695b8cc127b19ea45b480eb0713867` passed the frozen-asset invariant, harness audit, 14 focused OUB/PBM tests, unchanged PBM v5 fingerprint, repository fast verifier (64 Linux / 118 Windows / 9 browser), and exact scope/head checks. PR #203 merged byte-identically as `21b427a68a582ce3f717f4c64759bebd0c710edc`; see E-177.
 - No measured OUB model work has run yet. The first O1 Desktop↔Room comparison is the next explicit usage-consuming step.
+- The first O1 launch attempt exposed a launcher race before any measured arm was created: `Restart-Codex-Room.bat` returned after process launch but before the API accepted connections, causing `oub-v1.ps1 prepare` to fail at `/api/health`. PR #205 adds a post-launch readiness gate that polls `/api/health` for up to 30 seconds and cleans up on failure. Exact head `6ef357f512b1ff8b5f485212485c40249dd7fb7a` passed 9 launcher tests, frozen OUB/PBM fingerprint checks, a live restart-readiness probe, no-active-OUB confirmation, and exact scope/head checks; it merged byte-identically as `e0897b692aa985c6aa676a63a55df4cfe247ca17`. See E-178.
 
 ### I-027 — PBM v5 platform-outcome benchmark
 
