@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import json
 
-from codex_room import pbm, pbm_v4, pbm_v4_canary
+from codex_room import pbm, pbm_context, pbm_v4, pbm_v4_canary
 
 
 VERIFIED_V4_FINGERPRINT = "fc505df8c0578308f594e20c27d5a5e0ce68fa078a7c7c5935abc211550bec93"
@@ -89,7 +90,6 @@ def test_canary_context_snapshot_contract_uses_run_metadata(tmp_path, monkeypatc
     run_id = "pbm-v4-canary-context-test"
     root = tmp_path / run_id
     root.mkdir()
-    monkeypatch.setattr(pbm_v4_canary, "OUTPUT_ROOT", tmp_path)
 
     run_meta = {
         "schema": "pbm-v4-canary-run-v1",
@@ -103,7 +103,23 @@ def test_canary_context_snapshot_contract_uses_run_metadata(tmp_path, monkeypatc
         encoding="utf-8",
     )
 
-    loaded = json.loads((root / "run.json").read_text(encoding="utf-8"))
-    assert loaded["run_id"] == run_id
-    assert loaded["benchmark_version"] == "v4"
-    assert loaded["benchmark_fingerprint"] == VERIFIED_V4_FINGERPRINT
+    async def fake_native_context(_project_root):
+        return {"native_base": {}, "room": {}, "room_defaults": {}}
+
+    monkeypatch.setattr(pbm_context, "collect_native_context", fake_native_context)
+    monkeypatch.setattr(pbm_context, "repository_context", lambda _root: {"head": "test"})
+    monkeypatch.setattr(pbm_context, "environment_context", lambda _root: {})
+
+    snapshot = asyncio.run(
+        pbm_context.capture_snapshot(
+            run_root=root,
+            label="canary-prep",
+            project_root=tmp_path,
+            captured_at="2026-09-21T00:00:01Z",
+        )
+    )
+
+    assert snapshot["run_id"] == run_id
+    assert snapshot["benchmark_version"] == "v4"
+    assert snapshot["benchmark_fingerprint"] == VERIFIED_V4_FINGERPRINT
+    assert (root / "context" / "canary-prep.json").is_file()
