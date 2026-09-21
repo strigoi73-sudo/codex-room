@@ -1,0 +1,25 @@
+2026-09-18T09:42:10.090Z [W101] worker=w3 job=job-701 order=ord-A17 event=claimed claim_no=1
+2026-09-18T09:42:10.100Z [W102] worker=w3 job=job-701 order=ord-A17 event=gateway_attempt attempt=1 key=9d8bebea993bcad8
+2026-09-18T09:42:10.900Z [W103] worker=w3 job=job-701 order=ord-A17 event=gateway_timeout attempt=1 timeout_ms=800
+2026-09-18T09:42:12.401Z [W104] worker=w3 job=job-701 order=ord-A17 event=gateway_attempt attempt=2 key=250b8d1262322fd0
+2026-09-18T09:42:12.710Z [W105] worker=w3 job=job-701 order=ord-A17 event=charged attempt=2 charge_id=ch_A17_2
+2026-09-18T09:42:12.735Z [W106] worker=w3 job=job-701 order=ord-A17 event=completed
+
+2026-09-18T09:42:21.040Z [W111] worker=w5 job=job-702 order=ord-B04 event=claimed claim_no=1
+2026-09-18T09:42:21.050Z [W112] worker=w5 job=job-702 order=ord-B04 event=gateway_attempt attempt=1 key=042e56e7a8cab23f
+2026-09-18T09:42:21.850Z [W113] worker=w5 job=job-702 order=ord-B04 event=gateway_timeout attempt=1 timeout_ms=800
+2026-09-18T09:42:23.351Z [W114] worker=w5 job=job-702 order=ord-B04 event=gateway_attempt attempt=2 key=1bc18867226dc431
+2026-09-18T09:42:23.600Z [W115] worker=w5 job=job-702 order=ord-B04 event=charged attempt=2 charge_id=ch_B04_2
+2026-09-18T09:42:23.620Z [W116] worker=w5 job=job-702 order=ord-B04 event=completed
+
+2026-09-18T09:42:29.990Z [W121] worker=w2 job=job-703 order=ord-C09 event=claimed claim_no=1
+2026-09-18T09:42:30.000Z [W122] worker=w2 job=job-703 order=ord-C09 event=gateway_attempt attempt=1 key=aeab39e788455134
+2026-09-18T09:42:30.360Z [W123] worker=w2 job=job-703 order=ord-C09 event=charged attempt=1 charge_id=ch_C09_1
+2026-09-18T09:42:30.380Z [W124] worker=w2 job=job-703 order=ord-C09 event=completed
+
+2026-09-18T09:42:34.990Z [W131] worker=w7 job=job-704 order=ord-D12 event=claimed claim_no=1
+2026-09-18T09:42:35.000Z [W132] worker=w7 job=job-704 order=ord-D12 event=gateway_attempt attempt=1 key=9e32a470b3f3b7c4
+2026-09-18T09:42:35.800Z [W133] worker=w7 job=job-704 order=ord-D12 event=gateway_timeout attempt=1 timeout_ms=800
+2026-09-18T09:42:37.301Z [W134] worker=w7 job=job-704 order=ord-D12 event=gateway_attempt attempt=2 key=91543ccc1b12ad56
+2026-09-18T09:42:37.520Z [W135] worker=w7 job=job-704 order=ord-D12 event=charged attempt=2 charge_id=ch_D12_1
+2026-09-18T09:42:37.540Z [W136] worker=w7 job=job-704 order=ord-D12 event=completed
