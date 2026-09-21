@@ -4,7 +4,7 @@ Complete every task below. Each task has its own isolated subdirectory beneath `
 
 Work only inside the provided battery workspace. Do not inspect PBM harness code, graders, reference solutions, the other platform's results, or prior PBM results.
 
-Complete the tasks in this order:
+Complete all seven tasks. You may sequence or coordinate them using the platform's native capabilities, but do not omit any task:
 
 1. `t01-mechanical-change`
 2. `t02-bounded-investigation`
