@@ -308,7 +308,7 @@ def _marker_ok(mode: str, workspace: Path) -> bool:
 
 def _quality(mode: str, workspace: Path) -> dict[str, Any]:
     if mode == "benchmark":
-        return pbm._run_grader(TASK_ID, workspace, VERSION)
+        return pbm_v4.grade_battery(workspace)
     passed = _canary_marker_ok(workspace)
     return {
         "pass": passed,
@@ -337,6 +337,7 @@ def _prepare_workspace(
             evidence_dir=evidence,
             allow_existing=platform == "room",
         )
+        pbm_v4.populate_battery_workspace(workspace, allow_existing=True)
         return
 
     _copy_canary_fixture(workspace)
