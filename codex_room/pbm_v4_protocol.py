@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterator
 
-from . import codex_usage, pbm, pbm_v4, pbm_v4_canary
+from . import codex_usage, pbm, pbm_context, pbm_v4, pbm_v4_canary
 
 VERSION = "v4"
 TASK_ID = pbm_v4.TASK_ID
@@ -1284,6 +1284,108 @@ def _comparison(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+
+def _comparison_markdown(comparison: dict[str, Any]) -> str:
+    desktop = comparison.get("desktop") or {}
+    room = comparison.get("room") or {}
+    meter = comparison.get("provider_usage_meter") or {}
+    before = meter.get("before") or {}
+    after = meter.get("after") or {}
+    delta = meter.get("delta") or {}
+
+    lines = [
+        f"# PBM v4 comparison — {comparison.get('run_id')}",
+        "",
+        f"- Comparable: **{str(bool(comparison.get('comparable'))).lower()}**",
+        f"- Same benchmark fingerprint: **{str(bool(comparison.get('same_fingerprint'))).lower()}**",
+        "",
+        "| Platform | Classification | Score | Tokens | Duration s |",
+        "|---|---|---:|---:|---:|",
+        (
+            f"| Desktop | {desktop.get('classification')} | {desktop.get('score')} | "
+            f"{desktop.get('total_tokens')} | {desktop.get('duration_seconds')} |"
+        ),
+        (
+            f"| Room | {room.get('classification')} | {room.get('score')} | "
+            f"{room.get('total_tokens')} | {room.get('duration_seconds')} |"
+        ),
+        "",
+        f"- Room/Desktop token ratio: {comparison.get('room_to_desktop_total_token_ratio')}",
+        "",
+        "## Provider usage meter",
+        "",
+    ]
+
+    before_usage = before.get("account_usage") or {}
+    after_usage = after.get("account_usage") or {}
+    before_summary = before_usage.get("summary") or {}
+    after_summary = after_usage.get("summary") or {}
+    lines.extend(
+        [
+            f"- Before captured: {before.get('captured_at') or 'unavailable'}",
+            f"- After captured: {after.get('captured_at') or 'unavailable'}",
+            (
+                "- Account usage status: "
+                f"{before_usage.get('status', 'unavailable')} → "
+                f"{after_usage.get('status', 'unavailable')}"
+            ),
+            (
+                "- Lifetime tokens: "
+                f"{before_summary.get('lifetime_tokens', 'unavailable')} → "
+                f"{after_summary.get('lifetime_tokens', 'unavailable')} "
+                f"(Δ {delta.get('lifetime_tokens_delta', 'unavailable')})"
+            ),
+            "",
+            "| Limit | Window | Before used % | After used % | Δ percentage points | Reset changed |",
+            "|---|---|---:|---:|---:|---|",
+        ]
+    )
+
+    windows = delta.get("rate_limit_window_deltas") or []
+    if windows:
+        for item in windows:
+            label = item.get("limit_name") or item.get("limit_id") or "default"
+            duration = item.get("window_duration_mins")
+            window = item.get("window") or "window"
+            window_label = (
+                f"{window} ({duration} min)" if duration is not None else str(window)
+            )
+            change = item.get("delta_percentage_points")
+            lines.append(
+                f"| {label} | {window_label} | "
+                f"{item.get('before_used_percent')} | {item.get('after_used_percent')} | "
+                f"{change if change is not None else 'n/a'} | "
+                f"{str(bool(item.get('reset_changed'))).lower()} |"
+            )
+    else:
+        lines.append("| unavailable | — | — | — | — | — |")
+
+    daily = delta.get("daily_usage_bucket_deltas") or []
+    if daily:
+        lines.extend(
+            [
+                "",
+                "| Account-activity date | Before tokens | After tokens | Δ tokens |",
+                "|---|---:|---:|---:|",
+            ]
+        )
+        for item in daily:
+            lines.append(
+                f"| {item.get('start_date')} | {item.get('before_tokens')} | "
+                f"{item.get('after_tokens')} | {item.get('delta_tokens')} |"
+            )
+
+    lines.extend(
+        [
+            "",
+            "The provider meter is corroborating account-level context. "
+            "Measured Desktop/Room rollout accounting remains the primary PBM execution metric.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+
 def bundle(run_id: str) -> dict[str, Any]:
     state = _load_state(run_id)
     root = pbm.run_root(run_id)
@@ -1375,8 +1477,13 @@ def _finalize_if_ready(run_id: str) -> dict[str, Any]:
         state = _load_state(run_id)
         comparison = _comparison(state)
         root = pbm.run_root(run_id)
-        _write_json(root / "pbm-v4-protocol-comparison.json", comparison)
         pbm_v4._capture_context(run_id, "protocol-complete")
+        comparison["provider_usage_meter"] = pbm_context.protocol_usage_meter_summary(root)
+        _write_json(root / "pbm-v4-protocol-comparison.json", comparison)
+        (root / "pbm-v4-protocol-comparison.md").write_text(
+            _comparison_markdown(comparison),
+            encoding="utf-8",
+        )
         with _protocol_lock():
             state = _load_state(run_id)
             state["complete"] = True
