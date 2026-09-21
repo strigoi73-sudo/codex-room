@@ -382,7 +382,8 @@ def complete_room(run_id: str) -> dict[str, Any]:
 
     round_status = str(round_item.get("status") or "")
     room_status = str(room.get("status") or "")
-    if round_status in {"active", "preparing"} and room_status == "running":
+    invalid = room_intervention_reasons(round_item)
+    if round_status in {"active", "preparing"} and room_status == "running" and not invalid:
         raise PBMV4Error("Room benchmark Round is still active")
 
     round_id = str(round_item["id"])
