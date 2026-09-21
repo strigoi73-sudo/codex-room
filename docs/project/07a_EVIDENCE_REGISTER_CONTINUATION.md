@@ -2409,3 +2409,54 @@ The platform-outcome design behaved as intended: Desktop independently chose to 
 The provider/account usage meter was corroborating context only. It reported unchanged lifetime-token accounting across the snapshots while the primary rate-limit window increased by 15 percentage points and the secondary window by 2 percentage points. The PBM comparison therefore continues to rely on measured execution usage as its primary token metric, not the account-level meter delta.
 
 **Assessment:** PBM v5 has now completed its first real Desktop-versus-Room performance comparison successfully. I-027 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED / FIRST LIVE COMPARISON COMPLETE**.
+
+
+### E-175 — Controlled PBM v5 C-only Room comparison
+**Date:** 2026-09-21  
+**Status:** VERIFIED
+
+Controlled run `pbm-v5-c-only-20260921T134611828882Z` reused the already-verified Desktop arm from E-174 and executed a new Room arm under a mechanically enforced C-only condition.
+
+Control condition:
+
+- user mission remained byte-for-byte identical to canonical PBM v5;
+- Agent C was the sole permitted measured participant;
+- delegation to Agent A or Agent B was prohibited;
+- any measured A/B execution would invalidate and stop the run;
+- ordinary Agent-C-only continuations, native tools, deterministic evidence retrieval, and cognition selection remained available;
+- controlled-variant fingerprint: `1822ffd7aed5956e3ab931889e40b647a0e64b14bbfa89eb3daa82996a58c5a4`;
+- canonical benchmark fingerprint remained `492f8ce7d2cc49094abe993db7a20cad2a355ef277a90efd41fe26697b0cbc1b`.
+
+Final result:
+
+- Desktop baseline: **VALID / 100**, **371,378 tokens**, **292.069 s**;
+- C-only Room: **VALID / 100**, **644,255 tokens**, **327.556 s**;
+- C-only measured executions: **5**, all Agent C;
+- peer invocations: **0**;
+- C/Desktop token ratio: **1.7348**;
+- C/Desktop duration ratio: **1.1215**;
+- comparison: **comparable = true**.
+
+Relative to the ordinary three-agent Room result in E-174, C-only reduced measured tokens from **1,473,150** to **644,255** (**56.27% lower**) and duration from **628.984 s** to **327.556 s** (**47.92% lower**) while preserving score 100.
+
+Execution decomposition from the exported Room evidence:
+
+- execution 1: **22,205 tokens**, 0 tool calls;
+- execution 2: **25,561 tokens**, 0 tool calls;
+- execution 3: **35,711 tokens**, 0 tool calls;
+- execution 4: **42,070 tokens**, 0 tool calls;
+- execution 5: **518,708 tokens**, 18 tool calls, 1 failed tool call, 2 file changes.
+
+Thus the first four evidence/inspection continuations consumed **125,547 tokens (19.49%)**, while the final tool-bearing implementation/verification execution consumed **80.51%** of the measured C-only total.
+
+The aggregate measured C-only usage was **633,933 input tokens**, **10,322 output tokens**, and **644,255 total tokens**. Cached input was **546,816 tokens**, or **86.26% of measured input**. In the final execution alone, 490,496 of 510,005 input tokens were cached-input tokens.
+
+Interpretation:
+
+1. The large E-174 Room/Desktop gap was not caused solely by intrinsic single-agent Room overhead. Multi-agent delegation, audits, and coordination contributed substantially: removing A/B cut the Room token total by more than half.
+2. A material residual remained. C-only still used **272,877 more measured tokens than Desktop** (**73.48% more**) and took **35.487 s longer** (**12.15% more**).
+3. Even if the first four evidence-only continuation costs were hypothetically eliminated with all else unchanged, the final C execution alone was **518,708 tokens**, or **1.3967×** the entire Desktop baseline. Therefore continuation count is not the only remaining cause.
+4. The dominant residual is concentrated in a long tool-bearing C execution with repeated/cached input context. This points toward provider-turn/context replay and per-tool-loop prompt weight as the next architectural economy target, not merely peer-count reduction.
+5. The account-level usage meter again remained corroborating only; primary comparison remains measured execution usage.
+
+**Assessment:** The controlled C-only experiment isolates two separable efficiency penalties: a large coordination/delegation penalty in ordinary three-agent Room operation, plus a smaller but still material single-agent execution/context penalty versus Desktop. No PBM redesign is indicated by this result.
