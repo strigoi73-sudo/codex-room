@@ -16,8 +16,8 @@ For both Desktop and Room:
 
 1. Bind the exact current PBM v4 benchmark fingerprint and canonical repository HEAD before measured work starts.
 2. Join the same active PBM v4 pair automatically. The principal does not relay a run id between platforms.
-3. Prepare the platform workspace from the same versioned mission fixture. Canary mode substitutes the same tiny canary fixture on both platforms while retaining the production v4 fingerprint binding.
-4. Launch one fresh measured execution with the frozen mission instruction:
+3. Prepare the platform workspace from the same versioned seven-task battery. Canary mode substitutes the same tiny canary fixture on both platforms while retaining the production v4 fingerprint binding.
+4. Launch one fresh measured execution with the frozen battery instruction:
    `Read BENCHMARK.md and execute it exactly. Do not ask me questions. When complete, stop.`
 5. Supply no substantive principal guidance after launch. Native approval controls are permitted only when they add no benchmark substance.
 6. Do not coordinate with, wait for, wake, or control the other platform.
@@ -39,7 +39,7 @@ Room must hand its own measured Room execution to the detached deterministic Roo
 
 ## Modes
 
-**Benchmark mode** is the production integrated mission and is allowed only after `benchmarks/pbm/CURRENT` is deliberately promoted to `v4`.
+**Benchmark mode** is the production seven-task cross-domain battery and is allowed only after `benchmarks/pbm/CURRENT` is deliberately promoted to `v4`.
 
 **Canary mode** uses the same controller/adapters and the same measured launch boundaries with a tiny marker mission. It exists to verify the protocol before full paid execution.
 
