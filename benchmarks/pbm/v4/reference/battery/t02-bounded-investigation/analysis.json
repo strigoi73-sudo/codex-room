@@ -1,0 +1,11 @@
+{
+  "connect_timeout_seconds": 4,
+  "read_timeout_seconds": 11,
+  "request_timeout_seconds": 15,
+  "maximum_attempts": 3,
+  "evidence_files": [
+    "config/defaults.json",
+    "docs/ops.md",
+    "src/service.py"
+  ]
+}
