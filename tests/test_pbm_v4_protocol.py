@@ -258,3 +258,148 @@ def test_status_does_not_finalize_without_both_results(tmp_path, monkeypatch) ->
     assert result["complete"] is False
     assert result["active"] is True
 
+def test_provisional_desktop_id_resolves_unique_persisted_rollout(
+    tmp_path, monkeypatch
+) -> None:
+    rollout = tmp_path / "rollout-child.jsonl"
+    rollout.write_text("{}\n", encoding="utf-8")
+
+    def missing_exact(**_kwargs):
+        raise pbm_v4_protocol.codex_usage.RolloutUsageError("thread not found")
+
+    monkeypatch.setattr(
+        pbm_v4_protocol.codex_usage,
+        "select_rollout",
+        missing_exact,
+    )
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_desktop_rollout_candidates_since",
+        lambda _desktop: [(rollout, "019f-real-thread")],
+    )
+
+    observed_rollout, observed_thread = pbm_v4_protocol._resolve_desktop_rollout(
+        {"prepared_at": "2026-09-21T03:19:13-05:00"},
+        "client-new-thread:temporary",
+    )
+
+    assert observed_rollout == rollout
+    assert observed_thread == "019f-real-thread"
+
+
+def test_provisional_desktop_id_fails_closed_on_ambiguous_rollouts(
+    tmp_path, monkeypatch
+) -> None:
+    first = tmp_path / "rollout-first.jsonl"
+    second = tmp_path / "rollout-second.jsonl"
+    first.write_text("{}\n", encoding="utf-8")
+    second.write_text("{}\n", encoding="utf-8")
+
+    def missing_exact(**_kwargs):
+        raise pbm_v4_protocol.codex_usage.RolloutUsageError("thread not found")
+
+    monkeypatch.setattr(
+        pbm_v4_protocol.codex_usage,
+        "select_rollout",
+        missing_exact,
+    )
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_desktop_rollout_candidates_since",
+        lambda _desktop: [
+            (first, "019f-first"),
+            (second, "019f-second"),
+        ],
+    )
+
+    try:
+        pbm_v4_protocol._resolve_desktop_rollout(
+            {"prepared_at": "2026-09-21T03:19:13-05:00"},
+            "client-new-thread:temporary",
+        )
+    except pbm_v4_protocol.PBMV4ProtocolError as exc:
+        assert "ambiguous" in str(exc)
+    else:
+        raise AssertionError("ambiguous provisional Desktop mapping must fail closed")
+
+
+def test_status_can_recover_provisional_desktop_before_pair_finalization(
+    tmp_path, monkeypatch
+) -> None:
+    run_id = "pbm-v4-canary-protocol-provisional-recovery"
+    state_path = tmp_path / "state.json"
+    desktop_result = tmp_path / "desktop-result.json"
+    room_result = tmp_path / "room-result.json"
+
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_state_path",
+        lambda _run_id: state_path,
+    )
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_result_path",
+        lambda _state, arm: desktop_result if arm == "desktop" else room_result,
+    )
+
+    pbm_v4_protocol._write_json(
+        state_path,
+        {
+            "run_id": run_id,
+            "mode": "canary",
+            "benchmark_fingerprint": "benchmark",
+            "canary_fingerprint": "canary",
+            "desktop": {
+                "status": "monitoring",
+                "thread_id": "client-new-thread:temporary",
+            },
+            "room": {"status": "complete", "classification": "VALID"},
+            "complete": False,
+            "aborted": False,
+        },
+    )
+    pbm_v4_protocol._write_json(room_result, {"classification": "VALID"})
+
+    recovered = []
+
+    def fake_recover(candidate_run_id):
+        recovered.append(candidate_run_id)
+        state = pbm_v4_protocol._read_json(state_path)
+        state["desktop"] = {
+            "status": "complete",
+            "classification": "VALID",
+            "thread_id": "019f-real-thread",
+            "provisional_thread_id": "client-new-thread:temporary",
+        }
+        pbm_v4_protocol._write_json(state_path, state)
+        pbm_v4_protocol._write_json(
+            desktop_result,
+            {"classification": "VALID"},
+        )
+        return True
+
+    def fake_finalize(candidate_run_id):
+        state = pbm_v4_protocol._read_json(state_path)
+        state["complete"] = True
+        state["comparison"] = {"comparable": True}
+        pbm_v4_protocol._write_json(state_path, state)
+        return {"run_id": candidate_run_id, "complete": True}
+
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_recover_desktop_if_ready",
+        fake_recover,
+    )
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_finalize_if_ready",
+        fake_finalize,
+    )
+
+    result = pbm_v4_protocol.status(run_id)
+
+    assert recovered == [run_id]
+    assert result["complete"] is True
+    assert result["desktop"]["thread_id"] == "019f-real-thread"
+    assert result["desktop"]["provisional_thread_id"] == "client-new-thread:temporary"
+
