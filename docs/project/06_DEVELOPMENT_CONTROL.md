@@ -6,17 +6,42 @@
 
 ## Operator summary
 
-- **Where are we?** I-027 — **PBM v5 platform-outcome benchmark** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED / FIRST LIVE COMPARISON COMPLETE** under D-050.
-- **What just happened?** The first real PBM v5 run, `pbm-v5-benchmark-20260921T130735334526Z`, completed with Desktop **VALID / 100** and Room **VALID / 100**, every retained task scoring 100 on both platforms, matching benchmark fingerprints, `comparable: true`, and no finalization error.
-- **Measured result on the frozen seven-task battery:** Desktop used **371,378 tokens in 292.069 s** with one measured top-level thread and zero descendants. Room used **1,473,150 tokens in 628.984 s** across 32 measured executions with 6 peer invocations. Room/Desktop measured-token ratio was **3.9667**.
-- **Interpretation boundary:** This is a result for the frozen PBM v5 workload, not a universal product ranking. It demonstrates equal full-credit correctness under the benchmark while Desktop was materially more token- and time-efficient on this run.
-- **What is next?** The controlled C-only follow-up is complete (E-175). The next development target is Room execution/continuation economy: reduce unnecessary evidence-only continuations, per-tool-loop context replay, and coordination overhead before buying another PBM run.
-- **What is blocked?** Nothing is blocked in I-027.
-- **What are we deliberately not doing?** We are not changing PBM v5, buying another benchmark run before an architectural economy improvement exists, or treating the account-level usage meter as the primary token measurement.
+- **Where are we?** I-027 PBM v5 is complete. The first context-economy repair derived from E-175 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED** as PR #200 (E-176). The next work program is I-028 — **Codex Room utility gate**.
+- **What just happened?** PBM v5 showed equal full-credit correctness while Desktop used materially fewer measured tokens/time than ordinary Room; the controlled C-only follow-up isolated a large coordination penalty plus a residual single-agent context/tool-loop penalty. PR #200 repaired two demonstrated assignment-thread economy defects without changing PBM semantics.
+- **Why the priority changed:** current evidence does not demonstrate that Codex Room produces better practical outcomes than Codex Desktop on ordinary task execution. Further optimization is not sufficient justification by itself; the product must demonstrate value attributable to its persistent multi-agent organization.
+- **What is next?** Design and run I-028 as a product-value gate, not another token benchmark. Test cases must target capabilities Room is specifically intended to add: independent epistemic analysis, durable multi-session organizational continuity, meaningful implementation/review separation, or standing-objective coordination. Success must be judged by practical benefit, not agent activity.
+- **What is blocked?** Nothing technical is blocked.
+- **What are we deliberately not doing?** We are not buying another PBM run, adding more orchestration complexity, or continuing efficiency work merely to improve benchmark numbers before Codex Room demonstrates practical utility over Desktop.
 
 ## Current development state
 
+### I-028 — Codex Room utility gate
+
+**Scope:** [product-value validation / Room-specific organizational utility / Desktop comparison without handicapping either platform]
+
+**Work state:** PLANNED / NEXT
+
+**Reality / evidence:** EXPLORATORY; current PBM evidence shows no demonstrated ordinary-task quality advantage over Desktop
+
+**Evidence basis:** E-174, E-175, E-176
+
+Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
+
+The gate must test situations where Room's architecture should matter intrinsically rather than merely giving both products another generic coding battery. Candidate dimensions are:
+
+- independent epistemic analysis where premature convergence or correlated error is a meaningful risk;
+- durable organizational continuity across separate principal interactions or evolving objectives;
+- implementation plus genuinely independent skeptical review where the second perspective can catch consequential defects or alternatives;
+- standing objectives where persistent coordination materially reduces principal re-briefing or manual task management.
+
+Desktop must remain free to use its own native capabilities, including subagents, whenever it chooses. Room must likewise use normal A/B/C behavior. The test must not handicap Desktop or prescribe Room choreography.
+
+A positive result requires demonstrated practical benefit such as materially better answer/output quality, materially better consequential-error detection, materially better continuity, materially less human coordination burden, or a workflow/capability that Desktop cannot reproduce with comparable convenience. More agents, more messages, more provenance, or greater token spend are not success criteria.
+
+If fair utility testing fails to establish a meaningful advantage, the project should explicitly consider simplifying, repurposing, or stopping rather than continuing orchestration work by inertia.
+
 ### I-027 — PBM v5 platform-outcome benchmark
+
 
 **Scope:** [platform-level benchmark / equivalent mission and fixtures / native internal orchestration / aggregate platform measurement]
 
