@@ -64,6 +64,40 @@ def test_v4_battery_mission_names_every_task_and_excludes_broken_t07() -> None:
     assert "t07-spec-repair" not in mission
 
 
+def test_v4_battery_workspace_contains_all_task_fixtures_and_prompts(tmp_path) -> None:
+    workspace = tmp_path / "battery"
+
+    pbm_v4.populate_battery_workspace(workspace)
+
+    assert (workspace / "BENCHMARK.md").is_file()
+    for task_id in pbm_v4.BATTERY_TASK_IDS:
+        task_root = workspace / "tasks" / task_id
+        assert task_root.is_dir()
+        assert (task_root / "TASK.md").is_file()
+
+
+def test_v4_battery_grade_aggregates_task_specific_graders(tmp_path, monkeypatch) -> None:
+    workspace = tmp_path / "battery"
+    pbm_v4.populate_battery_workspace(workspace)
+
+    def fake_grader(task_id, task_workspace, version):
+        assert task_workspace == workspace / "tasks" / task_id
+        assert version == "v1"
+        return {"pass": True, "score": 100, "checks": [{"name": task_id, "ok": True}]}
+
+    monkeypatch.setattr(pbm._run_grader, "__wrapped__", None, raising=False)
+    monkeypatch.setattr(pbm, "_run_grader", fake_grader)
+
+    result = pbm_v4.grade_battery(workspace)
+
+    assert result["pass"] is True
+    assert result["score"] == 100
+    assert result["task_count"] == len(pbm_v4.BATTERY_TASK_IDS)
+    assert [item["name"] for item in result["checks"]] == list(
+        pbm_v4.BATTERY_TASK_IDS
+    )
+
+
 def test_v4_room_intervention_detection_is_fail_closed() -> None:
     round_item = {
         "starting_agent": "agent_c",
