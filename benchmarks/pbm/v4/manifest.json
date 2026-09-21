@@ -5,26 +5,35 @@
   "schema_version": 4,
   "tasks": [
     {
-      "id": "m01-integrated-mission",
-      "title": "Integrated fulfillment repair and delivery mission",
-      "category": "integrated",
-      "prompt_file": "prompts/m01-integrated-mission.txt",
-      "fixture_dir": "fixtures/m01-integrated-mission",
-      "grader_file": "graders/m01-integrated-mission.py",
+      "id": "m01-task-battery",
+      "title": "Cross-domain task battery",
+      "category": "battery",
+      "prompt_file": "prompts/m01-task-battery.txt",
+      "fixture_dir": "fixtures/m01-task-battery",
+      "grader_file": "graders/m01-task-battery.py",
       "room_max_turns": 80
     }
   ],
+  "battery_tasks": [
+    "t01-mechanical-change",
+    "t02-bounded-investigation",
+    "t03-localized-bug",
+    "t04-small-feature",
+    "t05-state-mutation-bug",
+    "t06-constrained-design",
+    "t08-integrated-cli"
+  ],
+  "additional_asset_versions": [
+    "v1"
+  ],
   "coverage_requirements": [
-    "public_tests",
-    "codec_contract",
-    "inventory_atomicity",
-    "summary_contract",
-    "payload_integration",
-    "cli_stdout",
-    "cli_output_file",
-    "cli_error_atomicity",
-    "storage_decision",
-    "completion_artifacts"
+    "t01-mechanical-change",
+    "t02-bounded-investigation",
+    "t03-localized-bug",
+    "t04-small-feature",
+    "t05-state-mutation-bug",
+    "t06-constrained-design",
+    "t08-integrated-cli"
   ],
   "v4_protocol": {
     "principal_initiations_per_platform": 1,
