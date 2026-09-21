@@ -6,10 +6,10 @@
 
 ## Operator summary
 
-- **Where are we?** I-026 — **PBM v4 independent complementary one-paste benchmarks** — is **IN PROGRESS / DECIDED / NOT IMPLEMENTED** under D-048. PBM v3's first substantial live run was aborted after it demonstrated architectural and benchmark-integrity failures; do not run v3 again for performance comparison.
+- **Where are we?** I-026 — **PBM v4 independent complementary one-paste benchmarks** — is **IN PROGRESS / IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / LIVE CANARIES PENDING** under D-048. PBM v3's first substantial live run was aborted after it demonstrated architectural and benchmark-integrity failures; do not run v3 again for performance comparison.
 - **What just changed?** Live run `pbm-v3-20260920T234823Z` proved that the Desktop controller could not durably survive Room-side waits without repeated principal resume prompts, that v3 validity handling could advance after an observer-stopped Room, and that frozen task t07 contains an internally inconsistent specification while its grader can still award full credit. The principal aborted the run and selected a replacement architecture: one independent one-paste benchmark for Desktop and one independent one-paste benchmark for Room.
-- **Verification state:** E-167 records the live v3 failure/postmortem. Earlier E-165/E-166 verification remains historically valid for the exact components it tested, but it did not establish live end-to-end protocol viability. No valid Desktop-versus-Room performance conclusion is claimed from the aborted v3 run.
-- **What is next?** Design, implement, and verify PBM v4 as two independent complementary harnesses sharing one frozen integrated mission, equivalent starting state, one external deterministic grader, explicit VALID/INVALID/FAILED semantics, first-class status/abort/evidence-bundle operations, and deterministic post-run comparison.
+- **Verification state:** E-167 records the live v3 failure/postmortem. E-168 records PBM v4 exact-head deterministic verification: mission/grader reference audit PASS, focused v4 tests 7 passed, repository fast verification PASS (Linux 63, Windows 118, browser 9), clean tree, and zero file differences from exact tested feature head to canonical merge. Live one-paste Desktop and Room canaries remain unperformed.
+- **What is next?** Execute bounded live one-paste canaries for Desktop and Room, then verify `status`, `abort`, and `bundle` on real v4 state. Do not promote `CURRENT` or run a full paid comparison until those gates pass.
 - **What is blocked?** No conceptual blocker. The next gate is implementation plus deterministic mission/grader audit and a real delayed end-to-end canary before any full paid comparison.
 - **What are we deliberately not doing?** We are not patching the v3 cross-platform controller, not reviving alternating live Desktop↔Room orchestration, and not treating a model conversation as a durable workflow daemon.
 
@@ -21,15 +21,17 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** DECIDED / NOT IMPLEMENTED
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / LIVE CANARIES PENDING
 
 **Decision:** D-048
 
-**Evidence:** E-167
+**Evidence:** E-167, E-168
 
 The principal requires two complementary benchmarks with exactly one substantive benchmark paste per platform.
 
-Planned architecture:
+PBM v4 implementation is now merged on canonical `main` at `a1144f27cc2fe196ed0ecd2935a30c76989a3f35`. The exact tested feature head `3074984340777ed906edf643c8deb2358c701827` passed deterministic verification, and Git comparison from tested head to merge showed zero file differences. `benchmarks/pbm/CURRENT` intentionally remains `v3` until live canary and operations gates pass.
+
+Implemented architecture:
 
 - one frozen integrated benchmark mission and equivalent prepared starting fixture for both products;
 - **Desktop:** one fresh top-level native Codex Desktop task, one principal instruction, no benchmark follow-up prompts;
@@ -49,9 +51,9 @@ Promotion gate:
 2. grader coverage audit passes;
 3. focused deterministic tests pass;
 4. repository routine verification passes;
-5. one-paste Desktop canary passes without a second benchmark instruction;
-6. one-paste Room canary passes without substantive principal consultation;
-7. abort/status/evidence-bundle paths are verified;
+5. one-paste Desktop canary passes without a second benchmark instruction — **PENDING**;
+6. one-paste Room canary passes without substantive principal consultation — **PENDING**;
+7. abort/status/evidence-bundle paths are verified — **PENDING LIVE PATH CHECK**;
 8. only then may `benchmarks/pbm/CURRENT` move to v4 and unqualified **Run PBM** resume.
 
 
