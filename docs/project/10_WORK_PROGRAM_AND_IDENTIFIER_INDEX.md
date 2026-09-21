@@ -74,6 +74,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-024` | PBM v2 contextual baseline — run/task-pair provider usage and environment snapshots | Development Control / D-046 |
 | `I-025` | PBM v3 one-paste workflow — one initial instruction per platform with fresh task contexts | Development Control / D-047 |
 | `I-026` | PBM v4 common protocol with thin platform adapters — one shared benchmark procedure, one principal initiation per platform, deterministic pairing/comparison | Development Control / D-049 / E-167–E-169 |
+| `I-027` | PBM v5 platform-outcome benchmark — equivalent missions with unconstrained native internal orchestration | Development Control / D-050 |
 
 ## 4. Decision and evidence identifiers
 
