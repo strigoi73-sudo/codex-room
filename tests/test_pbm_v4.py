@@ -40,6 +40,9 @@ def test_v4_battery_asset_audit_covers_every_frozen_task() -> None:
     assert result["ok"] is True
     assert result["benchmark_version"] == "v4"
     assert result["task_count"] == 7
+    assert result["reference_score"] == 100
+    assert set(result["reference_scores"]) == set(pbm_v4.BATTERY_TASK_IDS)
+    assert all(score == 100 for score in result["reference_scores"].values())
     assert [item["id"] for item in result["tasks"]] == list(
         pbm_v4.BATTERY_TASK_IDS
     )
