@@ -308,7 +308,7 @@ def _marker_ok(mode: str, workspace: Path) -> bool:
 
 def _quality(mode: str, workspace: Path) -> dict[str, Any]:
     if mode == "benchmark":
-        return pbm._run_grader(TASK_ID, workspace, VERSION)
+        return pbm_v4.grade_battery(workspace)
     passed = _canary_marker_ok(workspace)
     return {
         "pass": passed,
@@ -337,6 +337,7 @@ def _prepare_workspace(
             evidence_dir=evidence,
             allow_existing=platform == "room",
         )
+        pbm_v4.populate_battery_workspace(workspace, allow_existing=True)
         return
 
     _copy_canary_fixture(workspace)
@@ -628,6 +629,24 @@ def desktop_worker(run_id: str, timeout_seconds: int = 3600) -> dict[str, Any]:
         raise
 
 
+def _desktop_intervention_reasons(messages: list[str]) -> list[str]:
+    """Treat child user.text records as post-launch intervention evidence.
+
+    Native Codex fresh-task delegation does not serialize the delegated prompt as
+    a user.text record inside the measured child rollout. The deterministic
+    controller already owns the exact delegated prompt and binds the returned
+    child thread id before monitoring starts. Therefore the child rollout's
+    user.text surface is reserved for detecting prohibited follow-up guidance.
+    """
+
+    if not messages:
+        return []
+    return [
+        "Desktop measured child received post-launch user guidance: "
+        f"observed {len(messages)} user message(s)"
+    ]
+
+
 def desktop_finish(run_id: str, thread_id: str) -> dict[str, Any]:
     state = _load_state(run_id)
     if state.get("benchmark_fingerprint") != pbm.benchmark_fingerprint(VERSION):
@@ -649,14 +668,8 @@ def desktop_finish(run_id: str, thread_id: str) -> dict[str, Any]:
     workspace = Path(str(desktop["workspace"]))
     expected_prompt = str(desktop["delegated_prompt"])
 
-    invalid: list[str] = []
+    invalid = _desktop_intervention_reasons(messages)
     failed: list[str] = []
-    if len(messages) != 1:
-        invalid.append(
-            f"expected exactly one delegated Desktop task message; observed {len(messages)}"
-        )
-    elif messages[0].strip() != expected_prompt:
-        invalid.append("Desktop delegated task message did not match the protocol prompt")
 
     cwd = usage["thread"].get("cwd")
     if isinstance(cwd, str):
@@ -1053,6 +1066,22 @@ def room_worker(run_id: str, timeout_seconds: int = 3600) -> dict[str, Any]:
         raise
 
 
+def _battery_task_quality(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    quality = result.get("quality") or {}
+    summary: dict[str, dict[str, Any]] = {}
+    for item in quality.get("checks") or []:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if not isinstance(name, str) or name not in pbm_v4.BATTERY_TASK_IDS:
+            continue
+        summary[name] = {
+            "pass": bool(item.get("ok")),
+            "score": item.get("score"),
+        }
+    return summary
+
+
 def _comparison(state: dict[str, Any]) -> dict[str, Any]:
     desktop = _read_json(_result_path(state, "desktop"))
     room = _read_json(_result_path(state, "room"))
@@ -1096,6 +1125,9 @@ def _comparison(state: dict[str, Any]) -> dict[str, Any]:
             "classification": desktop.get("classification"),
             "score": (desktop.get("quality") or {}).get("score"),
             "pass": (desktop.get("quality") or {}).get("pass"),
+            "task_quality": (
+                _battery_task_quality(desktop) if state["mode"] == "benchmark" else None
+            ),
             "total_tokens": d_tokens,
             "duration_seconds": desktop.get("duration_seconds"),
         },
@@ -1103,6 +1135,9 @@ def _comparison(state: dict[str, Any]) -> dict[str, Any]:
             "classification": room.get("classification"),
             "score": (room.get("quality") or {}).get("score"),
             "pass": (room.get("quality") or {}).get("pass"),
+            "task_quality": (
+                _battery_task_quality(room) if state["mode"] == "benchmark" else None
+            ),
             "total_tokens": r_tokens,
             "duration_seconds": room.get("duration_seconds"),
             "peer_invocations": (room.get("usage") or {}).get("peer_invocations"),

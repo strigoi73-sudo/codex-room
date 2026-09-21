@@ -20,7 +20,16 @@ from typing import Any
 from . import codex_usage, pbm, pbm_context
 
 VERSION = "v4"
-TASK_ID = "m01-integrated-mission"
+TASK_ID = "m01-task-battery"
+BATTERY_TASK_IDS = (
+    "t01-mechanical-change",
+    "t02-bounded-investigation",
+    "t03-localized-bug",
+    "t04-small-feature",
+    "t05-state-mutation-bug",
+    "t06-constrained-design",
+    "t08-integrated-cli",
+)
 PASTE = "Read BENCHMARK.md and execute it exactly. Do not ask me questions. When complete, stop."
 DEFAULT_ROOM_BASE = "http://127.0.0.1:8765"
 V4_STATE_DIR = "v4"
@@ -116,10 +125,79 @@ def _overlay_reference(source: Path, destination: Path) -> None:
             shutil.copy2(item, target)
 
 
+def populate_battery_workspace(
+    workspace: Path,
+    *,
+    allow_existing: bool = False,
+) -> None:
+    """Populate one measured workspace with the seven-task PBM v4 battery."""
+
+    workspace.mkdir(parents=True, exist_ok=True)
+    mission_source = pbm.version_root(VERSION) / "fixtures" / TASK_ID / "BENCHMARK.md"
+    mission_target = workspace / "BENCHMARK.md"
+    if mission_target.exists():
+        if not allow_existing and mission_target.read_bytes() != mission_source.read_bytes():
+            raise PBMV4Error(f"battery mission would overwrite existing file: {mission_target}")
+    else:
+        shutil.copy2(mission_source, mission_target)
+
+    tasks_root = workspace / "tasks"
+    tasks_root.mkdir(parents=True, exist_ok=True)
+    v1_root = pbm.version_root("v1")
+
+    for task_id in BATTERY_TASK_IDS:
+        info = pbm.task_info(task_id, "v1")
+        source = v1_root / str(info["fixture_dir"])
+        destination = tasks_root / task_id
+        if destination.exists():
+            if allow_existing:
+                continue
+            raise PBMV4Error(f"battery task workspace already exists: {destination}")
+        shutil.copytree(source, destination)
+        prompt = (v1_root / str(info["prompt_file"])).read_text(encoding="utf-8").rstrip()
+        (destination / "TASK.md").write_text(prompt + "\n", encoding="utf-8")
+
+
+def grade_battery(workspace: Path) -> dict[str, Any]:
+    """Run the frozen task-specific graders and return one battery result."""
+
+    checks: list[dict[str, Any]] = []
+    scores: list[float] = []
+    for task_id in BATTERY_TASK_IDS:
+        task_workspace = workspace / "tasks" / task_id
+        result = pbm._run_grader(task_id, task_workspace, "v1")
+        score = float(result["score"])
+        scores.append(score)
+        checks.append(
+            {
+                "name": task_id,
+                "ok": result.get("pass") is True,
+                "score": result["score"],
+                "result": result,
+            }
+        )
+
+    passed = all(bool(item["ok"]) for item in checks)
+    score = round(sum(scores) / len(scores)) if scores else 0
+    return {
+        "pass": passed,
+        "score": score,
+        "checks": checks,
+        "task_count": len(checks),
+    }
+
+
 def audit_assets() -> dict[str, Any]:
     manifest = pbm.load_manifest(VERSION)
-    if len(manifest["tasks"]) != 1 or manifest["tasks"][0]["id"] != TASK_ID:
-        raise PBMV4Error("PBM v4 must contain exactly the integrated mission")
+    if [item["id"] for item in manifest["tasks"]] != [TASK_ID]:
+        raise PBMV4Error("PBM v4 manifest must expose the task battery as one measured mission")
+    if tuple(manifest.get("battery_tasks") or []) != BATTERY_TASK_IDS:
+        raise PBMV4Error("PBM v4 battery task list does not match the frozen task set")
+    if list(manifest.get("coverage_requirements") or []) != list(BATTERY_TASK_IDS):
+        raise PBMV4Error("PBM v4 coverage requirements must match the battery tasks")
+    if "t07-spec-repair" in BATTERY_TASK_IDS:
+        raise PBMV4Error("The known-inconsistent v1 t07 specification must not be in PBM v4")
+
     protocol = manifest.get("v4_protocol") or {}
     if protocol.get("cross_platform_coordination") is not False:
         raise PBMV4Error("PBM v4 must forbid live cross-platform coordination")
@@ -134,36 +212,58 @@ def audit_assets() -> dict[str, Any]:
     if protocol.get("automatic_pairing") is not True:
         raise PBMV4Error("PBM v4 must pair independent platform arms without principal relay")
 
-    root = pbm.version_root(VERSION)
-    fixture = root / manifest["tasks"][0]["fixture_dir"]
-    reference = root / "reference" / TASK_ID
-    spec = (fixture / "CODEC_SPEC.md").read_text(encoding="utf-8")
-    mission = (fixture / "BENCHMARK.md").read_text(encoding="utf-8")
-    if "encode([])" not in spec or "raises `ValueError`" not in spec:
-        raise PBMV4Error("Codec specification does not explicitly resolve the empty-list case")
-    if "non-empty JSON list" not in mission:
-        raise PBMV4Error("Integrated CLI contract must explicitly reject the empty order list")
+    v1_root = pbm.version_root("v1")
+    reference_root = pbm.version_root(VERSION) / "reference" / "battery"
+    task_inventory: list[dict[str, str]] = []
+    reference_scores: dict[str, int | float] = {}
 
-    with tempfile.TemporaryDirectory(prefix="pbm-v4-audit-") as temp_dir:
-        workspace = Path(temp_dir) / "workspace"
-        shutil.copytree(fixture, workspace)
-        _overlay_reference(reference, workspace)
-        grade = pbm._run_grader(TASK_ID, workspace, VERSION)
+    with tempfile.TemporaryDirectory(prefix="pbm-v4-battery-audit-") as temp_dir:
+        audit_root = Path(temp_dir)
 
-    required = list(manifest.get("coverage_requirements") or [])
-    observed = [str(item.get("name")) for item in grade.get("checks") or []]
-    if required != observed:
-        raise PBMV4Error(
-            f"PBM v4 grader coverage mismatch. required={required!r} observed={observed!r}"
-        )
-    if grade.get("pass") is not True or grade.get("score") != 100:
-        raise PBMV4Error("PBM v4 hidden reference solution does not earn a perfect grader result")
+        for task_id in BATTERY_TASK_IDS:
+            info = pbm.task_info(task_id, "v1")
+            prompt = v1_root / str(info["prompt_file"])
+            fixture = v1_root / str(info["fixture_dir"])
+            grader = v1_root / str(info["grader_file"])
+            reference = reference_root / task_id
+            if (
+                not prompt.is_file()
+                or not fixture.is_dir()
+                or not grader.is_file()
+                or not reference.is_dir()
+            ):
+                raise PBMV4Error(f"PBM v4 battery asset is incomplete for {task_id}")
+
+            workspace = audit_root / task_id
+            shutil.copytree(fixture, workspace)
+            _overlay_reference(reference, workspace)
+            grade = pbm._run_grader(task_id, workspace, "v1")
+            if grade.get("pass") is not True or grade.get("score") != 100:
+                raise PBMV4Error(
+                    f"PBM v4 known-good reference does not earn full credit for {task_id}"
+                )
+            reference_scores[task_id] = grade["score"]
+
+            task_inventory.append(
+                {
+                    "id": task_id,
+                    "category": str(info.get("category") or ""),
+                    "title": str(info.get("title") or ""),
+                }
+            )
+
     return {
         "ok": True,
         "benchmark_version": VERSION,
         "benchmark_fingerprint": pbm.benchmark_fingerprint(VERSION),
-        "coverage_requirements": required,
-        "reference_score": grade["score"],
+        "coverage_requirements": list(BATTERY_TASK_IDS),
+        "task_count": len(BATTERY_TASK_IDS),
+        "tasks": task_inventory,
+        "reference_score": round(
+            sum(float(value) for value in reference_scores.values())
+            / len(reference_scores)
+        ),
+        "reference_scores": reference_scores,
     }
 
 
@@ -209,6 +309,7 @@ def prepare_pair(room_base: str = DEFAULT_ROOM_BASE) -> dict[str, Any]:
         workspace=desktop_workspace,
         evidence_dir=root / TASK_ID / "desktop",
     )
+    populate_battery_workspace(desktop_workspace, allow_existing=True)
 
     room = _create_prepared_room(room_base, run_id)
     room_id = str(room["id"])
@@ -221,6 +322,7 @@ def prepare_pair(room_base: str = DEFAULT_ROOM_BASE) -> dict[str, Any]:
         evidence_dir=root / TASK_ID / "room",
         allow_existing=True,
     )
+    populate_battery_workspace(room_workspace, allow_existing=True)
 
     state = {
         "schema": "pbm-v4-state-v1",

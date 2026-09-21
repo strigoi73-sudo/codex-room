@@ -1,6 +1,6 @@
 # PBM v4 — common protocol with thin platform adapters
 
-PBM v4 compares one fresh native Codex Desktop measured task with one fresh ordinary Codex Room measured execution over the same frozen integrated mission.
+PBM v4 compares one fresh native Codex Desktop measured execution with one fresh ordinary Codex Room measured execution over the same frozen seven-task cross-domain battery.
 
 The principal does not orchestrate preparation, capture, grading, bundling, or comparison. Each platform is pointed once at its adapter protocol and carries its own procedure through to completion.
 
@@ -8,9 +8,9 @@ The principal does not orchestrate preparation, capture, grading, bundling, or c
 
 The normative shared procedure is `PROTOCOL.md`.
 
-Both platforms bind the same v4 fingerprint, prepare equivalent starting fixtures, launch the same frozen measured instruction, forbid substantive follow-up principal guidance, classify results as VALID / INVALID / FAILED, capture evidence deterministically, and auto-bundle. The independent arms never wait for or control one another. When both results exist for the active fingerprint, deterministic comparison closes the pair automatically.
+Both platforms bind the same v4 fingerprint, prepare equivalent copies of the seven-task battery, launch the same frozen measured instruction, forbid substantive follow-up principal guidance, classify results as VALID / INVALID / FAILED, capture evidence deterministically, and auto-bundle. The independent arms never wait for or control one another. When both results exist for the active fingerprint, deterministic comparison closes the pair automatically.
 
-The measured mission instruction remains exactly:
+The measured battery instruction remains exactly:
 
 `Read BENCHMARK.md and execute it exactly. Do not ask me questions. When complete, stop.`
 
@@ -60,4 +60,4 @@ Recovery is exceptional, not normal principal choreography. Deterministic status
 
 ## Promotion
 
-PBM v4 is not canonical merely because these assets exist. `benchmarks/pbm/CURRENT` remains unchanged until I-026's promotion gate is satisfied using the common protocol path: mission/grader audit, focused verification, one-instruction Desktop canary, one-instruction Room canary, and verified recovery/evidence paths.
+PBM v4 is not canonical merely because these assets exist. `benchmarks/pbm/CURRENT` remains unchanged until I-026's promotion gate is satisfied using the common protocol path: battery/grader audit, focused verification, one-instruction Desktop canary, one-instruction Room canary, and verified recovery/evidence paths. The canary validates protocol mechanics only; comparative token-efficiency measurement comes from the seven-task benchmark battery.

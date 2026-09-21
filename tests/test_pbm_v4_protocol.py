@@ -139,3 +139,28 @@ def test_canary_fixture_has_explicit_protocol_identity() -> None:
 
     assert len(fingerprint) == 64
     assert fingerprint != pbm.benchmark_fingerprint("v4")
+
+def test_desktop_native_delegation_expects_no_child_user_message() -> None:
+    assert pbm_v4_protocol._desktop_intervention_reasons([]) == []
+
+
+def test_desktop_child_user_message_is_post_launch_intervention() -> None:
+    assert pbm_v4_protocol._desktop_intervention_reasons(["follow-up guidance"]) == [
+        "Desktop measured child received post-launch user guidance: observed 1 user message(s)"
+    ]
+
+def test_battery_task_quality_reports_each_task_without_token_guessing() -> None:
+    result = {
+        "quality": {
+            "checks": [
+                {"name": task_id, "ok": True, "score": 100}
+                for task_id in pbm_v4.BATTERY_TASK_IDS
+            ]
+        }
+    }
+
+    summary = pbm_v4_protocol._battery_task_quality(result)
+
+    assert list(summary) == list(pbm_v4.BATTERY_TASK_IDS)
+    assert all(item == {"pass": True, "score": 100} for item in summary.values())
+
