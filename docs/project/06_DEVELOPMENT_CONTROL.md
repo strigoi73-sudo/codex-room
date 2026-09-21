@@ -6,14 +6,54 @@
 
 ## Operator summary
 
-- **Where are we?** I-025 — **PBM v3 one-paste workflow** — remains **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED** after a first-live-attempt launch repair. PBM v3 remains canonical; no PBM benchmark task has yet executed and no Desktop-versus-Room performance result exists. No feature implementation is currently selected.
-- **What just changed?** The principal invoked **“Run PBM”** for the first time. The Desktop controller failed closed before PBM initialization because the repo-local `codex_room` package was not importable when the prescribed venv Python command ran from `pbm_desktop_controller`. PR #181 added a tracked repo-root execution wrapper, bound it into the v3 fingerprint, and updated the driver. Exact-head smoke/focused/routine verification passed; zero benchmark tasks executed.
-- **Verification state:** E-165 records the original PBM v3 implementation/controller closeout. E-166 records the first-live-attempt discovery and repair. Exact repair head `e1a047dbe483598a8b800f5293d614fba9cb208b` passed the controller-directory import smoke test, 9 focused PBM tests, and `verify-fast.cmd` (63 Linux Python, 118 Windows portability, 9 browser transcript). PR #181 merged as `133ac4d0a2192189756fa8e12acd912b2ffbaca1`; comparison from tested head to merge commit shows one commit ahead with zero file differences.
-- **What is next?** Retry **“Run PBM”** from a fresh Codex Desktop controller conversation rooted at `C:\Codex Room\pbm_desktop_controller`. The failed first attempt is not a benchmark result because initialization never completed and no benchmark task ran.
-- **What is blocked?** No high-priority conceptual blocker prevents ordinary use or further development. Individual deferred items retain their own gates.
-- **What are we deliberately not doing?** No Room-local plugin mutation endpoint, principal-proof security subsystem solely for plugin administration, generic config editor, copied marketplace/plugin manager, built-in Codex subagents, autonomous fan-out, automatic model router, or speculative host-parity project.
+- **Where are we?** I-026 — **PBM v4 independent complementary one-paste benchmarks** — is **IN PROGRESS / DECIDED / NOT IMPLEMENTED** under D-048. PBM v3's first substantial live run was aborted after it demonstrated architectural and benchmark-integrity failures; do not run v3 again for performance comparison.
+- **What just changed?** Live run `pbm-v3-20260920T234823Z` proved that the Desktop controller could not durably survive Room-side waits without repeated principal resume prompts, that v3 validity handling could advance after an observer-stopped Room, and that frozen task t07 contains an internally inconsistent specification while its grader can still award full credit. The principal aborted the run and selected a replacement architecture: one independent one-paste benchmark for Desktop and one independent one-paste benchmark for Room.
+- **Verification state:** E-167 records the live v3 failure/postmortem. Earlier E-165/E-166 verification remains historically valid for the exact components it tested, but it did not establish live end-to-end protocol viability. No valid Desktop-versus-Room performance conclusion is claimed from the aborted v3 run.
+- **What is next?** Design, implement, and verify PBM v4 as two independent complementary harnesses sharing one frozen integrated mission, equivalent starting state, one external deterministic grader, explicit VALID/INVALID/FAILED semantics, first-class status/abort/evidence-bundle operations, and deterministic post-run comparison.
+- **What is blocked?** No conceptual blocker. The next gate is implementation plus deterministic mission/grader audit and a real delayed end-to-end canary before any full paid comparison.
+- **What are we deliberately not doing?** We are not patching the v3 cross-platform controller, not reviving alternating live Desktop↔Room orchestration, and not treating a model conversation as a durable workflow daemon.
 
 ## Current development state
+
+### I-026 — PBM v4 independent complementary one-paste benchmarks
+
+**Scope:** [benchmark redesign / independent native Desktop harness / ordinary Room harness / deterministic comparison]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** DECIDED / NOT IMPLEMENTED
+
+**Decision:** D-048
+
+**Evidence:** E-167
+
+The principal requires two complementary benchmarks with exactly one substantive benchmark paste per platform.
+
+Planned architecture:
+
+- one frozen integrated benchmark mission and equivalent prepared starting fixture for both products;
+- **Desktop:** one fresh top-level native Codex Desktop task, one principal instruction, no benchmark follow-up prompts;
+- **Room:** one fresh ordinary production Room, one principal instruction to C, normal A/B/C coordination and D-039 cognition, no substantive `CONSULT_PRINCIPAL` during the measured mission;
+- no cross-platform controller, alternating-arm schedule, platform wait loop, wake-up dependency, controller Room, or detached worker coordinating the two products;
+- deterministic harness code prepares each workspace, records exact benchmark fingerprints and contextual snapshots, captures execution evidence, runs the external grader, and emits one platform result;
+- deterministic comparison occurs only after independent Desktop and Room results exist for the same fingerprint;
+- explicit result classification: **VALID**, **INVALID**, or **FAILED**, with protocol intervention and terminal-state rules enforced rather than inferred from the existence of a result file;
+- first-class deterministic `status`, `abort`, and postmortem/evidence-bundle operations so incident handling never requires improvised PID/API surgery;
+- the integrated mission must cover representative investigation, repair, feature, specification/constraint, design, verification, and synthesis work while remaining internally satisfiable;
+- grader assertions must be audited against every mission requirement before promotion;
+- a real end-to-end delayed canary must test the native Desktop and Room operating boundaries before the first full paid comparison.
+
+Promotion gate:
+
+1. mission/specification satisfiability audit passes;
+2. grader coverage audit passes;
+3. focused deterministic tests pass;
+4. repository routine verification passes;
+5. one-paste Desktop canary passes without a second benchmark instruction;
+6. one-paste Room canary passes without substantive principal consultation;
+7. abort/status/evidence-bundle paths are verified;
+8. only then may `benchmarks/pbm/CURRENT` move to v4 and unqualified **Run PBM** resume.
+
 
 ### I-025 — PBM v3 one-paste workflow
 
@@ -21,11 +61,14 @@
 
 **Work state:** COMPLETE
 
-**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / CONTROLLER-PREFLIGHT VERIFIED / LIVE PAID PBM NOT YET EXECUTED
+**Reality / evidence:** IMPLEMENTED / HISTORICALLY VERIFIED / LIVE-END-TO-END FAILED / SUPERSEDED FOR CURRENT BENCHMARK WORK
 
 **Decision:** D-047
 
 **Evidence:** E-165, E-166
+
+**Postmortem disposition:** E-167 supersedes the earlier readiness inference. The first substantial live run exposed controller-liveness, validity-enforcement, and workload/grader defects. Preserve v3 for historical reproduction only; do not use it for another live performance comparison.
+
 
 PBM v3 preserves the frozen PBM workload and measurement semantics while removing repeated human prompt/command choreography.
 
