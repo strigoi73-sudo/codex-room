@@ -6,6 +6,49 @@ from pathlib import Path
 from codex_room import pbm, pbm_context, pbm_v4, pbm_v4_protocol
 
 
+def test_desktop_delegated_prompt_uses_canonical_absolute_task_file(
+    tmp_path, monkeypatch
+) -> None:
+    task_file = tmp_path / "Codex Room" / "pbm_desktop_controller" / "active-v4" / "ACTIVE_TASK.md"
+    monkeypatch.setattr(pbm_v4_protocol, "DESKTOP_TASK_FILE", task_file)
+
+    prompt = pbm_v4_protocol._desktop_delegated_prompt()
+
+    assert str(task_file.resolve()) in prompt
+    assert "active-v4/ACTIVE_TASK.md in the current workspace" not in prompt
+
+
+def test_desktop_controller_cwd_accepts_native_managed_worktree(
+    tmp_path, monkeypatch
+) -> None:
+    repo_root = tmp_path / "Codex Room"
+    controller = repo_root / "pbm_desktop_controller"
+    codex_home = tmp_path / ".codex"
+    managed = (
+        codex_home
+        / "worktrees"
+        / "fd0d"
+        / repo_root.name
+        / controller.name
+    )
+
+    monkeypatch.setattr(pbm_v4_protocol, "DESKTOP_CONTROLLER_ROOT", controller)
+    monkeypatch.setattr(
+        pbm_v4_protocol.codex_usage,
+        "default_codex_home",
+        lambda: codex_home,
+    )
+
+    assert pbm_v4_protocol._desktop_controller_cwd_ok(str(controller))
+    assert pbm_v4_protocol._desktop_controller_cwd_ok(str(managed))
+    assert not pbm_v4_protocol._desktop_controller_cwd_ok(
+        str(codex_home / "worktrees" / "fd0d" / "Other Repo" / controller.name)
+    )
+    assert not pbm_v4_protocol._desktop_controller_cwd_ok(
+        str(tmp_path / "elsewhere" / controller.name)
+    )
+
+
 def test_protocol_runner_uses_one_shared_active_pair(tmp_path, monkeypatch) -> None:
     active = tmp_path / "active.json"
     monkeypatch.setattr(pbm_v4_protocol, "ACTIVE_POINTER", active)
