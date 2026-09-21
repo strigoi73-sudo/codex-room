@@ -228,12 +228,26 @@ except Exception as exc:
 
 try:
     decision = json.loads((workspace / "storage_decision.json").read_text(encoding="utf-8"))
+    options = json.loads((workspace / "storage_options.json").read_text(encoding="utf-8"))
     codes = decision.get("evidence_codes")
+    selected = next(
+        (item for item in options["options"] if item.get("backend") == decision.get("backend")),
+        None,
+    )
+    required = set(options["required_constraints"])
+    valid_codes = {
+        item["code"]
+        for item in (selected or {}).get("evidence", [])
+        if isinstance(item, dict) and isinstance(item.get("code"), str)
+    }
     add(
         "storage_decision",
         decision.get("backend") == "sqlite"
+        and selected is not None
+        and required.issubset(set(selected.get("supports") or []))
         and isinstance(codes, list)
-        and {"stdlib", "transactions", "concurrent_readers"}.issubset(set(codes)),
+        and {"stdlib", "offline", "transactions", "concurrent_readers"}.issubset(set(codes))
+        and set(codes).issubset(valid_codes),
     )
 except Exception as exc:
     add("storage_decision", False, type(exc).__name__)
