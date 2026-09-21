@@ -253,6 +253,20 @@ def test_extract_user_messages_supports_response_item_schema(tmp_path: Path) -> 
         [
             _meta("thread-modern"),
             {
+                "timestamp": "2026-09-21T03:59:59Z",
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": "<environment_context>synthetic</environment_context>"},
+                    ],
+                    "internal_chat_message_metadata_passthrough": {
+                        "content_item_kinds": ["environments.environment_context"],
+                    },
+                },
+            },
+            {
                 "timestamp": "2026-09-21T04:00:00Z",
                 "type": "response_item",
                 "payload": {
@@ -261,6 +275,9 @@ def test_extract_user_messages_supports_response_item_schema(tmp_path: Path) -> 
                     "content": [
                         {"type": "input_text", "text": prompt},
                     ],
+                    "internal_chat_message_metadata_passthrough": {
+                        "content_item_kinds": ["user.text"],
+                    },
                 },
             },
         ],
