@@ -33,7 +33,7 @@ The controller is not the measured benchmark task.
 
 A controller must not solve, inspect, critique, repair, or summarize the benchmark mission. It may read this protocol and its own platform adapter, invoke deterministic PBM commands, launch the measured execution through native platform mechanics, and report protocol status.
 
-Desktop may wait only for its own single native measured child task. It must never wait for Room.
+Desktop must hand its native measured child thread id to the detached deterministic Desktop monitor and return. The controller model must not act as a durable polling loop. The monitor waits only for that Desktop child's completion evidence and must never wait for Room.
 
 Room must hand its own measured Room execution to the detached deterministic Room worker and return. Agent C must not act as a durable polling loop.
 
