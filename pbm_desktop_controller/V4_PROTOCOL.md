@@ -25,13 +25,14 @@ If `action` is `run_task`:
 
 1. Use the native Codex fresh-task creation mechanism with **exactly** the returned `delegated_prompt`. Do not substitute Codex CLI or solve the mission in this controller.
 2. Record the exact returned child thread id.
-3. Wait only for that exact Desktop child task to reach a non-active state. Do not read or critique its substantive answer.
-4. Run:
+3. Immediately hand that child to the durable deterministic monitor:
 
 ```powershell
-& .\PBM-V4.ps1 desktop-finish --run-id '<run_id>' --thread-id '<child-thread-id>'
+& .\PBM-V4.ps1 desktop-monitor-start --run-id '<run_id>' --thread-id '<child-thread-id>'
 ```
 
-5. Report the returned Desktop classification, evidence/bundle information if present, and whether the shared pair is now complete. Then stop.
+4. Report that the Desktop measured child and detached monitor were launched, including the returned run id/thread id. Then stop.
+
+Do not poll or wait for the measured child in this controller turn. The detached deterministic monitor waits only for that Desktop child's completion evidence, captures and grades it, bundles evidence, and closes the shared pair automatically if Room is already complete.
 
 Do not send a follow-up message to the measured child. Do not wait for Room. Do not ask the principal to run PBM preparation, capture, status, comparison, or bundle commands.
