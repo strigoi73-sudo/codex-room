@@ -884,3 +884,27 @@ Settled boundary:
 
 **Principle:** **One common protocol; one principal initiation per platform; only native platform entry mechanics differ; the platform performs the procedure.**
 
+
+
+### D-050 — PBM compares platform outcomes, not prescribed internal orchestration
+**Date:** 2026-09-21  
+**Status:** ACTIVE  
+**Supersedes:** D-049 where D-049 prescribed Desktop controller → one child → detached-monitor choreography; preserves D-049's common mission, deterministic evidence, no-substantive-principal-guidance, and automatic comparison principles
+
+The principal clarified the intended PBM abstraction boundary after the first paid v4 attempt exposed a managed-worktree failure in the prescribed Desktop child-task path.
+
+Settled boundary:
+
+- the comparison unit is the **platform**, not a harness-selected internal agent topology;
+- Desktop and Room receive the same frozen mission, equivalent starting fixtures, the same success criteria, and the same graders;
+- after measured work begins, the principal supplies no substantive guidance;
+- each platform is free to sequence, parallelize, delegate, create subagents/peers, or work directly using its native capabilities;
+- PBM must not prescribe the number of internal agents, their identities, their working directories, their delegation topology, or the order in which they work;
+- Desktop measurement includes the fresh top-level measured task plus all native descendant tasks attributable through rollout parent lineage;
+- Room measurement includes the complete measured Round across all participating A/B/C executions;
+- validity depends on the prepared starting boundary, final required outputs, prompt/intervention integrity, complete usage evidence, and deterministic grading—not on whether either platform used a particular internal workflow;
+- internal orchestration remains observable provenance and measured cost;
+- because this materially changes benchmark control semantics after v4 promotion evidence was recorded, the corrected protocol is versioned as **PBM v5** while reusing the frozen v4 seven-task battery and graders;
+- PBM v4 remains frozen and reproducible as the promoted predecessor; no paid seven-task v4 comparison was completed.
+
+**Principle:** **Give each platform the same job and judge the result; let the platform decide how to do the work.**

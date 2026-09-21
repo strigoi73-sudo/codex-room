@@ -1,0 +1,58 @@
+{
+  "schema": "pbm-manifest-v5",
+  "version": "v5",
+  "mode": "naturalistic",
+  "schema_version": 5,
+  "asset_version": "v4",
+  "tasks": [
+    {
+      "id": "m01-task-battery",
+      "title": "Cross-domain task battery",
+      "category": "battery",
+      "prompt_file": "prompts/m01-task-battery.txt",
+      "fixture_dir": "fixtures/m01-task-battery",
+      "grader_file": "graders/m01-task-battery.py",
+      "room_max_turns": 80
+    }
+  ],
+  "battery_tasks": [
+    "t01-mechanical-change",
+    "t02-bounded-investigation",
+    "t03-localized-bug",
+    "t04-small-feature",
+    "t05-state-mutation-bug",
+    "t06-constrained-design",
+    "t08-integrated-cli"
+  ],
+  "additional_asset_versions": ["v1"],
+  "coverage_requirements": [
+    "t01-mechanical-change",
+    "t02-bounded-investigation",
+    "t03-localized-bug",
+    "t04-small-feature",
+    "t05-state-mutation-bug",
+    "t06-constrained-design",
+    "t08-integrated-cli"
+  ],
+  "v5_protocol": {
+    "comparison_unit": "platform",
+    "same_mission": true,
+    "same_fixture": true,
+    "same_grader": true,
+    "principal_guidance_after_start": false,
+    "platform_internal_orchestration": "unconstrained",
+    "desktop_measurement_scope": "root-thread-and-descendants",
+    "room_measurement_scope": "measured-round-all-agents",
+    "automatic_capture_grading_bundle": true,
+    "automatic_pairing": true,
+    "result_classifications": ["VALID", "INVALID", "FAILED"]
+  },
+  "implementation_files": [
+    "codex_room/pbm.py",
+    "codex_room/pbm_context.py",
+    "codex_room/codex_usage.py",
+    "codex_room/pbm_v4.py",
+    "codex_room/pbm_v5.py",
+    "pbm-v5.ps1"
+  ]
+}
