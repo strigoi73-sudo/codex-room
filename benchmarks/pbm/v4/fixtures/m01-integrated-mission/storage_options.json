@@ -1,0 +1,27 @@
+{
+  "required_constraints": [
+    "stdlib_only",
+    "offline",
+    "atomic_commits",
+    "concurrent_readers"
+  ],
+  "options": [
+    {
+      "backend": "json",
+      "supports": ["stdlib_only", "offline"],
+      "evidence": [
+        {"code": "human_readable", "fact": "JSON is easy to inspect directly."},
+        {"code": "no_transaction_boundary", "fact": "The proposed JSON-file design has no atomic multi-record transaction boundary."}
+      ]
+    },
+    {
+      "backend": "sqlite",
+      "supports": ["stdlib_only", "offline", "atomic_commits", "concurrent_readers"],
+      "evidence": [
+        {"code": "stdlib", "fact": "Python includes sqlite3 in the standard library."},
+        {"code": "transactions", "fact": "SQLite provides commit/rollback transaction boundaries."},
+        {"code": "concurrent_readers", "fact": "SQLite supports multiple concurrent readers."}
+      ]
+    }
+  ]
+}
