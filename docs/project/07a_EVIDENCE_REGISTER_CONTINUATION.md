@@ -2496,3 +2496,51 @@ Revised exact head `4434ac711bf3d8a90e7dba2c183ca7e11dc8a75d` then passed:
 PR #200 merged as `f09a575881915256c0f7311f4bcce152bd18aeed`. GitHub comparison from the verified feature head to the merge commit reported zero file differences.
 
 **Assessment:** The demonstrated context-economy defect is repaired in canonical production bytes. This does not establish a measured post-repair savings rate; no additional PBM run is required merely to prove implementation. Product-value validation is now a separate question from execution-efficiency repair.
+
+
+### E-177 — OUB v1/O1 asset and harness promotion
+**Date:** 2026-09-21  
+**Status:** VERIFIED
+
+I-028's first Organizational Utility Benchmark slice is now deterministically ready for a measured platform comparison.
+
+**Frozen O1 asset**
+
+- task: `o01-competing-root-causes`;
+- target capable-model runtime: approximately 10–15 minutes per platform (manifest target: 12 minutes);
+- starting fixture: 10 files / 9,840 bytes;
+- deterministic reference score: 100;
+- frozen OUB v1 fingerprint: `d6ec60fca42c6dd436b15d4f8621bb711056b1da5aa93f5a6ecaee2188ba4835`;
+- exact asset head: `266481fa1d66571e250d588c3eba2c2b0f430348`;
+- asset verification: focused OUB tests 3/3; PBM v5 fingerprint unchanged; repository fast verifier 64 Linux / 118 Windows / 9 browser; clean exact scope/head checks;
+- PR #202 merged the verified bytes as `7d7d3342432908a553c6456d358d819ab8548079`, with zero file differences from the verified feature head.
+
+**Measurement harness**
+
+The thin OUB v1 harness reuses proven PBM v5 platform-boundary mechanics while keeping OUB's assets, grading, state, fingerprint and comparison separate:
+
+- one prepare operation creates equivalent Desktop and Room workspaces;
+- Room begins as an ordinary A/B/C Room with unconstrained native coordination;
+- Desktop is one fresh top-level native task rooted at the prepared workspace and may use native descendants;
+- Desktop measured usage aggregates the root rollout plus descendants;
+- Room measured usage aggregates all measured Round executions;
+- starting fixture hashes are captured and any mutation of supplied evidence invalidates that arm;
+- substantive principal intervention after launch invalidates the arm;
+- the same deterministic O1 grader scores both final workspaces;
+- comparison reports outcome quality, tokens, duration and orchestration separately and deliberately does not compute an overall platform winner;
+- the intended task budget remains 10–15 minutes while the detached harness uses a 30-minute safety ceiling.
+
+Exact harness head `9790c736ba695b8cc127b19ea45b480eb0713867` passed:
+
+- frozen `benchmarks/oub/v1` tree unchanged from the promoted O1 asset;
+- OUB harness audit: frozen fingerprint matched, reference score 100, target runtime 12 minutes, safety ceiling 1,800 seconds;
+- 14 focused OUB asset/harness/PBM measurement tests;
+- unchanged PBM v5 fingerprint `492f8ce7d2cc49094abe993db7a20cad2a355ef277a90efd41fe26697b0cbc1b`;
+- repository fast verifier: 64 Linux focused tests, 118 Windows portability tests and 9 browser transcript tests;
+- clean exact scope, diff and HEAD checks.
+
+The verifier emitted a WSL systemd-user-session startup warning before Linux tests, but the Linux suite, Windows suite, browser suite and overall verifier all completed successfully with `RESULT: PASS`.
+
+PR #203 merged as `21b427a68a582ce3f717f4c64759bebd0c710edc`. GitHub comparison from the exact verified feature head to the merge commit reported zero file differences.
+
+**Assessment:** OUB v1/O1 asset and measurement harness are promoted and ready. No measured OUB model execution occurred during implementation or verification. The next OUB action, if approved by the principal, is the first live Desktop-versus-Room O1 comparison and will consume model allotment.
