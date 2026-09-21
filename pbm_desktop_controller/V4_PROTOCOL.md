@@ -24,7 +24,7 @@ If `action` is `complete`, report the returned result and stop.
 If `action` is `run_task`:
 
 1. Use the native Codex fresh-task creation mechanism with **exactly** the returned `delegated_prompt`. Do not substitute Codex CLI or solve the mission in this controller.
-2. Record the exact returned child thread id.
+2. Record the exact task identifier returned by native task creation. Pass it through unchanged even if Desktop returns a provisional `client-new-thread:<uuid>` identifier; the deterministic monitor resolves provisional ids to the unique persisted rollout and fails closed if the mapping is ambiguous.
 3. Immediately hand that child to the durable deterministic monitor:
 
 ```powershell
