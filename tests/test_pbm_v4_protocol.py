@@ -592,3 +592,117 @@ def test_comparison_markdown_surfaces_provider_meter() -> None:
     assert "1000 → 1300 (Δ 300)" in text
     assert "| Codex | primary (300 min) | 20.0 | 27.5 | 7.5 | false |" in text
 
+def test_finalization_captures_protocol_complete_before_meter_summary(
+    tmp_path, monkeypatch
+) -> None:
+    run_id = "pbm-v4-benchmark-protocol-meter-finalization"
+    run_root = tmp_path / "run"
+    state_path = run_root / "v4-protocol" / "state.json"
+    desktop_result = run_root / "m01-task-battery" / "desktop" / "result.json"
+    room_result = run_root / "m01-task-battery" / "room" / "result.json"
+    active = tmp_path / "active.json"
+
+    monkeypatch.setattr(pbm_v4_protocol.pbm, "run_root", lambda _run_id: run_root)
+    monkeypatch.setattr(pbm_v4_protocol, "ACTIVE_POINTER", active)
+    monkeypatch.setattr(pbm_v4_protocol, "PROTOCOL_LOCK_DIR", tmp_path / "lock")
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "PROTOCOL_BUNDLE_ROOT",
+        tmp_path / "bundles",
+    )
+
+    state = {
+        "run_id": run_id,
+        "mode": "benchmark",
+        "benchmark_fingerprint": "benchmark",
+        "canary_fingerprint": None,
+        "desktop": {"status": "complete", "classification": "VALID"},
+        "room": {"status": "complete", "classification": "VALID"},
+        "complete": False,
+        "aborted": False,
+    }
+    pbm_v4_protocol._write_json(state_path, state)
+    pbm_v4_protocol._write_json(
+        active,
+        {"run_id": run_id, "mode": "benchmark"},
+    )
+    pbm_v4_protocol._write_json(
+        desktop_result,
+        {
+            "classification": "VALID",
+            "benchmark_fingerprint": "benchmark",
+            "quality": {"pass": True, "score": 100, "checks": []},
+            "usage": {"total_tokens": 100},
+            "duration_seconds": 1.0,
+            "provenance": {},
+        },
+    )
+    pbm_v4_protocol._write_json(
+        room_result,
+        {
+            "classification": "VALID",
+            "benchmark_fingerprint": "benchmark",
+            "quality": {"pass": True, "score": 100, "checks": []},
+            "usage": {"total_tokens": 120, "peer_invocations": 1},
+            "duration_seconds": 2.0,
+            "provenance": {},
+        },
+    )
+
+    context_dir = run_root / "context"
+    context_dir.mkdir(parents=True)
+    start = {
+        "captured_at": "before",
+        "native_codex": {
+            "native_base": {
+                "account_usage": {
+                    "status": "available",
+                    "data": {"summary": {"lifetimeTokens": 1000}},
+                },
+                "rate_limits": {"status": "unavailable"},
+            }
+        },
+    }
+    (context_dir / "protocol-start.json").write_text(
+        json.dumps(start),
+        encoding="utf-8",
+    )
+
+    def fake_capture(_run_id, label):
+        assert label == "protocol-complete"
+        complete = {
+            "captured_at": "after",
+            "native_codex": {
+                "native_base": {
+                    "account_usage": {
+                        "status": "available",
+                        "data": {"summary": {"lifetimeTokens": 1300}},
+                    },
+                    "rate_limits": {"status": "unavailable"},
+                }
+            },
+        }
+        (context_dir / "protocol-complete.json").write_text(
+            json.dumps(complete),
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(pbm_v4_protocol.pbm_v4, "_capture_context", fake_capture)
+
+    result = pbm_v4_protocol._finalize_if_ready(run_id)
+
+    assert result["complete"] is True
+    stored = pbm_v4_protocol._read_json(
+        run_root / "pbm-v4-protocol-comparison.json"
+    )
+    assert stored["provider_usage_meter"]["delta"]["lifetime_tokens_delta"] == 300
+    assert "1000 → 1300 (Δ 300)" in (
+        run_root / "pbm-v4-protocol-comparison.md"
+    ).read_text(encoding="utf-8")
+    final_state = pbm_v4_protocol._read_json(state_path)
+    assert final_state["complete"] is True
+    assert final_state["comparison"]["provider_usage_meter"]["delta"][
+        "lifetime_tokens_delta"
+    ] == 300
+    assert not active.exists()
+
