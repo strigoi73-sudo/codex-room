@@ -9,6 +9,7 @@ import pytest
 from codex_room.codex_usage import (
     RolloutUsageError,
     analyze_rollout,
+    extract_user_messages,
     main,
     select_rollout,
 )
@@ -242,3 +243,58 @@ def test_rollout_summary_counts_provider_records_tool_calls_and_zero_delta(
     assert counts["tool_calls"] == 2
     assert counts["inter_agent_communication_metadata"] == 1
 
+
+
+def test_extract_user_messages_supports_response_item_schema(tmp_path: Path) -> None:
+    path = tmp_path / "rollout-modern.jsonl"
+    prompt = "Read BENCHMARK.md and execute it exactly."
+    _write_jsonl(
+        path,
+        [
+            _meta("thread-modern"),
+            {
+                "timestamp": "2026-09-21T04:00:00Z",
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": prompt},
+                    ],
+                },
+            },
+        ],
+    )
+
+    assert extract_user_messages(path) == [prompt]
+
+
+def test_extract_user_messages_prefers_modern_record_when_both_schemas_exist(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "rollout-dual.jsonl"
+    prompt = "delegated task prompt"
+    _write_jsonl(
+        path,
+        [
+            _meta("thread-dual"),
+            {
+                "timestamp": "2026-09-21T04:00:00Z",
+                "type": "event_msg",
+                "payload": {"type": "user_message", "message": prompt},
+            },
+            {
+                "timestamp": "2026-09-21T04:00:00Z",
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": prompt},
+                    ],
+                },
+            },
+        ],
+    )
+
+    assert extract_user_messages(path) == [prompt]
