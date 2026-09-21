@@ -105,6 +105,19 @@ def _set_arm(run_id: str, arm: str, value: dict[str, Any]) -> dict[str, Any]:
         return state
 
 
+def _record_worker_started(run_id: str, arm: str, pid: int, active_status: str) -> None:
+    with _state_lock():
+        state = _load_state(run_id)
+        info = state.get(arm)
+        if not isinstance(info, dict):
+            raise PBMV5Error(f"PBM v5 {arm} arm is missing")
+        info = {**info, "worker_pid": pid}
+        if info.get("status") in {"prepared", "waiting_for_root_task"}:
+            info["status"] = active_status
+        state[arm] = info
+        _save_state(run_id, state)
+
+
 def _new_run_id() -> str:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     return f"pbm-v5-benchmark-{stamp}"
@@ -313,13 +326,9 @@ def prepare(room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str, Any]:
 
     desktop_pid = _spawn_worker("desktop", run_id)
     room_pid = _spawn_worker("room", run_id)
-    with _state_lock():
-        state = _load_state(run_id)
-        state["desktop"]["worker_pid"] = desktop_pid
-        state["desktop"]["status"] = "monitoring"
-        state["room"]["worker_pid"] = room_pid
-        state["room"]["status"] = "running"
-        _save_state(run_id, state)
+    _record_worker_started(run_id, "desktop", desktop_pid, "monitoring")
+    _record_worker_started(run_id, "room", room_pid, "running")
+    state = _load_state(run_id)
 
     return {
         "action": "ready",
