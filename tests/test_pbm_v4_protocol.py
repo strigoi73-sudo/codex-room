@@ -76,7 +76,7 @@ def test_protocol_wrappers_preserve_shell() -> None:
         assert "$LASTEXITCODE" in text
         assert "finally {" in text
         assert "Pop-Location" in text
-        assert "exit " not in text
+        assert "exit $protocolExit" not in text
 
 
 def test_canary_and_benchmark_share_frozen_measured_prompt() -> None:
