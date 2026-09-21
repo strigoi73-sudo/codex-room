@@ -2544,3 +2544,35 @@ The verifier emitted a WSL systemd-user-session startup warning before Linux tes
 PR #203 merged as `21b427a68a582ce3f717f4c64759bebd0c710edc`. GitHub comparison from the exact verified feature head to the merge commit reported zero file differences.
 
 **Assessment:** OUB v1/O1 asset and measurement harness are promoted and ready. No measured OUB model execution occurred during implementation or verification. The next OUB action, if approved by the principal, is the first live Desktop-versus-Room O1 comparison and will consume model allotment.
+
+
+### E-178 — OUB launch readiness race repair
+**Date:** 2026-09-21  
+**Status:** VERIFIED
+
+The first attempted live OUB v1/O1 launch failed before a measured Room or Desktop arm was created. The launch sequence successfully synchronized canonical `main`, verified the frozen OUB fingerprint, invoked `Restart-Codex-Room.bat`, and then immediately ran `oub-v1.ps1 prepare`. The prepare step failed at `http://127.0.0.1:8765/api/health` with `ConnectionRefusedError`.
+
+Root cause was launcher sequencing rather than OUB behavior: `Restart-Codex-Room.bat` waited five seconds **before** starting the server, then returned immediately after issuing the process launch. It did not guarantee that the Room API was accepting requests before dependent automation continued.
+
+PR #205 repaired the launcher contract:
+
+- after starting `Start-Codex-Room.cmd --no-browser`, restart now polls `http://127.0.0.1:8765/api/health`;
+- restart returns success only when the endpoint reports `ok=true`;
+- readiness polling is bounded to 30 seconds;
+- if readiness is not confirmed, restart invokes the normal kill path to clean up any partial server and returns failure;
+- existing browser-preservation and shutdown behavior is unchanged;
+- OUB v1 and PBM v5 benchmark bytes/fingerprints are unchanged.
+
+Exact repair head `6ef357f512b1ff8b5f485212485c40249dd7fb7a` passed:
+
+- 9 launcher regression tests;
+- OUB v1 fingerprint unchanged at `d6ec60fca42c6dd436b15d4f8621bb711056b1da5aa93f5a6ecaee2188ba4835`;
+- PBM v5 fingerprint unchanged at `492f8ce7d2cc49094abe993db7a20cad2a355ef277a90efd41fe26697b0cbc1b`;
+- dynamic restart test showing the script emitted `Waiting for Codex Room API readiness...` followed by `Codex Room API is ready.`;
+- an immediate independent `/api/health` probe after restart returned `ok=true`;
+- OUB status confirmed no active measured run existed;
+- exact two-file scope and clean-head checks.
+
+PR #205 merged as `e0897b692aa985c6aa676a63a55df4cfe247ca17`. GitHub comparison from the exact verified feature head to the merge commit reported zero file differences.
+
+**Assessment:** The failed first O1 launch consumed no measured benchmark work and exposed a reusable launcher-readiness defect. Canonical restart now has a deterministic API-readiness contract, and OUB v1/O1 remains ready for its first measured comparison.
