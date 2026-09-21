@@ -132,6 +132,18 @@ def prepare_pair(room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str, Any]:
         raise CanaryError(f"canary run already exists: {run_id}")
     root.mkdir(parents=True)
 
+    created_at = pbm.utc_now()
+    _write_json(
+        root / "run.json",
+        {
+            "schema": "pbm-v4-canary-run-v1",
+            "run_id": run_id,
+            "benchmark_version": pbm_v4.VERSION,
+            "benchmark_fingerprint": fingerprint,
+            "created_at": created_at,
+        },
+    )
+
     prepared_at_ns = time.time_ns()
     desktop_workspace = root / "desktop-workspace"
     _copy_canary(desktop_workspace)
@@ -144,7 +156,7 @@ def prepare_pair(room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str, Any]:
     state = {
         "schema": "pbm-v4-canary-state-v1",
         "run_id": run_id,
-        "created_at": pbm.utc_now(),
+        "created_at": created_at,
         "prepared_at_ns": prepared_at_ns,
         "benchmark_version": pbm_v4.VERSION,
         "benchmark_fingerprint": fingerprint,
