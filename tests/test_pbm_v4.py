@@ -85,7 +85,7 @@ def test_v4_wrapper_preserves_principal_shell_and_captures_native_exit() -> None
 def test_v4_readme_keeps_current_promotion_explicit() -> None:
     readme = (pbm.version_root("v4") / "README.md").read_text(encoding="utf-8")
 
-    assert "one fresh top-level native Codex Desktop task" in readme
+    assert "fresh top-level native Codex Desktop task" in readme
     assert "Click **New round**" in readme
     assert "Do not send observer messages" in readme
     assert "CURRENT" in readme
