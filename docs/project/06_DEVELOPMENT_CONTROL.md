@@ -6,10 +6,10 @@
 
 ## Operator summary
 
-- **Where are we?** I-027 PBM v5 is complete. The first context-economy repair derived from E-175 is **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED** as PR #200 (E-176). The next work program is I-028 — **Codex Room utility gate**.
-- **What just happened?** PBM v5 showed equal full-credit correctness while Desktop used materially fewer measured tokens/time than ordinary Room; the controlled C-only follow-up isolated a large coordination penalty plus a residual single-agent context/tool-loop penalty. PR #200 repaired two demonstrated assignment-thread economy defects without changing PBM semantics.
+- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. OUB v1/O1 assets and the thin Desktop↔Room measurement harness are now **IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED**; the first measured O1 comparison is the next explicit usage-consuming step.
+- **What just happened?** OUB v1/O1 was frozen and promoted under PR #202, then the thin measurement harness passed exact-head deterministic verification and merged byte-identically under PR #203. No measured OUB model work has run yet.
 - **Why the priority changed:** current evidence does not demonstrate that Codex Room produces better practical outcomes than Codex Desktop on ordinary task execution. Further optimization is not sufficient justification by itself; the product must demonstrate value attributable to its persistent multi-agent organization.
-- **What is next?** Design and run I-028 as a product-value gate, not another token benchmark. Test cases must target capabilities Room is specifically intended to add: independent epistemic analysis, durable multi-session organizational continuity, meaningful implementation/review separation, or standing-objective coordination. Success must be judged by practical benefit, not agent activity.
+- **What is next?** Run the first measured OUB v1/O1 comparison when the principal chooses to spend model allotment. O1 targets roughly 10–15 minutes of capable-model work per platform and tests competing-hypothesis forensic diagnosis under unconstrained native orchestration.
 - **What is blocked?** Nothing technical is blocked.
 - **What are we deliberately not doing?** We are not buying another PBM run, adding more orchestration complexity, or continuing efficiency work merely to improve benchmark numbers before Codex Room demonstrates practical utility over Desktop.
 
@@ -21,9 +21,9 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** EXPLORATORY; current PBM evidence shows no demonstrated ordinary-task quality advantage over Desktop
+**Reality / evidence:** OUB v1/O1 ASSET + HARNESS IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED; FIRST MEASURED O1 COMPARISON PENDING
 
-**Evidence basis:** E-174, E-175, E-176
+**Evidence basis:** E-174, E-175, E-176, E-177
 
 Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
 
@@ -52,9 +52,10 @@ Current implementation slice: **OUB v1 / O1 — Competing root causes**.
 - Reference artifacts and an asset audit are included so satisfiability and grading can be verified before any measured platform run.
 - O1 asset head `266481fa1d66571e250d588c3eba2c2b0f430348` passed exact-head verification: reference score 100, 10 fixture files / 9,840 bytes, focused OUB tests 3/3, unchanged PBM v5 fingerprint, repository fast verifier 64 Linux / 118 Windows / 9 browser, clean scope/head checks. PR #202 merged byte-identically as `7d7d3342432908a553c6456d358d819ab8548079`.
 - The frozen O1 fingerprint is `d6ec60fca42c6dd436b15d4f8621bb711056b1da5aa93f5a6ecaee2188ba4835`.
-- The thin measurement harness is now implemented on feature branch `oub-v1-harness`: one prepare operation creates equivalent Desktop/Room workspaces, starts the ordinary Room arm plus detached monitors, discovers exactly one fresh Desktop root by workspace, aggregates Desktop native descendants and all Room executions, enforces no-substantive-principal-intervention plus frozen-fixture integrity, grades both final workspaces, and reports quality/cost/duration/orchestration separately without declaring a winner.
+- The thin measurement harness creates equivalent Desktop/Room workspaces, starts the ordinary Room arm plus detached monitors, discovers exactly one fresh Desktop root by workspace, aggregates Desktop native descendants and all Room executions, enforces no-substantive-principal-intervention plus frozen-fixture integrity, grades both final workspaces, and reports quality/cost/duration/orchestration separately without declaring a winner.
 - Harness implementation uses a 30-minute safety ceiling while retaining the 10–15 minute / 12-minute target as the intended task budget.
-- Exact-head verification and promotion of the harness remain pending. No paid OUB arm should run before that gate passes.
+- Exact harness head `9790c736ba695b8cc127b19ea45b480eb0713867` passed the frozen-asset invariant, harness audit, 14 focused OUB/PBM tests, unchanged PBM v5 fingerprint, repository fast verifier (64 Linux / 118 Windows / 9 browser), and exact scope/head checks. PR #203 merged byte-identically as `21b427a68a582ce3f717f4c64759bebd0c710edc`; see E-177.
+- No measured OUB model work has run yet. The first O1 Desktop↔Room comparison is the next explicit usage-consuming step.
 
 ### I-027 — PBM v5 platform-outcome benchmark
 
