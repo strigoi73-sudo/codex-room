@@ -1066,6 +1066,22 @@ def room_worker(run_id: str, timeout_seconds: int = 3600) -> dict[str, Any]:
         raise
 
 
+def _battery_task_quality(result: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    quality = result.get("quality") or {}
+    summary: dict[str, dict[str, Any]] = {}
+    for item in quality.get("checks") or []:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name")
+        if not isinstance(name, str) or name not in pbm_v4.BATTERY_TASK_IDS:
+            continue
+        summary[name] = {
+            "pass": bool(item.get("ok")),
+            "score": item.get("score"),
+        }
+    return summary
+
+
 def _comparison(state: dict[str, Any]) -> dict[str, Any]:
     desktop = _read_json(_result_path(state, "desktop"))
     room = _read_json(_result_path(state, "room"))
@@ -1109,6 +1125,9 @@ def _comparison(state: dict[str, Any]) -> dict[str, Any]:
             "classification": desktop.get("classification"),
             "score": (desktop.get("quality") or {}).get("score"),
             "pass": (desktop.get("quality") or {}).get("pass"),
+            "task_quality": (
+                _battery_task_quality(desktop) if state["mode"] == "benchmark" else None
+            ),
             "total_tokens": d_tokens,
             "duration_seconds": desktop.get("duration_seconds"),
         },
@@ -1116,6 +1135,9 @@ def _comparison(state: dict[str, Any]) -> dict[str, Any]:
             "classification": room.get("classification"),
             "score": (room.get("quality") or {}).get("score"),
             "pass": (room.get("quality") or {}).get("pass"),
+            "task_quality": (
+                _battery_task_quality(room) if state["mode"] == "benchmark" else None
+            ),
             "total_tokens": r_tokens,
             "duration_seconds": room.get("duration_seconds"),
             "peer_invocations": (room.get("usage") or {}).get("peer_invocations"),
