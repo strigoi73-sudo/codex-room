@@ -91,8 +91,10 @@ def test_manifest_binds_protocol_implementation_files() -> None:
     assert "codex_room/pbm_v4_protocol.py" in files
     assert "pbm-v4-protocol.ps1" in files
     assert "pbm_desktop_controller/V4_PROTOCOL.md" in files
-    assert "benchmarks/pbm/v4/PROTOCOL.md" in files
-    assert "benchmarks/pbm/v4/ROOM_PROTOCOL.md" in files
+    assert "benchmarks/pbm/v4/PROTOCOL.md" not in files
+    assert "benchmarks/pbm/v4/ROOM_PROTOCOL.md" not in files
+    assert (pbm.version_root("v4") / "PROTOCOL.md").is_file()
+    assert (pbm.version_root("v4") / "ROOM_PROTOCOL.md").is_file()
 
 
 def test_worker_pid_update_does_not_overwrite_terminal_platform_state(
@@ -128,3 +130,12 @@ def test_worker_pid_update_does_not_overwrite_terminal_platform_state(
     assert state["desktop"]["status"] == "complete"
     assert state["desktop"]["classification"] == "VALID"
     assert state["desktop"]["worker_pid"] == 1234
+
+
+def test_canary_fixture_has_explicit_protocol_identity() -> None:
+    fingerprint = pbm_v4_protocol._tree_fingerprint(
+        pbm_v4_protocol.pbm_v4_canary.CANARY_ROOT
+    )
+
+    assert len(fingerprint) == 64
+    assert fingerprint != pbm.benchmark_fingerprint("v4")
