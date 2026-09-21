@@ -52,6 +52,8 @@ def test_desktop_adapter_requires_native_child_and_no_room_wait() -> None:
     ).read_text(encoding="utf-8")
 
     assert "native Codex fresh-task creation mechanism" in text
+    assert "desktop-monitor-start" in text
+    assert "Do not poll or wait for the measured child" in text
     assert "Do not substitute Codex CLI" in text
     assert "Do not wait for Room" in text
     assert "Do not ask the principal to run PBM preparation" in text
@@ -91,3 +93,38 @@ def test_manifest_binds_protocol_implementation_files() -> None:
     assert "pbm_desktop_controller/V4_PROTOCOL.md" in files
     assert "benchmarks/pbm/v4/PROTOCOL.md" in files
     assert "benchmarks/pbm/v4/ROOM_PROTOCOL.md" in files
+
+
+def test_worker_pid_update_does_not_overwrite_terminal_platform_state(
+    tmp_path, monkeypatch
+) -> None:
+    run_id = "pbm-v4-canary-protocol-worker-race"
+    state_path = tmp_path / "state.json"
+    monkeypatch.setattr(pbm_v4_protocol, "PROTOCOL_LOCK_DIR", tmp_path / "lock")
+    monkeypatch.setattr(
+        pbm_v4_protocol,
+        "_state_path",
+        lambda _run_id: state_path,
+    )
+    pbm_v4_protocol._write_json(
+        state_path,
+        {
+            "run_id": run_id,
+            "mode": "canary",
+            "desktop": {
+                "status": "complete",
+                "classification": "VALID",
+            },
+            "room": None,
+        },
+    )
+
+    state = pbm_v4_protocol._mark_platform_worker_started(
+        run_id,
+        "desktop",
+        1234,
+    )
+
+    assert state["desktop"]["status"] == "complete"
+    assert state["desktop"]["classification"] == "VALID"
+    assert state["desktop"]["worker_pid"] == 1234
