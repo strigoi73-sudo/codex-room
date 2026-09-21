@@ -1,0 +1,50 @@
+{
+  "primary_cause": "UNSTABLE_IDEMPOTENCY_KEY",
+  "trigger": "AMBIGUOUS_GATEWAY_TIMEOUT",
+  "causal_chain": [
+    "FIRST_GATEWAY_ATTEMPT_ACCEPTED",
+    "CLIENT_TIMED_OUT_BEFORE_RESPONSE",
+    "RETRY_GENERATED_NEW_IDEMPOTENCY_KEY",
+    "GATEWAY_ACCEPTED_RETRY_AS_NEW_CHARGE"
+  ],
+  "evidence_codes": [
+    "S401",
+    "W103",
+    "W104",
+    "G201",
+    "G202",
+    "G203",
+    "G204",
+    "R501",
+    "R502",
+    "R503"
+  ],
+  "rejected_hypotheses": [
+    {
+      "hypothesis": "UPSTREAM_DUPLICATE_SUBMISSION",
+      "evidence_codes": [
+        "I201",
+        "I202",
+        "I205"
+      ]
+    },
+    {
+      "hypothesis": "CONCURRENT_WORKER_DOUBLE_CLAIM",
+      "evidence_codes": [
+        "J301",
+        "J302"
+      ]
+    },
+    {
+      "hypothesis": "DB_POOL_EXHAUSTION",
+      "evidence_codes": [
+        "D301",
+        "D304"
+      ]
+    }
+  ],
+  "recommended_controls": [
+    "STABLE_PAYMENT_INTENT_IDEMPOTENCY_KEY",
+    "AMBIGUOUS_TIMEOUT_RECONCILIATION"
+  ]
+}
