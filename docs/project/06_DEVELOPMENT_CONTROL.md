@@ -6,14 +6,46 @@
 
 ## Operator summary
 
-- **Where are we?** I-026 — **PBM v4 common protocol with thin platform adapters and a seven-task cross-domain battery** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / LIVE CANARY VERIFIED / PROMOTED** under D-049.
-- **What just changed?** The final merged-bytes D-049 canary `pbm-v4-canary-protocol-20260921T085358797378Z` completed with Desktop **VALID / 100**, Room **VALID / 100**, matching benchmark and canary fingerprints, `comparable: true`, no finalization error, and the active pair cleared. The repaired Desktop provisional-task-id path resolved to durable thread `01a0c32c-a9e2-7481-9598-230bec40e382`.
-- **Verification state:** PR #190 established the verified seven-task battery; PR #192 repaired provisional Desktop task-id resolution and deterministic finalization. Exact PR #192 head `c5efa3ce144b3cbc5b731fb363f1871c2d67e661` passed **26 focused PBM v4 tests** and the routine fast verifier (**63 Linux / 118 Windows / 9 browser**), then merged as `97da426e8b7cc7f19226299fa6dd19a0dd1d418e` with zero file differences from the verified head.
-- **What is next?** PBM v4 is now the canonical benchmark selected by `benchmarks/pbm/CURRENT`. Unqualified **Run PBM** may proceed through the v4 common protocol when the principal chooses to spend the benchmark traffic. No paid seven-task performance comparison has yet been run.
-- **What is blocked?** Nothing remains blocked within I-026.
-- **What are we deliberately not doing?** We are not reviving PBM v3 for live comparison, not adding principal choreography back into the benchmark, and not treating canary token numbers as a Desktop-versus-Room performance conclusion.
+- **Where are we?** I-027 — **PBM v5 platform-outcome benchmark** — is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED** under D-050.
+- **What just changed?** The benchmark boundary was corrected from prescribed Desktop child-task choreography to platform-level outcomes. Desktop and Room now receive equivalent starting state, mission, success criteria, and grading while each platform controls its own native internal orchestration.
+- **Verification state:** exact feature head `098e4b1cb8a77a0dd440a1f4cad30ee935440280` passed 26 focused PBM tests, the frozen seven-task/reference audit, and the routine fast verifier (**63 Linux / 118 Windows / 9 browser**). PR #195 merged as `893f6bd673174168ba9fc5da16866a0fbcf8c3ff`; merge-to-tested-head comparison showed zero file differences. See E-173.
+- **What is next?** PBM v5 is canonical via `benchmarks/pbm/CURRENT`. The next selected action is the first real seven-task Desktop-versus-Room comparison under the v5 platform-outcome protocol.
+- **What is blocked?** Nothing is blocked in I-027.
+- **What are we deliberately not doing?** We are not adding another canary gate, prescribing Desktop subagent topology, prescribing Room peer topology, or treating PBM v4's controller/child choreography as the current comparison contract.
 
 ## Current development state
+
+### I-027 — PBM v5 platform-outcome benchmark
+
+**Scope:** [platform-level benchmark / equivalent mission and fixtures / native internal orchestration / aggregate platform measurement]
+
+**Work state:** COMPLETE
+
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED / FIRST LIVE COMPARISON PENDING
+
+**Decision:** D-050
+
+**Evidence:** E-173
+
+PBM v5 corrects the benchmark abstraction boundary while preserving the frozen seven-task battery and graders.
+
+Current architecture:
+
+- the comparison unit is **Desktop versus Codex Room as platforms**;
+- both platforms receive the same frozen seven-task mission, equivalent prepared fixtures, the same completion criteria, and the same deterministic graders;
+- after measured work begins, substantive principal guidance is prohibited;
+- Desktop receives one fresh top-level native task rooted at its prepared benchmark workspace and may sequence, parallelize, delegate, create native descendants, or work directly as it chooses;
+- Desktop cost/evidence aggregates the measured top-level rollout plus every native descendant attributable through rollout parent lineage;
+- Room receives one fresh ordinary measured Room and retains normal A/B/C coordination and D-039 cognition; PBM does not prescribe which peers C invokes or how the Room sequences work;
+- Room cost/evidence covers the complete measured Round across all participating executions;
+- internal agent topology is provenance and measured cost, not a validity requirement;
+- validity remains tied to equivalent starting boundary, frozen mission/prompt integrity, absence of substantive principal intervention, complete provider usage, completion evidence, and deterministic correctness grading;
+- automatic evidence capture, comparison, bundling, provider/account usage-meter context, and recovery operations remain deterministic harness responsibilities;
+- `benchmarks/pbm/CURRENT` resolves to **v5**;
+- PBM v4 is frozen as the promoted predecessor and is superseded for new live comparisons; no paid seven-task v4 comparison completed.
+
+The first paid seven-task v5 comparison is pending principal execution.
+
 
 ### I-026 — PBM v4 common protocol with thin platform adapters
 
@@ -334,4 +366,4 @@ Current unresolved questions are feature-local rather than roadmap-global:
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
 - if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
-I-026 is the selected active implementation. Unqualified **Run PBM** remains suspended while `CURRENT` still names historical v3; PBM v1–v3 remain explicitly reproducible only for historical purposes.
+I-027 is the current benchmark implementation. Unqualified **Run PBM** resolves to canonical PBM v5. PBM v1–v4 remain available only for historical/reproducibility purposes unless the principal explicitly selects an older version.
