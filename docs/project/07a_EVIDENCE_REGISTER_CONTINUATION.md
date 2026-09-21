@@ -2357,3 +2357,55 @@ PR #195 merged that exact tested head to canonical `main` as `893f6bd673174168ba
 PBM v5 is selected by `benchmarks/pbm/CURRENT`. Its comparison boundary is the platform: Desktop receives one fresh top-level measured task and may use any native descendant tasks it chooses; Room receives one fresh ordinary measured Room and may use ordinary A/B/C coordination. PBM constrains equivalent starting state, mission, success criteria, intervention rules, grading, and measurement—not internal delegation topology.
 
 No paid seven-task PBM v5 comparison has yet completed. The next live benchmark invocation will be the first performance comparison under D-050.
+
+
+### E-174 — First live PBM v5 Desktop-versus-Room comparison
+**Date:** 2026-09-21  
+**Status:** VERIFIED
+
+Run `pbm-v5-benchmark-20260921T130735334526Z` completed automatically under the D-050 platform-outcome contract.
+
+Final protocol state:
+
+- `complete: true`;
+- `aborted: false`;
+- `active: false`;
+- `finalization_error: null`;
+- benchmark fingerprint `492f8ce7d2cc49094abe993db7a20cad2a355ef277a90efd41fe26697b0cbc1b`;
+- fingerprint match across both arms: **true**;
+- comparison `comparable: true`.
+
+Correctness:
+
+- Desktop: **VALID / PASS / 100**;
+- Room: **VALID / PASS / 100**;
+- every one of the seven retained battery tasks scored **100** on both platforms.
+
+Measured Desktop platform result:
+
+- total tokens: **371,378**;
+- duration: **292.069 seconds**;
+- measured thread count: **1**;
+- native descendant count: **0**.
+
+Measured Room platform result:
+
+- total tokens: **1,473,150**;
+- duration: **628.984 seconds**;
+- measured execution count: **32**;
+- peer invocations: **6**.
+
+Derived comparison for this workload:
+
+- Room/Desktop total-token ratio: **3.9667**;
+- Desktop used **1,101,772 fewer measured tokens**, a **74.79% reduction relative to Room**;
+- Room took **2.1535×** Desktop's measured duration;
+- Desktop completed in **53.56% less measured time relative to Room**.
+
+Interpretation is intentionally bounded to this benchmark workload. The result establishes that both platforms achieved identical full-credit correctness under equivalent benchmark conditions, while Desktop used materially fewer measured tokens and less measured time on this run. It does not establish a universal product-performance ordering outside the frozen PBM v5 task battery.
+
+The platform-outcome design behaved as intended: Desktop independently chose to use no native descendants, while the Room used its native multi-agent coordination path with 32 measured executions and 6 peer invocations. Those differences were observed and charged as platform behavior rather than prescribed by the harness.
+
+The provider/account usage meter was corroborating context only. It reported unchanged lifetime-token accounting across the snapshots while the primary rate-limit window increased by 15 percentage points and the secondary window by 2 percentage points. The PBM comparison therefore continues to rely on measured execution usage as its primary token metric, not the account-level meter delta.
+
+**Assessment:** PBM v5 has now completed its first real Desktop-versus-Room performance comparison successfully. I-027 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED / FIRST LIVE COMPARISON COMPLETE**.
