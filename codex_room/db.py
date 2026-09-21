@@ -3905,12 +3905,13 @@ class Database:
         """Select bounded completed results from earlier Tasks/Rounds in this Room."""
         current_round = await self._fetchone(
             db,
-            "SELECT created_at FROM rounds WHERE id=? AND room_id=?",
+            """SELECT rowid AS row_order, created_at FROM rounds
+               WHERE id=? AND room_id=?""",
             (round_id, room_id),
         )
         current_task = await self._fetchone(
             db,
-            """SELECT created_at FROM tasks
+            """SELECT rowid AS row_order, created_at FROM tasks
                WHERE id=? AND round_id=? AND room_id=?""",
             (current_task_id, round_id, room_id),
         )
@@ -3931,12 +3932,19 @@ class Database:
                 room_id,
                 round_id,
                 current_task["created_at"],
+                current_task["created_at"],
+                current_task["row_order"],
                 current_round["created_at"],
+                current_round["created_at"],
+                current_round["row_order"],
             ]
             filters = [
                 "t.room_id=?",
-                """((ro.id=? AND t.state='settled' AND t.created_at < ?)
-                    OR ro.created_at < ?)""",
+                """((ro.id=? AND t.state='settled'
+                     AND (t.created_at < ?
+                          OR (t.created_at = ? AND t.rowid < ?)))
+                    OR (ro.created_at < ?
+                        OR (ro.created_at = ? AND ro.rowid < ?)))""",
                 "x.state='completed'",
                 "e.content IS NOT NULL",
                 "TRIM(e.content)<>''",

@@ -860,3 +860,27 @@ Settled boundary:
 - before any full paid v4 comparison, the mission/specification and grader must be audited together for satisfiability and coverage, and a real end-to-end delayed canary must exercise the actual native execution boundaries rather than only unit-testing the state machine.
 
 **Principle:** **One frozen mission; one paste into Desktop; one paste into Room; no live cross-platform orchestration; deterministic comparison afterward.**
+
+### D-049 — PBM v4 has one common protocol with thin platform adapters
+**Date:** 2026-09-21  
+**Status:** ACTIVE  
+**Supersedes:** D-048 only where D-048 described the principal directly pasting into each measured execution
+
+The principal clarified the PBM operator requirement after the first v4 canary attempt: the human should point Desktop or Room at a named process once and the platform should perform the rest of its own procedure. Desktop and Room may require different native initiation mechanics, but those differences must be thin adapters around one common benchmark protocol rather than separate substantive procedures.
+
+Settled boundary:
+
+- PBM v4 has one normative common protocol governing version/fingerprint binding, mission/fixture equivalence, fresh measured execution, no substantive follow-up guidance, grading, validity classification, evidence capture, bundling, pairing, and deterministic comparison;
+- the principal gives exactly one **controller initiation** per platform; the controller is outside measured benchmark cognition;
+- Desktop's adapter uses native fresh-task creation, then hands the exact child thread id to a detached deterministic monitor; the controller model does not remain alive as a polling loop, and the monitor waits only for its own measured child evidence;
+- Room's adapter may launch a detached deterministic worker that creates and waits only for its own fresh measured Room;
+- neither adapter may wait for, wake, control, or coordinate with the other platform;
+- the deterministic protocol layer automatically binds independent arms to the same active pair and fingerprint, so the principal does not shuttle run ids or intermediate commands between products;
+- preparation, capture, grading, validity checks, evidence bundling, and pair finalization are normal protocol responsibilities, not principal chores;
+- `status`, `abort`, and explicit `bundle` remain recovery/diagnostic operations, not the ordinary operator workflow;
+- the canary must use the same controller/adapters and native boundaries as production benchmark mode, substituting only the bounded canary mission;
+- controller cognition is not charged as measured task cognition; if reported for economics, it must remain visibly separate;
+- Desktop prompt/provenance validation must tolerate supported Codex rollout-schema versions rather than treating one legacy record representation as the protocol itself.
+
+**Principle:** **One common protocol; one principal initiation per platform; only native platform entry mechanics differ; the platform performs the procedure.**
+

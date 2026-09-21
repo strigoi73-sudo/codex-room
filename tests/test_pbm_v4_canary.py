@@ -6,7 +6,7 @@ import json
 from codex_room import pbm, pbm_context, pbm_v4, pbm_v4_canary
 
 
-VERIFIED_V4_FINGERPRINT = "fc505df8c0578308f594e20c27d5a5e0ce68fa078a7c7c5935abc211550bec93"
+CURRENT_V4_FINGERPRINT = pbm.benchmark_fingerprint("v4")
 
 
 def test_canary_uses_exact_v4_one_paste_prompt() -> None:
@@ -38,8 +38,11 @@ def test_canary_marker_validation_is_exact(tmp_path) -> None:
     assert pbm_v4_canary._marker_ok(tmp_path) is False
 
 
-def test_canary_files_do_not_change_verified_v4_benchmark_fingerprint() -> None:
-    assert pbm.benchmark_fingerprint("v4") == VERIFIED_V4_FINGERPRINT
+def test_canary_assets_are_not_production_fingerprint_inputs() -> None:
+    implementation_files = set(pbm.load_manifest("v4")["implementation_files"])
+
+    assert not any(path.startswith("benchmarks/pbm-canary/") for path in implementation_files)
+    assert len(CURRENT_V4_FINGERPRINT) == 64
 
 
 def test_canary_wrapper_preserves_principal_shell_and_captures_native_exit() -> None:
@@ -60,11 +63,11 @@ def test_canary_pair_verification_requires_both_valid_results(tmp_path, monkeypa
 
     desktop = {
         "classification": "VALID",
-        "benchmark_fingerprint": VERIFIED_V4_FINGERPRINT,
+        "benchmark_fingerprint": CURRENT_V4_FINGERPRINT,
     }
     room = {
         "classification": "VALID",
-        "benchmark_fingerprint": VERIFIED_V4_FINGERPRINT,
+        "benchmark_fingerprint": CURRENT_V4_FINGERPRINT,
     }
     (root / "desktop-result.json").write_text(
         json.dumps(desktop), encoding="utf-8"
@@ -95,7 +98,7 @@ def test_canary_context_snapshot_contract_uses_run_metadata(tmp_path, monkeypatc
         "schema": "pbm-v4-canary-run-v1",
         "run_id": run_id,
         "benchmark_version": "v4",
-        "benchmark_fingerprint": VERIFIED_V4_FINGERPRINT,
+        "benchmark_fingerprint": CURRENT_V4_FINGERPRINT,
         "created_at": "2026-09-21T00:00:00Z",
     }
     (root / "run.json").write_text(
@@ -121,5 +124,5 @@ def test_canary_context_snapshot_contract_uses_run_metadata(tmp_path, monkeypatc
 
     assert snapshot["run_id"] == run_id
     assert snapshot["benchmark_version"] == "v4"
-    assert snapshot["benchmark_fingerprint"] == VERIFIED_V4_FINGERPRINT
+    assert snapshot["benchmark_fingerprint"] == CURRENT_V4_FINGERPRINT
     assert (root / "context" / "canary-prep.json").is_file()

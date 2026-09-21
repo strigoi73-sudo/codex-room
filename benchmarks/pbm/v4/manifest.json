@@ -27,18 +27,32 @@
     "completion_artifacts"
   ],
   "v4_protocol": {
-    "desktop_principal_pastes": 1,
-    "room_principal_pastes": 1,
+    "principal_initiations_per_platform": 1,
+    "common_protocol": "PROTOCOL.md",
+    "controller_is_measured": false,
+    "measured_execution_is_fresh": true,
+    "measured_prompt_injected_by_adapter": true,
     "cross_platform_coordination": false,
     "same_fixture": true,
     "same_grader": true,
     "room_dynamic_cognition": "D-039",
-    "result_classifications": ["VALID", "INVALID", "FAILED"]
+    "result_classifications": [
+      "VALID",
+      "INVALID",
+      "FAILED"
+    ],
+    "automatic_pairing": true,
+    "automatic_capture_grading_bundle": true
   },
   "implementation_files": [
     "codex_room/pbm.py",
     "codex_room/pbm_context.py",
+    "codex_room/codex_usage.py",
     "codex_room/pbm_v4.py",
-    "pbm-v4.ps1"
+    "codex_room/pbm_v4_protocol.py",
+    "pbm-v4.ps1",
+    "pbm-v4-protocol.ps1",
+    "pbm_desktop_controller/V4_PROTOCOL.md",
+    "pbm_desktop_controller/PBM-V4.ps1"
   ]
 }

@@ -6,39 +6,41 @@
 
 ## Operator summary
 
-- **Where are we?** I-026 — **PBM v4 independent complementary one-paste benchmarks** — is **IN PROGRESS / IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / LIVE CANARIES PENDING** under D-048. PBM v3's first substantial live run was aborted after it demonstrated architectural and benchmark-integrity failures; do not run v3 again for performance comparison.
-- **What just changed?** Live run `pbm-v3-20260920T234823Z` proved that the Desktop controller could not durably survive Room-side waits without repeated principal resume prompts, that v3 validity handling could advance after an observer-stopped Room, and that frozen task t07 contains an internally inconsistent specification while its grader can still award full credit. The principal aborted the run and selected a replacement architecture: one independent one-paste benchmark for Desktop and one independent one-paste benchmark for Room.
-- **Verification state:** E-167 records the live v3 failure/postmortem. E-168 records PBM v4 exact-head deterministic verification: mission/grader reference audit PASS, focused v4 tests 7 passed, repository fast verification PASS (Linux 63, Windows 118, browser 9), clean tree, and zero file differences from exact tested feature head to canonical merge. Live one-paste Desktop and Room canaries remain unperformed.
-- **What is next?** Execute bounded live one-paste canaries for Desktop and Room, then verify `status`, `abort`, and `bundle` on real v4 state. Do not promote `CURRENT` or run a full paid comparison until those gates pass.
+- **Where are we?** I-026 — **PBM v4 common protocol with thin platform adapters** — is **IN PROGRESS / IMPLEMENTATION REVISION IN PROGRESS / COMMON-PROTOCOL CANARIES PENDING** under D-049. PBM v3's first substantial live run was aborted after it demonstrated architectural and benchmark-integrity failures; do not run v3 again for performance comparison.
+- **What just changed?** E-169 showed that the first v4 canary path still made the principal act as the orchestration layer and that Desktop prompt validation depended on a legacy rollout record shape. The principal clarified the replacement architecture: one common protocol, one controller initiation per platform, thin native adapters, automatic pairing/capture/grading/bundling, and no principal command shuttling.
+- **Verification state:** E-167 records the live v3 failure/postmortem. E-168 remains valid for the earlier v4 bytes it tested, but D-049 materially revises orchestration so that exact-head verification is stale for the new protocol. E-169 records the successful no-cognition operations probe, the Desktop canary's legacy-schema parser invalidity, and the principal's rejection of manual orchestration.
+- **What is next?** Finish and deterministically verify the D-049 common protocol/adapters, install the persistent Room runner once, then run one-initiation canaries through the exact Desktop and Room protocol paths. Do not promote `CURRENT` or run a full paid comparison until those gates pass.
 - **What is blocked?** No conceptual blocker. The next gate is implementation plus deterministic mission/grader audit and a real delayed end-to-end canary before any full paid comparison.
 - **What are we deliberately not doing?** We are not patching the v3 cross-platform controller, not reviving alternating live Desktop↔Room orchestration, and not treating a model conversation as a durable workflow daemon.
 
 ## Current development state
 
-### I-026 — PBM v4 independent complementary one-paste benchmarks
+### I-026 — PBM v4 common protocol with thin platform adapters
 
-**Scope:** [benchmark redesign / independent native Desktop harness / ordinary Room harness / deterministic comparison]
+**Scope:** [common benchmark protocol / native Desktop adapter / ordinary Room adapter / deterministic pairing and comparison]
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / LIVE CANARIES PENDING
+**Reality / evidence:** IMPLEMENTATION REVISION IN PROGRESS / PRIOR EXACT-HEAD VERIFICATION STALE FOR REVISED PROTOCOL / COMMON-PROTOCOL CANARIES PENDING
 
-**Decision:** D-048
+**Decision:** D-049 (supersedes D-048 operator-initiation mechanics)
 
-**Evidence:** E-167, E-168
+**Evidence:** E-167, E-168, E-169
 
-The principal requires two complementary benchmarks with exactly one substantive benchmark paste per platform.
+The principal requires two complementary benchmark executions under one common PBM protocol, with exactly one controller initiation per platform and no intermediate principal choreography.
 
-PBM v4 implementation is now merged on canonical `main` at `a1144f27cc2fe196ed0ecd2935a30c76989a3f35`. The exact tested feature head `3074984340777ed906edf643c8deb2358c701827` passed deterministic verification, and Git comparison from tested head to merge showed zero file differences. `benchmarks/pbm/CURRENT` intentionally remains `v3` until live canary and operations gates pass.
+E-168 verified the earlier v4 implementation bytes, but D-049 now materially revises the orchestration layer and therefore requires fresh exact-version verification. `benchmarks/pbm/CURRENT` intentionally remains `v3`, and live use remains suspended, until the revised common-protocol promotion gates pass.
 
-Implemented architecture:
+Revised architecture under D-049:
 
 - one frozen integrated benchmark mission and equivalent prepared starting fixture for both products;
-- **Desktop:** one fresh top-level native Codex Desktop task, one principal instruction, no benchmark follow-up prompts;
-- **Room:** one fresh ordinary production Room, one principal instruction to C, normal A/B/C coordination and D-039 cognition, no substantive `CONSULT_PRINCIPAL` during the measured mission;
+- **common protocol:** one normative procedure owns fingerprint binding, mission/fixture equivalence, validity, grading, capture, bundling, automatic pairing, and comparison;
+- **Desktop adapter:** one principal instruction to a non-measured Desktop controller; it uses native fresh-task creation for one fresh measured child, hands the exact child thread id to a detached deterministic monitor, and returns without becoming a durable polling loop;
+- **Room adapter:** one principal instruction to C in the persistent non-measured PBM Room Runner; C launches a detached deterministic worker that creates and waits only for one fresh measured ordinary Room;
+- measured Room work retains normal A/B/C coordination and D-039 cognition, with no substantive `CONSULT_PRINCIPAL` during the measured mission;
 - no cross-platform controller, alternating-arm schedule, platform wait loop, wake-up dependency, controller Room, or detached worker coordinating the two products;
 - deterministic harness code prepares each workspace, records exact benchmark fingerprints and contextual snapshots, captures execution evidence, runs the external grader, and emits one platform result;
-- deterministic comparison occurs only after independent Desktop and Room results exist for the same fingerprint;
+- deterministic protocol state automatically pairs the independent Desktop and Room arms under the same fingerprint without principal run-id relay; comparison occurs only after both results exist;
 - explicit result classification: **VALID**, **INVALID**, or **FAILED**, with protocol intervention and terminal-state rules enforced rather than inferred from the existence of a result file;
 - first-class deterministic `status`, `abort`, and postmortem/evidence-bundle operations so incident handling never requires improvised PID/API surgery;
 - the integrated mission must cover representative investigation, repair, feature, specification/constraint, design, verification, and synthesis work while remaining internally satisfiable;
@@ -51,9 +53,9 @@ Promotion gate:
 2. grader coverage audit passes;
 3. focused deterministic tests pass;
 4. repository routine verification passes;
-5. one-paste Desktop canary passes without a second benchmark instruction — **PENDING**;
-6. one-paste Room canary passes without substantive principal consultation — **PENDING**;
-7. abort/status/evidence-bundle paths are verified — **PENDING LIVE PATH CHECK**;
+5. one-initiation Desktop canary passes through the common protocol without principal follow-up — **PENDING REVISED PATH**;
+6. one-initiation Room canary passes through the common protocol without substantive principal consultation — **PENDING REVISED PATH**;
+7. abort/status/evidence-bundle paths are verified — **NO-COGNITION PATH PASSED; REVISED COMMON-PROTOCOL PATH PENDING**;
 8. only then may `benchmarks/pbm/CURRENT` move to v4 and unqualified **Run PBM** resume.
 
 
@@ -324,4 +326,4 @@ Current unresolved questions are feature-local rather than roadmap-global:
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
 - if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
-No feature implementation is currently selected. PBM v3 is the canonical live-use benchmark through **“Run PBM”**; PBM v1 and v2 remain explicitly reproducible as frozen historical versions.
+I-026 is the selected active implementation. Unqualified **Run PBM** remains suspended while `CURRENT` still names historical v3; PBM v1–v3 remain explicitly reproducible only for historical purposes.

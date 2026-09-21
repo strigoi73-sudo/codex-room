@@ -1,42 +1,29 @@
-# PBM v4 bounded one-paste canary
+# PBM v4 bounded common-protocol canary
 
-This canary verifies the live native one-paste protocol without spending a full PBM mission.
+This canary verifies the same PBM v4 controller/adapters used by production benchmark mode without spending a full integrated mission.
 
-The canary uses the exact production v4 paste:
+The canary keeps the production v4 fingerprint binding and the exact measured instruction:
 
 `Read BENCHMARK.md and execute it exactly. Do not ask me questions. When complete, stop.`
 
-It gives Desktop and Room the same tiny workspace instruction: create and verify one exact JSON marker, then stop. It does not measure comparative task performance.
+Its tiny fixture only requires an exact completion marker. It does not measure comparative task performance.
 
-## Deterministic operations probe
+## Desktop
 
-Before paid cognition:
+Point a fresh Desktop controller at the normal adapter in canary mode:
 
-```powershell
-.\pbm-v4-canary.ps1 probe-operations
-```
+`Read V4_PROTOCOL.md and execute it exactly in canary mode.`
 
-This creates a prepared Room without starting cognition, checks live status, aborts it through the canonical Room stop endpoint, rechecks status, and creates an evidence bundle.
+The controller performs preparation, native fresh-task launch, capture, classification, and bundling itself. The principal does not run intermediate commands.
 
-## Live pair canary
+## Room
 
-Prepare:
+Use the persistent `PBM v4 Room Runner` and point C at the normal adapter in canary mode:
 
-```powershell
-.\pbm-v4-canary.ps1 prepare-pair
-```
+`Read PBM_ROOM_PROTOCOL.md and execute it exactly in canary mode.`
 
-Then follow the printed Desktop and Room steps. Each platform receives exactly one substantive paste.
+C launches the detached deterministic worker and returns. The worker creates the fresh measured canary Room and performs capture/classification/bundling without principal choreography.
 
-Capture:
+A canary pair passes only when both independent platform results are VALID and share the exact same production v4 fingerprint.
 
-```powershell
-.\pbm-v4-canary.ps1 complete-desktop --run-id '<run-id>'
-.\pbm-v4-canary.ps1 complete-room --run-id '<run-id>'
-.\pbm-v4-canary.ps1 verify-pair --run-id '<run-id>'
-.\pbm-v4-canary.ps1 bundle --run-id '<run-id>'
-```
-
-A canary passes only if both platform classifications are `VALID` and both are bound to the same already-verified PBM v4 production fingerprint.
-
-The canary assets live outside `benchmarks/pbm/v4` and the canary implementation is not a v4 `implementation_file`; therefore adding or changing canary-only scaffolding does not silently alter the verified production benchmark fingerprint.
+The older `pbm-v4-canary.ps1` commands remain diagnostic/recovery tooling for historical canary evidence. They are not the canonical operator path after D-049.

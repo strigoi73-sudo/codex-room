@@ -123,8 +123,16 @@ def audit_assets() -> dict[str, Any]:
     protocol = manifest.get("v4_protocol") or {}
     if protocol.get("cross_platform_coordination") is not False:
         raise PBMV4Error("PBM v4 must forbid live cross-platform coordination")
-    if protocol.get("desktop_principal_pastes") != 1 or protocol.get("room_principal_pastes") != 1:
-        raise PBMV4Error("PBM v4 requires exactly one principal paste per platform")
+    if protocol.get("principal_initiations_per_platform") != 1:
+        raise PBMV4Error("PBM v4 requires exactly one principal initiation per platform")
+    if protocol.get("common_protocol") != "PROTOCOL.md":
+        raise PBMV4Error("PBM v4 must bind the shared common protocol")
+    if protocol.get("controller_is_measured") is not False:
+        raise PBMV4Error("PBM v4 controller cognition must stay outside measured execution")
+    if protocol.get("measured_execution_is_fresh") is not True:
+        raise PBMV4Error("PBM v4 must use a fresh measured execution per platform")
+    if protocol.get("automatic_pairing") is not True:
+        raise PBMV4Error("PBM v4 must pair independent platform arms without principal relay")
 
     root = pbm.version_root(VERSION)
     fixture = root / manifest["tasks"][0]["fixture_dir"]
@@ -250,22 +258,7 @@ def prepare_pair(room_base: str = DEFAULT_ROOM_BASE) -> dict[str, Any]:
 
 
 def _desktop_user_messages(path: Path) -> list[str]:
-    messages: list[str] = []
-    with path.open("r", encoding="utf-8-sig") as handle:
-        for raw in handle:
-            try:
-                record = json.loads(raw)
-            except json.JSONDecodeError:
-                continue
-            if record.get("type") != "event_msg":
-                continue
-            payload = record.get("payload")
-            if not isinstance(payload, dict) or payload.get("type") != "user_message":
-                continue
-            message = payload.get("message")
-            if isinstance(message, str):
-                messages.append(message)
-    return messages
+    return codex_usage.extract_user_messages(path)
 
 
 def _marker_ok(workspace: Path) -> bool:

@@ -168,6 +168,72 @@ def select_rollout(
     )
 
 
+def extract_user_messages(path: Path) -> list[str]:
+    """Extract user/delegated prompt text across known Codex rollout schemas."""
+
+    legacy: list[str] = []
+    response_items: list[str] = []
+
+    for _, record in _read_json_lines(path):
+        payload = record.get("payload")
+        if not isinstance(payload, dict):
+            continue
+
+        if (
+            record.get("type") == "event_msg"
+            and payload.get("type") == "user_message"
+            and isinstance(payload.get("message"), str)
+        ):
+            legacy.append(str(payload["message"]))
+            continue
+
+        if record.get("type") != "response_item":
+            continue
+
+        role = payload.get("role")
+        payload_type = payload.get("type")
+        if role != "user" and payload_type != "user_message":
+            continue
+
+        metadata = payload.get("internal_chat_message_metadata_passthrough")
+        if isinstance(metadata, dict):
+            kinds = metadata.get("content_item_kinds")
+            if isinstance(kinds, list) and "user.text" not in kinds:
+                # Codex may serialize environment/plugin context as role=user
+                # response items. Those are not principal/delegated task messages.
+                continue
+
+        message = payload.get("message")
+        if isinstance(message, str):
+            response_items.append(message)
+            continue
+
+        content = payload.get("content")
+        if not isinstance(content, list):
+            continue
+
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+                continue
+            if not isinstance(item, dict):
+                continue
+            text = item.get("text")
+            if isinstance(text, str) and item.get("type") in {
+                None,
+                "input_text",
+                "text",
+            }:
+                parts.append(text)
+        if parts:
+            response_items.append("".join(parts))
+
+    # Modern response_item messages and legacy event messages can coexist for
+    # one logical turn. Prefer the richer modern representation when present.
+    return response_items if response_items else legacy
+
+
 def analyze_rollout(path: Path) -> dict[str, Any]:
     meta: dict[str, Any] = {}
     event_counts: Counter[str] = Counter()
