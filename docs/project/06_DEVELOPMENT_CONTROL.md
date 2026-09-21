@@ -6,10 +6,10 @@
 
 ## Operator summary
 
-- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. OUB v1/O1 assets and the thin Desktop↔Room measurement harness are now **IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED**; the first measured O1 comparison is the next explicit usage-consuming step.
-- **What just happened?** OUB v1/O1 was frozen and promoted under PR #202, then the thin measurement harness passed exact-head deterministic verification and merged byte-identically under PR #203. No measured OUB model work has run yet.
+- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. The first measured OUB v1/O1 comparison is complete. It produced usable cost/orchestration evidence but exposed a hidden exact-label grader-contract defect, so its numeric quality scores are not authoritative.
+- **What just happened?** O1 completed VALID on both platforms. Desktop used 167,898 tokens in 56.223 s; Room used 191,793 tokens in 109.143 s with five C executions and zero peer invocations. Both reports substantively identified the intended incident mechanism, but the frozen grader penalized unspecified hidden canonical code strings.
 - **Why the priority changed:** current evidence does not demonstrate that Codex Room produces better practical outcomes than Codex Desktop on ordinary task execution. Further optimization is not sufficient justification by itself; the product must demonstrate value attributable to its persistent multi-agent organization.
-- **What is next?** Run the first measured OUB v1/O1 comparison when the principal chooses to spend model allotment. O1 targets roughly 10–15 minutes of capable-model work per platform and tests competing-hypothesis forensic diagnosis under unconstrained native orchestration.
+- **What is next?** Do not rerun O1. Design the next OUB version/task to create stronger intrinsic need for independent analysis while keeping Desktop orchestration unconstrained, and make the grading contract robust to semantically equivalent answers.
 - **What is blocked?** Nothing technical is blocked.
 - **What are we deliberately not doing?** We are not buying another PBM run, adding more orchestration complexity, or continuing efficiency work merely to improve benchmark numbers before Codex Room demonstrates practical utility over Desktop.
 
