@@ -1,0 +1,8 @@
+{
+  "evidence_code": "C501",
+  "gateway_timeout_ms": 800,
+  "gateway_retry_delay_ms": 1500,
+  "gateway_max_attempts": 2,
+  "worker_parallelism": 8,
+  "job_lease_seconds": 30
+}

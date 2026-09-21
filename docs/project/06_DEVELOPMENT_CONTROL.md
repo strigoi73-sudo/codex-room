@@ -19,7 +19,7 @@
 
 **Scope:** [product-value validation / Room-specific organizational utility / Desktop comparison without handicapping either platform]
 
-**Work state:** PLANNED / NEXT
+**Work state:** IN PROGRESS
 
 **Reality / evidence:** EXPLORATORY; current PBM evidence shows no demonstrated ordinary-task quality advantage over Desktop
 
@@ -39,6 +39,18 @@ Desktop must remain free to use its own native capabilities, including subagents
 A positive result requires demonstrated practical benefit such as materially better answer/output quality, materially better consequential-error detection, materially better continuity, materially less human coordination burden, or a workflow/capability that Desktop cannot reproduce with comparable convenience. More agents, more messages, more provenance, or greater token spend are not success criteria.
 
 If fair utility testing fails to establish a meaningful advantage, the project should explicitly consider simplifying, repurposing, or stopping rather than continuing orchestration work by inertia.
+
+
+Current implementation slice: **OUB v1 / O1 — Competing root causes**.
+
+- OUB is a separate organizational-utility benchmark family rather than a harder PBM battery.
+- O1 is a compact fictional duplicate-charge forensic investigation with one real retry/idempotency causal chain and three plausible competing explanations.
+- Both platforms receive the same ten-file investigation workspace and the same mission; native internal orchestration is unconstrained.
+- No implementation work or outside research is required. The intended model workload is evidence partitioning, competing-hypothesis analysis, causal synthesis, falsification, and control selection.
+- O1's design budget is **10–15 minutes per platform**, with a manifest target of 12 minutes, at most ten fixture files, and at most 30 KB of starting fixture content.
+- The deterministic 100-point grader separately scores root cause, trigger, exact causal ordering, source/operational evidence, rejection of duplicate-ingress / concurrent-claim / database-pool alternatives, and recurrence controls.
+- Reference artifacts and an asset audit are included so satisfiability and grading can be verified before any measured platform run.
+- Current feature branch: `oub-v1-o01`. Exact-head verification and promotion remain pending; no paid OUB arm should run before that gate passes.
 
 ### I-027 — PBM v5 platform-outcome benchmark
 
