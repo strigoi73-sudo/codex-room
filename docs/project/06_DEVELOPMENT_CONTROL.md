@@ -6,10 +6,10 @@
 
 ## Operator summary
 
-- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. OUB v1/O1 assets and the thin Desktop↔Room measurement harness are now **IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED**; the first measured O1 comparison is the next explicit usage-consuming step.
-- **What just happened?** OUB v1/O1 was frozen and promoted under PR #202, then the thin measurement harness passed exact-head deterministic verification and merged byte-identically under PR #203. No measured OUB model work has run yet.
+- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. The first measured OUB v1/O1 comparison is complete. It produced usable cost/orchestration evidence but exposed a hidden exact-label grader-contract defect, so its numeric quality scores are not authoritative.
+- **What just happened?** O1 completed VALID on both platforms. Desktop used 167,898 tokens in 56.223 s; Room used 191,793 tokens in 109.143 s with five C executions and zero peer invocations. Both reports substantively identified the intended incident mechanism, but the frozen grader penalized unspecified hidden canonical code strings.
 - **Why the priority changed:** current evidence does not demonstrate that Codex Room produces better practical outcomes than Codex Desktop on ordinary task execution. Further optimization is not sufficient justification by itself; the product must demonstrate value attributable to its persistent multi-agent organization.
-- **What is next?** Run the first measured OUB v1/O1 comparison when the principal chooses to spend model allotment. O1 targets roughly 10–15 minutes of capable-model work per platform and tests competing-hypothesis forensic diagnosis under unconstrained native orchestration.
+- **What is next?** Do not rerun O1. Design the next OUB version/task to create stronger intrinsic need for independent analysis while keeping Desktop orchestration unconstrained, and make the grading contract robust to semantically equivalent answers.
 - **What is blocked?** Nothing technical is blocked.
 - **What are we deliberately not doing?** We are not buying another PBM run, adding more orchestration complexity, or continuing efficiency work merely to improve benchmark numbers before Codex Room demonstrates practical utility over Desktop.
 
@@ -21,9 +21,9 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** OUB v1/O1 ASSET + HARNESS IMPLEMENTED / EXACT-HEAD VERIFIED / PROMOTED; FIRST MEASURED O1 COMPARISON PENDING
+**Reality / evidence:** OUB v1/O1 FIRST MEASURED COMPARISON COMPLETE; COST/ORCHESTRATION EVIDENCE VALID; NUMERIC QUALITY SCORE NOT AUTHORITATIVE DUE GRADER-CONTRACT DEFECT
 
-**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179
+**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179, E-180
 
 Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
 
@@ -55,7 +55,9 @@ Current implementation slice: **OUB v1 / O1 — Competing root causes**.
 - The thin measurement harness creates equivalent Desktop/Room workspaces, starts the ordinary Room arm plus detached monitors, discovers exactly one fresh Desktop root by workspace, aggregates Desktop native descendants and all Room executions, enforces no-substantive-principal-intervention plus frozen-fixture integrity, grades both final workspaces, and reports quality/cost/duration/orchestration separately without declaring a winner.
 - Harness implementation uses a 30-minute safety ceiling while retaining the 10–15 minute / 12-minute target as the intended task budget.
 - Exact harness head `9790c736ba695b8cc127b19ea45b480eb0713867` passed the frozen-asset invariant, harness audit, 14 focused OUB/PBM tests, unchanged PBM v5 fingerprint, repository fast verifier (64 Linux / 118 Windows / 9 browser), and exact scope/head checks. PR #203 merged byte-identically as `21b427a68a582ce3f717f4c64759bebd0c710edc`; see E-177.
-- No measured OUB model work has run yet. The first O1 Desktop↔Room comparison is the next explicit usage-consuming step.
+- First measured O1 comparison completed as `oub-v1-o01-20260921T164303033477Z`. Both arms were VALID and used the same frozen fingerprint. Desktop: 167,898 tokens / 56.223 s / 1 thread / 0 descendants. Room: 191,793 tokens / 109.143 s / 5 executions / 0 peer invocations. The observed Room/Desktop token ratio was 1.1423 and duration ratio 1.9413.
+- The reported quality scores (Desktop 45, Room 35) are **not authoritative measures of diagnosis quality**. `BENCHMARK.md` permitted arbitrary descriptive `UPPER_SNAKE_CASE` codes, while the hidden grader required exact canonical strings and one exact four-step chain. Manual inspection shows both platforms identified the unstable per-attempt idempotency identity, ambiguous timeout-after-commit mechanism, the three rejected alternatives, and the two intended controls. Preserve the numeric outputs as historical grader results, but do not use them to infer a 10-point reasoning gap.
+- O1 did not create the intended organizational pressure: both platforms finished far below the 10–15 minute design budget, Desktop used no descendants, and Room used no A/B peer invocation. O1 therefore provides a valid negative signal about spontaneous Room organizational activation plus valid cost/time evidence, but is insufficient as the decisive I-028 utility gate. Do not rerun O1 merely for another stochastic sample; design the next OUB version/task around stronger intrinsic need for independent analysis and a grader contract that cannot penalize unspecified hidden labels.
 - The first O1 launch attempt exposed a launcher race before any measured arm was created: `Restart-Codex-Room.bat` returned after process launch but before the API accepted connections, causing `oub-v1.ps1 prepare` to fail at `/api/health`. PR #205 adds a post-launch readiness gate that polls `/api/health` for up to 30 seconds and cleans up on failure. Exact head `6ef357f512b1ff8b5f485212485c40249dd7fb7a` passed 9 launcher tests, frozen OUB/PBM fingerprint checks, a live restart-readiness probe, no-active-OUB confirmation, and exact scope/head checks; it merged byte-identically as `e0897b692aa985c6aa676a63a55df4cfe247ca17`. See E-178.
 - The second O1 launch attempt reached Room creation but still failed before any measured turn began: OUB tried to delete the newly created live Room `shared` workspace before copying the fixture, but the persistent Codex threads already used that directory as their working directory, producing Windows `WinError 32`. PR #207 aligns OUB with PBM's proven pattern by populating the existing empty Room workspace in place, rejects unexpected pre-existing files, and archives a newly created Room automatically if preparation fails before measurement. Exact head `0eb91145f5eb75237b9dcc4fba1a03620fb971cb` passed 17 focused OUB/PBM tests, a Windows live-workspace lock regression, frozen OUB/PBM fingerprint checks, and exact scope/head checks; it merged byte-identically as `4b8d9a4335fd3abddd02b7ba36a90b20c685a13e`. See E-179.
 

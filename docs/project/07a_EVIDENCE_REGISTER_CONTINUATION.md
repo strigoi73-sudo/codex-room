@@ -2608,3 +2608,36 @@ The orphan Room from the failed attempt was already archived when verification b
 PR #207 merged as `4b8d9a4335fd3abddd02b7ba36a90b20c685a13e`. GitHub comparison from the exact verified feature head to the merge commit reported zero file differences.
 
 **Assessment:** Both observed O1 launch-path defects are now repaired without changing frozen benchmark assets. The first measured OUB v1/O1 comparison remains pending; no paid benchmark model work was consumed by either failed launch.
+
+
+### E-180 — First measured OUB v1/O1 comparison and grader-contract diagnosis
+**Date:** 2026-09-21  
+**Status:** VERIFIED
+
+Run `oub-v1-o01-20260921T164303033477Z` completed as the first measured Organizational Utility Benchmark comparison.
+
+Both arms were valid for comparison and bound to the same frozen OUB v1 fingerprint `d6ec60fca42c6dd436b15d4f8621bb711056b1da5aa93f5a6ecaee2188ba4835`.
+
+Measured platform behavior:
+
+- Desktop: VALID; 167,898 total tokens; 56.223 seconds; 1 measured thread; 0 descendants; 5 tool calls.
+- Room: VALID; 191,793 total tokens; 109.143 seconds; 5 measured executions; 0 peer invocations; 1 tool call.
+- Room/Desktop total-token ratio: 1.1423.
+- Room/Desktop duration ratio: 1.9413.
+- No substantive principal intervention occurred after launch.
+
+The deterministic grader emitted Desktop 45/100 and Room 35/100. Post-run inspection established that these numeric scores are not authoritative measures of reasoning quality because the benchmark/grader contract is inconsistent:
+
+- `BENCHMARK.md` requires descriptive `UPPER_SNAKE_CASE` codes but does not publish canonical values for root cause, trigger, causal steps, rejected-hypothesis names, or control names.
+- The hidden grader nevertheless requires exact canonical strings such as `UNSTABLE_IDEMPOTENCY_KEY`, `AMBIGUOUS_GATEWAY_TIMEOUT`, exact rejected-hypothesis identifiers, exact control identifiers, and one exact four-element causal chain.
+- Desktop used semantically equivalent labels such as `GATEWAY_RETRY_IDEMPOTENCY_FAILURE`, `DUPLICATE_UPSTREAM_SUBMISSIONS`, and `USE_STABLE_PAYMENT_INTENT_IDEMPOTENCY_KEY`.
+- Room used semantically equivalent labels such as `RETRY_IDEMPOTENCY_KEY_CHANGED_PER_ATTEMPT`, `AMBIGUOUS_GATEWAY_TIMEOUT_AFTER_COMMIT`, `CONCURRENT_JOB_CLAIMS`, and `USE_PAYMENT_INTENT_ID_AS_STABLE_IDEMPOTENCY_KEY`.
+- Both incident reports correctly describe the intended causal mechanism: the first gateway charge committed, the client observed an ambiguous timeout, retry logic generated a new idempotency identity, and the gateway accepted the retry as a second charge.
+- Both reports reject duplicate upstream submission, concurrent/double claim, and database-pool exhaustion using relevant supplied evidence.
+- Both reports recommend stable per-payment idempotency identity plus reconciliation of ambiguous timeout outcomes.
+
+Accordingly, preserve 45 and 35 as historical outputs of the frozen OUB v1 grader, but do not interpret the 10-point difference as demonstrated diagnosis-quality superiority.
+
+The organizational-utility signal is separate and valid. O1 was designed for approximately 10–15 minutes of capable-model work per platform, yet Desktop completed in 56.223 seconds and Room in 109.143 seconds. Desktop used no descendants. Room used five Agent-C executions across Terra-high, Terra-medium, Sol-medium and Luna-low configurations, but **zero A/B peer invocations**.
+
+**Assessment:** O1 did not create enough intrinsic organizational pressure to test the intended Room advantage. It provides valid platform cost/time evidence and a valid observation that ordinary Room coordination chose not to use its peers on this task. It does not provide a reliable numeric quality comparison because of the hidden exact-label grader contract. Do not spend another paid run merely repeating O1. The next OUB version/task should (1) make independent perspectives materially useful to task success, (2) remain fair to Desktop native orchestration, and (3) use a grading contract whose accepted semantics are fully specified or otherwise robust to equivalent wording.
