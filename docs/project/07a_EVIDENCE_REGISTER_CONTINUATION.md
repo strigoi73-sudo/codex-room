@@ -2186,3 +2186,72 @@ The merged D-049 implementation provides the common PBM v4 protocol, thin Deskto
 
 **Assessment:** the revised PBM v4 D-049 implementation is **IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / NOT YET PROMOTED**. The next gate is one-initiation live canary execution through the exact Desktop and persistent Room-runner adapter paths, followed by inspection of deterministic canary state/evidence and any remaining live recovery-path verification. `benchmarks/pbm/CURRENT` remains `v3` until the full promotion gate passes.
 
+---
+
+### E-171 — PBM v4 real common-protocol canary evidence, Desktop provenance repair, and seven-task battery exact-head verification
+**Date:** 2026-09-21  
+**Kind:** [live canary evidence / benchmark redesign / validity repair / exact-head verification / repository verification / Git provenance]  
+**Related work:** I-026 / D-049  
+**Evidence state:** VERIFIED for the observed live canary behavior, PR #190 deterministic repair, and exact tested-to-merged file equivalence; final merged-bytes common-protocol canary pair remains pending
+
+The first real D-049 common-protocol canary pair exercised both native platform paths without principal run-id shuttling.
+
+Observed live result:
+
+- Room arm: **VALID**;
+- Desktop arm: measured execution completed successfully, provider usage was present, the controller workspace provenance was correct, the canary quality result was **100/100**, and no failed reasons were recorded;
+- Desktop classification nevertheless returned **INVALID** only because the verifier expected exactly one delegated user message in the child rollout and observed zero.
+
+Read-only rollout inspection established that native Codex fresh-task delegation does not serialize the controller's delegated prompt as a child `user.text` record. The child rollout's only user-role response item was synthetic plugin/environment context, which the schema-tolerant parser correctly excluded. Therefore the verifier's assumption—not the measured Desktop execution—caused the invalid classification.
+
+The repair changes the Desktop validity contract to match the native boundary:
+
+- zero child `user.text` records is the expected baseline for native fresh-task delegation;
+- any child user message is treated as post-launch substantive intervention and invalidates the measured arm;
+- the exact delegated prompt remains owned by deterministic controller state and the exact child thread id remains bound before the detached monitor starts.
+
+The same work also corrected the PBM v4 workload design before promotion. Benchmark mode now uses one frozen seven-task cross-domain battery shared by Desktop and Room rather than one monolithic order-tool mission. The retained tasks are:
+
+1. `t01-mechanical-change`;
+2. `t02-bounded-investigation`;
+3. `t03-localized-bug`;
+4. `t04-small-feature`;
+5. `t05-state-mutation-bug`;
+6. `t06-constrained-design`;
+7. `t08-integrated-cli`.
+
+The known-inconsistent historical `t07-spec-repair` task remains excluded. Both products receive equivalent fixtures/prompts/graders but may organize the work using their own native platform capabilities. Token/duration efficiency is measured across the full battery; task-specific correctness remains independently graded. The benchmark does not invent per-task token attribution from one continuous measured execution.
+
+The v4 fingerprint now binds the inherited v1 task assets in addition to v4 implementation bytes. Each retained task has a known-good v4 reference overlay that must earn full credit before a paid run.
+
+The principal verified exact PR #190 head:
+
+`5e367513e9331a09c768aad377b5924b274b5e16`
+
+from a clean tracked checkout. Observed deterministic verification results:
+
+- Python syntax check: **PASS**;
+- seven-task battery/reference audit: **PASS**;
+- battery fingerprint: `1c4359810f18b394fcc91d1177aeb641af5783d7d9c4b43827ab94e484531c5a`;
+- aggregate reference score: **100**;
+- every retained task reference score: **100**;
+- focused PBM verification: **55 passed**;
+- `verify-fast.cmd`: **PASS**;
+- Linux Python 3.12 focused core: **63 passed**;
+- Windows focused portability: **118 passed**;
+- browser transcript stability: **9 passed**;
+- tracked tree remained clean;
+- exact feature HEAD remained unchanged during verification.
+
+PR #190 was merged with expected-head protection. Canonical implementation merge commit:
+
+`8015d0a8bef6233de622bec18a92c61dc71dfa96`
+
+Git comparison from the exact tested feature head to that canonical merge established:
+
+- merge-base is the exact tested feature head;
+- canonical merge is exactly one commit ahead;
+- there are **zero file differences** between the tested feature head and canonical implementation merge.
+
+**Assessment:** PBM v4 is **IMPLEMENTED / SEVEN-TASK BATTERY EXACT-HEAD DETERMINISTICALLY VERIFIED / NOT YET PROMOTED**. The remaining promotion gate is one final common-protocol canary pair on the merged repaired bytes, plus final automatic status/evidence-bundle confirmation. `benchmarks/pbm/CURRENT` remains `v3`; do not run the paid seven-task comparison until promotion.
+
