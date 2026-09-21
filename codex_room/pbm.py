@@ -71,6 +71,15 @@ def benchmark_fingerprint(version: str | None = None) -> str:
     asset_version = manifest.get("asset_version")
     if isinstance(asset_version, str) and asset_version and asset_version != root.name:
         roots.append(version_root(asset_version))
+    additional_asset_versions = manifest.get("additional_asset_versions") or []
+    if not isinstance(additional_asset_versions, list):
+        raise PBMError("additional_asset_versions must be a list when present")
+    for asset in additional_asset_versions:
+        if not isinstance(asset, str) or not asset:
+            raise PBMError("additional_asset_versions entries must be non-empty strings")
+        candidate = version_root(asset)
+        if candidate not in roots:
+            roots.append(candidate)
 
     digest = hashlib.sha256()
     for source_root in roots:
