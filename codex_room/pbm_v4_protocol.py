@@ -525,6 +525,139 @@ def desktop_monitor_start(run_id: str, thread_id: str) -> dict[str, Any]:
     }
 
 
+def _provisional_desktop_thread_id(thread_id: str) -> bool:
+    return thread_id.startswith("client-new-thread:")
+
+
+def _desktop_rollout_candidates_since(desktop: dict[str, Any]) -> list[tuple[Path, str]]:
+    prepared_at = pbm._parse_time(desktop.get("prepared_at"))
+    candidates: list[tuple[Path, str]] = []
+
+    for path in codex_usage._rollout_paths(  # type: ignore[attr-defined]
+        codex_usage.default_codex_home(),
+        include_archived=True,
+    ):
+        meta = codex_usage._session_meta(path)  # type: ignore[attr-defined]
+        actual_thread_id = codex_usage._thread_id(meta)  # type: ignore[attr-defined]
+        if not isinstance(actual_thread_id, str) or not actual_thread_id:
+            continue
+        if _provisional_desktop_thread_id(actual_thread_id):
+            continue
+
+        cwd = meta.get("cwd")
+        if not isinstance(cwd, str):
+            continue
+        if os.path.normcase(os.path.abspath(cwd)) != os.path.normcase(
+            os.path.abspath(DESKTOP_CONTROLLER_ROOT)
+        ):
+            continue
+
+        created_at = pbm._parse_time(meta.get("timestamp"))
+        if prepared_at is not None and created_at is not None and created_at < prepared_at:
+            continue
+        if prepared_at is not None and created_at is None:
+            continue
+
+        candidates.append((path, actual_thread_id))
+
+    return sorted(candidates, key=lambda item: item[0].stat().st_mtime_ns)
+
+
+def _resolve_desktop_rollout(
+    desktop: dict[str, Any],
+    thread_id: str,
+) -> tuple[Path, str]:
+    try:
+        rollout = codex_usage.select_rollout(
+            codex_home=codex_usage.default_codex_home(),
+            thread_id=thread_id,
+            include_archived=True,
+        )
+        meta = codex_usage._session_meta(rollout)  # type: ignore[attr-defined]
+        actual = codex_usage._thread_id(meta)  # type: ignore[attr-defined]
+        return rollout, str(actual or thread_id)
+    except codex_usage.RolloutUsageError:
+        if not _provisional_desktop_thread_id(thread_id):
+            raise
+
+    candidates = _desktop_rollout_candidates_since(desktop)
+    if not candidates:
+        raise codex_usage.RolloutUsageError(
+            f"no persisted rollout found yet for provisional Desktop task {thread_id}"
+        )
+    if len(candidates) != 1:
+        observed = ", ".join(actual for _, actual in candidates)
+        raise PBMV4ProtocolError(
+            "provisional Desktop task mapping is ambiguous; "
+            f"observed {len(candidates)} candidate rollouts: {observed}"
+        )
+    return candidates[0]
+
+
+def _bind_resolved_desktop_thread(
+    run_id: str,
+    provisional_thread_id: str,
+    actual_thread_id: str,
+) -> None:
+    if provisional_thread_id == actual_thread_id:
+        return
+    with _protocol_lock():
+        state = _load_state(run_id)
+        desktop = state.get("desktop")
+        if not isinstance(desktop, dict):
+            return
+        current = desktop.get("thread_id")
+        if current not in {provisional_thread_id, actual_thread_id}:
+            raise PBMV4ProtocolError(
+                "Desktop thread binding changed while resolving provisional task id"
+            )
+        state["desktop"] = {
+            **desktop,
+            "thread_id": actual_thread_id,
+            "provisional_thread_id": provisional_thread_id,
+            "thread_resolved_at": pbm.utc_now(),
+        }
+        _save_state(run_id, state)
+
+
+def _recover_desktop_if_ready(run_id: str) -> bool:
+    state = _load_state(run_id)
+    desktop = state.get("desktop")
+    if not isinstance(desktop, dict):
+        return False
+    if desktop.get("status") not in {"prepared", "monitoring"}:
+        return False
+    if _result_path(state, "desktop").is_file():
+        return False
+
+    workspace = Path(str(desktop.get("workspace") or ""))
+    if not workspace.is_dir() or not _marker_ok(str(state["mode"]), workspace):
+        return False
+
+    requested_thread_id = desktop.get("thread_id")
+    if not isinstance(requested_thread_id, str) or not requested_thread_id:
+        return False
+
+    try:
+        rollout, actual_thread_id = _resolve_desktop_rollout(
+            desktop,
+            requested_thread_id,
+        )
+    except codex_usage.RolloutUsageError:
+        return False
+
+    if time.time_ns() - rollout.stat().st_mtime_ns < 3_000_000_000:
+        return False
+
+    _bind_resolved_desktop_thread(
+        run_id,
+        requested_thread_id,
+        actual_thread_id,
+    )
+    desktop_finish(run_id, actual_thread_id)
+    return True
+
+
 def _rollout_stable_for(
     path: Path,
     *,
@@ -565,15 +698,20 @@ def desktop_worker(run_id: str, timeout_seconds: int = 3600) -> dict[str, Any]:
                 }
 
             try:
-                rollout = codex_usage.select_rollout(
-                    codex_home=codex_usage.default_codex_home(),
-                    thread_id=thread_id,
-                    include_archived=True,
+                rollout, actual_thread_id = _resolve_desktop_rollout(
+                    desktop,
+                    thread_id,
                 )
             except codex_usage.RolloutUsageError:
                 rollout = None
+                actual_thread_id = thread_id
 
             if rollout is not None and _marker_ok(str(state["mode"]), workspace):
+                _bind_resolved_desktop_thread(
+                    run_id,
+                    thread_id,
+                    actual_thread_id,
+                )
                 signature, stable_since = _rollout_stable_for(
                     rollout,
                     prior_signature=signature,
@@ -583,7 +721,7 @@ def desktop_worker(run_id: str, timeout_seconds: int = 3600) -> dict[str, Any]:
                     stable_since is not None
                     and time.time() - stable_since >= 3.0
                 ):
-                    return desktop_finish(run_id, thread_id)
+                    return desktop_finish(run_id, actual_thread_id)
             else:
                 signature = None
                 stable_since = None
@@ -593,7 +731,7 @@ def desktop_worker(run_id: str, timeout_seconds: int = 3600) -> dict[str, Any]:
         if rollout is not None:
             # Preserve a deterministic FAILED/INVALID result on timeout when
             # rollout evidence exists, rather than requiring principal capture.
-            return desktop_finish(run_id, thread_id)
+            return desktop_finish(run_id, actual_thread_id)
         raise PBMV4ProtocolError(
             f"Desktop measured child {thread_id} produced no rollout within "
             f"{timeout_seconds} seconds"
@@ -1275,13 +1413,12 @@ def status(run_id: str | None = None) -> dict[str, Any]:
         run_id = str(pointer["run_id"])
 
     state = _load_state(run_id)
-    if (
-        not state.get("complete")
-        and not state.get("aborted")
-        and all(_result_path(state, arm).is_file() for arm in ("desktop", "room"))
-    ):
-        _finalize_if_ready(run_id)
+    if not state.get("complete") and not state.get("aborted"):
+        _recover_desktop_if_ready(run_id)
         state = _load_state(run_id)
+        if all(_result_path(state, arm).is_file() for arm in ("desktop", "room")):
+            _finalize_if_ready(run_id)
+            state = _load_state(run_id)
 
     value = {
         "active": not state.get("complete") and not state.get("aborted"),
