@@ -7,7 +7,7 @@
 ## Operator summary
 
 - **Where are we?** I-026 — **PBM v4 common protocol with thin platform adapters** — is **IN PROGRESS / IMPLEMENTATION REVISION IN PROGRESS / COMMON-PROTOCOL CANARIES PENDING** under D-049. PBM v3's first substantial live run was aborted after it demonstrated architectural and benchmark-integrity failures; do not run v3 again for performance comparison.
-- **What just changed?** Live run `pbm-v3-20260920T234823Z` proved that the Desktop controller could not durably survive Room-side waits without repeated principal resume prompts, that v3 validity handling could advance after an observer-stopped Room, and that frozen task t07 contains an internally inconsistent specification while its grader can still award full credit. The principal aborted the run and selected a replacement architecture: one independent one-paste benchmark for Desktop and one independent one-paste benchmark for Room.
+- **What just changed?** E-169 showed that the first v4 canary path still made the principal act as the orchestration layer and that Desktop prompt validation depended on a legacy rollout record shape. The principal clarified the replacement architecture: one common protocol, one controller initiation per platform, thin native adapters, automatic pairing/capture/grading/bundling, and no principal command shuttling.
 - **Verification state:** E-167 records the live v3 failure/postmortem. E-168 remains valid for the earlier v4 bytes it tested, but D-049 materially revises orchestration so that exact-head verification is stale for the new protocol. E-169 records the successful no-cognition operations probe, the Desktop canary's legacy-schema parser invalidity, and the principal's rejection of manual orchestration.
 - **What is next?** Finish and deterministically verify the D-049 common protocol/adapters, install the persistent Room runner once, then run one-initiation canaries through the exact Desktop and Room protocol paths. Do not promote `CURRENT` or run a full paid comparison until those gates pass.
 - **What is blocked?** No conceptual blocker. The next gate is implementation plus deterministic mission/grader audit and a real delayed end-to-end canary before any full paid comparison.
@@ -15,9 +15,9 @@
 
 ## Current development state
 
-### I-026 — PBM v4 independent complementary one-paste benchmarks
+### I-026 — PBM v4 common protocol with thin platform adapters
 
-**Scope:** [benchmark redesign / independent native Desktop harness / ordinary Room harness / deterministic comparison]
+**Scope:** [common benchmark protocol / native Desktop adapter / ordinary Room adapter / deterministic pairing and comparison]
 
 **Work state:** IN PROGRESS
 
@@ -29,7 +29,7 @@
 
 The principal requires two complementary benchmark executions under one common PBM protocol, with exactly one controller initiation per platform and no intermediate principal choreography.
 
-PBM v4 implementation is now merged on canonical `main` at `a1144f27cc2fe196ed0ecd2935a30c76989a3f35`. The exact tested feature head `3074984340777ed906edf643c8deb2358c701827` passed deterministic verification, and Git comparison from tested head to merge showed zero file differences. `benchmarks/pbm/CURRENT` intentionally remains `v3` until live canary and operations gates pass.
+E-168 verified the earlier v4 implementation bytes, but D-049 now materially revises the orchestration layer and therefore requires fresh exact-version verification. `benchmarks/pbm/CURRENT` intentionally remains `v3`, and live use remains suspended, until the revised common-protocol promotion gates pass.
 
 Revised architecture under D-049:
 
@@ -326,4 +326,4 @@ Current unresolved questions are feature-local rather than roadmap-global:
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
 - if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
-No feature implementation is currently selected. PBM v3 is the canonical live-use benchmark through **“Run PBM”**; PBM v1 and v2 remain explicitly reproducible as frozen historical versions.
+I-026 is the selected active implementation. Unqualified **Run PBM** remains suspended while `CURRENT` still names historical v3; PBM v1–v3 remain explicitly reproducible only for historical purposes.
