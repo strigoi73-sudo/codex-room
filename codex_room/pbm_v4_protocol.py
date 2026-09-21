@@ -11,9 +11,10 @@ import subprocess
 import sys
 import time
 import zipfile
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from . import codex_usage, pbm, pbm_v4, pbm_v4_canary
 
@@ -26,6 +27,7 @@ DESKTOP_ACTIVE_ROOT = DESKTOP_CONTROLLER_ROOT / "active-v4"
 DESKTOP_TASK_FILE = DESKTOP_ACTIVE_ROOT / "ACTIVE_TASK.md"
 PROTOCOL_STATE_DIR = "v4-protocol"
 PROTOCOL_BUNDLE_ROOT = pbm.PROJECT_ROOT / "output" / "pbm" / "protocol-bundles"
+PROTOCOL_LOCK_DIR = pbm.PROJECT_ROOT / "output" / "pbm" / ".v4-protocol-state-lock"
 ROOM_RUNNER_TITLE = "PBM v4 Room Runner"
 TERMINAL_ROOM_STATUSES = {"finished", "stopped", "error", "archived"}
 
@@ -59,6 +61,51 @@ def _load_state(run_id: str) -> dict[str, Any]:
 
 def _save_state(run_id: str, state: dict[str, Any]) -> None:
     _write_json(_state_path(run_id), state)
+
+
+@contextmanager
+def _protocol_lock(timeout_seconds: float = 10.0) -> Iterator[None]:
+    """Serialize short active-pair/state mutations across independent adapters."""
+
+    PROTOCOL_LOCK_DIR.parent.mkdir(parents=True, exist_ok=True)
+    deadline = time.time() + timeout_seconds
+    while True:
+        try:
+            PROTOCOL_LOCK_DIR.mkdir()
+            break
+        except FileExistsError:
+            try:
+                age = time.time() - PROTOCOL_LOCK_DIR.stat().st_mtime
+            except OSError:
+                age = 0.0
+            if age > 60:
+                try:
+                    PROTOCOL_LOCK_DIR.rmdir()
+                    continue
+                except OSError:
+                    pass
+            if time.time() >= deadline:
+                raise PBMV4ProtocolError("Timed out waiting for PBM v4 protocol state lock")
+            time.sleep(0.05)
+    try:
+        yield
+    finally:
+        try:
+            PROTOCOL_LOCK_DIR.rmdir()
+        except OSError:
+            pass
+
+
+def _set_platform_state(
+    run_id: str,
+    platform: str,
+    value: dict[str, Any],
+) -> dict[str, Any]:
+    with _protocol_lock():
+        latest = _load_state(run_id)
+        latest[platform] = value
+        _save_state(run_id, latest)
+        return latest
 
 
 def _result_path(state: dict[str, Any], platform: str) -> Path:
@@ -126,56 +173,61 @@ def _ensure_run(mode: str) -> dict[str, Any]:
     audit = pbm_v4.audit_assets()
     fingerprint = str(audit["benchmark_fingerprint"])
 
-    pointer = _active_run()
-    if pointer is not None:
-        run_id = str(pointer["run_id"])
-        state = _load_state(run_id)
-        if state.get("complete") or state.get("aborted"):
-            _clear_active_if(run_id)
-        else:
-            if state.get("mode") != mode:
-                raise PBMV4ProtocolError(
-                    f"Active PBM v4 protocol run {run_id} is {state.get('mode')}; "
-                    "finish or abort it before starting a different mode"
-                )
-            if state.get("benchmark_fingerprint") != fingerprint:
-                raise PBMV4ProtocolError(
-                    "PBM v4 fingerprint changed while a protocol run is active"
-                )
-            if (state.get("repo") or {}).get("head") != repo["head"]:
-                raise PBMV4ProtocolError(
-                    "Repository HEAD changed while a protocol run is active"
-                )
-            return state
+    created_run_id: str | None = None
+    with _protocol_lock():
+        pointer = _active_run()
+        if pointer is not None:
+            run_id = str(pointer["run_id"])
+            state = _load_state(run_id)
+            if state.get("complete") or state.get("aborted"):
+                _clear_active_if(run_id)
+            else:
+                if state.get("mode") != mode:
+                    raise PBMV4ProtocolError(
+                        f"Active PBM v4 protocol run {run_id} is {state.get('mode')}; "
+                        "finish or abort it before starting a different mode"
+                    )
+                if state.get("benchmark_fingerprint") != fingerprint:
+                    raise PBMV4ProtocolError(
+                        "PBM v4 fingerprint changed while a protocol run is active"
+                    )
+                if (state.get("repo") or {}).get("head") != repo["head"]:
+                    raise PBMV4ProtocolError(
+                        "Repository HEAD changed while a protocol run is active"
+                    )
+                return state
 
-    run_id = _new_run_id(mode)
-    run = pbm.new_run(run_id=run_id, version=VERSION)
-    state = {
-        "schema": "pbm-v4-protocol-state-v1",
-        "run_id": run_id,
-        "mode": mode,
-        "benchmark_version": VERSION,
-        "benchmark_fingerprint": fingerprint,
-        "created_at": pbm.utc_now(),
-        "repo": repo,
-        "audit": audit,
-        "desktop": None,
-        "room": None,
-        "complete": False,
-        "aborted": False,
-    }
-    _save_state(run_id, state)
-    _write_json(
-        ACTIVE_POINTER,
-        {
+        run_id = _new_run_id(mode)
+        run = pbm.new_run(run_id=run_id, version=VERSION)
+        state = {
+            "schema": "pbm-v4-protocol-state-v1",
             "run_id": run_id,
             "mode": mode,
+            "benchmark_version": VERSION,
             "benchmark_fingerprint": fingerprint,
-            "repo_head": repo["head"],
-        },
-    )
-    pbm_v4._capture_context(run_id, "protocol-start")
-    return state
+            "created_at": pbm.utc_now(),
+            "repo": repo,
+            "audit": audit,
+            "desktop": None,
+            "room": None,
+            "complete": False,
+            "aborted": False,
+        }
+        _save_state(run_id, state)
+        _write_json(
+            ACTIVE_POINTER,
+            {
+                "run_id": run_id,
+                "mode": mode,
+                "benchmark_fingerprint": fingerprint,
+                "repo_head": repo["head"],
+            },
+        )
+        created_run_id = run_id
+
+    if created_run_id is not None:
+        pbm_v4._capture_context(created_run_id, "protocol-start")
+    return _load_state(run_id)
 
 
 def _copy_canary_fixture(workspace: Path) -> None:
@@ -308,7 +360,7 @@ def desktop_prepare(mode: str) -> dict[str, Any]:
         "workspace and execute it exactly. Do not inspect parent or sibling benchmark "
         "files. When complete, stop."
     )
-    state["desktop"] = {
+    desktop_state = {
         "status": "prepared",
         "workspace": str(workspace.resolve()),
         "delegated_prompt": delegated_prompt,
@@ -317,7 +369,7 @@ def desktop_prepare(mode: str) -> dict[str, Any]:
         ).hexdigest(),
         "prepared_at": pbm.utc_now(),
     }
-    _save_state(run_id, state)
+    _set_platform_state(run_id, "desktop", desktop_state)
     return {
         "action": "run_task",
         "run_id": run_id,
@@ -433,16 +485,19 @@ def desktop_finish(run_id: str, thread_id: str) -> dict[str, Any]:
     if DESKTOP_ACTIVE_ROOT.exists():
         shutil.rmtree(DESKTOP_ACTIVE_ROOT)
 
-    state["desktop"] = {
-        **desktop,
-        "status": "complete",
-        "thread_id": thread_id,
-        "classification": result["classification"],
-        "completed_at": result["completed_at"],
-    }
-    _save_state(run_id, state)
+    _set_platform_state(
+        run_id,
+        "desktop",
+        {
+            **desktop,
+            "status": "complete",
+            "thread_id": thread_id,
+            "classification": result["classification"],
+            "completed_at": result["completed_at"],
+        },
+    )
     pbm_v4._capture_context(run_id, "desktop-protocol-post")
-    _finalize_if_ready(run_id)
+    result["protocol_finalization"] = _finalize_if_ready(run_id)
     return result
 
 
@@ -538,7 +593,7 @@ def room_start(mode: str, room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str
     workspace = pbm.PROJECT_ROOT / "data" / "rooms" / room_id / "shared"
     _prepare_workspace(state, "room", workspace)
 
-    state["room"] = {
+    room_state = {
         "status": "prepared",
         "room_base": room_base,
         "room_id": room_id,
@@ -547,13 +602,15 @@ def room_start(mode: str, room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str
         "prepared_at": pbm.utc_now(),
         "worker_pid": None,
     }
-    _save_state(run_id, state)
+    _set_platform_state(run_id, "room", room_state)
 
     pid = _spawn_room_worker(run_id)
-    state = _load_state(run_id)
-    state["room"]["worker_pid"] = pid
-    state["room"]["status"] = "running"
-    _save_state(run_id, state)
+    room_state = {
+        **room_state,
+        "worker_pid": pid,
+        "status": "running",
+    }
+    state = _set_platform_state(run_id, "room", room_state)
     return {
         "action": "started",
         "run_id": run_id,
@@ -683,15 +740,18 @@ def _capture_room(run_id: str) -> dict[str, Any]:
     _write_json(evidence / "grade.json", quality)
     _write_json(evidence / "result.json", result)
 
-    state["room"] = {
-        **room_info,
-        "status": "complete",
-        "classification": result["classification"],
-        "completed_at": result["completed_at"],
-    }
-    _save_state(run_id, state)
+    _set_platform_state(
+        run_id,
+        "room",
+        {
+            **room_info,
+            "status": "complete",
+            "classification": result["classification"],
+            "completed_at": result["completed_at"],
+        },
+    )
     pbm_v4._capture_context(run_id, "room-protocol-post")
-    _finalize_if_ready(run_id)
+    result["protocol_finalization"] = _finalize_if_ready(run_id)
     return result
 
 
@@ -752,9 +812,19 @@ def room_worker(run_id: str, timeout_seconds: int = 3600) -> dict[str, Any]:
         )
         state = _load_state(run_id)
         if isinstance(state.get("room"), dict):
-            state["room"]["status"] = "worker_error"
-            state["room"]["worker_error"] = error
-            _save_state(run_id, state)
+            _set_platform_state(
+                run_id,
+                "room",
+                {
+                    **state["room"],
+                    "status": "worker_error",
+                    "worker_error": error,
+                },
+            )
+        try:
+            bundle(run_id)
+        except Exception:
+            pass
         raise
 
 
@@ -872,12 +942,13 @@ def _finalize_if_ready(run_id: str) -> dict[str, Any]:
     root = pbm.run_root(run_id)
     _write_json(root / "pbm-v4-protocol-comparison.json", comparison)
     pbm_v4._capture_context(run_id, "protocol-complete")
-    state = _load_state(run_id)
-    state["complete"] = True
-    state["completed_at"] = pbm.utc_now()
-    state["comparison"] = comparison
-    _save_state(run_id, state)
-    _clear_active_if(run_id)
+    with _protocol_lock():
+        state = _load_state(run_id)
+        state["complete"] = True
+        state["completed_at"] = pbm.utc_now()
+        state["comparison"] = comparison
+        _save_state(run_id, state)
+        _clear_active_if(run_id)
     evidence_bundle = bundle(run_id)
     return {
         "run_id": run_id,
@@ -935,11 +1006,13 @@ def abort(run_id: str | None = None) -> dict[str, Any]:
         except pbm.PBMError as exc:
             room_action = f"error: {exc}"
 
-    state["aborted"] = True
-    state["aborted_at"] = pbm.utc_now()
-    state["abort_room_action"] = room_action
-    _save_state(run_id, state)
-    _clear_active_if(run_id)
+    with _protocol_lock():
+        state = _load_state(run_id)
+        state["aborted"] = True
+        state["aborted_at"] = pbm.utc_now()
+        state["abort_room_action"] = room_action
+        _save_state(run_id, state)
+        _clear_active_if(run_id)
     if DESKTOP_ACTIVE_ROOT.exists():
         shutil.rmtree(DESKTOP_ACTIVE_ROOT)
     evidence_bundle = bundle(run_id)
