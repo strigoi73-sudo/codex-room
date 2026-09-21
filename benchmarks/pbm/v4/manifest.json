@@ -1,0 +1,44 @@
+{
+  "schema": "pbm-manifest-v4",
+  "version": "v4",
+  "mode": "naturalistic",
+  "schema_version": 4,
+  "tasks": [
+    {
+      "id": "m01-integrated-mission",
+      "title": "Integrated fulfillment repair and delivery mission",
+      "category": "integrated",
+      "prompt_file": "prompts/m01-integrated-mission.txt",
+      "fixture_dir": "fixtures/m01-integrated-mission",
+      "grader_file": "graders/m01-integrated-mission.py",
+      "room_max_turns": 80
+    }
+  ],
+  "coverage_requirements": [
+    "public_tests",
+    "codec_contract",
+    "inventory_atomicity",
+    "summary_contract",
+    "payload_integration",
+    "cli_stdout",
+    "cli_output_file",
+    "cli_error_atomicity",
+    "storage_decision",
+    "completion_artifacts"
+  ],
+  "v4_protocol": {
+    "desktop_principal_pastes": 1,
+    "room_principal_pastes": 1,
+    "cross_platform_coordination": false,
+    "same_fixture": true,
+    "same_grader": true,
+    "room_dynamic_cognition": "D-039",
+    "result_classifications": ["VALID", "INVALID", "FAILED"]
+  },
+  "implementation_files": [
+    "codex_room/pbm.py",
+    "codex_room/pbm_context.py",
+    "codex_room/pbm_v4.py",
+    "pbm-v4.ps1"
+  ]
+}

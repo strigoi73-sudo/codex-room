@@ -1,0 +1,9 @@
+{
+  "backend": "sqlite",
+  "evidence_codes": [
+    "stdlib",
+    "offline",
+    "transactions",
+    "concurrent_readers"
+  ]
+}
