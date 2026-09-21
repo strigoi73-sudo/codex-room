@@ -149,3 +149,18 @@ def test_desktop_child_user_message_is_post_launch_intervention() -> None:
         "Desktop measured child received post-launch user guidance: observed 1 user message(s)"
     ]
 
+def test_battery_task_quality_reports_each_task_without_token_guessing() -> None:
+    result = {
+        "quality": {
+            "checks": [
+                {"name": task_id, "ok": True, "score": 100}
+                for task_id in pbm_v4.BATTERY_TASK_IDS
+            ]
+        }
+    }
+
+    summary = pbm_v4_protocol._battery_task_quality(result)
+
+    assert list(summary) == list(pbm_v4.BATTERY_TASK_IDS)
+    assert all(item == {"pass": True, "score": 100} for item in summary.values())
+
