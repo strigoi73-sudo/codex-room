@@ -186,13 +186,67 @@ def _fixture_unchanged(workspace: Path, expected: dict[str, str]) -> tuple[bool,
     return not changed, changed
 
 
-def _prepare_workspace(workspace: Path) -> dict[str, str]:
+def _prepare_workspace(
+    workspace: Path,
+    *,
+    allow_existing_root: bool = False,
+) -> dict[str, str]:
     source = _fixture_dir()
-    if workspace.exists():
+    if workspace.exists() and not allow_existing_root:
         shutil.rmtree(workspace)
-    workspace.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source, workspace)
+
+    workspace.mkdir(parents=True, exist_ok=True)
+
+    if allow_existing_root:
+        existing_files = sorted(
+            path.relative_to(workspace).as_posix()
+            for path in workspace.rglob("*")
+            if path.is_file()
+        )
+        if existing_files:
+            raise OUBV1Error(
+                "Room workspace contains pre-existing files before OUB fixture "
+                "population: " + ", ".join(existing_files)
+            )
+
+    for source_path in sorted(source.rglob("*")):
+        rel = source_path.relative_to(source)
+        destination = workspace / rel
+        if source_path.is_dir():
+            destination.mkdir(parents=True, exist_ok=True)
+            continue
+        if destination.exists():
+            raise OUBV1Error(
+                f"OUB fixture would overwrite existing workspace path: {destination}"
+            )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_path, destination)
+
     return _fixture_hashes(workspace)
+
+
+def _cleanup_failed_room_preparation(room_base: str, room_id: str) -> str:
+    try:
+        pbm_v4._http_json(
+            "POST",
+            f"{room_base}/api/rooms/{room_id}/archive",
+            {},
+        )
+        return "archived"
+    except Exception as archive_exc:
+        try:
+            pbm_v4._http_json(
+                "POST",
+                f"{room_base}/api/rooms/{room_id}/stop",
+                {},
+            )
+            return f"stopped_after_archive_error:{type(archive_exc).__name__}"
+        except Exception as stop_exc:
+            return (
+                "cleanup_failed:"
+                f"{type(archive_exc).__name__}:"
+                f"{type(stop_exc).__name__}"
+            )
 
 
 def _required_artifacts_present(workspace: Path) -> bool:
@@ -314,16 +368,40 @@ def prepare(room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str, Any]:
     health = pbm_v4._http_json("GET", f"{room_base}/api/health")
     if not isinstance(health, dict) or health.get("ok") is not True:
         raise OUBV1Error("Codex Room health endpoint did not report ok=true")
-    room = pbm_v4._http_json("POST", f"{room_base}/api/rooms", _room_payload(run_id))
-    if not isinstance(room, dict) or not room.get("id") or not room.get("active_round_id"):
-        raise OUBV1Error("Measured Room creation returned incomplete identifiers")
 
-    room_id = str(room["id"])
-    round_id = str(room["active_round_id"])
-    room_workspace = oub.PROJECT_ROOT / "data" / "rooms" / room_id / "shared"
-    room_hashes = _prepare_workspace(room_workspace)
-    if desktop_hashes != room_hashes:
-        raise OUBV1Error("Desktop and Room prepared fixture hashes differ")
+    room_id: str | None = None
+    try:
+        room = pbm_v4._http_json(
+            "POST",
+            f"{room_base}/api/rooms",
+            _room_payload(run_id),
+        )
+        if (
+            not isinstance(room, dict)
+            or not room.get("id")
+            or not room.get("active_round_id")
+        ):
+            raise OUBV1Error("Measured Room creation returned incomplete identifiers")
+
+        room_id = str(room["id"])
+        round_id = str(room["active_round_id"])
+        room_workspace = oub.PROJECT_ROOT / "data" / "rooms" / room_id / "shared"
+        room_hashes = _prepare_workspace(
+            room_workspace,
+            allow_existing_root=True,
+        )
+        if desktop_hashes != room_hashes:
+            raise OUBV1Error("Desktop and Room prepared fixture hashes differ")
+    except BaseException as exc:
+        cleanup = (
+            _cleanup_failed_room_preparation(room_base, room_id)
+            if room_id is not None
+            else "room_not_created"
+        )
+        shutil.rmtree(run_root, ignore_errors=True)
+        raise OUBV1Error(
+            f"OUB Room preparation failed before measurement; cleanup={cleanup}: {exc}"
+        ) from exc
 
     prepared_at = pbm.utc_now()
     state = {
