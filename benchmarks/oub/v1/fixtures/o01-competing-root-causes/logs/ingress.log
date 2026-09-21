@@ -1,0 +1,5 @@
+2026-09-18T09:42:09.970Z [I201] request=req-881 order=ord-A17 payment_intent=pi-A17 accepted_once=true
+2026-09-18T09:42:20.930Z [I202] request=req-882 order=ord-B04 payment_intent=pi-B04 accepted_once=true
+2026-09-18T09:42:29.900Z [I203] request=req-883 order=ord-C09 payment_intent=pi-C09 accepted_once=true
+2026-09-18T09:42:34.900Z [I204] request=req-884 order=ord-D12 payment_intent=pi-D12 accepted_once=true
+2026-09-18T09:45:00.000Z [I205] duplicate_submission_scan window=09:40-09:44 duplicate_order_ids=0 duplicate_payment_intents=0
