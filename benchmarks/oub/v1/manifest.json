@@ -1,0 +1,45 @@
+{
+  "schema": "oub-manifest-v1",
+  "version": "v1",
+  "mode": "naturalistic",
+  "target_runtime_minutes": {
+    "lower": 10,
+    "upper": 15
+  },
+  "tasks": [
+    {
+      "id": "o01-competing-root-causes",
+      "title": "Ambiguous duplicate-charge incident",
+      "category": "forensic-investigation",
+      "prompt_file": "prompts/o01-competing-root-causes.txt",
+      "fixture_dir": "fixtures/o01-competing-root-causes",
+      "grader_file": "graders/o01-competing-root-causes.py",
+      "reference_dir": "reference/o01-competing-root-causes",
+      "room_max_turns": 40,
+      "target_runtime_minutes": 12
+    }
+  ],
+  "protocol": {
+    "comparison_unit": "platform",
+    "same_mission": true,
+    "same_fixture": true,
+    "same_grader": true,
+    "principal_guidance_after_start": false,
+    "platform_internal_orchestration": "unconstrained",
+    "desktop_measurement_scope": "root-thread-and-descendants",
+    "room_measurement_scope": "measured-round-all-agents",
+    "score_dimensions": [
+      "diagnosis",
+      "causal_chain",
+      "evidence",
+      "falsification",
+      "remediation"
+    ],
+    "measured_context": [
+      "tokens",
+      "duration",
+      "orchestration",
+      "principal_interventions"
+    ]
+  }
+}
