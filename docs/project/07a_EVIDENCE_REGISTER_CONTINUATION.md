@@ -2333,3 +2333,27 @@ All I-026 promotion gates are therefore satisfied. Canonical `benchmarks/pbm/CUR
 
 **Assessment:** I-026 is **COMPLETE / IMPLEMENTED / EXACT-HEAD VERIFIED / LIVE CANARY VERIFIED / PROMOTED**. No paid seven-task Desktop-versus-Room comparison has yet occurred.
 
+
+
+### E-173 — PBM v5 platform-outcome harness exact-head verification and promotion
+**Date:** 2026-09-21  
+**Status:** VERIFIED
+
+The PBM v5 platform-outcome implementation at exact feature head `098e4b1cb8a77a0dd440a1f4cad30ee935440280` passed the requested deterministic verification without any additional benchmark/canary model traffic:
+
+- Python syntax check — PASS;
+- focused PBM v5 + v4 protocol tests — **26 passed**;
+- PBM v5 frozen-battery/reference audit — **PASS**, seven tasks, every known-good reference score 100;
+- routine fast verifier — **PASS**:
+  - Linux Python 3.12 focused core: **63 passed**, 2 warnings;
+  - Windows focused portability: **118 passed**;
+  - browser transcript stability: **9 passed**;
+- `git diff --check` — PASS;
+- tracked tree remained clean;
+- HEAD remained exactly `098e4b1cb8a77a0dd440a1f4cad30ee935440280`.
+
+PR #195 merged that exact tested head to canonical `main` as `893f6bd673174168ba9fc5da16866a0fbcf8c3ff`. A post-merge comparison showed the merge commit exactly one commit ahead of the tested head with **zero file differences**, so the verified benchmark/runtime bytes are unchanged.
+
+PBM v5 is selected by `benchmarks/pbm/CURRENT`. Its comparison boundary is the platform: Desktop receives one fresh top-level measured task and may use any native descendant tasks it chooses; Room receives one fresh ordinary measured Room and may use ordinary A/B/C coordination. PBM constrains equivalent starting state, mission, success criteria, intervention rules, grading, and measurement—not internal delegation topology.
+
+No paid seven-task PBM v5 comparison has yet completed. The next live benchmark invocation will be the first performance comparison under D-050.
