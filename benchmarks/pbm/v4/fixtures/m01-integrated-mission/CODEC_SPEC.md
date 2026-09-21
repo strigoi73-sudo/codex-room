@@ -11,6 +11,6 @@ The wire format represents a **non-empty** list of string fields.
 - Empty fields are significant. Therefore `decode("") == [""]`, and `encode([""]) == ""`.
 - A dangling terminal backslash is invalid and raises `ValueError`.
 - An escape other than backslash-backslash or backslash-vertical-bar is invalid and raises `ValueError`.
-- Non-string fields passed to `encode), and non-string `text` passed to `decode`, raise `TypeError`.
+- Non-string fields passed to `encode`, and non-string `text` passed to `decode`, raise `TypeError`.
 
 These rules deliberately make the empty-list case unambiguous: it is not representable and `encode([])` must fail.
