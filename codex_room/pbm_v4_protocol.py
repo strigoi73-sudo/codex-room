@@ -628,6 +628,24 @@ def desktop_worker(run_id: str, timeout_seconds: int = 3600) -> dict[str, Any]:
         raise
 
 
+def _desktop_intervention_reasons(messages: list[str]) -> list[str]:
+    """Treat child user.text records as post-launch intervention evidence.
+
+    Native Codex fresh-task delegation does not serialize the delegated prompt as
+    a user.text record inside the measured child rollout. The deterministic
+    controller already owns the exact delegated prompt and binds the returned
+    child thread id before monitoring starts. Therefore the child rollout's
+    user.text surface is reserved for detecting prohibited follow-up guidance.
+    """
+
+    if not messages:
+        return []
+    return [
+        "Desktop measured child received post-launch user guidance: "
+        f"observed {len(messages)} user message(s)"
+    ]
+
+
 def desktop_finish(run_id: str, thread_id: str) -> dict[str, Any]:
     state = _load_state(run_id)
     if state.get("benchmark_fingerprint") != pbm.benchmark_fingerprint(VERSION):
@@ -649,14 +667,8 @@ def desktop_finish(run_id: str, thread_id: str) -> dict[str, Any]:
     workspace = Path(str(desktop["workspace"]))
     expected_prompt = str(desktop["delegated_prompt"])
 
-    invalid: list[str] = []
+    invalid = _desktop_intervention_reasons(messages)
     failed: list[str] = []
-    if len(messages) != 1:
-        invalid.append(
-            f"expected exactly one delegated Desktop task message; observed {len(messages)}"
-        )
-    elif messages[0].strip() != expected_prompt:
-        invalid.append("Desktop delegated task message did not match the protocol prompt")
 
     cwd = usage["thread"].get("cwd")
     if isinstance(cwd, str):
