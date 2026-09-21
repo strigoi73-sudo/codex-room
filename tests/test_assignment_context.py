@@ -1489,7 +1489,7 @@ async def test_bctx3_history_recent_recovers_completed_prior_task_in_same_round(
 
     async with runtime.db.connect() as db:
         tasks = await db.execute_fetchall(
-            "SELECT * FROM tasks WHERE room_id=? ORDER BY created_at, id",
+            "SELECT * FROM tasks WHERE room_id=? ORDER BY rowid",
             (room_id,),
         )
         assignments = await db.execute_fetchall(
