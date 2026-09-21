@@ -872,7 +872,7 @@ Settled boundary:
 
 - PBM v4 has one normative common protocol governing version/fingerprint binding, mission/fixture equivalence, fresh measured execution, no substantive follow-up guidance, grading, validity classification, evidence capture, bundling, pairing, and deterministic comparison;
 - the principal gives exactly one **controller initiation** per platform; the controller is outside measured benchmark cognition;
-- Desktop's adapter may use native fresh-task creation and wait only for its own measured child task;
+- Desktop's adapter uses native fresh-task creation, then hands the exact child thread id to a detached deterministic monitor; the controller model does not remain alive as a polling loop, and the monitor waits only for its own measured child evidence;
 - Room's adapter may launch a detached deterministic worker that creates and waits only for its own fresh measured Room;
 - neither adapter may wait for, wake, control, or coordinate with the other platform;
 - the deterministic protocol layer automatically binds independent arms to the same active pair and fingerprint, so the principal does not shuttle run ids or intermediate commands between products;
