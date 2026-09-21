@@ -53,8 +53,6 @@
     "pbm-v4.ps1",
     "pbm-v4-protocol.ps1",
     "pbm_desktop_controller/V4_PROTOCOL.md",
-    "pbm_desktop_controller/PBM-V4.ps1",
-    "benchmarks/pbm/v4/PROTOCOL.md",
-    "benchmarks/pbm/v4/ROOM_PROTOCOL.md"
+    "pbm_desktop_controller/PBM-V4.ps1"
   ]
 }
