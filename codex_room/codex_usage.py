@@ -195,6 +195,14 @@ def extract_user_messages(path: Path) -> list[str]:
         if role != "user" and payload_type != "user_message":
             continue
 
+        metadata = payload.get("internal_chat_message_metadata_passthrough")
+        if isinstance(metadata, dict):
+            kinds = metadata.get("content_item_kinds")
+            if isinstance(kinds, list) and "user.text" not in kinds:
+                # Codex may serialize environment/plugin context as role=user
+                # response items. Those are not principal/delegated task messages.
+                continue
+
         message = payload.get("message")
         if isinstance(message, str):
             response_items.append(message)
