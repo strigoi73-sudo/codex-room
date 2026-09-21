@@ -350,6 +350,7 @@ def _prepare_workspace(
             "mode": "canary",
             "benchmark_version": VERSION,
             "benchmark_fingerprint": state["benchmark_fingerprint"],
+            "canary_fingerprint": state.get("canary_fingerprint"),
             "workspace": str(workspace.resolve()),
             "prepared_at": pbm.utc_now(),
             "prepared_at_ns": time.time_ns(),
@@ -1058,10 +1059,15 @@ def _comparison(state: dict[str, Any]) -> dict[str, Any]:
     same_fingerprint = (
         desktop.get("benchmark_fingerprint") == room.get("benchmark_fingerprint")
     )
+    same_canary_fingerprint = (
+        desktop.get("canary_fingerprint") == room.get("canary_fingerprint")
+        and desktop.get("canary_fingerprint") == state.get("canary_fingerprint")
+    )
     comparable = (
         desktop.get("classification") == "VALID"
         and room.get("classification") == "VALID"
         and same_fingerprint
+        and (state["mode"] != "canary" or same_canary_fingerprint)
     )
     d_tokens = (desktop.get("usage") or {}).get("total_tokens")
     r_tokens = (room.get("usage") or {}).get("total_tokens")
@@ -1082,6 +1088,10 @@ def _comparison(state: dict[str, Any]) -> dict[str, Any]:
         ),
         "comparable": comparable,
         "same_fingerprint": same_fingerprint,
+        "canary_fingerprint": state.get("canary_fingerprint"),
+        "same_canary_fingerprint": (
+            same_canary_fingerprint if state["mode"] == "canary" else None
+        ),
         "desktop": {
             "classification": desktop.get("classification"),
             "score": (desktop.get("quality") or {}).get("score"),
