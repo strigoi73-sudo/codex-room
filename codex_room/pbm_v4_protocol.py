@@ -414,11 +414,7 @@ def desktop_prepare(mode: str) -> dict[str, Any]:
         "Do not ask the principal for guidance. When the mission is complete, stop.\n"
     )
     DESKTOP_TASK_FILE.write_text(task_text, encoding="utf-8")
-    delegated_prompt = (
-        "PBM v4 measured execution. Read active-v4/ACTIVE_TASK.md in the current "
-        "workspace and execute it exactly. Do not inspect parent or sibling benchmark "
-        "files. When complete, stop."
-    )
+    delegated_prompt = _desktop_delegated_prompt()
     desktop_state = {
         "status": "prepared",
         "workspace": str(workspace.resolve()),
@@ -525,6 +521,39 @@ def desktop_monitor_start(run_id: str, thread_id: str) -> dict[str, Any]:
     }
 
 
+def _desktop_delegated_prompt() -> str:
+    task_file = DESKTOP_TASK_FILE.resolve()
+    return (
+        f"PBM v4 measured execution. Read the instruction file at {task_file} and "
+        "execute it exactly. Do not inspect parent or sibling benchmark files. "
+        "When complete, stop."
+    )
+
+
+def _desktop_controller_cwd_ok(cwd: str) -> bool:
+    controller = os.path.normcase(os.path.abspath(DESKTOP_CONTROLLER_ROOT))
+    observed = os.path.normcase(os.path.abspath(cwd))
+    if observed == controller:
+        return True
+
+    worktrees_root = os.path.normcase(
+        os.path.abspath(Path(codex_usage.default_codex_home()) / "worktrees")
+    )
+    try:
+        if os.path.commonpath([observed, worktrees_root]) != worktrees_root:
+            return False
+        relative = os.path.relpath(observed, worktrees_root)
+    except (OSError, ValueError):
+        return False
+
+    parts = Path(relative).parts
+    if len(parts) != 3:
+        return False
+
+    expected = Path(worktrees_root) / parts[0] / DESKTOP_CONTROLLER_ROOT.parent.name / DESKTOP_CONTROLLER_ROOT.name
+    return observed == os.path.normcase(os.path.abspath(expected))
+
+
 def _provisional_desktop_thread_id(thread_id: str) -> bool:
     return thread_id.startswith("client-new-thread:")
 
@@ -547,9 +576,7 @@ def _desktop_rollout_candidates_since(desktop: dict[str, Any]) -> list[tuple[Pat
         cwd = meta.get("cwd")
         if not isinstance(cwd, str):
             continue
-        if os.path.normcase(os.path.abspath(cwd)) != os.path.normcase(
-            os.path.abspath(DESKTOP_CONTROLLER_ROOT)
-        ):
+        if not _desktop_controller_cwd_ok(cwd):
             continue
 
         created_at = pbm._parse_time(meta.get("timestamp"))
@@ -811,10 +838,11 @@ def desktop_finish(run_id: str, thread_id: str) -> dict[str, Any]:
 
     cwd = usage["thread"].get("cwd")
     if isinstance(cwd, str):
-        if os.path.normcase(os.path.abspath(cwd)) != os.path.normcase(
-            os.path.abspath(DESKTOP_CONTROLLER_ROOT)
-        ):
-            invalid.append("Desktop child task did not originate from the PBM controller workspace")
+        if not _desktop_controller_cwd_ok(cwd):
+            invalid.append(
+                "Desktop child task did not originate from the PBM controller workspace "
+                "or its native Codex managed worktree"
+            )
     else:
         failed.append("Desktop rollout cwd was unavailable")
 
