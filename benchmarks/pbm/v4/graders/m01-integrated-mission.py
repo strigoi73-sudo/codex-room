@@ -40,8 +40,8 @@ try:
     cases = [
         [""],
         ["a", "b", ""],
-        ["a|b", r"c\d", ""],
-        [r"\", "|", r"x\|y"],
+        ["a|b", "c\\d", ""],
+        ["\\", "|", "x\\|y"],
     ]
     ok = all(codec.decode(codec.encode(fields)) == fields for fields in cases)
     try:
@@ -134,7 +134,7 @@ sample_payload = {
     "reservations": [{"sku": "a", "quantity": 2}, {"sku": "b", "quantity": 1}],
     "orders": [
         {"id": "o|1", "category": "retail", "amount": "12.50"},
-        {"id": r"o\2", "category": "wholesale", "amount": "3.25"},
+        {"id": "o\\2", "category": "wholesale", "amount": "3.25"},
     ],
 }
 expected_result = {
@@ -144,7 +144,7 @@ expected_result = {
         "total_cents": 1575,
         "by_category_cents": {"retail": 1250, "wholesale": 325},
     },
-    "encoded_order_ids": r"o\|1|o\\2",
+    "encoded_order_ids": "o\\|1|o\\\\2",
 }
 
 try:
