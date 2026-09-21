@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -371,14 +372,28 @@ def desktop_prepare(mode: str) -> dict[str, Any]:
             "classification": result.get("classification"),
         }
 
-    if isinstance(existing, dict) and existing.get("status") == "prepared":
-        return {
-            "action": "run_task",
-            "run_id": run_id,
-            "mode": state["mode"],
-            "workspace": existing["workspace"],
-            "delegated_prompt": existing["delegated_prompt"],
-        }
+    if isinstance(existing, dict):
+        status = str(existing.get("status") or "")
+        if status == "prepared":
+            return {
+                "action": "run_task",
+                "run_id": run_id,
+                "mode": state["mode"],
+                "workspace": existing["workspace"],
+                "delegated_prompt": existing["delegated_prompt"],
+            }
+        if status == "monitoring":
+            return {
+                "action": "already_started",
+                "run_id": run_id,
+                "mode": state["mode"],
+                "thread_id": existing.get("thread_id"),
+                "worker_pid": existing.get("worker_pid"),
+            }
+        raise PBMV4ProtocolError(
+            f"Desktop protocol arm already exists with status {status or 'unknown'}; "
+            "do not create a replacement measured task"
+        )
 
     if DESKTOP_ACTIVE_ROOT.exists():
         shutil.rmtree(DESKTOP_ACTIVE_ROOT)
@@ -779,17 +794,20 @@ def room_start(mode: str, room_base: str = pbm_v4.DEFAULT_ROOM_BASE) -> dict[str
             "classification": result.get("classification"),
         }
 
-    if isinstance(existing, dict) and existing.get("status") in {
-        "prepared",
-        "running",
-    }:
-        return {
-            "action": "already_started",
-            "run_id": run_id,
-            "mode": state["mode"],
-            "room_id": existing.get("room_id"),
-            "worker_pid": existing.get("worker_pid"),
-        }
+    if isinstance(existing, dict):
+        status = str(existing.get("status") or "")
+        if status in {"prepared", "running"}:
+            return {
+                "action": "already_started",
+                "run_id": run_id,
+                "mode": state["mode"],
+                "room_id": existing.get("room_id"),
+                "worker_pid": existing.get("worker_pid"),
+            }
+        raise PBMV4ProtocolError(
+            f"Room protocol arm already exists with status {status or 'unknown'}; "
+            "do not create a replacement measured Room"
+        )
 
     health = pbm_v4._http_json("GET", f"{room_base}/api/health")
     if not isinstance(health, dict) or health.get("ok") is not True:
@@ -1135,34 +1153,73 @@ def bundle(run_id: str) -> dict[str, Any]:
 
 
 def _finalize_if_ready(run_id: str) -> dict[str, Any]:
-    state = _load_state(run_id)
-    evidence_bundle = bundle(run_id)
-    ready = all(_result_path(state, arm).is_file() for arm in ("desktop", "room"))
-    if not ready:
+    with _protocol_lock():
+        state = _load_state(run_id)
+        if state.get("complete"):
+            comparison = state.get("comparison")
+            return {
+                "run_id": run_id,
+                "complete": True,
+                "comparison": comparison,
+                "bundle": bundle(run_id),
+            }
+
+        ready = all(
+            _result_path(state, arm).is_file()
+            for arm in ("desktop", "room")
+        )
+        if not ready:
+            claimed = False
+        elif state.get("finalizing"):
+            return {
+                "run_id": run_id,
+                "complete": False,
+                "finalizing": True,
+            }
+        else:
+            state["finalizing"] = True
+            _save_state(run_id, state)
+            claimed = True
+
+    if not claimed:
         return {
             "run_id": run_id,
             "complete": False,
-            "bundle": evidence_bundle,
+            "bundle": bundle(run_id),
         }
 
-    comparison = _comparison(state)
-    root = pbm.run_root(run_id)
-    _write_json(root / "pbm-v4-protocol-comparison.json", comparison)
-    pbm_v4._capture_context(run_id, "protocol-complete")
-    with _protocol_lock():
+    try:
         state = _load_state(run_id)
-        state["complete"] = True
-        state["completed_at"] = pbm.utc_now()
-        state["comparison"] = comparison
-        _save_state(run_id, state)
-        _clear_active_if(run_id)
-    evidence_bundle = bundle(run_id)
-    return {
-        "run_id": run_id,
-        "complete": True,
-        "comparison": comparison,
-        "bundle": evidence_bundle,
-    }
+        comparison = _comparison(state)
+        root = pbm.run_root(run_id)
+        _write_json(root / "pbm-v4-protocol-comparison.json", comparison)
+        pbm_v4._capture_context(run_id, "protocol-complete")
+        with _protocol_lock():
+            state = _load_state(run_id)
+            state["complete"] = True
+            state["finalizing"] = False
+            state["completed_at"] = pbm.utc_now()
+            state["comparison"] = comparison
+            _save_state(run_id, state)
+            _clear_active_if(run_id)
+        evidence_bundle = bundle(run_id)
+        return {
+            "run_id": run_id,
+            "complete": True,
+            "comparison": comparison,
+            "bundle": evidence_bundle,
+        }
+    except Exception as exc:
+        with _protocol_lock():
+            state = _load_state(run_id)
+            state["finalizing"] = False
+            state["finalization_error"] = {
+                "recorded_at": pbm.utc_now(),
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            }
+            _save_state(run_id, state)
+        raise
 
 
 def status(run_id: str | None = None) -> dict[str, Any]:
@@ -1186,6 +1243,18 @@ def status(run_id: str | None = None) -> dict[str, Any]:
     return value
 
 
+def _stop_owned_worker(pid: Any) -> str:
+    if not isinstance(pid, int) or pid <= 0:
+        return "not_running"
+    try:
+        os.kill(pid, signal.SIGTERM)
+        return "stop_requested"
+    except ProcessLookupError:
+        return "already_exited"
+    except OSError as exc:
+        return f"error: {type(exc).__name__}"
+
+
 def abort(run_id: str | None = None) -> dict[str, Any]:
     if run_id is None:
         pointer = _active_run()
@@ -1193,6 +1262,11 @@ def abort(run_id: str | None = None) -> dict[str, Any]:
             raise PBMV4ProtocolError("No active PBM v4 protocol run exists")
         run_id = str(pointer["run_id"])
     state = _load_state(run_id)
+
+    desktop_worker_action = "not_started"
+    desktop_info = state.get("desktop")
+    if isinstance(desktop_info, dict):
+        desktop_worker_action = _stop_owned_worker(desktop_info.get("worker_pid"))
 
     room_action = "not_started"
     room_info = state.get("room")
@@ -1228,9 +1302,11 @@ def abort(run_id: str | None = None) -> dict[str, Any]:
         "run_id": run_id,
         "aborted": True,
         "room_action": room_action,
+        "desktop_worker_action": desktop_worker_action,
         "desktop_note": (
-            "No PBM background Desktop controller exists; stop an active native "
-            "Desktop child task manually if one is still running."
+            "The owned deterministic Desktop monitor is stopped when possible. "
+            "If the native measured Desktop child itself is still active, stop that "
+            "native task through Codex Desktop."
         ),
         "bundle": evidence_bundle,
     }
