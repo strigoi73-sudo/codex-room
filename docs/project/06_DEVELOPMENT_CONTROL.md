@@ -1,15 +1,15 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-20
+**Last updated:** 2026-09-21
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
-- **Where are we?** I-026 — **PBM v4 common protocol with thin platform adapters** — is **IN PROGRESS / IMPLEMENTATION REVISION IN PROGRESS / COMMON-PROTOCOL CANARIES PENDING** under D-049. PBM v3's first substantial live run was aborted after it demonstrated architectural and benchmark-integrity failures; do not run v3 again for performance comparison.
+- **Where are we?** I-026 — **PBM v4 common protocol with thin platform adapters** — is **IN PROGRESS / IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / COMMON-PROTOCOL CANARIES PENDING** under D-049. PBM v3's first substantial live run was aborted after it demonstrated architectural and benchmark-integrity failures; do not run v3 again for performance comparison.
 - **What just changed?** E-169 showed that the first v4 canary path still made the principal act as the orchestration layer and that Desktop prompt validation depended on a legacy rollout record shape. The principal clarified the replacement architecture: one common protocol, one controller initiation per platform, thin native adapters, automatic pairing/capture/grading/bundling, and no principal command shuttling.
-- **Verification state:** E-167 records the live v3 failure/postmortem. E-168 remains valid for the earlier v4 bytes it tested, but D-049 materially revises orchestration so that exact-head verification is stale for the new protocol. E-169 records the successful no-cognition operations probe, the Desktop canary's legacy-schema parser invalidity, and the principal's rejection of manual orchestration.
-- **What is next?** Finish and deterministically verify the D-049 common protocol/adapters, install the persistent Room runner once, then run one-initiation canaries through the exact Desktop and Room protocol paths. Do not promote `CURRENT` or run a full paid comparison until those gates pass.
+- **Verification state:** E-170 records fresh D-049 exact-head verification: the forced Room-history collision regressions passed, repository fast verification passed (Linux 63, Windows 118, browser 9), the tracked tree stayed clean, and canonical merge #188 has zero file differences from the exact tested head. E-169 remains the live evidence that motivated D-049.
+- **What is next?** Install the persistent Room runner once, then run one-initiation canaries through the exact Desktop and Room D-049 protocol paths. After both arms settle, inspect deterministic protocol state/evidence and exercise any remaining live recovery/evidence path. Do not promote `CURRENT` or run a full paid comparison until those gates pass.
 - **What is blocked?** No conceptual blocker. The next gate is implementation plus deterministic mission/grader audit and a real delayed end-to-end canary before any full paid comparison.
 - **What are we deliberately not doing?** We are not patching the v3 cross-platform controller, not reviving alternating live Desktop↔Room orchestration, and not treating a model conversation as a durable workflow daemon.
 
@@ -21,15 +21,15 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** IMPLEMENTATION REVISION IN PROGRESS / PRIOR EXACT-HEAD VERIFICATION STALE FOR REVISED PROTOCOL / COMMON-PROTOCOL CANARIES PENDING
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD DETERMINISTICALLY VERIFIED / COMMON-PROTOCOL CANARIES PENDING
 
 **Decision:** D-049 (supersedes D-048 operator-initiation mechanics)
 
-**Evidence:** E-167, E-168, E-169
+**Evidence:** E-167, E-168, E-169, E-170
 
 The principal requires two complementary benchmark executions under one common PBM protocol, with exactly one controller initiation per platform and no intermediate principal choreography.
 
-E-168 verified the earlier v4 implementation bytes, but D-049 now materially revises the orchestration layer and therefore requires fresh exact-version verification. `benchmarks/pbm/CURRENT` intentionally remains `v3`, and live use remains suspended, until the revised common-protocol promotion gates pass.
+E-170 records fresh exact-version verification of the D-049 common protocol/adapters and the incidental Room-history ordering repair discovered during repository verification. `benchmarks/pbm/CURRENT` intentionally remains `v3`, and live use remains suspended, until the common-protocol canary and remaining live-path promotion gates pass.
 
 Revised architecture under D-049:
 
