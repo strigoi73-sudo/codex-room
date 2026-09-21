@@ -176,6 +176,24 @@ class RoomRuntime:
         "does not replace it.\n"
         "</deterministic_capabilities>"
     )
+    TRANSACTION_CONTINUATION_INSTRUCTION = (
+        "<transaction_continuation_delta>\n"
+        "This execution continues an already-established bound provider-context lineage. "
+        "That lineage may remain on the same Assignment or, where CORE explicitly permits "
+        "continuity, continue into a successor Assignment/Task. The immutable transaction "
+        "protocol, deterministic evidence/history/capability instructions, and structured "
+        "output contract supplied earlier on this exact provider thread remain in force; "
+        "omitted static text is not revoked. CORE is supplying the current authoritative "
+        "dynamic Assignment/Task state plus newly resolved dependencies, history, evidence, "
+        "or principal input in this prompt. HISTORY remains available when the current work "
+        "needs a specific fact or result from earlier completed Tasks in this Round or from "
+        "earlier Rounds in this same Room; retrieve only the bounded result actually needed. "
+        "Do not ask CORE to replay already consumed evidence merely for reassurance. Minimize "
+        "continuations and native tool-loop context growth; when coordinator economics recommend "
+        "refresh, prefer a bounded REFRESH before substantial new tool work if continuity can "
+        "be preserved safely.\n"
+        "</transaction_continuation_delta>"
+    )
     TRANSACTION_EVIDENCE_INSTRUCTION = (
         "<deterministic_evidence>\n"
         "For read-only source evidence from your workspace, CORE, or another Room shared "
@@ -2162,11 +2180,17 @@ class RoomRuntime:
             and provider_context_mode == "assignment_thread"
             and assignment.get("context_thread_id")
         )
-        coordinator_context_economics = None
-        if is_root_coordinator:
+        context_usage_history: list[dict[str, Any]] = []
+        if (
+            provider_context_mode == "assignment_thread"
+            and assignment.get("context_thread_id")
+        ):
             context_usage_history = await self.db.get_provider_context_usage_history(
                 agent["id"], batch["round_id"], assignment["context_thread_id"]
             )
+        is_provider_context_continuation = bool(context_usage_history)
+        coordinator_context_economics = None
+        if is_root_coordinator:
             coordinator_context_economics = self._coordinator_context_economics(
                 context_usage_history
             )
@@ -2489,10 +2513,25 @@ class RoomRuntime:
                     "The transaction assignment above is the only current actionable Room work. "
                     + context_boundary
                 ),
-                self.TRANSACTION_EVIDENCE_INSTRUCTION,
-                self.TRANSACTION_HISTORY_INSTRUCTION,
-                self.TRANSACTION_CAPABILITY_INSTRUCTION,
+                *(
+                    [self.TRANSACTION_CONTINUATION_INSTRUCTION]
+                    if is_provider_context_continuation
+                    else [
+                        self.TRANSACTION_EVIDENCE_INSTRUCTION,
+                        self.TRANSACTION_HISTORY_INSTRUCTION,
+                        self.TRANSACTION_CAPABILITY_INSTRUCTION,
+                    ]
+                ),
                 (
+                    (
+                        "Continue under the same transaction structured-decision contract already "
+                        "established on this bound provider thread. Use the current output schema and "
+                        "current dynamic state in this prompt; request only genuinely new evidence or "
+                        "history. C may use REFRESH when its current coordinator economics recommend "
+                        "a fresh provider context and a bounded checkpoint can preserve continuity."
+                    )
+                    if is_provider_context_continuation
+                    else
                     "Return the transaction structured decision only. action must be COMPLETE, "
                     "DELEGATE, EVIDENCE, HISTORY, REFRESH, CONSULT_PRINCIPAL, or PASS. COMPLETE ends this assignment with a "
                     "substantive terminal message. If you need the human principal to answer before "
@@ -2509,9 +2548,12 @@ class RoomRuntime:
                     "use it only from the root coordinator Assignment when a deliberate fresh provider "
                     "context is materially useful. CORE supplies exact-thread coordinator context economics "
                     "to eligible C turns. Treat the 64,000-input-token range as an advisory point to actively "
-                    "consider refresh at the next clean bounded Task boundary, and the 96,000-input-token "
-                    "range as an advisory point to strongly prefer refresh unless a concrete continuity or "
-                    "integration reason makes immediate refresh materially unsafe or lossy. These are judgment "
+                    "consider refresh at the next clean execution boundary, especially before substantial native "
+                    "tool work, and the 96,000-input-token range as an advisory point to strongly prefer refresh "
+                    "unless a concrete continuity or integration reason makes immediate refresh materially unsafe "
+                    "or lossy. The guidance uses the stronger signal of cumulative provider-thread input spend or "
+                    "the latest execution input spend, because repeated cached-prefix replay is itself a measured "
+                    "cost even when the latest evidence-only continuation is individually small. These are judgment "
                     "guides, not automatic triggers: CORE never refreshes solely because a number was crossed. "
                     "Put the bounded continuity handoff in checkpoint (maximum 12,000 characters), describing "
                     "unresolved reasoning, current strategy, important judgments, and near-term intent without "
@@ -4088,11 +4130,34 @@ class RoomRuntime:
             and baseline_input_tokens is not None
             else None
         )
-        if last_execution_input_tokens is None:
+        refresh_pressure_candidates = [
+            ("cumulative_provider_input", cumulative_input_tokens),
+            ("last_execution_input", last_execution_input_tokens),
+        ]
+        available_pressure = [
+            (label, value)
+            for label, value in refresh_pressure_candidates
+            if isinstance(value, (int, float)) and not isinstance(value, bool)
+        ]
+        if available_pressure:
+            refresh_pressure_basis, refresh_pressure_input_tokens = max(
+                available_pressure, key=lambda item: item[1]
+            )
+        else:
+            refresh_pressure_basis = None
+            refresh_pressure_input_tokens = None
+
+        if refresh_pressure_input_tokens is None:
             guidance_level = "baseline_pending" if not history else "insufficient_data"
-        elif last_execution_input_tokens >= cls.COORDINATOR_REFRESH_PREFER_INPUT_TOKENS:
+        elif (
+            refresh_pressure_input_tokens
+            >= cls.COORDINATOR_REFRESH_PREFER_INPUT_TOKENS
+        ):
             guidance_level = "strongly_prefer"
-        elif last_execution_input_tokens >= cls.COORDINATOR_REFRESH_CONSIDER_INPUT_TOKENS:
+        elif (
+            refresh_pressure_input_tokens
+            >= cls.COORDINATOR_REFRESH_CONSIDER_INPUT_TOKENS
+        ):
             guidance_level = "consider"
         else:
             guidance_level = "normal"
@@ -4112,6 +4177,8 @@ class RoomRuntime:
             "last_execution_cached_input_tokens": last_execution_cached_input_tokens,
             "cumulative_input_tokens": cumulative_input_tokens,
             "input_growth_from_baseline": input_growth_from_baseline,
+            "refresh_pressure_input_tokens": refresh_pressure_input_tokens,
+            "refresh_pressure_basis": refresh_pressure_basis,
             "guidance_level": guidance_level,
         }
 
@@ -4129,20 +4196,21 @@ class RoomRuntime:
         level = economics["guidance_level"]
         if level == "strongly_prefer":
             guidance = (
-                "The last completed coordinator execution crossed the strong-preference range. "
-                "At the next clean bounded Task boundary, strongly prefer REFRESH unless a concrete "
-                "continuity or integration reason makes immediate refresh materially unsafe or lossy."
+                "Coordinator provider-thread input pressure crossed the strong-preference range. "
+                "At the next clean execution boundary, especially before substantial native tool work, "
+                "strongly prefer REFRESH unless a concrete continuity or integration reason makes "
+                "immediate refresh materially unsafe or lossy."
             )
         elif level == "consider":
             guidance = (
-                "The last completed coordinator execution crossed the consideration range. "
-                "At the next clean bounded Task boundary, actively consider REFRESH when a bounded "
+                "Coordinator provider-thread input pressure crossed the consideration range. "
+                "At the next clean execution boundary, actively consider REFRESH when a bounded "
                 "checkpoint can preserve the unresolved state faithfully."
             )
         elif level == "normal":
             guidance = (
-                "The last completed coordinator execution remains below the advisory consideration "
-                "range. Do not refresh solely because a Task boundary exists."
+                "Coordinator provider-thread input pressure remains below the advisory consideration "
+                "range. Do not refresh solely because an execution boundary exists."
             )
         elif level == "baseline_pending":
             guidance = (
@@ -4173,16 +4241,22 @@ class RoomRuntime:
             + render(economics["cumulative_input_tokens"]),
             "input_growth_from_baseline: "
             + render(economics["input_growth_from_baseline"]),
+            "refresh_pressure_input_tokens: "
+            + render(economics["refresh_pressure_input_tokens"]),
+            "refresh_pressure_basis: "
+            + render(economics["refresh_pressure_basis"]),
             f"refresh_guidance_level: {level}",
             f"advisory_consider_input_tokens: {cls.COORDINATOR_REFRESH_CONSIDER_INPUT_TOKENS}",
             f"advisory_strongly_prefer_input_tokens: {cls.COORDINATOR_REFRESH_PREFER_INPUT_TOKENS}",
             guidance,
             (
                 "These figures are deterministic telemetry from completed executions on this exact "
-                "provider thread. The input-load figure is not a claimed context-window occupancy "
-                "percentage. The advisory ranges guide C's judgment only; CORE never auto-refreshes. "
-                "Prefer refresh at a clean Task boundary and do not interrupt delicate integration merely "
-                "to satisfy a number. After REFRESH, the distinct new provider thread establishes a new baseline."
+                "provider thread. refresh_pressure_input_tokens uses the stronger of cumulative provider "
+                "input spend and the latest execution input spend; it is a cost-pressure signal, not a "
+                "claimed context-window occupancy percentage. The advisory ranges guide C's judgment only; "
+                "CORE never auto-refreshes. Prefer refresh at a clean execution boundary, especially before "
+                "substantial native tool work, and do not interrupt delicate integration merely to satisfy "
+                "a number. After REFRESH, the distinct new provider thread establishes a new baseline."
             ),
             "</coordinator_context_economics>",
         ]

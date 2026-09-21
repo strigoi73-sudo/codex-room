@@ -323,6 +323,13 @@ async def test_assignment_context_mode_keeps_evidence_resume_on_same_thread(
     assert adapter.calls["agent_c"][0]["thread_id"] == adapter.calls["agent_c"][1]["thread_id"]
     assert len([item for item in adapter.context_starts if item[0] == "agent_c"]) == 1
     assert "assignment evidence survives the resume" in adapter.calls["agent_c"][1]["prompt"]
+    assert "<deterministic_evidence>" in adapter.calls["agent_c"][0]["prompt"]
+    assert "<room_history>" in adapter.calls["agent_c"][0]["prompt"]
+    assert "<deterministic_capabilities>" in adapter.calls["agent_c"][0]["prompt"]
+    assert "<transaction_continuation_delta>" in adapter.calls["agent_c"][1]["prompt"]
+    assert "<deterministic_evidence>" not in adapter.calls["agent_c"][1]["prompt"]
+    assert "<room_history>" not in adapter.calls["agent_c"][1]["prompt"]
+    assert "<deterministic_capabilities>" not in adapter.calls["agent_c"][1]["prompt"]
 
 
 @pytest.mark.asyncio
@@ -850,6 +857,23 @@ async def test_assignment_context_history_recent_recovers_prior_round_result_wit
     assert history_events[0]["metadata"]["selected_event_ids"] == [first_result_event_id]
 
 
+def test_bctx4_coordinator_context_economics_uses_cumulative_spend_for_refresh_pressure() -> None:
+    economics = RoomRuntime._coordinator_context_economics(
+        [
+            {"task_id": "task_one", "task_state": "active", "usage": {"input_tokens": 22_066}},
+            {"task_id": "task_one", "task_state": "active", "usage": {"input_tokens": 47_232}},
+            {"task_id": "task_one", "task_state": "active", "usage": {"input_tokens": 82_469}},
+            {"task_id": "task_one", "task_state": "active", "usage": {"input_tokens": 123_928}},
+        ]
+    )
+
+    assert economics["last_execution_input_tokens"] == 41_459
+    assert economics["cumulative_input_tokens"] == 123_928
+    assert economics["refresh_pressure_input_tokens"] == 123_928
+    assert economics["refresh_pressure_basis"] == "cumulative_provider_input"
+    assert economics["guidance_level"] == "strongly_prefer"
+
+
 def test_bctx4_coordinator_context_economics_advisory_levels() -> None:
     consider = RoomRuntime._coordinator_context_economics(
         [
@@ -876,6 +900,8 @@ def test_bctx4_coordinator_context_economics_advisory_levels() -> None:
     assert consider["baseline_input_tokens"] == 20_000
     assert consider["last_execution_input_tokens"] == 70_000
     assert consider["input_growth_from_baseline"] == 50_000
+    assert consider["refresh_pressure_input_tokens"] == 90_000
+    assert consider["refresh_pressure_basis"] == "cumulative_provider_input"
     assert consider["guidance_level"] == "consider"
     assert consider["settled_tasks_on_context"] == 1
 
@@ -894,6 +920,8 @@ def test_bctx4_coordinator_context_economics_advisory_levels() -> None:
         ]
     )
     assert strongly_prefer["last_execution_input_tokens"] == 100_000
+    assert strongly_prefer["refresh_pressure_input_tokens"] == 120_000
+    assert strongly_prefer["refresh_pressure_basis"] == "cumulative_provider_input"
     assert strongly_prefer["guidance_level"] == "strongly_prefer"
     assert strongly_prefer["settled_tasks_on_context"] == 2
 
@@ -990,6 +1018,8 @@ async def test_bctx4_coordinator_context_economics_warns_and_resets_after_refres
     assert "baseline_first_execution_input_tokens: 20000" in third_prompt
     assert "last_completed_execution_input_tokens: 100000" in third_prompt
     assert "input_growth_from_baseline: 80000" in third_prompt
+    assert "refresh_pressure_input_tokens: 120000" in third_prompt
+    assert "refresh_pressure_basis: cumulative_provider_input" in third_prompt
     assert "refresh_guidance_level: strongly_prefer" in third_prompt
     assert "advisory_consider_input_tokens: 64000" in third_prompt
     assert "advisory_strongly_prefer_input_tokens: 96000" in third_prompt
