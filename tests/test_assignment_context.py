@@ -1417,7 +1417,10 @@ async def test_bctx3_history_recent_recovers_completed_prior_task_in_same_round(
     context_runtime_factory,
 ):
     token = "SAME-ROUND-6317"
-    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {2}},
+    )
     adapter.decisions["agent_c"].extend(
         [
             TransactionDecision(
@@ -1452,6 +1455,25 @@ async def test_bctx3_history_recent_recovers_completed_prior_task_in_same_round(
         )
     )
     room_id = snapshot["id"]
+
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 2)
+    async with runtime.db.connect() as db:
+        tasks = await db.execute_fetchall(
+            "SELECT rowid, id, created_at FROM tasks WHERE room_id=? ORDER BY rowid",
+            (room_id,),
+        )
+        assert len(tasks) == 2
+        await db.execute(
+            "UPDATE tasks SET created_at=? WHERE id=?",
+            (tasks[0]["created_at"], tasks[1]["id"]),
+        )
+        await db.commit()
+        collided = await db.execute_fetchall(
+            "SELECT rowid, id, created_at FROM tasks WHERE room_id=? ORDER BY rowid",
+            (room_id,),
+        )
+    assert collided[0]["created_at"] == collided[1]["created_at"]
+    adapter.release_call("agent_c", 2)
 
     async def stopped() -> bool:
         room = await runtime.db.get_room(room_id)
@@ -1513,7 +1535,10 @@ async def test_bctx3_history_recent_recovers_completed_prior_task_in_same_round(
 async def test_assignment_context_history_search_matches_prior_round_prompt_and_returns_terminal_result(
     context_runtime_factory,
 ):
-    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {2}},
+    )
     adapter.decisions["agent_c"].extend(
         [
             TransactionDecision(
@@ -1562,6 +1587,24 @@ async def test_assignment_context_history_search_matches_prior_round_prompt_and_
         ),
     )
     await runtime.start_round(room_id, prepared["active_round_id"])
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 2)
+    async with runtime.db.connect() as db:
+        rounds = await db.execute_fetchall(
+            "SELECT rowid, id, created_at FROM rounds WHERE room_id=? ORDER BY rowid",
+            (room_id,),
+        )
+        assert len(rounds) == 2
+        await db.execute(
+            "UPDATE rounds SET created_at=? WHERE id=?",
+            (rounds[0]["created_at"], rounds[1]["id"]),
+        )
+        await db.commit()
+        collided = await db.execute_fetchall(
+            "SELECT rowid, id, created_at FROM rounds WHERE room_id=? ORDER BY rowid",
+            (room_id,),
+        )
+    assert collided[0]["created_at"] == collided[1]["created_at"]
+    adapter.release_call("agent_c", 2)
     await wait_until(lambda: len(adapter.calls["agent_c"]) == 3)
     await wait_until(lambda: _finished(runtime, room_id))
 
