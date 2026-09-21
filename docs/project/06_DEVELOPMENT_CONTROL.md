@@ -290,7 +290,7 @@ The Common Cause implementation/repair/verification work is complete and the art
 ## Repository-development hygiene
 
 - canonical source is private GitHub repo `strigoi73-sudo/codex-room`, branch `main`;
-- routine change verification uses `verify-fast.cmd`; `verify-full.cmd` is the exhaustive/manual path;
+- verification should match the changed risk surface: use focused deterministic tests for localized changes; use `verify-fast.cmd` for materially integration-sensitive changes, repository-wide gates, or when focused evidence is insufficient; `verify-full.cmd` remains the exhaustive/manual path;
 - GitHub Actions are not the routine verification gate after the documented pre-runner failures;
 - exact current refs/working-tree state are live Git/GitHub facts, not maintained prose;
 - the complete `data/` tree is runtime/generated state and is ignored by Git;
