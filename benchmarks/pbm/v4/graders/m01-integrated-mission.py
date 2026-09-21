@@ -152,7 +152,17 @@ try:
     payload = copy.deepcopy(sample_payload)
     original = copy.deepcopy(payload)
     result = cli.run_payload(payload)
-    add("payload_integration", result == expected_result and payload == original)
+    ok = result == expected_result and payload == original
+    empty_payload = copy.deepcopy(sample_payload)
+    empty_payload["orders"] = []
+    empty_original = copy.deepcopy(empty_payload)
+    try:
+        cli.run_payload(empty_payload)
+        ok = False
+    except ValueError:
+        pass
+    ok = ok and empty_payload == empty_original
+    add("payload_integration", ok)
 except Exception as exc:
     add("payload_integration", False, type(exc).__name__)
 
