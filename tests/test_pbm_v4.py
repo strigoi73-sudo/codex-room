@@ -85,7 +85,6 @@ def test_v4_battery_grade_aggregates_task_specific_graders(tmp_path, monkeypatch
         assert version == "v1"
         return {"pass": True, "score": 100, "checks": [{"name": task_id, "ok": True}]}
 
-    monkeypatch.setattr(pbm._run_grader, "__wrapped__", None, raising=False)
     monkeypatch.setattr(pbm, "_run_grader", fake_grader)
 
     result = pbm_v4.grade_battery(workspace)
