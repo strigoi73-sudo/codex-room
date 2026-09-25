@@ -2688,3 +2688,26 @@ This entry records **principal verification of the live behavior**. The assistan
 
 **Assessment:** Combined with E-181's exact-head local verification and byte-equivalent merge evidence, the principal's natural provider-backed acceptance closes I-029. D-051 is implemented, verified, merged, and accepted in ordinary use.
 
+### E-183 — D-052 conversational continuity exact-head verification and merge
+**Date:** 2026-09-25  
+**Status:** VERIFIED BY PRINCIPAL  
+**Kind:** [worker context continuity / public Room delta / same-Task HISTORY / exact-head local verification]  
+**Decision:** D-052  
+**Issue:** I-030
+
+The principal locally verified exact feature head `03fb490d6b924f6268a29ceeda62a8f7bab6300a` for the D-052 same-Task conversational continuity repair.
+
+The principal reported that the supplied exact-head verification block completed successfully:
+
+- the focused D-052 continuity regression block passed;
+- `verify-fast.cmd` passed;
+- the verification applied to the exact expected feature head.
+
+The focused block covered the new default same-Task worker continuation, explicit fresh-context reset, fresh-plus-explicit-lineage rejection, public Room-delta delivery, no repeat public-delta injection on same-Assignment continuation, same-Task HISTORY access, existing explicit lineage reuse, local repair-loop continuity, and bounded cross-Task worker grace.
+
+PR #213 was then merged from that exact head. Merge commit: `2985b714dce70e0fe7540e8b2e8b3eb3fc7a4c17`. GitHub comparison from the verified feature head to the merge commit reported **zero file differences**, establishing byte-equivalent implementation content.
+
+This entry records principal-reported local verification. The assistant did not independently execute the local verifier and therefore does not infer per-suite pass counts beyond what was explicitly reported.
+
+**Assessment:** D-052 is implemented, exact-head verified, and merged. I-030 remains open for one natural provider-backed debate-style acceptance showing that peers can directly respond to already-public Room statements without context-recovery turns.
+
