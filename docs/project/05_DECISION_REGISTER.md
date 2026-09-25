@@ -383,7 +383,7 @@ D-027 generalizes the token-economy principle beyond C's initial allocation deci
 
 ### D-028 — Astra is prohibited for Codex Room execution
 **Date:** 2026-09-15  
-**Status:** ACTIVE
+**Status:** SUPERSEDED by D-051
 
 Codex Room must not execute Room cognition on an Astra model.
 
@@ -908,3 +908,26 @@ Settled boundary:
 - PBM v4 remains frozen and reproducible as the promoted predecessor; no paid seven-task v4 comparison was completed.
 
 **Principle:** **Give each platform the same job and judge the result; let the platform decide how to do the work.**
+
+### D-051 — Astra is default-denied but may be authorized by the opening Room prompt
+**Date:** 2026-09-24  
+**Status:** ACTIVE  
+**Supersedes:** D-028
+
+The principal replaced D-028's blanket Astra prohibition with an explicit opening-prompt opt-in.
+
+Settled rule:
+
+- Astra remains unavailable by default for Codex Room execution;
+- the **opening Room prompt** may explicitly request Astra, including a participant/model direction such as `Agent A — Astra, Medium` or an instruction to use Astra;
+- when that opening prompt explicitly authorizes Astra, the authorization is durable for the **entire conversation lineage**, including later turns, later bounded Tasks/Rounds, retries, and normal Room rollover successors;
+- subsequent observer messages, agent messages, coordination policy, or autonomous routing may not grant Astra to a conversation lineage whose opening prompt did not authorize it;
+- authorization makes Astra Low/Medium/High selectable through the ordinary C-controlled model-allocation surface; C must use Astra only where the principal's opening model directions call for it and must not expand Astra use to other participants merely because the Room is authorized;
+- CORE must persist the authorization deterministically and fail closed at both coordination validation and provider-turn execution if Astra is attempted without it;
+- Luna, Terra, and Sol retain their existing ordinary availability and D-039 economics/coordination rules;
+- Sol/Ultra remains unavailable for its separate automatic-delegation reason, and Sol/XHigh / Sol/Max retain their existing C-only Task-scoped approval rules.
+
+This makes the principal's opening Room prompt the authorization boundary. A new prompt later in the same unauthorized Room cannot unlock Astra; creating a new Room with an explicit Astra direction can.
+
+**Principle:** **Astra requires explicit principal opt-in at conversation creation, and that opt-in persists with the conversation lineage.**
+
