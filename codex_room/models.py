@@ -133,14 +133,23 @@ def initial_prompt_authorizes_astra(prompt: str) -> bool:
         re.IGNORECASE,
     )
     explicit = (
-        re.compile(r"\bastra(?:[- /]+)(?:low|medium|high)\b", re.IGNORECASE),
         re.compile(
             r"\b(?:use|uses|using|run|runs|running|execute|executes|executing|"
             r"assign|assigns|assigning|select|selects|selecting)\b"
             r"[^\n]{0,120}\bastra\b",
             re.IGNORECASE,
         ),
-        re.compile(r"\bagent\s+[abc]\b[^\n]{0,120}\bastra\b", re.IGNORECASE),
+        re.compile(
+            r"\bagent\s+[abc]\b[^\n]{0,80}"
+            r"\b(?:participant|model|config|configuration)\b"
+            r"[^\n]{0,80}\bastra\b",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\b(?:agent\s+)?[abc]\b\s*(?:[:=]|[-–—]{1,2})"
+            r"[^\n]{0,60}\bastra\b",
+            re.IGNORECASE,
+        ),
         re.compile(
             r"\bastra\b[^\n]{0,120}\b(?:for|on)\s+(?:agent\s+)?[abc]\b",
             re.IGNORECASE,
