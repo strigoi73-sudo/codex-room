@@ -764,11 +764,11 @@ async def test_run_agent_uses_explicit_per_turn_model_and_effort(tmp_path: Path)
 
 
 @pytest.mark.asyncio
-async def test_run_agent_rejects_prohibited_astra_model(tmp_path: Path):
+async def test_run_agent_rejects_astra_without_room_authorization(tmp_path: Path):
     adapter = CodexAgentAdapter()
     agent = {"id": "agent-one", "thread_id": "thread-one"}
 
-    with pytest.raises(ValueError, match="prohibited for Codex Room execution"):
+    with pytest.raises(ValueError, match="prohibited unless Astra"):
         await adapter.run_agent(
             agent,
             tmp_path,
@@ -776,6 +776,29 @@ async def test_run_agent_rejects_prohibited_astra_model(tmp_path: Path):
             model="gpt-6-astra",
             reasoning_effort="medium",
         )
+
+
+@pytest.mark.asyncio
+async def test_run_agent_allows_astra_with_room_authorization(tmp_path: Path):
+    adapter = CodexAgentAdapter()
+    adapter._client = object()
+    adapter.RECONCILIATION_INTERVAL_SECONDS = 0.01
+    handle = HistoryHandle()
+    thread = HistoryThread(handle)
+    adapter._threads["agent-one"] = thread
+    agent = {"id": "agent-one", "thread_id": thread.id}
+
+    await adapter.run_agent(
+        agent,
+        tmp_path,
+        "prompt",
+        model="gpt-6-astra",
+        reasoning_effort="medium",
+        allow_astra=True,
+    )
+
+    assert thread.turn_kwargs["model"] == "gpt-6-astra"
+    assert thread.turn_kwargs["effort"] == "medium"
 
 
 @pytest.mark.asyncio
