@@ -83,9 +83,14 @@ def sdk_server_identity(metadata: Any) -> dict[str, str] | None:
     return {"name": agent_name, "version": agent_version}
 
 
-def _assert_room_model_allowed(model: str) -> None:
-    if model in PROHIBITED_ROOM_MODELS:
-        raise ValueError(f"Model {model!r} is prohibited for Codex Room execution")
+def _assert_room_model_allowed(model: str, *, allow_astra: bool = False) -> None:
+    if model in PROHIBITED_ROOM_MODELS and not (
+        allow_astra and model == "gpt-6-astra"
+    ):
+        raise ValueError(
+            f"Model {model!r} is prohibited unless Astra was explicitly authorized "
+            "by the opening Room prompt"
+        )
 
 ROOM_CODEX_CONFIG_OVERRIDES = (
     f'model="{ROOM_MODEL}"',
@@ -172,6 +177,7 @@ class AgentAdapter(Protocol):
         *,
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
+        allow_astra: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult: ...
 
@@ -186,6 +192,7 @@ class AgentAdapter(Protocol):
         *,
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
+        allow_astra: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult: ...
 
@@ -412,9 +419,10 @@ class CodexAgentAdapter:
         *,
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
+        allow_astra: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
-        _assert_room_model_allowed(model)
+        _assert_room_model_allowed(model, allow_astra=allow_astra)
         usage_continuation = agent["id"] in self._usage_continuation_agents
         self._usage_continuation_agents.discard(agent["id"])
         await self._wait_until_thread_idle(
@@ -447,9 +455,10 @@ class CodexAgentAdapter:
         *,
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
+        allow_astra: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
-        _assert_room_model_allowed(model)
+        _assert_room_model_allowed(model, allow_astra=allow_astra)
         thread = await self._get_thread(agent, cwd)
         return await self._run_on_thread(
             agent,
@@ -459,6 +468,7 @@ class CodexAgentAdapter:
             on_progress=on_progress,
             model=model,
             reasoning_effort=reasoning_effort,
+            allow_astra=allow_astra,
             transactional=transactional,
         )
 
@@ -473,9 +483,10 @@ class CodexAgentAdapter:
         *,
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
+        allow_astra: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
-        _assert_room_model_allowed(model)
+        _assert_room_model_allowed(model, allow_astra=allow_astra)
         thread = await self._get_thread_by_id(agent, cwd, thread_id)
         return await self._run_on_thread(
             agent,
@@ -485,6 +496,7 @@ class CodexAgentAdapter:
             on_progress=on_progress,
             model=model,
             reasoning_effort=reasoning_effort,
+            allow_astra=allow_astra,
             transactional=transactional,
         )
 
