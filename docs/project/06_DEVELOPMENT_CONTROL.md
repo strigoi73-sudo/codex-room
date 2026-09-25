@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-030 — **same-Task conversational continuity repair** — is IN PROGRESS under explicit principal direction after a natural AI Debate exposed that A/B Assignments could lose already-public peer context between turns.
-- **What just happened?** D-052 was adopted and implementation was prepared on `feature/task-context-continuity`: same-worker same-Task provider continuity is automatic by default, `fresh_context=true` preserves deliberate independent resets, the first execution of each new worker Assignment receives a bounded public Room delta, and `HISTORY` can retrieve completed results from earlier Assignments in the current Task.
-- **What is next?** Run focused context/transaction tests and the repository fast verifier on the exact feature head. If those pass, review/merge the exact bytes and then run one natural debate-style acceptance confirming that A/B can directly respond to prior public peer statements without context-recovery turns.
+- **Where are we?** I-030 — **same-Task conversational continuity repair** — is IN PROGRESS with implementation verified and merged; only natural debate-style runtime acceptance remains.
+- **What just happened?** PR #213 merged D-052 as `2985b714dce70e0fe7540e8b2e8b3eb3fc7a4c17` after principal exact-head verification of `03fb490d6b924f6268a29ceeda62a8f7bab6300a`. The focused continuity block and `verify-fast.cmd` passed; GitHub comparison showed zero file differences between the verified feature head and merge commit. See E-183.
+- **What is next?** Run one natural debate-style acceptance confirming that A/B can directly respond to prior public peer statements without context-recovery turns. If that passes, close I-030 and resume I-028.
 - **What remains behind it?** I-028 — the Codex Room utility gate — remains the broader product-value priority, but fair utility benchmarking should resume only after I-030 closes because conversational continuity is a prerequisite for evaluating Room's persistent-participant value.
-- **What is blocked?** Nothing technical is blocked; exact-head verification is pending.
+- **What is blocked?** Nothing technical is blocked; natural provider-backed acceptance is pending.
 - **What are we deliberately not doing?** We are not restoring a forever-growing full transcript, replaying mechanical/tool/economics events, weakening Task boundaries, or making cross-Task worker continuity automatic.
 
 ## Current development state
@@ -21,7 +21,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** DECIDED / IMPLEMENTATION PREPARED / NEEDS EXACT-HEAD + NATURAL RUNTIME VERIFICATION
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURAL RUNTIME ACCEPTANCE PENDING
 
 **Decision:** D-052
 
@@ -37,9 +37,9 @@ D-052 changes the worker boundary without returning to permanent transcript repl
 - `HISTORY` may retrieve completed Assignment results from the current Task as well as prior Tasks/Rounds;
 - C coordinator continuity/REFRESH and Task-boundary semantics remain unchanged.
 
-Implementation branch: `feature/task-context-continuity`.
+PR #213 merged the implementation after principal exact-head verification of `03fb490d6b924f6268a29ceeda62a8f7bab6300a`. The focused D-052 continuity regression block passed and `verify-fast.cmd` passed. GitHub comparison from that exact verified head to merge commit `2985b714dce70e0fe7540e8b2e8b3eb3fc7a4c17` reported zero file differences. See E-183.
 
-Acceptance gate: focused context/transaction regressions plus `verify-fast.cmd` on one exact feature head, followed after merge by one natural debate-style Room in which B can directly inspect/respond to A's prior public statement (and vice versa) without a recovery delegation/HISTORY detour.
+Remaining acceptance gate: one natural debate-style Room in which B can directly inspect/respond to A's prior public statement (and vice versa) without a recovery delegation/HISTORY detour.
 
 ### I-029 — Opening-prompt Astra opt-in
 
