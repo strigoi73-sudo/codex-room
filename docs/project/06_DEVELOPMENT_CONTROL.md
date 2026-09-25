@@ -1,19 +1,39 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-21
+**Last updated:** 2026-09-24
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
-- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. The first measured OUB v1/O1 comparison is complete. It produced usable cost/orchestration evidence but exposed a hidden exact-label grader-contract defect, so its numeric quality scores are not authoritative.
-- **What just happened?** O1 completed VALID on both platforms. Desktop used 167,898 tokens in 56.223 s; Room used 191,793 tokens in 109.143 s with five C executions and zero peer invocations. Both reports substantively identified the intended incident mechanism, but the frozen grader penalized unspecified hidden canonical code strings.
-- **Why the priority changed:** current evidence does not demonstrate that Codex Room produces better practical outcomes than Codex Desktop on ordinary task execution. Further optimization is not sufficient justification by itself; the product must demonstrate value attributable to its persistent multi-agent organization.
-- **What is next?** Do not rerun O1. Design the next OUB version/task to create stronger intrinsic need for independent analysis while keeping Desktop orchestration unconstrained, and make the grading contract robust to semantically equivalent answers.
-- **What is blocked?** Nothing technical is blocked.
-- **What are we deliberately not doing?** We are not buying another PBM run, adding more orchestration complexity, or continuing efficiency work merely to improve benchmark numbers before Codex Room demonstrates practical utility over Desktop.
+- **Where are we?** I-029 — **opening-prompt Astra opt-in** — is IN PROGRESS under explicit principal direction. D-051 supersedes the blanket D-028 prohibition: Astra is to remain default-denied and become available for an entire conversation lineage only when the opening Room prompt explicitly requests it.
+- **What just happened?** A bounded implementation is prepared on `feature/astra-initial-room-authorization`: Room creation persists the authorization, rollover carries it forward, Astra Low/Medium/High enters the C-controlled allocation surface only for authorized Rooms, and both coordination validation and provider execution retain fail-closed checks. Focused tests have been added but exact-head local verification has not yet been recorded.
+- **What is next?** Run focused Astra/transaction/rollover tests and the repository fast verifier on the exact feature head, review the exact diff, then merge only if those gates pass. After merge, perform a natural Room acceptance using an opening prompt that assigns Astra/Medium to A and B while C stays on Terra.
+- **What remains behind it?** I-028 — the Codex Room utility gate — remains the broader product-value priority after this bounded principal-requested change. Do not rerun O1; the next OUB task still needs stronger intrinsic independent-analysis pressure and a semantically robust grader contract.
+- **What is blocked?** Repository-side implementation is not blocked; exact local/runtime verification remains outstanding.
+- **What are we deliberately not doing?** We are not enabling Astra globally, allowing later messages to unlock it, changing Sol exceptional-cognition policy, buying another PBM run, or expanding this bounded change into automatic model routing.
 
 ## Current development state
+
+### I-029 — Opening-prompt Astra opt-in
+
+**Scope:** [CORE model allocation / explicit principal authorization / conversation-lineage persistence]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** DECIDED / IMPLEMENTATION PREPARED / NEEDS EXACT-HEAD + RUNTIME VERIFICATION
+
+**Decision:** D-051
+
+The principal explicitly authorized a narrow replacement for D-028:
+
+- Astra remains denied unless the opening Room prompt explicitly requests it;
+- authorization is captured once at Room creation and persists for the whole conversation lineage, including later turns, Tasks/Rounds, retries, and normal rollover successors;
+- later observer or agent messages cannot grant Astra to an unauthorized lineage;
+- authorized Rooms expose Astra Low/Medium/High through C's existing bounded model-allocation surface, while C must honor the participant/model directions in the opening prompt rather than expanding Astra use merely because it is available;
+- the implementation must fail closed both when C attempts an unauthorized Astra allocation and immediately before provider execution.
+
+Current implementation is on `feature/astra-initial-room-authorization`. Added coverage includes opening-prompt recognition, repeated Astra peer turns in both legacy and production transaction paths, default-denied behavior, adapter fail-closed behavior, and rollover inheritance. Do not mark IMPLEMENTED / VERIFIED until exact-head local tests and a natural provider-backed Room acceptance succeed.
 
 ### I-028 — Codex Room utility gate
 
