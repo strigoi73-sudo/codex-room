@@ -2668,3 +2668,23 @@ PR #210 was then marked ready and merged. Merge commit: `8132fac9df2d4fc06fcb59a
 
 **Assessment:** D-051 is implemented, exact-head locally verified, and merged. The remaining I-029 acceptance step is one natural provider-backed Room demonstrating that an opening prompt can keep A and B on the requested Astra configuration across the conversation while C remains on its separately requested Terra configuration, with actual execution evidence confirming model/effort selection.
 
+### E-182 — Natural provider-backed Astra acceptance verified by the principal
+**Date:** 2026-09-24  
+**Status:** VERIFIED BY PRINCIPAL  
+**Kind:** [natural Room acceptance / provider execution / model-allocation policy]  
+**Decision:** D-051  
+**Issue:** I-029
+
+After PR #210 merged the exact-head-verified D-051 implementation, the principal ran a fresh ordinary Codex Room using the intended opening-prompt Astra authorization behavior and reported that it worked.
+
+The accepted behavior was the bounded policy change under I-029:
+
+- the opening Room prompt authorized Astra for the conversation lineage;
+- the requested Astra participant execution behavior was available in the natural provider-backed Room;
+- the separate non-Astra coordinator model direction remained compatible with that authorization;
+- no further repository change was required after the natural acceptance.
+
+This entry records **principal verification of the live behavior**. The assistant did not independently inspect the Room export or provider execution trace for this acceptance run, so this evidence must not be restated as independently trace-verified model/effort telemetry.
+
+**Assessment:** Combined with E-181's exact-head local verification and byte-equivalent merge evidence, the principal's natural provider-backed acceptance closes I-029. D-051 is implemented, verified, merged, and accepted in ordinary use.
+
