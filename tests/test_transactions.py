@@ -2525,6 +2525,115 @@ async def test_transaction_c_can_select_ordinary_config_for_its_next_execution(
 
 
 @pytest.mark.asyncio
+async def test_transaction_opening_prompt_authorizes_repeated_astra_peer_turns(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                message="First requested Astra pass.",
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Return FIRST.",
+                        "config": "astra-medium",
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                message="Second requested Astra pass.",
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Return SECOND.",
+                        "config": "astra-medium",
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated FIRST and SECOND.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(action=TransactionAction.COMPLETE, message="FIRST"),
+            TransactionDecision(action=TransactionAction.COMPLETE, message="SECOND"),
+        ]
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "astra-transaction.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic=(
+                "Agent A must use Astra Medium for its participant work. "
+                "Agent C remains on Terra."
+            ),
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_a"]) == 2
+    assert [call["model"] for call in adapter.calls["agent_a"]] == [
+        "gpt-6-astra",
+        "gpt-6-astra",
+    ]
+    assert [call["reasoning_effort"] for call in adapter.calls["agent_a"]] == [
+        "medium",
+        "medium",
+    ]
+    assert all(call["allow_astra"] is True for call in adapter.calls["agent_a"])
+    assert all(call["model"] == "gpt-5.6-terra" for call in adapter.calls["agent_c"])
+
+
+@pytest.mark.asyncio
+async def test_transaction_rejects_astra_without_opening_prompt_authorization(
+    transaction_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            message="Unauthorized Astra attempt.",
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "This should never execute.",
+                    "config": "astra-medium",
+                }
+            ],
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "astra-denied-transaction.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Ordinary work with no special model authorization.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert not adapter.calls["agent_a"]
+    events = await runtime.db.get_events(room_id)
+    assert any(
+        event["event_type"] == "agent_error"
+        and "Astra execution was not authorized by the opening Room prompt"
+        in event["content"]
+        for event in events
+    )
+
+
+@pytest.mark.asyncio
 async def test_transaction_task_scoped_cognition_approval_allows_repeated_exceptional_c_turns_and_downgrade(
     transaction_runtime_factory,
 ):
