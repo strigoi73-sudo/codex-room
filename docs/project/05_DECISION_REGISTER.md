@@ -931,3 +931,29 @@ This makes the principal's opening Room prompt the authorization boundary. A new
 
 **Principle:** **Astra requires explicit principal opt-in at conversation creation, and that opt-in persists with the conversation lineage.**
 
+### D-052 — Same-Task worker continuity is the default and public Room conversation is supplied incrementally
+**Date:** 2026-09-25  
+**Status:** ACTIVE  
+**Amends:** D-033 and D-037
+
+Ordinary use exposed that D-033/D-037 had made worker context isolation too conservative for conversational multi-agent work. In a natural adversarial debate, later A/B Assignments repeatedly lacked already-public statements from the other participant and spent additional cognition requesting or reconstructing material that the Room had already recorded.
+
+Settled boundary:
+
+- for A/B work inside one active Task under production `assignment_thread` mode, CORE should automatically continue the worker's latest completed same-Task provider context when one exists;
+- the durable `context_parent_assignment_id` continues to record the exact lineage source, and stale/forking provider-context reuse remains prohibited;
+- a delegation may set `fresh_context=true` when independence, deliberate reset, or lower accumulated private/provider context is materially more valuable than continuity;
+- `fresh_context=true` and an explicit `context_from_assignment_id` are mutually exclusive;
+- explicit `context_from_assignment_id` remains available when an exact source must be named and remains required for bounded cross-Task worker-grace continuation;
+- the first execution of each new A/B Assignment receives a bounded **public Room delta** covering public, agent-readable conversational messages published since the inherited worker context last settled, or since the Task began when the worker starts fresh;
+- the public delta must exclude private principal content, private participant content, mechanical/lifecycle events, status telemetry, tool chatter, and other non-conversational runtime records;
+- provider-context independence does not mean ignorance of shared public Room facts: even a deliberately fresh worker Assignment may receive the bounded public Room delta;
+- the delta is injected only on the first execution of the new logical Assignment, so EVIDENCE/HISTORY/retry continuations on that same provider thread do not replay it;
+- bounded `HISTORY` may select completed Assignment results from earlier work in the **current Task** as well as earlier settled Tasks in the same Round and earlier Rounds;
+- C's coordinator-context rules, REFRESH economics, Task boundaries, and cross-Task worker-grace rules otherwise remain unchanged;
+- a new unrelated Task still starts fresh worker context by default unless the existing explicit grace mechanism is deliberately used.
+
+This retains assignment-thread isolation at real objective boundaries while restoring the basic conversational expectation that a participant can respond to public statements already made in the Room.
+
+**Principle:** **Keep context bounded at objective boundaries, not at every conversational turn; preserve private/provider independence without making peers forget the public Room.**
+
