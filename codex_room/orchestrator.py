@@ -3201,6 +3201,13 @@ class RoomRuntime:
                         "Only Agent C may select a peer execution configuration"
                     )
                 if (
+                    item.get("config") in ASTRA_EXECUTION_CONFIGS
+                    and not astra_authorized
+                ):
+                    raise ValueError(
+                        "Astra execution was not authorized by the opening Room prompt"
+                    )
+                if (
                     item.get("config") is not None
                     and item["config"] not in allowed_peer_configs
                 ):

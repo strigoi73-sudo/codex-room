@@ -4397,6 +4397,14 @@ class Database:
                     if astra_authorized:
                         allowed_peer_configs.update(ASTRA_EXECUTION_CONFIGS)
                     if (
+                        config_id in ASTRA_EXECUTION_CONFIGS
+                        and not astra_authorized
+                    ):
+                        await db.rollback()
+                        raise ValueError(
+                            "Astra execution was not authorized by the opening Room prompt"
+                        )
+                    if (
                         config_id is not None
                         and config_id not in allowed_peer_configs
                     ):
