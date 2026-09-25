@@ -222,7 +222,7 @@ async def test_assignment_context_mode_reuses_one_thread_per_logical_assignment(
         in adapter.calls["agent_c"][0]["prompt"]
     )
     assert (
-        "otherwise do not assume unsupplied history from another Assignment"
+        "CORE normally continues the latest completed same-worker provider context"
         in adapter.calls["agent_c"][0]["prompt"]
     )
     assert "Bounded peer result." in adapter.calls["agent_c"][1]["prompt"]
@@ -1813,7 +1813,7 @@ async def test_bctx3_history_recent_recovers_completed_prior_task_in_same_round(
     assert "<retrieved_room_history>" not in adapter.calls["agent_c"][1]["prompt"]
     assert "<retrieved_room_history>" in adapter.calls["agent_c"][2]["prompt"]
     assert token in adapter.calls["agent_c"][2]["prompt"]
-    assert "earlier completed Tasks in this Round" in adapter.calls["agent_c"][1]["prompt"]
+    assert "an earlier completed Task in this Round" in adapter.calls["agent_c"][1]["prompt"]
 
     async with runtime.db.connect() as db:
         tasks = await db.execute_fetchall(
