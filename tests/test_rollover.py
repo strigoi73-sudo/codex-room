@@ -136,6 +136,40 @@ async def _room_is_quiescent(runtime: RoomRuntime, room_id: str) -> bool:
     )
 
 
+@pytest.mark.asyncio
+async def test_rollover_preserves_opening_prompt_astra_authorization(tmp_path):
+    runtime = RoomRuntime(
+        Database(tmp_path / "astra-rollover.db"),
+        FakeAgentAdapter({"agent_a": [(Outcome.PASS, "")]}),
+        tmp_path / "data",
+    )
+    await runtime.initialize()
+    try:
+        source = await _finished_source(
+            runtime,
+            topic=(
+                "Agent A must use Astra Medium throughout this conversation. "
+                "Agent C remains on Terra."
+            ),
+        )
+        assert source["metadata"]["astra_authorized"] is True
+
+        successor = await runtime.rollover(
+            source["id"],
+            RolloverRoomRequest(checkpoint="Continue the same conversation."),
+        )
+
+        assert successor["metadata"]["astra_authorized"] is True
+        assert successor["metadata"]["astra_authorization"]["source"] == (
+            "inherited_room_lineage"
+        )
+        assert successor["metadata"]["astra_authorization"][
+            "predecessor_room_id"
+        ] == source["id"]
+    finally:
+        await runtime.close()
+
+
 def _publish_test_release(
     runtime: RoomRuntime,
     room_id: str,

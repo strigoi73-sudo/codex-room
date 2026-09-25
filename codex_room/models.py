@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+import re
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
@@ -69,11 +70,17 @@ OrdinaryExecutionConfigId = Literal[
     "sol-medium",
     "sol-high",
 ]
+AstraExecutionConfigId = Literal[
+    "astra-low",
+    "astra-medium",
+    "astra-high",
+]
+SelectableExecutionConfigId = OrdinaryExecutionConfigId | AstraExecutionConfigId
 ExceptionalCExecutionConfigId = Literal[
     "sol-xhigh",
     "sol-max",
 ]
-ExecutionConfigId = OrdinaryExecutionConfigId | ExceptionalCExecutionConfigId
+ExecutionConfigId = SelectableExecutionConfigId | ExceptionalCExecutionConfigId
 
 ORDINARY_EXECUTION_CONFIGS: tuple[str, ...] = (
     "luna-low",
@@ -85,6 +92,11 @@ ORDINARY_EXECUTION_CONFIGS: tuple[str, ...] = (
     "sol-low",
     "sol-medium",
     "sol-high",
+)
+ASTRA_EXECUTION_CONFIGS: tuple[str, ...] = (
+    "astra-low",
+    "astra-medium",
+    "astra-high",
 )
 EXCEPTIONAL_C_EXECUTION_CONFIGS: tuple[str, ...] = (
     "sol-xhigh",
@@ -100,6 +112,9 @@ EXECUTION_CONFIGS: dict[str, tuple[str, str]] = {
     "sol-low": ("gpt-5.6-sol", "low"),
     "sol-medium": ("gpt-5.6-sol", "medium"),
     "sol-high": ("gpt-5.6-sol", "high"),
+    "astra-low": ("gpt-6-astra", "low"),
+    "astra-medium": ("gpt-6-astra", "medium"),
+    "astra-high": ("gpt-6-astra", "high"),
     "sol-xhigh": ("gpt-5.6-sol", "xhigh"),
     "sol-max": ("gpt-5.6-sol", "max"),
 }
@@ -110,15 +125,53 @@ C_COGNITION_CEILING_RANK: dict[str, int] = {
 }
 
 
+def initial_prompt_authorizes_astra(prompt: str) -> bool:
+    """Return whether the opening Room prompt explicitly authorizes Astra execution."""
+    negative = re.compile(
+        r"\b(?:do\s+not|don't|never|prohibit(?:ed)?|forbid(?:den)?|without)\b"
+        r"[^\n]{0,80}\bastra\b",
+        re.IGNORECASE,
+    )
+    explicit = (
+        re.compile(
+            r"\b(?:use|uses|using|run|runs|running|execute|executes|executing|"
+            r"assign|assigns|assigning|select|selects|selecting)\b"
+            r"[^\n]{0,120}\bastra\b",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\bagent\s+[abc]\b[^\n]{0,80}"
+            r"\b(?:participant|model|config|configuration)\b"
+            r"[^\n]{0,80}\bastra\b",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\b(?:agent\s+)?[abc]\b\s*(?:[:=]|[-–—]{1,2})"
+            r"[^\n]{0,60}\bastra\b",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\bastra\b[^\n]{0,120}\b(?:for|on)\s+(?:agent\s+)?[abc]\b",
+            re.IGNORECASE,
+        ),
+    )
+    for line in prompt.splitlines():
+        if "astra" not in line.lower() or negative.search(line):
+            continue
+        if any(pattern.search(line) for pattern in explicit):
+            return True
+    return False
+
+
 class ExecutionSelection(BaseModel):
     target: Literal["agent_a", "agent_b", "agent_c"]
-    config: OrdinaryExecutionConfigId
+    config: SelectableExecutionConfigId
 
 
 class DelegationRequest(BaseModel):
     target: Literal["agent_a", "agent_b", "agent_c"]
     instruction: str = Field(min_length=1, max_length=50_000)
-    config: OrdinaryExecutionConfigId | None = None
+    config: SelectableExecutionConfigId | None = None
     context_from_assignment_id: str | None = Field(
         default=None, min_length=1, max_length=200
     )
@@ -330,6 +383,9 @@ DECISION_SCHEMA: dict[str, Any] = {
                                     "sol-low",
                                     "sol-medium",
                                     "sol-high",
+                                    "astra-low",
+                                    "astra-medium",
+                                    "astra-high",
                                 ],
                             },
                         },
@@ -400,6 +456,9 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                             "sol-low",
                                             "sol-medium",
                                             "sol-high",
+                                            "astra-low",
+                                            "astra-medium",
+                                            "astra-high",
                                         ],
                                     },
                                     {"type": "null"},
@@ -614,6 +673,9 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                         "sol-low",
                         "sol-medium",
                         "sol-high",
+                        "astra-low",
+                        "astra-medium",
+                        "astra-high",
                         "sol-xhigh",
                         "sol-max",
                     ],

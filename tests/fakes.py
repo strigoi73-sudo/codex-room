@@ -126,6 +126,7 @@ class FakeAgentAdapter:
         *,
         model: str = "gpt-5.6-terra",
         reasoning_effort: str = "high",
+        allow_astra: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
         self._inactive_agents.discard(agent["agent_key"])
@@ -136,6 +137,7 @@ class FakeAgentAdapter:
                 "cwd": str(cwd),
                 "model": model,
                 "reasoning_effort": reasoning_effort,
+                "allow_astra": allow_astra,
                 "transactional": transactional,
             }
         )
@@ -196,6 +198,7 @@ class FakeAgentAdapter:
         *,
         model: str = "gpt-5.6-terra",
         reasoning_effort: str = "high",
+        allow_astra: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
         contextual_agent = dict(agent)
@@ -208,6 +211,7 @@ class FakeAgentAdapter:
             on_progress=on_progress,
             model=model,
             reasoning_effort=reasoning_effort,
+            allow_astra=allow_astra,
             transactional=transactional,
         )
 

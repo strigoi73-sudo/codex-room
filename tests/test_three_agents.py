@@ -18,6 +18,7 @@ from codex_room.models import (
     Outcome,
     PrepareRoundRequest,
     RoomStatus,
+    initial_prompt_authorizes_astra,
 )
 from codex_room.personalities import (
     AGENT_A_DEFAULT_PERSONALITY,
@@ -1582,6 +1583,84 @@ async def test_passive_and_runnable_state_survives_restart(tmp_path):
         await restarted.close()
 
 
+def test_opening_prompt_astra_authorization_requires_explicit_request() -> None:
+    assert initial_prompt_authorizes_astra(
+        "Agent A — participant: Astra, Medium reasoning"
+    )
+    assert initial_prompt_authorizes_astra("I want A and B to use Astra.")
+    assert not initial_prompt_authorizes_astra("Do not use Astra Medium in this Room.")
+    assert not initial_prompt_authorizes_astra(
+        "Discuss whether Astra should ever be permitted in Codex Room."
+    )
+    assert not initial_prompt_authorizes_astra(
+        "Agent A should analyze why Astra Medium could be risky."
+    )
+
+
+@pytest.mark.asyncio
+async def test_opening_prompt_authorizes_astra_for_later_peer_turns(runtime_factory):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="A: first Astra pass.",
+                invoke_targets=["agent_a"],
+                execution_configs=[{"target": "agent_a", "config": "astra-medium"}],
+            ),
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="A: second Astra pass.",
+                invoke_targets=["agent_a"],
+                execution_configs=[{"target": "agent_a", "config": "astra-medium"}],
+            ),
+            AgentDecision(outcome=Outcome.FINISH, message="Integrated Astra result"),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="First Astra pass complete.",
+                invoke_targets=["agent_c"],
+            ),
+            AgentDecision(
+                outcome=Outcome.MESSAGE,
+                message="Second Astra pass complete.",
+                invoke_targets=["agent_c"],
+            ),
+        ]
+    )
+
+    runtime = await runtime_factory(adapter, "astra-authorized.db")
+    room = await runtime.create_room(
+        CreateRoomRequest(
+            topic=(
+                "Agent A — participant: Astra, Medium reasoning. "
+                "Keep Astra available to A throughout this conversation."
+            ),
+            starting_agent="agent_c",
+            max_consecutive_passes=10,
+        )
+    )
+
+    await wait_until(lambda: len(adapter.calls["agent_a"]) == 2)
+    await wait_until(lambda: len(adapter.calls["agent_c"]) == 3)
+
+    stored = await runtime.db.get_room(room["id"])
+    assert stored is not None
+    assert stored["metadata"]["astra_authorized"] is True
+    assert [call["model"] for call in adapter.calls["agent_a"]] == [
+        "gpt-6-astra",
+        "gpt-6-astra",
+    ]
+    assert [call["reasoning_effort"] for call in adapter.calls["agent_a"]] == [
+        "medium",
+        "medium",
+    ]
+    assert all(call["allow_astra"] is True for call in adapter.calls["agent_a"])
+
+
 @pytest.mark.asyncio
 async def test_c_can_redelegate_same_peer_with_stronger_execution_config(runtime_factory):
     adapter = FakeAgentAdapter(
@@ -1697,13 +1776,26 @@ def test_invoke_targets_validation_and_room_membership() -> None:
                 {"target": "agent_a", "config": "terra-high"},
             ],
         )
-    with pytest.raises(ValidationError):
-        AgentDecision(
-            outcome=Outcome.MESSAGE,
-            message="Astra is prohibited",
-            invoke_targets=["agent_a"],
-            execution_configs=[{"target": "agent_a", "config": "astra-medium"}],
+    astra_selected = AgentDecision(
+        outcome=Outcome.MESSAGE,
+        message="Use Astra when this Room permits it",
+        invoke_targets=["agent_a"],
+        execution_configs=[{"target": "agent_a", "config": "astra-medium"}],
+    )
+    with pytest.raises(ValueError, match="not authorized by the opening Room prompt"):
+        RoomRuntime._resolve_execution_configs(
+            astra_selected, "agent_c", ("agent_a",)
         )
+    assert RoomRuntime._resolve_execution_configs(
+        astra_selected,
+        "agent_c",
+        ("agent_a",),
+        astra_authorized=True,
+    )["agent_a"] == {
+        "config_id": "astra-medium",
+        "model": "gpt-6-astra",
+        "reasoning_effort": "medium",
+    }
     with pytest.raises(ValidationError):
         AgentDecision(
             outcome=Outcome.MESSAGE,

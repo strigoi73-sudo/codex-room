@@ -27,9 +27,11 @@ from .models import (
     RoomStatus,
     RoundStatus,
     C_COGNITION_CEILING_RANK,
+    ASTRA_EXECUTION_CONFIGS,
     EXCEPTIONAL_C_EXECUTION_CONFIGS,
     EXECUTION_CONFIGS,
     ORDINARY_EXECUTION_CONFIGS,
+    initial_prompt_authorizes_astra,
 )
 
 
@@ -939,6 +941,17 @@ class Database:
         a_id = f"{room_id}:agent_a"
         b_id = f"{room_id}:agent_b"
         c_id = f"{room_id}:agent_c"
+        astra_authorized = initial_prompt_authorizes_astra(request.topic)
+        room_metadata: dict[str, Any] = {
+            "schema_version": 2,
+            "created_by": "local_observer",
+            "astra_authorized": astra_authorized,
+        }
+        if astra_authorized:
+            room_metadata["astra_authorization"] = {
+                "source": "initial_room_prompt",
+                "scope": "conversation_lineage",
+            }
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             profile_a = await self._fetchone(
@@ -982,7 +995,7 @@ class Database:
                     request.max_turns,
                     request.max_consecutive_passes,
                     request.inactivity_seconds,
-                    json.dumps({"schema_version": 2, "created_by": "local_observer"}),
+                    json.dumps(room_metadata, ensure_ascii=False),
                     round_id,
                     profile_a["id"],
                     profile_b["id"],
@@ -1184,6 +1197,15 @@ class Database:
             }
             if not predecessor_has_c:
                 successor_metadata["lineage"]["successor_added_participants"] = ["agent_c"]
+            if source_metadata.get("astra_authorized") is True:
+                successor_metadata["astra_authorized"] = True
+                successor_metadata["astra_authorization"] = {
+                    "source": "inherited_room_lineage",
+                    "predecessor_room_id": source_room_id,
+                    "scope": "conversation_lineage",
+                }
+            else:
+                successor_metadata["astra_authorized"] = False
             if institutional_release is not None:
                 successor_metadata["institutional_release"] = institutional_release
                 successor_metadata["lineage"]["institutional_release"] = institutional_release
@@ -4176,6 +4198,15 @@ class Database:
             if assignment is None or assignment["room_id"] != room_id:
                 await db.rollback()
                 raise RuntimeError("Transaction assignment is missing or belongs elsewhere")
+            room_policy = await self._fetchone(
+                db, "SELECT metadata_json FROM rooms WHERE id=?", (room_id,)
+            )
+            room_metadata = (
+                json.loads(room_policy["metadata_json"] or "{}")
+                if room_policy is not None
+                else {}
+            )
+            astra_authorized = room_metadata.get("astra_authorized") is True
             if execution["decision_recorded_at"] is not None:
                 await db.commit()
                 return {
@@ -4220,6 +4251,14 @@ class Database:
                 if next_self_config not in EXECUTION_CONFIGS:
                     await db.rollback()
                     raise ValueError("next_self_config is unsupported")
+                if (
+                    next_self_config in ASTRA_EXECUTION_CONFIGS
+                    and not astra_authorized
+                ):
+                    await db.rollback()
+                    raise ValueError(
+                        "Astra execution was not authorized by the opening Room prompt"
+                    )
                 if next_self_config in EXCEPTIONAL_C_EXECUTION_CONFIGS:
                     ceiling = (
                         task_policy["c_cognition_ceiling"]
@@ -4354,9 +4393,20 @@ class Database:
                         await db.rollback()
                         raise ValueError(f"Delegation target {target_key} is unavailable")
                     config_id = item.get("config")
+                    allowed_peer_configs = set(ORDINARY_EXECUTION_CONFIGS)
+                    if astra_authorized:
+                        allowed_peer_configs.update(ASTRA_EXECUTION_CONFIGS)
+                    if (
+                        config_id in ASTRA_EXECUTION_CONFIGS
+                        and not astra_authorized
+                    ):
+                        await db.rollback()
+                        raise ValueError(
+                            "Astra execution was not authorized by the opening Room prompt"
+                        )
                     if (
                         config_id is not None
-                        and config_id not in ORDINARY_EXECUTION_CONFIGS
+                        and config_id not in allowed_peer_configs
                     ):
                         await db.rollback()
                         raise ValueError("Delegation execution config is unsupported")

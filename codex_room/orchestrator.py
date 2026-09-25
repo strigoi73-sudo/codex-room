@@ -54,6 +54,7 @@ from .models import (
     BindInstitutionalReleaseRequest,
     CreateRoomRequest,
     C_COGNITION_CEILING_RANK,
+    ASTRA_EXECUTION_CONFIGS,
     EXCEPTIONAL_C_EXECUTION_CONFIGS,
     EXECUTION_CONFIGS,
     ORDINARY_EXECUTION_CONFIGS,
@@ -2137,7 +2138,11 @@ class RoomRuntime:
                 self._publish_event(event)
 
     async def _assignment_prompt(
-        self, batch: dict[str, Any], agent: dict[str, Any]
+        self,
+        batch: dict[str, Any],
+        agent: dict[str, Any],
+        *,
+        astra_authorized: bool = False,
     ) -> str:
         round_item = await self.db.get_round(batch["round_id"])
         if round_item is None:
@@ -2597,6 +2602,7 @@ class RoomRuntime:
                     else "sol-high",
                     (batch.get("execution") or {}).get("model"),
                     (batch.get("execution") or {}).get("reasoning_effort"),
+                    astra_authorized=astra_authorized,
                 ),
             ]
         )
@@ -2860,6 +2866,11 @@ class RoomRuntime:
         agent = await self.db.get_agent(room_id, agent_key)
         if agent is None:
             return
+        room_record = await self.db.get_room(room_id)
+        astra_authorized = bool(
+            room_record
+            and (room_record.get("metadata") or {}).get("astra_authorized") is True
+        )
         execution = batch.get("execution") or {}
         if execution.get("state") == "quarantined":
             slot = self._worker_slots.get((room_id, agent_key))
@@ -2946,7 +2957,9 @@ class RoomRuntime:
 
                 # Compose only after assignment-thread binding so C's first prompt can
                 # report exact-thread coordinator economics truthfully.
-                prompt = await self._assignment_prompt(batch, agent)
+                prompt = await self._assignment_prompt(
+                    batch, agent, astra_authorized=astra_authorized
+                )
 
                 if batch.get("usage_continuation"):
                     await self.adapter.prepare_usage_continuation(
@@ -2989,6 +3002,7 @@ class RoomRuntime:
                             execution.get("reasoning_effort")
                             or ROOM_REASONING_EFFORT
                         ),
+                        allow_astra=astra_authorized,
                         transactional=True,
                     )
                     if provider_context_mode == "assignment_thread"
@@ -3003,6 +3017,7 @@ class RoomRuntime:
                             execution.get("reasoning_effort")
                             or ROOM_REASONING_EFFORT
                         ),
+                        allow_astra=astra_authorized,
                         transactional=True,
                     )
                 )
@@ -3132,6 +3147,13 @@ class RoomRuntime:
                     )
             if decision.next_self_config is not None:
                 if (
+                    decision.next_self_config in ASTRA_EXECUTION_CONFIGS
+                    and not astra_authorized
+                ):
+                    raise ValueError(
+                        "Astra execution was not authorized by the opening Room prompt"
+                    )
+                if (
                     agent_key != "agent_c"
                     or consultation_status is None
                     or consultation_status.get("coordinator_agent_key") != "agent_c"
@@ -3168,6 +3190,9 @@ class RoomRuntime:
                     raise ValueError(
                         "Requested Task cognition ceiling is already authorized"
                     )
+            allowed_peer_configs = set(ORDINARY_EXECUTION_CONFIGS)
+            if astra_authorized:
+                allowed_peer_configs.update(ASTRA_EXECUTION_CONFIGS)
             for item in delegations:
                 if item["target"] == agent_key or item["target"] not in participants:
                     raise ValueError("Transaction delegation must target an available peer")
@@ -3176,11 +3201,18 @@ class RoomRuntime:
                         "Only Agent C may select a peer execution configuration"
                     )
                 if (
-                    item.get("config") is not None
-                    and item["config"] not in ORDINARY_EXECUTION_CONFIGS
+                    item.get("config") in ASTRA_EXECUTION_CONFIGS
+                    and not astra_authorized
                 ):
                     raise ValueError(
-                        "Peer execution configuration must stay within the ordinary Low/Medium/High set"
+                        "Astra execution was not authorized by the opening Room prompt"
+                    )
+                if (
+                    item.get("config") is not None
+                    and item["config"] not in allowed_peer_configs
+                ):
+                    raise ValueError(
+                        "Peer execution configuration is unavailable in this Room"
                     )
             runnable_targets = [item["target"] for item in delegations]
         except ValueError as exc:
@@ -3661,6 +3693,11 @@ class RoomRuntime:
         room_id = batch["room_id"]
         agent_key = batch["agent_key"]
         agent = await self.db.get_agent(room_id, agent_key)
+        room_record = await self.db.get_room(room_id)
+        astra_authorized = bool(
+            room_record
+            and (room_record.get("metadata") or {}).get("astra_authorized") is True
+        )
         events = batch["events"]
         first_event = events[0]
         input_ids = [event["id"] for event in events]
@@ -3761,7 +3798,12 @@ class RoomRuntime:
                     generation,
                 )
             else:
-                prompt = await self._delivery_prompt(events, agent, batch["round_id"])
+                prompt = await self._delivery_prompt(
+                    events,
+                    agent,
+                    batch["round_id"],
+                    astra_authorized=astra_authorized,
+                )
                 if batch.get("usage_continuation"):
                     await self.adapter.prepare_usage_continuation(
                         agent, self.workspace(room_id)
@@ -3793,6 +3835,7 @@ class RoomRuntime:
                             execution.get("reasoning_effort")
                             or ROOM_REASONING_EFFORT
                         ),
+                        allow_astra=astra_authorized,
                     ),
                     (room_id, agent_key),
                     generation,
@@ -3868,6 +3911,7 @@ class RoomRuntime:
                 result.decision,
                 agent["agent_key"],
                 runnable_targets,
+                astra_authorized=astra_authorized,
             )
         except ValueError as exc:
             await self._handle_turn_failure(
@@ -4550,6 +4594,9 @@ class RoomRuntime:
             decision,
             agent_key,
             requested_runnable_targets,
+            astra_authorized=bool(
+                (room_config.get("metadata") or {}).get("astra_authorized") is True
+            ),
         )
         peer_keys = tuple(item["agent_key"] for item in peers)
         ready_peers = {
@@ -4968,6 +5015,8 @@ class RoomRuntime:
         decision: AgentDecision,
         sender_key: str,
         runnable_targets: tuple[str, ...],
+        *,
+        astra_authorized: bool = False,
     ) -> dict[str, dict[str, str]]:
         """Resolve C's bounded per-invocation cognition choices to exact SDK settings."""
         if (
@@ -4988,6 +5037,10 @@ class RoomRuntime:
             )
         resolved: dict[str, dict[str, str]] = {}
         for target, config_id in requested.items():
+            if config_id in ASTRA_EXECUTION_CONFIGS and not astra_authorized:
+                raise ValueError(
+                    "Astra execution was not authorized by the opening Room prompt"
+                )
             model, effort = EXECUTION_CONFIGS[config_id]
             resolved[target] = {
                 "config_id": config_id,
@@ -5569,7 +5622,12 @@ class RoomRuntime:
         self._publish_event(event)
 
     async def _delivery_prompt(
-        self, events: list[dict[str, Any]], agent: dict[str, Any], round_id: str
+        self,
+        events: list[dict[str, Any]],
+        agent: dict[str, Any],
+        round_id: str,
+        *,
+        astra_authorized: bool = False,
     ) -> str:
         source_labels: dict[str, str] = {
             "observer": "the human Observer",
@@ -5657,7 +5715,7 @@ Unread event count: {len(events)}
 
 Respond to this event according to your own judgment. Your final response must satisfy the Room's structured schema: outcome MESSAGE, PASS, or FINISH; message text; invoke_targets; and execution_configs. For MESSAGE, invoke_targets may be {available_peer_targets}, ["all"] for every peer, or [] for a public/readable message that should make no peer runnable. The message remains public/readable to every authorized peer, but only named invoke_targets become runnable. Use null to retain legacy all-peer invocation.
 
-{self._execution_config_prompt(agent["agent_key"])}
+{self._execution_config_prompt(agent["agent_key"], astra_authorized=astra_authorized)}
 
 For MESSAGE, execution_configs is null or an array of target/config records, for example a record selecting agent_a with luna-medium. For PASS or FINISH, set invoke_targets and execution_configs to null. PASS creates no follow-up delivery. FINISH marks you ready to close; the Room preserves any peer turns already in progress and waits for every engaged participant to settle. Do not place JSON in markdown fences."""
 
@@ -5667,6 +5725,8 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
         task_cognition_ceiling: str = "sol-high",
         current_model: str | None = None,
         current_effort: str | None = None,
+        *,
+        astra_authorized: bool = False,
     ) -> str:
         if agent_key != "agent_c":
             return (
@@ -5674,8 +5734,12 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
                 "set each delegation record's config to null. If stronger cognition "
                 "appears necessary, say why in your substantive result so C can decide."
             )
-        peer_choices = ", ".join(ORDINARY_EXECUTION_CONFIGS)
+        peer_configs = list(ORDINARY_EXECUTION_CONFIGS)
         allowed_self = list(ORDINARY_EXECUTION_CONFIGS)
+        if astra_authorized:
+            peer_configs.extend(ASTRA_EXECUTION_CONFIGS)
+            allowed_self.extend(ASTRA_EXECUTION_CONFIGS)
+        peer_choices = ", ".join(peer_configs)
         ceiling_rank = C_COGNITION_CEILING_RANK.get(task_cognition_ceiling, 0)
         allowed_self.extend(
             config
@@ -5687,21 +5751,30 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
             if current_model and current_effort
             else "the compatibility Terra/high fallback"
         )
+        astra_note = (
+            "The opening Room prompt explicitly authorized Astra for this conversation "
+            "lineage, so Astra Low/Medium/High may be selected where that opening prompt "
+            "calls for Astra. Do not expand Astra use beyond the principal's stated model "
+            "directions. "
+            if astra_authorized
+            else "Astra is unavailable because the opening Room prompt did not explicitly "
+            "authorize it. "
+        )
         return (
             "As Agent C, allocate cognition economically. Your current execution used "
             f"{current}. For your own next nonterminal execution of this same root "
             "Assignment, next_self_config may be one of: "
             + ", ".join(allowed_self)
             + ". A null next_self_config retains the Assignment's current selection. "
-            "Ordinary autonomous self-routing is limited to Low/Medium/High across "
-            "Luna, Terra, and Sol. The current Task cognition ceiling is "
+            + astra_note
+            + "The current Task cognition ceiling is "
             f"{task_cognition_ceiling}. If Sol/XHigh or Sol/Max would materially help "
             "and the current Task ceiling does not already authorize it, use "
             "CONSULT_PRINCIPAL with requested_task_cognition_ceiling set to the desired "
             "ceiling and briefly explain why. CORE will ask the principal privately; "
             "approval raises the ceiling for this Task only and resumes this same "
-            "Assignment using the approved configuration. Sol/Ultra, Astra, and GPT-5.5 "
-            "are unavailable. For peers, each DELEGATE record may use only the ordinary "
+            "Assignment using the approved configuration. Sol/Ultra and GPT-5.5 are "
+            "unavailable. For peers, each DELEGATE record may use only the available "
             f"set: {peer_choices}. Prefer the cheapest configuration likely to be "
             "sufficient; spend more only for affirmative complexity, uncertainty, risk, "
             "or verification reasons. A null peer config retains the Terra/high "
@@ -5709,21 +5782,35 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
         )
 
     @staticmethod
-    def _execution_config_prompt(agent_key: str) -> str:
+    def _execution_config_prompt(
+        agent_key: str, *, astra_authorized: bool = False
+    ) -> str:
         if agent_key != "agent_c":
             return (
                 "Only Agent C may select peer execution_configs in this P1 trial. "
                 "Set execution_configs to null. If the assigned work appears to need "
                 "stronger cognition, report that to C in a MESSAGE and request escalation."
             )
-        choices = ", ".join(ORDINARY_EXECUTION_CONFIGS)
+        choices_list = list(ORDINARY_EXECUTION_CONFIGS)
+        if astra_authorized:
+            choices_list.extend(ASTRA_EXECUTION_CONFIGS)
+        choices = ", ".join(choices_list)
+        astra_note = (
+            "Astra is authorized for this conversation lineage only where the opening "
+            "Room prompt explicitly calls for it. "
+            if astra_authorized
+            else "Astra is unavailable because the opening Room prompt did not explicitly "
+            "authorize it. "
+        )
         return (
             "As Agent C, you may set execution_configs only for peers you are invoking "
             "in this MESSAGE. Allowed peer configs are: "
-            f"{choices}. Prefer the cheapest configuration likely to be sufficient. "
-            "Exceptional Sol/XHigh or Sol/Max authority is reserved for C's own Task-scoped "
-            "private approval path and cannot be assigned to peers. If an invoked peer has "
-            "no explicit execution_configs entry, the compatibility fallback remains the "
+            f"{choices}. "
+            + astra_note
+            + "Prefer the cheapest configuration likely to be sufficient. Exceptional "
+            "Sol/XHigh or Sol/Max authority is reserved for C's own Task-scoped private "
+            "approval path and cannot be assigned to peers. If an invoked peer has no "
+            "explicit execution_configs entry, the compatibility fallback remains the "
             "current Terra/high policy. Set execution_configs to null when no peer cognition "
             "is invoked."
         )
