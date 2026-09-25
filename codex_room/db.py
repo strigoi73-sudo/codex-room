@@ -4216,8 +4216,6 @@ class Database:
                 raise ValueError("Delegation Task is missing or no longer active")
             for item in delegations:
                 source_id = item.get("context_from_assignment_id")
-                if source_id is None:
-                    continue
                 target = await self._fetchone(
                     db,
                     "SELECT id FROM agents WHERE room_id=? AND agent_key=?",
