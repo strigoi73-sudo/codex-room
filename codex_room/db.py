@@ -2410,6 +2410,73 @@ class Database:
         }
         return [by_id[event_id] for event_id in event_ids if event_id in by_id]
 
+    async def get_assignment_public_context_delta(
+        self, assignment_id: str, *, max_events: int = 50
+    ) -> list[dict[str, Any]]:
+        """Return the public conversational messages a worker has not yet seen."""
+        if max_events < 1:
+            return []
+        async with self.connect() as db:
+            assignment = await self._fetchone(
+                db,
+                """SELECT x.*, t.room_id, t.round_id,
+                          t.origin_event_id AS task_origin_event_id
+                   FROM assignments x JOIN tasks t ON t.id=x.task_id
+                   WHERE x.id=?""",
+                (assignment_id,),
+            )
+            if assignment is None or assignment["origin_event_id"] is None:
+                return []
+
+            upper = await self._fetchone(
+                db,
+                "SELECT sequence_no FROM events WHERE id=? AND room_id=?",
+                (assignment["origin_event_id"], assignment["room_id"]),
+            )
+            if upper is None or upper["sequence_no"] is None:
+                return []
+
+            lower_event_id = assignment["task_origin_event_id"]
+            if assignment["context_parent_assignment_id"] is not None:
+                parent = await self._fetchone(
+                    db,
+                    "SELECT result_event_id FROM assignments WHERE id=?",
+                    (assignment["context_parent_assignment_id"],),
+                )
+                if parent is not None and parent["result_event_id"] is not None:
+                    lower_event_id = parent["result_event_id"]
+
+            lower_sequence = 0
+            if lower_event_id is not None:
+                lower = await self._fetchone(
+                    db,
+                    "SELECT sequence_no FROM events WHERE id=? AND room_id=?",
+                    (lower_event_id, assignment["room_id"]),
+                )
+                if lower is not None and lower["sequence_no"] is not None:
+                    lower_sequence = int(lower["sequence_no"])
+
+            rows = await db.execute_fetchall(
+                """SELECT * FROM (
+                       SELECT * FROM events
+                       WHERE room_id=? AND round_id=?
+                         AND sequence_no>? AND sequence_no<=?
+                         AND conversational=1 AND agent_readable=1
+                         AND visibility='public'
+                       ORDER BY sequence_no DESC
+                       LIMIT ?
+                   )
+                   ORDER BY sequence_no ASC""",
+                (
+                    assignment["room_id"],
+                    assignment["round_id"],
+                    lower_sequence,
+                    int(upper["sequence_no"]),
+                    max_events,
+                ),
+            )
+        return [self._decode_row(row) for row in rows]
+
     async def get_events(
         self, room_id: str, limit: int | None = 2000
     ) -> list[dict[str, Any]]:
@@ -3924,7 +3991,7 @@ class Database:
         requests: list[dict[str, Any]],
         existing_event_ids: list[str],
     ) -> tuple[list[str], list[str]]:
-        """Select bounded completed results from earlier Tasks/Rounds in this Room."""
+        """Select bounded completed results from the current Task or earlier Tasks/Rounds."""
         current_round = await self._fetchone(
             db,
             """SELECT rowid AS row_order, created_at FROM rounds
@@ -3953,6 +4020,7 @@ class Database:
             params: list[Any] = [
                 room_id,
                 round_id,
+                current_task_id,
                 current_task["created_at"],
                 current_task["created_at"],
                 current_task["row_order"],
@@ -3962,9 +4030,11 @@ class Database:
             ]
             filters = [
                 "t.room_id=?",
-                """((ro.id=? AND t.state='settled'
-                     AND (t.created_at < ?
-                          OR (t.created_at = ? AND t.rowid < ?)))
+                """((ro.id=? AND
+                       (t.id=?
+                        OR (t.state='settled'
+                            AND (t.created_at < ?
+                                 OR (t.created_at = ? AND t.rowid < ?)))))
                     OR (ro.created_at < ?
                         OR (ro.created_at = ? AND ro.rowid < ?)))""",
                 "x.state='completed'",
@@ -4020,30 +4090,54 @@ class Database:
         coordinator_agent_id: str,
         provider_context_mode: str,
         context_source_id: str | None,
+        fresh_context: bool = False,
     ) -> tuple[str | None, str | None, bool]:
-        """Validate explicit same-Task or grace-bounded predecessor worker context lineage."""
-        if context_source_id is None:
-            return None, None, False
-        if provider_context_mode != "assignment_thread":
+        """Resolve default same-Task worker continuity or validate an explicit lineage."""
+        if fresh_context and context_source_id is not None:
             raise ValueError(
-                "Explicit Assignment context lineage requires assignment_thread mode"
+                "fresh_context cannot be combined with context_from_assignment_id"
             )
+        if provider_context_mode != "assignment_thread":
+            if context_source_id is not None:
+                raise ValueError(
+                    "Explicit Assignment context lineage requires assignment_thread mode"
+                )
+            return None, None, False
         if target_agent_id == coordinator_agent_id:
-            raise ValueError("Worker context lineage cannot target the Task coordinator")
+            if context_source_id is not None:
+                raise ValueError("Worker context lineage cannot target the Task coordinator")
+            return None, None, False
+        if fresh_context:
+            return None, None, False
 
         target_task = await self._fetchone(
             db,
             "SELECT * FROM tasks WHERE id=? AND state='active'",
             (task_id,),
         )
-        source = await self._fetchone(
-            db,
-            "SELECT * FROM assignments WHERE id=?",
-            (context_source_id,),
-        )
+        if target_task is None:
+            raise ValueError("Delegation Task is missing or no longer active")
+
+        if context_source_id is None:
+            source = await self._fetchone(
+                db,
+                """SELECT * FROM assignments
+                   WHERE task_id=? AND agent_id=? AND context_thread_id IS NOT NULL
+                   ORDER BY created_at DESC, id DESC LIMIT 1""",
+                (task_id, target_agent_id),
+            )
+            if source is None or source["state"] not in ("completed", "passed"):
+                return None, None, False
+            context_source_id = source["id"]
+        else:
+            source = await self._fetchone(
+                db,
+                "SELECT * FROM assignments WHERE id=?",
+                (context_source_id,),
+            )
+
         if (
-            target_task is None
-            or source is None
+            source is None
             or source["agent_id"] != target_agent_id
             or source["state"] not in ("completed", "passed", "failed", "waived")
             or source["context_thread_id"] is None
@@ -4111,9 +4205,7 @@ class Database:
         provider_context_mode: str,
         delegations: list[dict[str, Any]],
     ) -> None:
-        """Preflight explicit lineage so agent mistakes use bounded retry handling."""
-        if not any(item.get("context_from_assignment_id") for item in delegations):
-            return
+        """Preflight worker context policy so invalid lineage choices fail before settlement."""
         async with self.connect() as db:
             task = await self._fetchone(
                 db,
@@ -4124,8 +4216,6 @@ class Database:
                 raise ValueError("Delegation Task is missing or no longer active")
             for item in delegations:
                 source_id = item.get("context_from_assignment_id")
-                if source_id is None:
-                    continue
                 target = await self._fetchone(
                     db,
                     "SELECT id FROM agents WHERE room_id=? AND agent_key=?",
@@ -4140,6 +4230,7 @@ class Database:
                     coordinator_agent_id=task["coordinator_agent_id"],
                     provider_context_mode=provider_context_mode,
                     context_source_id=source_id,
+                    fresh_context=bool(item.get("fresh_context")),
                 )
 
     async def settle_transaction_decision(
@@ -4431,6 +4522,7 @@ class Database:
                             context_source_id=item.get(
                                 "context_from_assignment_id"
                             ),
+                            fresh_context=bool(item.get("fresh_context")),
                         )
                     except ValueError:
                         await db.rollback()

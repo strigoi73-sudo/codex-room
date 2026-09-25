@@ -679,7 +679,7 @@ async def test_transaction_local_repair_loop_reuses_verifier_context_explicitly(
 
 
 @pytest.mark.asyncio
-async def test_transaction_same_task_worker_context_stays_fresh_without_explicit_lineage(
+async def test_transaction_same_task_worker_context_stays_fresh_with_explicit_reset(
     transaction_runtime_factory,
 ):
     adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
@@ -702,6 +702,7 @@ async def test_transaction_same_task_worker_context_stays_fresh_without_explicit
                         "target": "agent_a",
                         "instruction": "Perform independent bounded worker pass two.",
                         "config": None,
+                        "fresh_context": True,
                     }
                 ],
             ),
@@ -727,7 +728,7 @@ async def test_transaction_same_task_worker_context_stays_fresh_without_explicit
     runtime = await transaction_runtime_factory(adapter, "worker-context-fresh.db")
     snapshot = await runtime.create_room(
         CreateRoomRequest(
-            topic="Worker context stays fresh",
+            topic="Worker context can be reset explicitly",
             work_model_version=2,
             provider_context_mode="assignment_thread",
         )

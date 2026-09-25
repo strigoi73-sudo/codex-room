@@ -175,6 +175,15 @@ class DelegationRequest(BaseModel):
     context_from_assignment_id: str | None = Field(
         default=None, min_length=1, max_length=200
     )
+    fresh_context: bool = False
+
+    @model_validator(mode="after")
+    def validate_context_policy(self) -> "DelegationRequest":
+        if self.fresh_context and self.context_from_assignment_id is not None:
+            raise ValueError(
+                "fresh_context cannot be combined with context_from_assignment_id"
+            )
+        return self
 
 
 class SourceEvidenceRequest(BaseModel):
@@ -470,12 +479,14 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                     {"type": "null"},
                                 ]
                             },
+                            "fresh_context": {"type": "boolean"},
                         },
                         "required": [
                             "target",
                             "instruction",
                             "config",
                             "context_from_assignment_id",
+                            "fresh_context",
                         ],
                         "additionalProperties": False,
                     },

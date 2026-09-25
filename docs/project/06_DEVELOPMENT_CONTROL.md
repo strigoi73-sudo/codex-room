@@ -1,19 +1,45 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-24
+**Last updated:** 2026-09-25
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
-- **Where are we?** I-029 — **opening-prompt Astra opt-in** — is COMPLETE. D-051 supersedes the blanket D-028 prohibition: Astra remains default-denied and becomes available for an entire conversation lineage only when the opening Room prompt explicitly requests it.
-- **What just happened?** PR #210 merged the D-051 implementation as `8132fac9df2d4fc06fcb59a0d015400fdab4f5d6` after exact-head verification of feature head `b923e1654bae39291ff7f3211c1062b1005615b4`. The focused Astra suite passed 7/7, `verify-fast.cmd` passed 64 Linux focused tests, 119 Windows portability tests, and 9 browser transcript tests, and GitHub comparison showed zero file differences between the verified feature head and the merge commit. See E-181.
-- **What is next?** Return to I-028 — the Codex Room utility gate — as the broader product-value priority. I-029 requires no further work unless Astra behavior regresses or policy changes.
-- **What remains behind it?** I-028 — the Codex Room utility gate — remains the broader product-value priority after this bounded principal-requested change. Do not rerun O1; the next OUB task still needs stronger intrinsic independent-analysis pressure and a semantically robust grader contract.
-- **What is blocked?** Nothing technical is blocked.
-- **What are we deliberately not doing?** We are not enabling Astra globally, allowing later messages to unlock it, changing Sol exceptional-cognition policy, buying another PBM run, or expanding this bounded change into automatic model routing.
+- **Where are we?** I-030 — **same-Task conversational continuity repair** — is IN PROGRESS under explicit principal direction after a natural AI Debate exposed that A/B Assignments could lose already-public peer context between turns.
+- **What just happened?** D-052 was adopted and implementation was prepared on `feature/task-context-continuity`: same-worker same-Task provider continuity is automatic by default, `fresh_context=true` preserves deliberate independent resets, the first execution of each new worker Assignment receives a bounded public Room delta, and `HISTORY` can retrieve completed results from earlier Assignments in the current Task.
+- **What is next?** Run focused context/transaction tests and the repository fast verifier on the exact feature head. If those pass, review/merge the exact bytes and then run one natural debate-style acceptance confirming that A/B can directly respond to prior public peer statements without context-recovery turns.
+- **What remains behind it?** I-028 — the Codex Room utility gate — remains the broader product-value priority, but fair utility benchmarking should resume only after I-030 closes because conversational continuity is a prerequisite for evaluating Room's persistent-participant value.
+- **What is blocked?** Nothing technical is blocked; exact-head verification is pending.
+- **What are we deliberately not doing?** We are not restoring a forever-growing full transcript, replaying mechanical/tool/economics events, weakening Task boundaries, or making cross-Task worker continuity automatic.
 
 ## Current development state
+
+### I-030 — Same-Task conversational continuity repair
+
+**Scope:** [worker provider-context continuity / public Room delta / same-Task HISTORY / token economy]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** DECIDED / IMPLEMENTATION PREPARED / NEEDS EXACT-HEAD + NATURAL RUNTIME VERIFICATION
+
+**Decision:** D-052
+
+A natural multi-agent AI debate exposed a product-level continuity defect in the production assignment-thread model: later A/B Assignments sometimes lacked public statements already made by their peers, then spent additional model executions requesting, reconstructing, or unsuccessfully searching for that same Room context. The principal judged the existing rule too conservative for token efficiency and directed a repair before further utility benchmarking.
+
+D-052 changes the worker boundary without returning to permanent transcript replay:
+
+- same A/B worker + same active Task automatically continues the latest completed worker provider context;
+- `fresh_context=true` explicitly requests a new provider context when independence/reset/low-context execution is the real goal;
+- exact `context_from_assignment_id` remains available and is still required for bounded cross-Task grace continuation;
+- each new A/B Assignment receives a bounded public conversational delta on its first execution only;
+- the delta contains only public, agent-readable conversational Room messages and excludes private/mechanical/status/tool/economics material;
+- `HISTORY` may retrieve completed Assignment results from the current Task as well as prior Tasks/Rounds;
+- C coordinator continuity/REFRESH and Task-boundary semantics remain unchanged.
+
+Implementation branch: `feature/task-context-continuity`.
+
+Acceptance gate: focused context/transaction regressions plus `verify-fast.cmd` on one exact feature head, followed after merge by one natural debate-style Room in which B can directly inspect/respond to A's prior public statement (and vice versa) without a recovery delegation/HISTORY detour.
 
 ### I-029 — Opening-prompt Astra opt-in
 
