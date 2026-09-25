@@ -2,7 +2,7 @@
 
 **Continues:** `07_EVIDENCE_REGISTER.md`  
 **Initialized:** 2026-09-17  
-**Last updated:** 2026-09-20  
+**Last updated:** 2026-09-24  
 **Scope:** Continuation of the canonical Evidence Register. Evidence identifiers continue the existing `E-###` sequence without a new namespace.  
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
@@ -2641,3 +2641,30 @@ Accordingly, preserve 45 and 35 as historical outputs of the frozen OUB v1 grade
 The organizational-utility signal is separate and valid. O1 was designed for approximately 10–15 minutes of capable-model work per platform, yet Desktop completed in 56.223 seconds and Room in 109.143 seconds. Desktop used no descendants. Room used five Agent-C executions across Terra-high, Terra-medium, Sol-medium and Luna-low configurations, but **zero A/B peer invocations**.
 
 **Assessment:** O1 did not create enough intrinsic organizational pressure to test the intended Room advantage. It provides valid platform cost/time evidence and a valid observation that ordinary Room coordination chose not to use its peers on this task. It does not provide a reliable numeric quality comparison because of the hidden exact-label grader contract. Do not spend another paid run merely repeating O1. The next OUB version/task should (1) make independent perspectives materially useful to task success, (2) remain fair to Desktop native orchestration, and (3) use a grading contract whose accepted semantics are fully specified or otherwise robust to equivalent wording.
+
+### E-181 — D-051 opening-prompt Astra opt-in exact-head verification and merge
+**Date:** 2026-09-24  
+**Status:** VERIFIED  
+**Kind:** [CORE model allocation / fail-closed authorization / exact-head local verification]  
+**Decision:** D-051  
+**Issue:** I-029
+
+The principal locally verified exact feature head `b923e1654bae39291ff7f3211c1062b1005615b4` for the D-051 opening-prompt Astra opt-in implementation.
+
+Observed verification:
+
+- the tracked tree was clean at the exact expected commit;
+- Python syntax compilation across the changed runtime and test files passed;
+- the focused Astra authorization suite passed **7/7** tests;
+- those tests covered default denial, explicit adapter authorization, opening-prompt recognition, repeated later-turn Astra use in the legacy routing path, repeated Astra peer execution in the production transaction path, unauthorized transaction rejection, and rollover inheritance;
+- `verify-fast.cmd` completed with `RESULT: PASS`;
+- Linux Python 3.12 focused core: **64 passed**;
+- Windows focused portability tests: **119 passed**;
+- browser transcript stability: **9 passed**;
+- the verifier emitted a WSL systemd-user-session startup warning before the Linux suite, but all verifier stages completed successfully;
+- an interactive PowerShell `else` parse error occurred only after the script had already printed the successful feature-verification result and did not affect any verification command or exit code.
+
+PR #210 was then marked ready and merged. Merge commit: `8132fac9df2d4fc06fcb59a0d015400fdab4f5d6`. GitHub comparison from the exact verified feature head to the merge commit reported **zero file differences**, establishing byte-equivalent repository content for the implementation.
+
+**Assessment:** D-051 is implemented, exact-head locally verified, and merged. The remaining I-029 acceptance step is one natural provider-backed Room demonstrating that an opening prompt can keep A and B on the requested Astra configuration across the conversation while C remains on its separately requested Terra configuration, with actual execution evidence confirming model/effort selection.
+
