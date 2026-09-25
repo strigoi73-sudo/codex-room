@@ -7,10 +7,10 @@
 ## Operator summary
 
 - **Where are we?** I-029 — **opening-prompt Astra opt-in** — is IN PROGRESS under explicit principal direction. D-051 supersedes the blanket D-028 prohibition: Astra is to remain default-denied and become available for an entire conversation lineage only when the opening Room prompt explicitly requests it.
-- **What just happened?** A bounded implementation is prepared on `feature/astra-initial-room-authorization`: Room creation persists the authorization, rollover carries it forward, Astra Low/Medium/High enters the C-controlled allocation surface only for authorized Rooms, and both coordination validation and provider execution retain fail-closed checks. Focused tests have been added but exact-head local verification has not yet been recorded.
-- **What is next?** Run focused Astra/transaction/rollover tests and the repository fast verifier on the exact feature head, review the exact diff, then merge only if those gates pass. After merge, perform a natural Room acceptance using an opening prompt that assigns Astra/Medium to A and B while C stays on Terra.
+- **What just happened?** PR #210 merged the D-051 implementation as `8132fac9df2d4fc06fcb59a0d015400fdab4f5d6` after exact-head verification of feature head `b923e1654bae39291ff7f3211c1062b1005615b4`. The focused Astra suite passed 7/7, `verify-fast.cmd` passed 64 Linux focused tests, 119 Windows portability tests, and 9 browser transcript tests, and GitHub comparison showed zero file differences between the verified feature head and the merge commit. See E-181.
+- **What is next?** Perform one natural provider-backed Room acceptance using an opening prompt that assigns Astra/Medium to A and B while C stays on Terra. Verify the actual execution model/effort evidence, then close I-029 if the Room behaves as designed.
 - **What remains behind it?** I-028 — the Codex Room utility gate — remains the broader product-value priority after this bounded principal-requested change. Do not rerun O1; the next OUB task still needs stronger intrinsic independent-analysis pressure and a semantically robust grader contract.
-- **What is blocked?** Repository-side implementation is not blocked; exact local/runtime verification remains outstanding.
+- **What is blocked?** Nothing technical is blocked. Only the natural provider-backed acceptance remains before I-029 can close.
 - **What are we deliberately not doing?** We are not enabling Astra globally, allowing later messages to unlock it, changing Sol exceptional-cognition policy, buying another PBM run, or expanding this bounded change into automatic model routing.
 
 ## Current development state
@@ -21,7 +21,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** DECIDED / IMPLEMENTATION PREPARED / NEEDS EXACT-HEAD + RUNTIME VERIFICATION
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURAL PROVIDER ACCEPTANCE PENDING
 
 **Decision:** D-051
 
@@ -33,7 +33,7 @@ The principal explicitly authorized a narrow replacement for D-028:
 - authorized Rooms expose Astra Low/Medium/High through C's existing bounded model-allocation surface, while C must honor the participant/model directions in the opening prompt rather than expanding Astra use merely because it is available;
 - the implementation must fail closed both when C attempts an unauthorized Astra allocation and immediately before provider execution.
 
-Current implementation is on `feature/astra-initial-room-authorization`. Added coverage includes opening-prompt recognition, repeated Astra peer turns in both legacy and production transaction paths, default-denied behavior, adapter fail-closed behavior, and rollover inheritance. Do not mark IMPLEMENTED / VERIFIED until exact-head local tests and a natural provider-backed Room acceptance succeed.
+PR #210 merged the implementation after exact-head verification of `b923e1654bae39291ff7f3211c1062b1005615b4`. Coverage includes opening-prompt recognition, repeated Astra peer turns in both legacy and production transaction paths, default-denied behavior, adapter fail-closed behavior, and rollover inheritance. The focused Astra suite passed 7/7 and the repository fast verifier passed 64 Linux focused tests, 119 Windows portability tests, and 9 browser transcript tests. GitHub comparison from the exact verified feature head to merge commit `8132fac9df2d4fc06fcb59a0d015400fdab4f5d6` reported zero file differences. See E-181. Keep I-029 IN PROGRESS until a natural provider-backed Room confirms the requested A/B Astra and C Terra execution behavior.
 
 ### I-028 — Codex Room utility gate
 
