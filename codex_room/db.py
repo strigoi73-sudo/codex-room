@@ -30,6 +30,7 @@ from .models import (
     EXCEPTIONAL_C_EXECUTION_CONFIGS,
     EXECUTION_CONFIGS,
     ORDINARY_EXECUTION_CONFIGS,
+    initial_prompt_authorizes_astra,
 )
 
 
@@ -939,6 +940,17 @@ class Database:
         a_id = f"{room_id}:agent_a"
         b_id = f"{room_id}:agent_b"
         c_id = f"{room_id}:agent_c"
+        astra_authorized = initial_prompt_authorizes_astra(request.topic)
+        room_metadata: dict[str, Any] = {
+            "schema_version": 2,
+            "created_by": "local_observer",
+            "astra_authorized": astra_authorized,
+        }
+        if astra_authorized:
+            room_metadata["astra_authorization"] = {
+                "source": "initial_room_prompt",
+                "scope": "conversation_lineage",
+            }
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             profile_a = await self._fetchone(
@@ -982,7 +994,7 @@ class Database:
                     request.max_turns,
                     request.max_consecutive_passes,
                     request.inactivity_seconds,
-                    json.dumps({"schema_version": 2, "created_by": "local_observer"}),
+                    json.dumps(room_metadata, ensure_ascii=False),
                     round_id,
                     profile_a["id"],
                     profile_b["id"],
@@ -1184,6 +1196,15 @@ class Database:
             }
             if not predecessor_has_c:
                 successor_metadata["lineage"]["successor_added_participants"] = ["agent_c"]
+            if source_metadata.get("astra_authorized") is True:
+                successor_metadata["astra_authorized"] = True
+                successor_metadata["astra_authorization"] = {
+                    "source": "inherited_room_lineage",
+                    "predecessor_room_id": source_room_id,
+                    "scope": "conversation_lineage",
+                }
+            else:
+                successor_metadata["astra_authorized"] = False
             if institutional_release is not None:
                 successor_metadata["institutional_release"] = institutional_release
                 successor_metadata["lineage"]["institutional_release"] = institutional_release
