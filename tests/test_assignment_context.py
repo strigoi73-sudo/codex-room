@@ -100,6 +100,25 @@ def test_bctx4_refresh_decision_requires_bounded_checkpoint() -> None:
         )
 
 
+def test_delegation_context_policy_rejects_fresh_plus_explicit_lineage() -> None:
+    with pytest.raises(
+        ValidationError,
+        match="fresh_context cannot be combined with context_from_assignment_id",
+    ):
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "Invalid mixed context policy.",
+                    "config": None,
+                    "context_from_assignment_id": "assignment_prior",
+                    "fresh_context": True,
+                }
+            ],
+        )
+
+
 def test_assignment_context_mode_requires_transaction_work_model() -> None:
     with pytest.raises(ValidationError, match="requires work_model_version=2"):
         CreateRoomRequest(
@@ -466,6 +485,285 @@ async def test_assignment_context_exact_active_turn_recovers_by_recorded_thread(
     assert recovered["thread_id"] == context_thread
     assert recovered["turn_id"] == turn_id
     assert second_adapter.context_starts == []
+
+
+@pytest.mark.asyncio
+async def test_same_task_worker_context_continues_implicitly(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {2}},
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "Perform the first pass.",
+                    "config": None,
+                }
+            ],
+        )
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="IMPLICIT-CONTEXT-ALPHA",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Implicit continuation succeeded.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "implicit-worker-context.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Keep same-worker context across causally continuous same-Task work.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(
+        lambda: len(adapter.completed_calls["agent_a"]) == 1
+        and len(adapter.calls["agent_c"]) == 2
+    )
+
+    async with runtime.db.connect() as db:
+        first_a = await runtime.db._fetchone(
+            db,
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id LIMIT 1""",
+            (room_id,),
+        )
+    assert first_a is not None
+    first_thread = first_a["context_thread_id"]
+    assert first_thread
+
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Continue the same Task without naming a context source.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated the implicit continuation.",
+            ),
+        ]
+    )
+    adapter.release_call("agent_c", 2)
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_a"]) == 2
+    assert adapter.calls["agent_a"][0]["thread_id"] == first_thread
+    assert adapter.calls["agent_a"][1]["thread_id"] == first_thread
+    assert len([item for item in adapter.context_starts if item[0] == "agent_a"]) == 1
+
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+    assert len(rows) == 2
+    assert rows[1]["context_parent_assignment_id"] == rows[0]["id"]
+    assert rows[1]["context_thread_id"] == rows[0]["context_thread_id"]
+
+
+@pytest.mark.asyncio
+async def test_same_task_worker_can_request_fresh_context_explicitly(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {2}},
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "Perform the first pass.",
+                    "config": None,
+                }
+            ],
+        )
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="FRESH-CONTEXT-PREVIOUS-PUBLIC-RESULT",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Fresh-context independent pass complete.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "fresh-worker-context.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Allow an explicit same-Task provider-context reset.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    await wait_until(
+        lambda: len(adapter.completed_calls["agent_a"]) == 1
+        and len(adapter.calls["agent_c"]) == 2
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Reassess independently on a fresh provider context.",
+                        "config": None,
+                        "fresh_context": True,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated the fresh independent pass.",
+            ),
+        ]
+    )
+    adapter.release_call("agent_c", 2)
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_a"]) == 2
+    assert adapter.calls["agent_a"][0]["thread_id"] != adapter.calls["agent_a"][1]["thread_id"]
+    assert len([item for item in adapter.context_starts if item[0] == "agent_a"]) == 2
+    assert "FRESH-CONTEXT-PREVIOUS-PUBLIC-RESULT" in adapter.calls["agent_a"][1]["prompt"]
+
+    async with runtime.db.connect() as db:
+        rows = await db.execute_fetchall(
+            """SELECT x.* FROM assignments x
+               JOIN tasks t ON t.id=x.task_id
+               JOIN agents a ON a.id=x.agent_id
+               WHERE t.room_id=? AND a.agent_key='agent_a'
+               ORDER BY x.created_at, x.id""",
+            (room_id,),
+        )
+    assert rows[1]["context_parent_assignment_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_worker_receives_missed_public_room_delta_and_same_task_history(
+    context_runtime_factory,
+):
+    marker = "PUBLIC-DEBATE-MARKER-731"
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Publish the first participant statement.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_b",
+                        "instruction": "Respond to the participant statement already public in the Room.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated both participants.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message=marker,
+        )
+    )
+    adapter.decisions["agent_b"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.HISTORY,
+                history_requests=[
+                    HistoryRequest(
+                        operation="SEARCH",
+                        query=marker,
+                        agent="agent_a",
+                        max_results=1,
+                    )
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="B received public context and exact same-Task history.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "public-room-delta.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise shared public conversation continuity.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_b"]) == 2
+    first_b_prompt = adapter.calls["agent_b"][0]["prompt"]
+    second_b_prompt = adapter.calls["agent_b"][1]["prompt"]
+    assert "<public_room_delta>" in first_b_prompt
+    assert marker in first_b_prompt
+    assert "<retrieved_room_history>" in second_b_prompt
+    assert marker in second_b_prompt
+    assert "<public_room_delta>" not in second_b_prompt
+
+    events = await runtime.db.get_events(room_id)
+    history = [
+        event
+        for event in events
+        if event["event_type"] == "tool_activity"
+        and event.get("metadata", {}).get("type") == "deterministic_room_history"
+    ]
+    assert len(history) == 1
+    assert len(history[0]["metadata"]["selected_event_ids"]) == 1
 
 
 @pytest.mark.asyncio
