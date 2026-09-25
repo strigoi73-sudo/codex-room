@@ -84,7 +84,7 @@ The compatibility/default execution boundary remains **Terra/high**. Agent C can
 - `terra-high`
 - `sol-medium`
 
-Routine bounded delegated work is guided toward lower-cost cognition when sufficient. Stronger configurations are available when complexity, uncertainty, risk, or verification trouble justifies them. **Astra is prohibited for Codex Room execution.** There is no automatic model router.
+Routine bounded delegated work is guided toward lower-cost cognition when sufficient. Stronger configurations are available when complexity, uncertainty, risk, or verification trouble justifies them. **Astra is default-denied; an explicit Astra model direction in the opening Room prompt authorizes Astra Low/Medium/High for that conversation lineage, including normal rollover successors.** Later messages cannot unlock Astra in an unauthorized lineage. There is no automatic model router.
 
 ## Deterministic capabilities
 
