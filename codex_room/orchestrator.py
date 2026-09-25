@@ -187,8 +187,9 @@ class RoomRuntime:
         "omitted static text is not revoked. CORE is supplying the current authoritative "
         "dynamic Assignment/Task state plus newly resolved dependencies, history, evidence, "
         "or principal input in this prompt. HISTORY remains available when the current work "
-        "needs a specific fact or result from earlier completed Tasks in this Round or from "
-        "earlier Rounds in this same Room; retrieve only the bounded result actually needed. "
+        "needs a specific fact or result from an earlier completed Assignment in this Task, "
+        "an earlier completed Task in this Round, or an earlier Round in this same Room; "
+        "retrieve only the bounded result actually needed. "
         "Do not ask CORE to replay already consumed evidence merely for reassurance. Minimize "
         "continuations and native tool-loop context growth; when coordinator economics recommend "
         "refresh, prefer a bounded REFRESH before substantial new tool work if continuity can "
@@ -217,21 +218,25 @@ class RoomRuntime:
     )
     TRANSACTION_HISTORY_INSTRUCTION = (
         "<room_history>\n"
-        "When this assignment needs a specific fact or result from an earlier completed Task "
-        "in this Round or from an earlier Round in this same Room, and that history is not already "
+        "When this assignment needs a specific fact or result from an earlier completed "
+        "Assignment in this Task, an earlier completed Task in this Round, or an earlier Round "
+        "in this same Room, and that history is not already "
         "supplied, declare the bounded need with "
         "transaction action HISTORY. Use RECENT for a temporal dependency or SEARCH with one "
         "specific lexical query when you know the relevant concept; optionally restrict the "
         "request to one agent and request only as many results as are likely necessary. Each "
         "HISTORY request may ask for 1-10 results, with at most 4 requests in one action. CORE "
-        "selects only durable completed Assignment results from eligible earlier Tasks/Rounds and returns the "
-        "exact bounded result events to this same assignment. Do not use HISTORY to recover "
+        "selects only durable completed Assignment results from the eligible current/earlier Task "
+        "or earlier Round and returns the exact bounded result events to this same assignment. "
+        "Do not use HISTORY to recover "
         "current Task/Join/Evidence state already supplied in the assignment envelope, to read "
         "source files, or for broad catch-up. Ask again only when the returned history leaves a "
         "specific unresolved dependency.\n"
         "</room_history>"
     )
     TRANSACTION_HISTORY_CONTEXT_MAX_CHARS = 24_000
+    TRANSACTION_PUBLIC_CONTEXT_MAX_CHARS = 64_000
+    TRANSACTION_PUBLIC_CONTEXT_MAX_EVENTS = 50
     TRANSACTION_CAPABILITY_INSTRUCTION = (
         "<deterministic_capabilities>\n"
         "For reusable non-source work, use an existing enabled Codex skill when it materially fits before "
@@ -2194,6 +2199,18 @@ class RoomRuntime:
                 agent["id"], batch["round_id"], assignment["context_thread_id"]
             )
         is_provider_context_continuation = bool(context_usage_history)
+        has_prior_assignment_execution = any(
+            item.get("assignment_id") == assignment["id"]
+            for item in context_usage_history
+        )
+        public_context_events = (
+            await self.db.get_assignment_public_context_delta(
+                assignment["id"],
+                max_events=self.TRANSACTION_PUBLIC_CONTEXT_MAX_EVENTS,
+            )
+            if agent["agent_key"] != "agent_c" and not has_prior_assignment_execution
+            else []
+        )
         coordinator_context_economics = None
         if is_root_coordinator:
             coordinator_context_economics = self._coordinator_context_economics(
@@ -2241,6 +2258,46 @@ class RoomRuntime:
             f"Round objective:\n{round_item['prompt']}",
             f"Current assignment:\n{assignment['instruction']}",
         ]
+        if public_context_events:
+            remaining_chars = self.TRANSACTION_PUBLIC_CONTEXT_MAX_CHARS
+            selected_public_events: list[tuple[dict[str, Any], str]] = []
+            public_delta_truncated = False
+            for event in reversed(public_context_events):
+                raw_content = event.get("content") or ""
+                if len(raw_content) > remaining_chars:
+                    if not selected_public_events and remaining_chars > 0:
+                        selected_public_events.append(
+                            (event, raw_content[:remaining_chars])
+                        )
+                    public_delta_truncated = True
+                    break
+                selected_public_events.append((event, raw_content))
+                remaining_chars -= len(raw_content)
+            selected_public_events.reverse()
+            context_parts.append("<public_room_delta>")
+            for event, content in selected_public_events:
+                context_parts.extend(
+                    [
+                        (
+                            f"<public_message event_id=\"{event['id']}\" "
+                            f"sequence_no=\"{event.get('sequence_no') or ''}\" "
+                            f"source=\"{event.get('source') or ''}\">"
+                        ),
+                        content,
+                        "</public_message>",
+                    ]
+                )
+            if public_delta_truncated:
+                context_parts.append(
+                    "[Older public Room messages were omitted by the bounded context delta.]"
+                )
+            context_parts.append("</public_room_delta>")
+            context_parts.append(
+                "The public Room delta above contains conversational messages published since "
+                "this worker's inherited provider context last settled, or since the current Task "
+                "began when this is a fresh worker context. Treat those messages as shared Room "
+                "conversation, not as private provider context or authoritative Task state."
+            )
         if coordinator_checkpoint is not None:
             context_parts.extend(
                 [
@@ -2501,11 +2558,13 @@ class RoomRuntime:
             )
         context_boundary = (
             "This provider context is bounded to the current declared Assignment context lineage. "
-            "A context_parent_assignment_id above means CORE explicitly continued a terminal "
-            "worker context through valid same-Task lineage or an eligible predecessor-Task "
-            "grace window; otherwise do not assume unsupplied history from another Assignment "
-            "or earlier Round. Durable Room, Task, dependency, and evidence state "
-            "supplied above remains authoritative."
+            "For A/B, CORE normally continues the latest completed same-worker provider context "
+            "inside the active Task; a context_parent_assignment_id records that continuation. "
+            "A fresh_context delegation deliberately starts a new worker provider context, while "
+            "cross-Task continuation still requires an eligible predecessor-Task grace source. "
+            "Otherwise do not assume unsupplied history from another Assignment or earlier Round. "
+            "Durable Room, Task, dependency, public-delta, and evidence state supplied above "
+            "remains authoritative."
             if provider_context_mode == "assignment_thread"
             else
             "Earlier persistent-thread history is background only; do not treat an older "
@@ -2544,10 +2603,14 @@ class RoomRuntime:
                     "to ask the principal a question or request a response, because COMPLETE settles "
                     "this Assignment and may settle the Task. DELEGATE pauses this assignment and must include one or "
                     "more distinct peer delegations, each with target, bounded instruction, optional "
-                    "config, and optional context_from_assignment_id. Use context_from_assignment_id "
-                    "only to deliberately continue the target worker's latest eligible provider context "
-                    "inside this same Task or from a listed grace-eligible predecessor Task; otherwise "
-                    "leave it null. retire_worker_context_task_ids may list up to 8 settled prior Task IDs "
+                    "config, optional context_from_assignment_id, and fresh_context. For A/B work in "
+                    "the current Task, CORE automatically continues that worker's latest completed "
+                    "provider context when one exists. Set fresh_context=true only when independence, "
+                    "a deliberate reset, or lower accumulated private/provider context is materially "
+                    "more valuable than continuity. Use context_from_assignment_id when you must name "
+                    "an exact eligible source, especially for a listed grace-eligible predecessor Task; "
+                    "do not combine it with fresh_context=true. Otherwise leave context_from_assignment_id "
+                    "null and fresh_context=false. retire_worker_context_task_ids may list up to 8 settled prior Task IDs "
                     "whose worker context should be retired early because you have deliberately moved past "
                     "or closed that objective; only C may use it. REFRESH is C-only and nonterminal: "
                     "use it only from the root coordinator Assignment when a deliberate fresh provider "
@@ -2581,8 +2644,9 @@ class RoomRuntime:
                     "return the exact child result toward the Task coordinator. EVIDENCE pauses this "
                     "same assignment and must include 1-16 "
                     "bounded READ, SEARCH, or FIND source-evidence requests. HISTORY immediately "
-                    "selects bounded completed results from earlier completed Tasks in this Round "
-                    "and from earlier Rounds in this Room, then resumes "
+                    "selects bounded completed results from earlier completed Assignments in the "
+                    "current Task, earlier completed Tasks in this Round, and earlier Rounds in this "
+                    "Room, then resumes "
                     "this same assignment with those exact events supplied as historical context. "
                     "PASS ends this assignment without substantive output. Do not announce that you "
                     "are waiting for a peer unless you actually use DELEGATE to create that work. "
