@@ -1592,6 +1592,9 @@ def test_opening_prompt_astra_authorization_requires_explicit_request() -> None:
     assert not initial_prompt_authorizes_astra(
         "Discuss whether Astra should ever be permitted in Codex Room."
     )
+    assert not initial_prompt_authorizes_astra(
+        "Agent A should analyze why Astra Medium could be risky."
+    )
 
 
 @pytest.mark.asyncio
