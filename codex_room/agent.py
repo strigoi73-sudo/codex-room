@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import shlex
@@ -345,7 +346,10 @@ class AgentAdapter(Protocol):
                     pair = (model, effort)
                     config_id = reverse.get(pair) or f"native:{model}:{effort}"
                     if len(config_id) > 200:
-                        continue
+                        digest = hashlib.sha256(
+                            f"{model}\0{effort}".encode("utf-8")
+                        ).hexdigest()
+                        config_id = f"native:{digest}"
                     catalog[config_id] = {
                         "model": model,
                         "reasoning_effort": effort,
