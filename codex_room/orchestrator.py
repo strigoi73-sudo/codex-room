@@ -5829,6 +5829,8 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
         current_effort: str | None = None,
         *,
         astra_authorized: bool = False,
+        unrestricted_model_access: bool = False,
+        available_execution_configs: dict[str, tuple[str, str]] | None = None,
     ) -> str:
         if agent_key != "agent_c":
             return (
@@ -5836,6 +5838,30 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
                 "set each delegation record's config to null. If stronger cognition "
                 "appears necessary, say why in your substantive result so C can decide."
             )
+        current = (
+            f"{current_model}/{current_effort}"
+            if current_model and current_effort
+            else "the compatibility Terra/high fallback"
+        )
+        if unrestricted_model_access:
+            choices = ", ".join(sorted((available_execution_configs or {}).keys()))
+            return (
+                "The human principal enabled UNRESTRICTED MODEL ACCESS when this Room "
+                "was created. CORE's native Codex model/list snapshot is authoritative "
+                "for this lineage. Your current execution used "
+                f"{current}. For your own next nonterminal execution, next_self_config "
+                "may use any exact config ID in this catalog: "
+                f"{choices}. Each peer DELEGATE config may use any exact ID in the same "
+                "catalog. These choices include every visible model/reasoning-effort "
+                "combination Codex exposed at Room creation; Room-side Astra gates, "
+                "peer-vs-C model restrictions, and Task cognition ceilings do not apply. "
+                "requested_task_cognition_ceiling must remain null because advance "
+                "principal authorization was granted by the Room-creation toggle. A null "
+                "config retains the ordinary Terra/high compatibility fallback. Continue "
+                "to allocate cognition economically: use stronger or more expensive "
+                "configurations only when they are expected to add material value."
+            )
+
         peer_configs = list(ORDINARY_EXECUTION_CONFIGS)
         allowed_self = list(ORDINARY_EXECUTION_CONFIGS)
         if astra_authorized:
@@ -5847,11 +5873,6 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
             config
             for config in EXCEPTIONAL_C_EXECUTION_CONFIGS
             if C_COGNITION_CEILING_RANK[config] <= ceiling_rank
-        )
-        current = (
-            f"{current_model}/{current_effort}"
-            if current_model and current_effort
-            else "the compatibility Terra/high fallback"
         )
         astra_note = (
             "The opening Room prompt explicitly authorized Astra for this conversation "
