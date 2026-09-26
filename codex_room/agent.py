@@ -20,6 +20,7 @@ from .models import (
     AgentDecision,
     DECISION_SCHEMA,
     EXECUTION_CONFIGS,
+    EXCEPTIONAL_C_EXECUTION_CONFIGS,
     TransactionDecision,
     TRANSACTION_DECISION_SCHEMA,
 )
@@ -305,7 +306,11 @@ class AgentAdapter(Protocol):
                     "retrieve the remaining native catalog"
                 )
 
-        reverse = {value: key for key, value in EXECUTION_CONFIGS.items()}
+        reverse = {
+            value: key
+            for key, value in EXECUTION_CONFIGS.items()
+            if key not in EXCEPTIONAL_C_EXECUTION_CONFIGS
+        }
         catalog: dict[str, dict[str, str]] = {}
         for raw in raw_pages:
             items = raw.get("data") or []
