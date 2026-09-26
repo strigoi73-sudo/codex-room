@@ -66,6 +66,13 @@
               <label>Room personality override <span class="optional">optional</span><textarea name="agent_c_instructions" rows="8" maxlength="50000" placeholder="Leave blank to use the saved Agent C personality"></textarea></label>
               <button type="button" class="text-button restore-default" data-agent="c">Clear room override</button>
             </div>
+            <label class="model-policy-toggle">
+              <input name="model_policy" type="checkbox" value="unrestricted" />
+              <span>
+                <strong>Unrestricted model access</strong>
+                <small>Allow Agent C to use any model and reasoning effort exposed by the current Codex runtime for A, B, or C. May consume substantially more usage.</small>
+              </span>
+            </label>
             <details class="limits">
               <summary>Runaway protection</summary>
               <div class="limit-grid">
@@ -84,7 +91,7 @@
           <header class="room-header">
             <div class="room-title-wrap">
               <button class="mobile-sidebar ghost" aria-label="Show rooms">☰</button>
-              <div><p class="eyebrow">Persistent room</p><h1 id="room-title">Room</h1><small id="room-id" class="room-id">Room ID —</small><small id="round-summary" class="round-summary">No round</small></div>
+              <div><p class="eyebrow">Persistent room</p><h1 id="room-title">Room</h1><small id="room-id" class="room-id">Room ID —</small><small id="model-policy-summary" class="room-id">Model policy · Default</small><small id="round-summary" class="round-summary">No round</small></div>
               <span id="room-status" class="status-pill">loading</span>
             </div>
             <div class="header-actions">
