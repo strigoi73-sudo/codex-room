@@ -18,6 +18,7 @@ from .custom_capability_registration import (
 from .models import (
     AgentDecision,
     DECISION_SCHEMA,
+    EXECUTION_CONFIGS,
     TransactionDecision,
     TRANSACTION_DECISION_SCHEMA,
 )
@@ -83,13 +84,20 @@ def sdk_server_identity(metadata: Any) -> dict[str, str] | None:
     return {"name": agent_name, "version": agent_version}
 
 
-def _assert_room_model_allowed(model: str, *, allow_astra: bool = False) -> None:
+def _assert_room_model_allowed(
+    model: str,
+    *,
+    allow_astra: bool = False,
+    unrestricted_model_access: bool = False,
+) -> None:
+    if unrestricted_model_access:
+        return
     if model in PROHIBITED_ROOM_MODELS and not (
         allow_astra and model == "gpt-6-astra"
     ):
         raise ValueError(
             f"Model {model!r} is prohibited unless Astra was explicitly authorized "
-            "by the opening Room prompt"
+            "by the opening Room prompt or unrestricted model access is enabled"
         )
 
 ROOM_CODEX_CONFIG_OVERRIDES = (
@@ -178,6 +186,7 @@ class AgentAdapter(Protocol):
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
         allow_astra: bool = False,
+        unrestricted_model_access: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult: ...
 
@@ -193,6 +202,7 @@ class AgentAdapter(Protocol):
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
         allow_astra: bool = False,
+        unrestricted_model_access: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult: ...
 
@@ -226,6 +236,8 @@ class AgentAdapter(Protocol):
     async def inspect_tools(
         self, cwd: Path, *, thread_id: str | None = None
     ) -> dict[str, Any]: ...
+
+    async def list_execution_configs(self) -> dict[str, dict[str, str]]: ...
 
 
 class CodexAgentAdapter:
@@ -273,6 +285,68 @@ class CodexAgentAdapter:
         if runtime_identity is not None:
             raw["runtime"] = runtime_identity
         return raw
+
+    async def list_execution_configs(self) -> dict[str, dict[str, str]]:
+        """Return the visible native Codex model/effort combinations."""
+        self._require_client()
+        response = await self._client.model_list(include_hidden=False)
+        if hasattr(response, "model_dump"):
+            raw = response.model_dump(mode="json", by_alias=False)
+        elif isinstance(response, Mapping):
+            raw = dict(response)
+        else:
+            raise RuntimeError("Codex model/list returned an unsupported response")
+
+        items = raw.get("data") or []
+        if not isinstance(items, list):
+            raise RuntimeError("Codex model/list returned invalid model data")
+
+        reverse = {value: key for key, value in EXECUTION_CONFIGS.items()}
+        catalog: dict[str, dict[str, str]] = {}
+        for item in items:
+            if not isinstance(item, Mapping):
+                continue
+            model = item.get("model") or item.get("id")
+            display_name = item.get("display_name") or item.get("displayName") or model
+            if not isinstance(model, str) or not model.strip():
+                continue
+            efforts = item.get("supported_reasoning_efforts")
+            if efforts is None:
+                efforts = item.get("supportedReasoningEfforts")
+            if not isinstance(efforts, list):
+                efforts = []
+            effort_names: list[str] = []
+            for option in efforts:
+                if isinstance(option, Mapping):
+                    effort = option.get("reasoning_effort")
+                    if effort is None:
+                        effort = option.get("reasoningEffort")
+                else:
+                    effort = option
+                if isinstance(effort, str) and effort and effort not in effort_names:
+                    effort_names.append(effort)
+            default_effort = item.get("default_reasoning_effort")
+            if default_effort is None:
+                default_effort = item.get("defaultReasoningEffort")
+            if (
+                isinstance(default_effort, str)
+                and default_effort
+                and default_effort not in effort_names
+            ):
+                effort_names.append(default_effort)
+            for effort in effort_names:
+                pair = (model, effort)
+                config_id = reverse.get(pair) or f"native:{model}:{effort}"
+                if len(config_id) > 200:
+                    continue
+                catalog[config_id] = {
+                    "model": model,
+                    "reasoning_effort": effort,
+                    "display_name": str(display_name),
+                }
+        if not catalog:
+            raise RuntimeError("Codex model/list exposed no usable model/effort configurations")
+        return catalog
 
     async def inspect_tools(
         self, cwd: Path, *, thread_id: str | None = None
@@ -420,9 +494,14 @@ class CodexAgentAdapter:
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
         allow_astra: bool = False,
+        unrestricted_model_access: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
-        _assert_room_model_allowed(model, allow_astra=allow_astra)
+        _assert_room_model_allowed(
+            model,
+            allow_astra=allow_astra,
+            unrestricted_model_access=unrestricted_model_access,
+        )
         usage_continuation = agent["id"] in self._usage_continuation_agents
         self._usage_continuation_agents.discard(agent["id"])
         await self._wait_until_thread_idle(
@@ -456,9 +535,14 @@ class CodexAgentAdapter:
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
         allow_astra: bool = False,
+        unrestricted_model_access: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
-        _assert_room_model_allowed(model, allow_astra=allow_astra)
+        _assert_room_model_allowed(
+            model,
+            allow_astra=allow_astra,
+            unrestricted_model_access=unrestricted_model_access,
+        )
         thread = await self._get_thread(agent, cwd)
         return await self._run_on_thread(
             agent,
@@ -469,6 +553,7 @@ class CodexAgentAdapter:
             model=model,
             reasoning_effort=reasoning_effort,
             allow_astra=allow_astra,
+            unrestricted_model_access=unrestricted_model_access,
             transactional=transactional,
         )
 
@@ -484,9 +569,14 @@ class CodexAgentAdapter:
         model: str = ROOM_MODEL,
         reasoning_effort: str = ROOM_REASONING_EFFORT,
         allow_astra: bool = False,
+        unrestricted_model_access: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
-        _assert_room_model_allowed(model, allow_astra=allow_astra)
+        _assert_room_model_allowed(
+            model,
+            allow_astra=allow_astra,
+            unrestricted_model_access=unrestricted_model_access,
+        )
         thread = await self._get_thread_by_id(agent, cwd, thread_id)
         return await self._run_on_thread(
             agent,
@@ -497,6 +587,7 @@ class CodexAgentAdapter:
             model=model,
             reasoning_effort=reasoning_effort,
             allow_astra=allow_astra,
+            unrestricted_model_access=unrestricted_model_access,
             transactional=transactional,
         )
 
