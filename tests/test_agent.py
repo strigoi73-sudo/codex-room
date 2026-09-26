@@ -1671,7 +1671,7 @@ def test_safe_activity_promotes_direct_source_bundle_cli() -> None:
 
 class ModelListClient:
     async def model_list(self, include_hidden: bool = False):
-        assert include_hidden is False
+        assert include_hidden is True
         payload = {
             "data": [
                 {
