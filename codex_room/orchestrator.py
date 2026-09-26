@@ -358,7 +358,13 @@ class RoomRuntime:
     async def create_room(self, request: CreateRoomRequest) -> dict[str, Any]:
         unrestricted_execution_configs = None
         if request.model_policy == "unrestricted":
-            unrestricted_execution_configs = await self.adapter.list_execution_configs()
+            try:
+                unrestricted_execution_configs = await self.adapter.list_execution_configs()
+            except Exception as exc:
+                raise RuntimeError(
+                    "Could not discover the native Codex model/effort catalog required "
+                    "for unrestricted model access"
+                ) from exc
             if not unrestricted_execution_configs:
                 raise RuntimeError(
                     "Codex exposed no usable model/effort configurations for unrestricted access"
