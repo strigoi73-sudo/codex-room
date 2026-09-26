@@ -1764,10 +1764,108 @@ class PaginatedModelListClient:
         return SimpleNamespace(model_dump=lambda **_kwargs: payload)
 
 
+class NativeModelListTransport:
+    def __init__(self):
+        self.requests = []
+
+    async def request(self, method, params, *, response_model):
+        self.requests.append((method, dict(params), response_model))
+        cursor = params.get("cursor")
+        if cursor is None:
+            payload = {
+                "data": [
+                    {
+                        "model": "gpt-5.6-sol",
+                        "display_name": "Sol",
+                        "supported_reasoning_efforts": [
+                            {"reasoning_effort": "high"},
+                        ],
+                        "default_reasoning_effort": "high",
+                    }
+                ],
+                "next_cursor": "page-two",
+            }
+        else:
+            assert cursor == "page-two"
+            payload = {
+                "data": [
+                    {
+                        "model": "gpt-test-frontier",
+                        "display_name": "Test Frontier",
+                        "supported_reasoning_efforts": [
+                            {"reasoning_effort": "ultra"},
+                        ],
+                        "default_reasoning_effort": "ultra",
+                    }
+                ],
+                "next_cursor": None,
+            }
+        return SimpleNamespace(model_dump=lambda **_kwargs: payload)
+
+
+class NativeModelListClient:
+    def __init__(self):
+        self._client = NativeModelListTransport()
+
+
 @pytest.mark.asyncio
-async def test_list_execution_configs_rejects_partial_paginated_catalog():
+async def test_list_execution_configs_paginates_complete_native_catalog():
+    adapter = CodexAgentAdapter()
+    adapter._client = NativeModelListClient()
+
+    catalog = await adapter.list_execution_configs()
+
+    assert catalog["sol-high"]["model"] == "gpt-5.6-sol"
+    assert catalog["native:gpt-test-frontier:ultra"] == {
+        "model": "gpt-test-frontier",
+        "reasoning_effort": "ultra",
+        "display_name": "Test Frontier",
+    }
+    assert [item[1].get("cursor") for item in adapter._client._client.requests] == [
+        None,
+        "page-two",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_list_execution_configs_rejects_partial_fallback_catalog():
     adapter = CodexAgentAdapter()
     adapter._client = PaginatedModelListClient()
 
-    with pytest.raises(RuntimeError, match="partial native catalog"):
+    with pytest.raises(RuntimeError, match="requires pagination"):
         await adapter.list_execution_configs()
+
+
+@pytest.mark.asyncio
+async def test_list_execution_configs_keeps_long_native_model_ids_addressable():
+    long_model = "gpt-" + ("frontier-" * 40)
+    adapter = CodexAgentAdapter()
+    adapter._client = ModelListClient()
+    adapter._client.models = lambda include_hidden=True: None
+
+    payload = {
+        "data": [
+            {
+                "model": long_model,
+                "display_name": "Long Frontier",
+                "supported_reasoning_efforts": [
+                    {"reasoning_effort": "ultra"},
+                ],
+                "default_reasoning_effort": "ultra",
+            }
+        ]
+    }
+
+    async def models(include_hidden: bool = False):
+        assert include_hidden is True
+        return SimpleNamespace(model_dump=lambda **_kwargs: payload)
+
+    adapter._client.models = models
+    catalog = await adapter.list_execution_configs()
+
+    assert len(catalog) == 1
+    config_id, config = next(iter(catalog.items()))
+    assert config_id.startswith("native:")
+    assert len(config_id) <= 200
+    assert config["model"] == long_model
+    assert config["reasoning_effort"] == "ultra"
