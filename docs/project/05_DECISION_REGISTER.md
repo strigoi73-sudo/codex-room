@@ -957,3 +957,25 @@ This retains assignment-thread isolation at real objective boundaries while rest
 
 **Principle:** **Keep context bounded at objective boundaries, not at every conversational turn; preserve private/provider independence without making peers forget the public Room.**
 
+### D-053 — Room creation may explicitly enable unrestricted native model access
+**Date:** 2026-09-26  
+**Status:** ACTIVE  
+**Amends:** D-039 and D-051 only when the principal selects unrestricted model access; default Room behavior remains unchanged
+
+The principal selected an explicit Room-creation control that preserves the existing bounded model policy by default while allowing a deliberately unrestricted Room when needed.
+
+Settled boundary:
+
+- New Room setup exposes an **Unrestricted model access** toggle, default **off**.
+- With the toggle off, the existing model policy remains authoritative: ordinary bounded configurations, opening-prompt Astra authorization under D-051, and Task-scoped exceptional C cognition approval under D-039 continue unchanged.
+- With the toggle on, the human principal grants advance authorization for Agent C to allocate any model/reasoning-effort combination that the current native Codex runtime exposes as available to agents, for A, B, or C.
+- CORE must discover that catalog through native Codex model discovery rather than maintaining a separate unrestricted allowlist. The visible native model/effort catalog is snapshotted at Room creation, persisted with the Room, and used as the exact execution-validation boundary for that conversation lineage.
+- Unrestricted mode removes Room-side Astra gates, peer-versus-C configuration restrictions, and Task cognition-ceiling approval requirements. It does not force expensive cognition: C retains coordination responsibility and should still choose configurations economically according to expected value.
+- Native Codex availability remains the hard boundary. Hidden, unavailable, unsupported, or undiscovered configurations are not emulated or inferred.
+- Unrestricted creation fails closed if CORE cannot obtain a complete usable native catalog. A partial catalog must not silently masquerade as unrestricted access.
+- The policy is creation-time lineage state rather than prompt interpretation. Later messages cannot switch a default Room into unrestricted mode.
+- Normal rollover successors inherit the predecessor's model policy and exact snapshotted catalog so authorization/provenance remain deterministic.
+- Room UI and exports must expose whether the lineage uses the default or unrestricted model policy.
+
+**Principle:** **Keep economical restrictions as the default; when the principal explicitly opens the gate, let native Codex availability—not duplicated Room policy—define the model menu.**
+
