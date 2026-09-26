@@ -540,6 +540,7 @@ function openCreate() {
   state.room = null;
   location.hash = "new";
   restoreDefaults();
+  $("#create-form").elements.model_policy.checked = false;
   hideError("#create-error");
   showView($("#create-view"));
 }
@@ -567,6 +568,11 @@ function renderRoom({ replaceTranscript = false } = {}) {
   $("#room-title").textContent = room.title;
   $("#room-id").textContent = `Room ID ${room.id}`;
   $("#room-id").title = room.id;
+  const unrestrictedModelAccess = room.metadata?.model_policy === "unrestricted";
+  $("#model-policy-summary").textContent = `Model policy · ${unrestrictedModelAccess ? "Unrestricted" : "Default"}`;
+  $("#model-policy-summary").title = unrestrictedModelAccess
+    ? "Room-side model and reasoning-effort restrictions are disabled for this lineage."
+    : "Standard Codex Room model and reasoning-effort restrictions apply.";
   $("#room-status").textContent = room.status;
   $("#room-status").className = `status-pill ${room.status}`;
   const round = room.active_round;
