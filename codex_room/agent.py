@@ -237,121 +237,120 @@ class AgentAdapter(Protocol):
         self, cwd: Path, *, thread_id: str | None = None
     ) -> dict[str, Any]: ...
 
-    async def list_execution_configs(self) -> dict[str, dict[str, str]]: ...
-
-
-class CodexAgentAdapter:
-    """Thin adapter around the official asynchronous Python Codex SDK."""
-
-    INTERRUPT_TIMEOUT_SECONDS = 2.0
-    RECONCILIATION_INTERVAL_SECONDS = 2.0
-    # One event-loop handoff plus modest local notification jitter; this is not a
-    # retry window and applies only to an authoritative interrupted observation.
-    RECONCILIATION_TERMINAL_GRACE_SECONDS = 0.05
-    THREAD_IDLE_TIMEOUT_SECONDS = 120.0
-
-    def __init__(self, *, codex_bin: str | None = None) -> None:
-        self._codex_bin = codex_bin or os.environ.get("CODEX_ROOM_CODEX_BIN")
-        self._client: Any = None
-        self._threads: dict[str, Any] = {}
-        self._active_handles: dict[str, Any] = {}
-        self._unconfirmed_handles: set[str] = set()
-        self._usage_continuation_agents: set[str] = set()
-        self._active_lock = asyncio.Lock()
-
-    async def initialize(self) -> dict[str, Any]:
-        from openai_codex import AsyncCodex, CodexConfig
-
-        if self._client is None:
-            config = CodexConfig(
-                codex_bin=self._codex_bin,
-                config_overrides=ROOM_CODEX_CONFIG_OVERRIDES,
-            )
-            self._client = AsyncCodex(config=config)
-        account = await self._client.account(refresh_token=False)
-        root = getattr(account, "account", None)
-        if root is None:
-            root = getattr(account, "root", None)
-        if root is not None and hasattr(root, "model_dump"):
-            raw = root.model_dump(mode="json")
-        elif hasattr(account, "model_dump"):
-            raw = account.model_dump(mode="json")
-        else:
-            raw = {"authenticated": True}
-        # The browser only needs auth capability/status; do not expose account email.
-        raw.pop("email", None)
-        raw["authenticated"] = True
-        runtime_identity = sdk_server_identity(getattr(self._client, "metadata", None))
-        if runtime_identity is not None:
-            raw["runtime"] = runtime_identity
-        return raw
-
     async def list_execution_configs(self) -> dict[str, dict[str, str]]:
         """Return every native Codex model/effort combination exposed by model/list."""
         self._require_client()
-        response = await self._client.models(include_hidden=True)
-        if hasattr(response, "model_dump"):
-            raw = response.model_dump(mode="json", by_alias=False)
-        elif isinstance(response, Mapping):
-            raw = dict(response)
-        else:
-            raise RuntimeError("Codex model/list returned an unsupported response")
 
-        items = raw.get("data") or []
-        if not isinstance(items, list):
-            raise RuntimeError("Codex model/list returned invalid model data")
-        next_cursor = raw.get("next_cursor")
-        if next_cursor is None:
-            next_cursor = raw.get("nextCursor")
-        if next_cursor:
-            raise RuntimeError(
-                "Codex model/list returned a continuation cursor; unrestricted model "
-                "access refuses to snapshot a partial native catalog"
-            )
+        raw_pages: list[dict[str, Any]] = []
+        sdk_client = getattr(self._client, "_client", None)
+        request = getattr(sdk_client, "request", None)
+
+        if callable(request):
+            try:
+                from openai_codex.generated.v2_all import ModelListResponse
+            except (ImportError, AttributeError) as exc:
+                raise RuntimeError(
+                    "Codex SDK does not expose the native model/list response contract"
+                ) from exc
+
+            cursor: str | None = None
+            seen_cursors: set[str] = set()
+            while True:
+                params: dict[str, Any] = {
+                    "includeHidden": True,
+                    "limit": 100,
+                }
+                if cursor is not None:
+                    params["cursor"] = cursor
+                response = await request(
+                    "model/list",
+                    params,
+                    response_model=ModelListResponse,
+                )
+                if hasattr(response, "model_dump"):
+                    raw = response.model_dump(mode="json", by_alias=False)
+                elif isinstance(response, Mapping):
+                    raw = dict(response)
+                else:
+                    raise RuntimeError("Codex model/list returned an unsupported response")
+                raw_pages.append(raw)
+
+                next_cursor = raw.get("next_cursor")
+                if next_cursor is None:
+                    next_cursor = raw.get("nextCursor")
+                if not next_cursor:
+                    break
+                if not isinstance(next_cursor, str):
+                    raise RuntimeError("Codex model/list returned an invalid continuation cursor")
+                if next_cursor in seen_cursors:
+                    raise RuntimeError("Codex model/list repeated a continuation cursor")
+                seen_cursors.add(next_cursor)
+                cursor = next_cursor
+        else:
+            response = await self._client.models(include_hidden=True)
+            if hasattr(response, "model_dump"):
+                raw = response.model_dump(mode="json", by_alias=False)
+            elif isinstance(response, Mapping):
+                raw = dict(response)
+            else:
+                raise RuntimeError("Codex model/list returned an unsupported response")
+            raw_pages.append(raw)
+            next_cursor = raw.get("next_cursor")
+            if next_cursor is None:
+                next_cursor = raw.get("nextCursor")
+            if next_cursor:
+                raise RuntimeError(
+                    "Codex model/list requires pagination, but this SDK surface cannot "
+                    "retrieve the remaining native catalog"
+                )
 
         reverse = {value: key for key, value in EXECUTION_CONFIGS.items()}
         catalog: dict[str, dict[str, str]] = {}
-        for item in items:
-            if not isinstance(item, Mapping):
-                continue
-            model = item.get("model") or item.get("id")
-            display_name = item.get("display_name") or item.get("displayName") or model
-            if not isinstance(model, str) or not model.strip():
-                continue
-            efforts = item.get("supported_reasoning_efforts")
-            if efforts is None:
-                efforts = item.get("supportedReasoningEfforts")
-            if not isinstance(efforts, list):
-                efforts = []
-            effort_names: list[str] = []
-            for option in efforts:
-                if isinstance(option, Mapping):
-                    effort = option.get("reasoning_effort")
-                    if effort is None:
-                        effort = option.get("reasoningEffort")
-                else:
-                    effort = option
-                if isinstance(effort, str) and effort and effort not in effort_names:
-                    effort_names.append(effort)
-            default_effort = item.get("default_reasoning_effort")
-            if default_effort is None:
-                default_effort = item.get("defaultReasoningEffort")
-            if (
-                isinstance(default_effort, str)
-                and default_effort
-                and default_effort not in effort_names
-            ):
-                effort_names.append(default_effort)
-            for effort in effort_names:
-                pair = (model, effort)
-                config_id = reverse.get(pair) or f"native:{model}:{effort}"
-                if len(config_id) > 200:
+        for raw in raw_pages:
+            items = raw.get("data") or []
+            if not isinstance(items, list):
+                raise RuntimeError("Codex model/list returned invalid model data")
+            for item in items:
+                if not isinstance(item, Mapping):
                     continue
-                catalog[config_id] = {
-                    "model": model,
-                    "reasoning_effort": effort,
-                    "display_name": str(display_name),
-                }
+                model = item.get("model") or item.get("id")
+                display_name = item.get("display_name") or item.get("displayName") or model
+                if not isinstance(model, str) or not model.strip():
+                    continue
+                efforts = item.get("supported_reasoning_efforts")
+                if efforts is None:
+                    efforts = item.get("supportedReasoningEfforts")
+                if not isinstance(efforts, list):
+                    efforts = []
+                effort_names: list[str] = []
+                for option in efforts:
+                    if isinstance(option, Mapping):
+                        effort = option.get("reasoning_effort")
+                        if effort is None:
+                            effort = option.get("reasoningEffort")
+                    else:
+                        effort = option
+                    if isinstance(effort, str) and effort and effort not in effort_names:
+                        effort_names.append(effort)
+                default_effort = item.get("default_reasoning_effort")
+                if default_effort is None:
+                    default_effort = item.get("defaultReasoningEffort")
+                if (
+                    isinstance(default_effort, str)
+                    and default_effort
+                    and default_effort not in effort_names
+                ):
+                    effort_names.append(default_effort)
+                for effort in effort_names:
+                    pair = (model, effort)
+                    config_id = reverse.get(pair) or f"native:{model}:{effort}"
+                    if len(config_id) > 200:
+                        continue
+                    catalog[config_id] = {
+                        "model": model,
+                        "reasoning_effort": effort,
+                        "display_name": str(display_name),
+                    }
         if not catalog:
             raise RuntimeError("Codex model/list exposed no usable model/effort configurations")
         return catalog
