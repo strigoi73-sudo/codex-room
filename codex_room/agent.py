@@ -239,6 +239,55 @@ class AgentAdapter(Protocol):
         self, cwd: Path, *, thread_id: str | None = None
     ) -> dict[str, Any]: ...
 
+    async def list_execution_configs(self) -> dict[str, dict[str, str]]: ...
+
+
+class CodexAgentAdapter:
+    """Thin adapter around the official asynchronous Python Codex SDK."""
+
+    INTERRUPT_TIMEOUT_SECONDS = 2.0
+    RECONCILIATION_INTERVAL_SECONDS = 2.0
+    # One event-loop handoff plus modest local notification jitter; this is not a
+    # retry window and applies only to an authoritative interrupted observation.
+    RECONCILIATION_TERMINAL_GRACE_SECONDS = 0.05
+    THREAD_IDLE_TIMEOUT_SECONDS = 120.0
+
+    def __init__(self, *, codex_bin: str | None = None) -> None:
+        self._codex_bin = codex_bin or os.environ.get("CODEX_ROOM_CODEX_BIN")
+        self._client: Any = None
+        self._threads: dict[str, Any] = {}
+        self._active_handles: dict[str, Any] = {}
+        self._unconfirmed_handles: set[str] = set()
+        self._usage_continuation_agents: set[str] = set()
+        self._active_lock = asyncio.Lock()
+
+    async def initialize(self) -> dict[str, Any]:
+        from openai_codex import AsyncCodex, CodexConfig
+
+        if self._client is None:
+            config = CodexConfig(
+                codex_bin=self._codex_bin,
+                config_overrides=ROOM_CODEX_CONFIG_OVERRIDES,
+            )
+            self._client = AsyncCodex(config=config)
+        account = await self._client.account(refresh_token=False)
+        root = getattr(account, "account", None)
+        if root is None:
+            root = getattr(account, "root", None)
+        if root is not None and hasattr(root, "model_dump"):
+            raw = root.model_dump(mode="json")
+        elif hasattr(account, "model_dump"):
+            raw = account.model_dump(mode="json")
+        else:
+            raw = {"authenticated": True}
+        # The browser only needs auth capability/status; do not expose account email.
+        raw.pop("email", None)
+        raw["authenticated"] = True
+        runtime_identity = sdk_server_identity(getattr(self._client, "metadata", None))
+        if runtime_identity is not None:
+            raw["runtime"] = runtime_identity
+        return raw
+
     async def list_execution_configs(self) -> dict[str, dict[str, str]]:
         """Return every native Codex model/effort combination exposed by model/list."""
         self._require_client()
