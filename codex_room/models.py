@@ -81,6 +81,7 @@ ExceptionalCExecutionConfigId = Literal[
     "sol-max",
 ]
 ExecutionConfigId = SelectableExecutionConfigId | ExceptionalCExecutionConfigId
+ModelPolicy = Literal["default", "unrestricted"]
 
 ORDINARY_EXECUTION_CONFIGS: tuple[str, ...] = (
     "luna-low",
@@ -171,7 +172,7 @@ class ExecutionSelection(BaseModel):
 class DelegationRequest(BaseModel):
     target: Literal["agent_a", "agent_b", "agent_c"]
     instruction: str = Field(min_length=1, max_length=50_000)
-    config: SelectableExecutionConfigId | None = None
+    config: str | None = Field(default=None, min_length=1, max_length=200)
     context_from_assignment_id: str | None = Field(
         default=None, min_length=1, max_length=200
     )
@@ -243,7 +244,7 @@ class TransactionDecision(BaseModel):
     retire_worker_context_task_ids: list[str] | None = None
     evidence_requests: list[SourceEvidenceRequest] | None = None
     history_requests: list[HistoryRequest] | None = None
-    next_self_config: ExecutionConfigId | None = None
+    next_self_config: str | None = Field(default=None, min_length=1, max_length=200)
     requested_task_cognition_ceiling: ExceptionalCExecutionConfigId | None = None
 
     @model_validator(mode="after")
@@ -455,20 +456,8 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
                                 "anyOf": [
                                     {
                                         "type": "string",
-                                        "enum": [
-                                            "luna-low",
-                                            "luna-medium",
-                                            "luna-high",
-                                            "terra-low",
-                                            "terra-medium",
-                                            "terra-high",
-                                            "sol-low",
-                                            "sol-medium",
-                                            "sol-high",
-                                            "astra-low",
-                                            "astra-medium",
-                                            "astra-high",
-                                        ],
+                                        "minLength": 1,
+                                        "maxLength": 200,
                                     },
                                     {"type": "null"},
                                 ]
@@ -674,22 +663,8 @@ TRANSACTION_DECISION_SCHEMA: dict[str, Any] = {
             "anyOf": [
                 {
                     "type": "string",
-                    "enum": [
-                        "luna-low",
-                        "luna-medium",
-                        "luna-high",
-                        "terra-low",
-                        "terra-medium",
-                        "terra-high",
-                        "sol-low",
-                        "sol-medium",
-                        "sol-high",
-                        "astra-low",
-                        "astra-medium",
-                        "astra-high",
-                        "sol-xhigh",
-                        "sol-max",
-                    ],
+                    "minLength": 1,
+                    "maxLength": 200,
                 },
                 {"type": "null"},
             ]
@@ -809,6 +784,7 @@ class CreateRoomRequest(BaseModel):
         "persistent_agent_thread"
     )
     completion_policy: Literal["auto_settle", "continuous"] = "auto_settle"
+    model_policy: ModelPolicy = "default"
     required_contributors: list[
         Literal["agent_a", "agent_b", "agent_c"]
     ] = Field(default_factory=list)
