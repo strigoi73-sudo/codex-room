@@ -44,6 +44,49 @@ def as_markdown(snapshot: dict[str, Any]) -> str:
                 f"- Consecutive conversational PASSes: {round_item.get('consecutive_passes', 0)}",
                 f"- Work model version: {round_item.get('work_model_version', 1)}",
                 "",
+            ]
+        )
+        usage_cycles = round_item.get("usage_cycles") or []
+        if usage_cycles:
+            lines.extend(
+                [
+                    "### Provider usage cycles",
+                    "",
+                    "_These are account-level provider-meter snapshots. Concurrent Codex activity "
+                    "outside this Room can contribute to the observed delta._",
+                    "",
+                ]
+            )
+            for cycle_index, cycle in enumerate(usage_cycles, start=1):
+                start = cycle.get("start") or {}
+                end = cycle.get("end") or {}
+                delta = cycle.get("delta") or {}
+                lines.append(
+                    f"- Cycle {cycle_index}: {cycle.get('status', 'open')} · "
+                    f"start={start.get('captured_at') or 'unavailable'} · "
+                    f"end={end.get('captured_at') or 'not captured'}"
+                )
+                for window in delta.get("rate_limit_window_deltas") or []:
+                    duration = window.get("window_duration_mins")
+                    before = window.get("before_used_percent")
+                    after = window.get("after_used_percent")
+                    change = window.get("delta_percentage_points")
+                    label = (
+                        "5-hour"
+                        if duration == 300
+                        else (
+                            f"{duration}-minute"
+                            if duration is not None
+                            else str(window.get("window") or "provider")
+                        )
+                    )
+                    lines.append(
+                        f"  - {label} usage: {before}% → {after}% "
+                        f"(Δ {change if change is not None else 'unavailable'} percentage points)"
+                    )
+            lines.append("")
+        lines.extend(
+            [
                 "### Public prompt",
                 "",
                 round_item.get("prompt") or snapshot.get("topic", ""),
