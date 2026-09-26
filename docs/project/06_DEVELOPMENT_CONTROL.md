@@ -28,7 +28,7 @@
 The principal selected a creation-time toggle rather than a global policy change:
 
 - unchecked/default Rooms retain D-039/D-051 behavior unchanged;
-- checked Rooms ask native Codex model discovery for the visible model catalog and supported reasoning efforts, then snapshot that exact catalog into Room metadata;
+- checked Rooms ask native Codex model discovery for the native model catalog and supported reasoning efforts, then snapshot that exact catalog into Room metadata;
 - C may allocate any snapshotted native model/effort configuration to A, B, or C;
 - unrestricted mode bypasses Room-side Astra gates, peer-versus-C config restrictions, and exceptional C Task cognition ceilings, while preserving C's responsibility to allocate cognition economically;
 - creation fails closed if native discovery is unavailable, empty, or demonstrably partial;
