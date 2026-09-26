@@ -21,7 +21,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** IMPLEMENTED ON FEATURE BRANCH / SOURCE REVIEW IN PROGRESS / EXACT-HEAD VERIFICATION PENDING
+**Reality / evidence:** IMPLEMENTED ON FEATURE BRANCH / SOURCE REVIEW COMPLETE / EXACT-HEAD VERIFICATION PENDING
 
 **Decision:** D-053
 
@@ -35,7 +35,7 @@ The principal selected a creation-time toggle rather than a global policy change
 - the setting is immutable after Room creation, survives restart through persisted metadata, and normal rollover successors inherit the exact policy/catalog;
 - Room UI and exports expose the active model policy.
 
-The implementation deliberately reuses native Codex `model/list` rather than creating a second Room-owned unrestricted catalog. Exact-head focused regression plus repository fast verification remain required before merge.
+The implementation deliberately reuses native Codex `model/list` rather than creating a second Room-owned unrestricted catalog. Source review verified the pinned 0.154 native pagination contract and repaired the adapter integration before the verification freeze. Exact-head focused regression plus repository fast verification remain required before merge.
 
 ### I-030 — Same-Task conversational continuity repair
 
