@@ -18,6 +18,7 @@ def as_markdown(snapshot: dict[str, Any]) -> str:
         f"- Room ID: `{snapshot['id']}`",
         f"- Created: {snapshot['created_at']}",
         f"- Status: {snapshot['status']}",
+        f"- Model policy: {(snapshot.get('metadata') or {}).get('model_policy', 'default')}",
     ]
     for agent in ordered_agents:
         label = f"Agent {agent['agent_key'].removeprefix('agent_').upper()}"
