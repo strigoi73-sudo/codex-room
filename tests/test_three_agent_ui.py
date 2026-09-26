@@ -131,6 +131,9 @@ def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Pa
         ids = {agent["agent_key"]: agent["thread_id"] for agent in created["agents"]}
         assert set(ids) == {"agent_a", "agent_b", "agent_c"}
         assert len(set(ids.values())) == 3
+        agent_c = next(agent for agent in created["agents"] if agent["agent_key"] == "agent_c")
+        assert "Follow CORE's model-policy block" in agent_c["developer_instructions"]
+        assert "Sol/Ultra, Astra, and legacy GPT-5.5 are not available" not in agent_c["developer_instructions"]
         assert created["active_round"]["starting_agent"] == "agent_c"
         assert adapter.calls["agent_c"] == []
 
