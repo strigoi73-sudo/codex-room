@@ -971,7 +971,7 @@ Settled boundary:
 - With the toggle on, the human principal grants advance authorization for Agent C to allocate any model/reasoning-effort combination that the current native Codex runtime exposes as available to agents, for A, B, or C.
 - CORE must discover that catalog through native Codex model discovery rather than maintaining a separate unrestricted allowlist. The native model/effort catalog is snapshotted at Room creation, persisted with the Room, and used as the exact execution-validation boundary for that conversation lineage.
 - Unrestricted mode removes Room-side Astra gates, peer-versus-C configuration restrictions, and Task cognition-ceiling approval requirements. It does not force expensive cognition: C retains coordination responsibility and should still choose configurations economically according to expected value.
-- Native Codex availability remains the hard boundary. Hidden, unavailable, unsupported, or undiscovered configurations are not emulated or inferred.
+- Native Codex availability remains the hard boundary. CORE requests the complete native `model/list` catalog, including entries Codex marks hidden; configurations absent from that native catalog or rejected by the provider are not emulated or inferred.
 - Unrestricted creation fails closed if CORE cannot obtain a complete usable native catalog. A partial catalog must not silently masquerade as unrestricted access.
 - The policy is creation-time lineage state rather than prompt interpretation. Later messages cannot switch a default Room into unrestricted mode.
 - Normal rollover successors inherit the predecessor's model policy and exact snapshotted catalog so authorization/provenance remain deterministic.
