@@ -6,14 +6,39 @@
 
 ## Operator summary
 
-- **Where are we?** I-031 — **principal-selectable unrestricted Room model access** — is COMPLETE and merged. The active development priority returns to I-030's remaining concurrent public-delta continuity race.
-- **What just happened?** PR #215 merged I-031 after principal exact-head acceptance of `a189a9b9b0c03e118f5c5d9a862739a5d47f33fc`. The three repaired rollover recovery tests passed; the focused run produced 127 passes plus one unchanged rollover timing failure, and that unchanged test then passed 5/5 isolated reruns. The merge commit `0ddfc5d6411c4da749dd16a5a903f7b028bc1f09` has zero file differences from the accepted feature head. See E-184.
+- **Where are we?** I-032 — **automatic per-Round provider usage-meter capture** — is COMPLETE and merged. The active development priority remains I-030's concurrent public-delta continuity race.
+- **What just happened?** PR #217 merged I-032 after principal exact-head verification of `ba5de09a0bc441691db318d16611bf8fc0ca6d57`. The focused validation passed **4/4** tests after repairing a reopen-cycle settlement race. Ordinary production Rooms now persist account-level provider-meter snapshots at each measured work-cycle boundary and export the observed before/after/delta. See E-185.
 - **What is next?** Resume I-030 and repair the remaining concurrency defect in public-delta visibility before resuming I-028 utility benchmarking.
 - **What remains behind it?** I-028 utility benchmarking remains behind I-030.
 - **What is blocked?** Nothing conceptual is blocked.
 - **What are we deliberately not doing?** We are not globally deleting default model safeguards, hard-coding a second unrestricted model list, or treating unrestricted authorization as a mandate to use maximum cognition.
 
 ## Current development state
+
+### I-032 — Automatic per-Round provider usage-meter capture
+
+**Scope:** [ordinary Room lifecycle / native provider usage meter / durable measurement / exports]
+
+**Work state:** COMPLETE
+
+**Reality / evidence:** IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED
+
+**Decision:** D-054
+
+The principal selected read-only automatic usage measurement for all ordinary production Rooms without reactivating D-019 pacing:
+
+- when a Round begins measured work, CORE reads native Codex `account/rateLimits/read` and `account/usage/read` through the existing production adapter;
+- when that measured work cycle naturally settles, is stopped/replaced, or later begins another reopened/resumed cycle, CORE records the corresponding end/start boundaries;
+- snapshots live in a dedicated durable `usage_meter_snapshots` table rather than the conversational event stream, so measurement does not alter agent-visible transcript sequence or wake behavior;
+- completed cycles expose normalized provider-meter before/after values and deltas in Room snapshots and JSON exports; Markdown exports surface the recorded usage-cycle summary;
+- the shared normalization/delta implementation is also used by PBM, avoiding two incompatible interpretations of the native provider meter;
+- if a provider window resets between snapshots, CORE records the reset and does not report a misleading negative percentage-point delta;
+- natural Room completion persists the closing usage snapshot atomically with the `FINISHED` transition, preventing observers/exports from seeing a finished Room with an open measurement cycle;
+- this is measurement only. It does not stop work, impose a budget, choose models, or change D-019's deferred pacing policy.
+
+The provider readings are account-level, not exclusive per-Room billing telemetry. Concurrent Codex activity outside the measured Room can contribute to an observed delta, so isolated benchmark runs remain the strongest attribution case.
+
+PR #217 was verified locally by the principal at exact head `ba5de09a0bc441691db318d16611bf8fc0ca6d57`. The focused gate passed `git diff --check`, Python compilation/import smoke, and **4/4** targeted tests in **6.71 s**. GitHub then merged that exact expected head as merge commit `0874b630c1f62505b552b1c9220d40a471214864`. See E-185.
 
 ### I-031 — Principal-selectable unrestricted Room model access
 

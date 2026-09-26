@@ -76,6 +76,10 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-026` | PBM v4 common protocol with thin platform adapters — one shared benchmark procedure, one principal initiation per platform, deterministic pairing/comparison | Development Control / D-049 / E-167–E-169 |
 | `I-027` | PBM v5 platform-outcome benchmark — equivalent missions with unconstrained native internal orchestration | Development Control / D-050 |
 | `I-028` | Codex Room utility gate — practical value validation of persistent multi-agent organization versus Codex Desktop | Development Control / E-174–E-176 |
+| `I-029` | Opening-prompt Astra opt-in | Development Control / D-051 / E-181–E-182 |
+| `I-030` | Same-Task conversational continuity repair | Development Control / D-052 / E-183 |
+| `I-031` | Principal-selectable unrestricted Room model access | Development Control / D-053 / E-184 |
+| `I-032` | Automatic per-Round provider usage-meter capture | Development Control / D-054 / E-185 |
 
 ## 4. Decision and evidence identifiers
 

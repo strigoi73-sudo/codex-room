@@ -2721,3 +2721,32 @@ This entry records principal-reported local verification. The assistant did not 
 Principal verification targeted exact feature head `a189a9b9b0c03e118f5c5d9a862739a5d47f33fc` for I-031 / D-053. `git diff --check origin/main...HEAD` passed. The three previously failing rollover recovery tests passed. The focused I-031 regression run produced **127 passed, 1 failed**; the sole failure was the unchanged `test_rollover_http_endpoint_leaves_successor_preparing`, which returned a transient rollover-idle HTTP 409. Comparison with canonical `main` showed that test's relevant polling logic was unchanged. The same test then passed **5/5 consecutive isolated reruns** at the exact accepted head. Because the remaining evidence identified a timing/flakiness event rather than an I-031 regression, the expensive full focused suite was not rerun; `verify-fast.cmd` was not run after the focused-suite failure.
 
 PR #215 recorded this qualified evidence before merge and was merged with GitHub enforcing the expected head SHA. Merge commit `0ddfc5d6411c4da749dd16a5a903f7b028bc1f09` compares one commit ahead of the accepted feature head with **zero changed files**, establishing that the merged tree preserves the accepted I-031 feature bytes exactly.
+
+### E-185 — I-032 ordinary-Room provider usage capture exact-head verification and merge
+**Date:** 2026-09-26  
+**Status:** VERIFIED BY PRINCIPAL  
+**Kind:** [provider usage meter / ordinary Room lifecycle / focused exact-head verification]  
+**Decision:** D-054  
+**Issue:** I-032
+
+The principal locally verified the automatic ordinary-Room provider usage-meter implementation at exact feature head `ba5de09a0bc441691db318d16611bf8fc0ca6d57`.
+
+The first focused verification attempt at predecessor head `c6b3d46a586fbc883e753466910755d2900b220a` exposed a real reopen-cycle race: after an observer reopened a naturally finished Room, the test could observe the Room as `FINISHED` while the second usage cycle was still `open`. The meter arithmetic itself was not the failure. The repair moved natural-completion persistence of the end snapshot into the same database transaction that closes the discussion and sets the Room/Round to finished.
+
+The principal then ran the replacement focused gate at exact head `ba5de09a0bc441691db318d16611bf8fc0ca6d57` and reported:
+
+- exact remote feature head matched the expected SHA;
+- detached verification worktree creation succeeded without modifying the live working tree;
+- `git diff --check origin/main...HEAD` completed without error;
+- changed Python modules compiled successfully;
+- the usage-meter/PBM import smoke printed `Usage-meter import smoke: PASS`;
+- targeted usage-meter, reopen-cycle, and PBM-context tests passed **4/4** in **6.71 seconds**;
+- final result: `I-032 FOCUSED VERIFICATION: PASS`.
+
+The focused tests establish normalization/delta behavior, suppression of misleading percentage deltas across provider-window resets, complete start/end capture for an initial Room cycle, and a complete second cycle after reopening the same Round. PBM context compatibility was also exercised. No I-031 or repository-wide full-suite rerun was performed because this feature was deliberately validated with the smallest focused regression set.
+
+PR #217 was marked ready only after this exact-head pass and merged with GitHub enforcing expected head `ba5de09a0bc441691db318d16611bf8fc0ca6d57`. Merge commit: `0874b630c1f62505b552b1c9220d40a471214864`.
+
+Evidence boundary: the implementation records **account-level** provider-meter changes over each measured Room interval. It does not prove that every observed delta was caused exclusively by that Room when other Codex activity overlaps the interval. It also does not implement D-019 pacing or resolve mixed subscription-allowance versus purchased-credit semantics.
+
+**Assessment:** I-032 / D-054 is implemented, focused exact-head verified, and merged. Ordinary production Rooms now automatically retain provider-meter evidence suitable for later usage analysis without manual UI transcription.
