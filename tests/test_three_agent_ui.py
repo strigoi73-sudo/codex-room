@@ -103,6 +103,12 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert "Approve for this Task" in javascript
     assert "Task cognition escalation approved" in javascript
     assert "cognition_approval" in javascript
+    assert 'name="model_policy"' in html
+    assert 'value="unrestricted"' in html
+    assert "Unrestricted model access" in html
+    assert 'id="model-policy-summary"' in html
+    assert 'room.metadata?.model_policy === "unrestricted"' in javascript
+    assert 'Model policy · ${unrestrictedModelAccess ? "Unrestricted" : "Default"}' in javascript
 
 
 def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Path) -> None:
