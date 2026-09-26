@@ -84,7 +84,7 @@ class FakeAgentAdapter:
                 "reasoning_effort": "high",
                 "display_name": "Astra",
             },
-            "sol-max": {
+            "native:gpt-5.6-sol:max": {
                 "model": "gpt-5.6-sol",
                 "reasoning_effort": "max",
                 "display_name": "Sol",
