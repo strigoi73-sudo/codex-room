@@ -1,7 +1,7 @@
 # Codex Room — Architecture & Current State
 
-**Last synthesized:** 2026-09-26  
-**Scope:** Best current technical synthesis from canonical source, dated implementation/test evidence, and current repository state.  
+**Last synthesized:** 2026-09-26
+**Scope:** Best current technical synthesis from canonical source, dated implementation/test evidence, and current repository state.
 **Freshness:** Moderate to high volatility. Verify consequential current-state claims against newer source, tests, runtime evidence, and `06_DEVELOPMENT_CONTROL.md`.
 
 ## 1. Status legend
