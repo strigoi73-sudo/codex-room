@@ -1,7 +1,7 @@
 # Codex Room — Decision Register
 
 **Initialized:** 2026-09-08  
-**Last updated:** 2026-09-20  
+**Last updated:** 2026-09-26  
 **Scope:** Settled architectural, governance, product-direction, and development-order decisions.  
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
