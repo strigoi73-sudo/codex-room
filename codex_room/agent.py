@@ -300,6 +300,14 @@ class CodexAgentAdapter:
         items = raw.get("data") or []
         if not isinstance(items, list):
             raise RuntimeError("Codex model/list returned invalid model data")
+        next_cursor = raw.get("next_cursor")
+        if next_cursor is None:
+            next_cursor = raw.get("nextCursor")
+        if next_cursor:
+            raise RuntimeError(
+                "Codex model/list returned a continuation cursor; unrestricted model "
+                "access refuses to snapshot a partial native catalog"
+            )
 
         reverse = {value: key for key, value in EXECUTION_CONFIGS.items()}
         catalog: dict[str, dict[str, str]] = {}
