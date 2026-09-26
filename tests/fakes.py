@@ -84,10 +84,15 @@ class FakeAgentAdapter:
                 "reasoning_effort": "high",
                 "display_name": "Astra",
             },
-            "native:gpt-5.6-sol:max": {
+            "sol-max": {
                 "model": "gpt-5.6-sol",
                 "reasoning_effort": "max",
                 "display_name": "Sol",
+            },
+            "native:gpt-test-frontier:ultra": {
+                "model": "gpt-test-frontier",
+                "reasoning_effort": "ultra",
+                "display_name": "Test Frontier",
             },
         }
         self._call_gates: dict[tuple[str, int], asyncio.Event] = {}
