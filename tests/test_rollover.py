@@ -1149,7 +1149,7 @@ async def test_restart_recovers_staged_rollover_without_split_brain(
     )
     successor_id = reservation["successor_room_id"]
     runtime._materialize_rollover_workspace(  # noqa: SLF001 - exercise saga crash boundary
-        reservation["operation_id"], successor_id, None
+        reservation["operation_id"], source["id"], successor_id, None
     )
     inherit_room_custom_capabilities(
         runtime.data_root,
@@ -1256,7 +1256,7 @@ async def test_restart_aborts_fully_provisioned_rollover_if_staged_release_drift
     )
     successor_id = reservation["successor_room_id"]
     runtime._materialize_rollover_workspace(  # noqa: SLF001
-        reservation["operation_id"], successor_id, release
+        reservation["operation_id"], source["id"], successor_id, release
     )
     successor_agents = await runtime.db.get_agents(successor_id)
     expected_orphans: set[str] = set()
