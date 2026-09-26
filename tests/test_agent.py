@@ -1666,3 +1666,79 @@ def test_safe_activity_promotes_direct_source_bundle_cli() -> None:
             },
         }
     ]
+
+
+
+class ModelListClient:
+    async def model_list(self, include_hidden: bool = False):
+        assert include_hidden is False
+        payload = {
+            "data": [
+                {
+                    "model": "gpt-5.6-sol",
+                    "display_name": "Sol",
+                    "supported_reasoning_efforts": [
+                        {"reasoning_effort": "medium"},
+                        {"reasoning_effort": "max"},
+                    ],
+                    "default_reasoning_effort": "medium",
+                },
+                {
+                    "model": "gpt-test-frontier",
+                    "display_name": "Test Frontier",
+                    "supported_reasoning_efforts": [
+                        {"reasoning_effort": "low"},
+                        {"reasoning_effort": "ultra"},
+                    ],
+                    "default_reasoning_effort": "low",
+                },
+            ]
+        }
+        return SimpleNamespace(model_dump=lambda **_kwargs: payload)
+
+
+@pytest.mark.asyncio
+async def test_list_execution_configs_uses_native_model_effort_catalog():
+    adapter = CodexAgentAdapter()
+    adapter._client = ModelListClient()
+
+    catalog = await adapter.list_execution_configs()
+
+    assert catalog["sol-medium"] == {
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "medium",
+        "display_name": "Sol",
+    }
+    assert catalog["sol-max"] == {
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "max",
+        "display_name": "Sol",
+    }
+    assert catalog["native:gpt-test-frontier:ultra"] == {
+        "model": "gpt-test-frontier",
+        "reasoning_effort": "ultra",
+        "display_name": "Test Frontier",
+    }
+
+
+@pytest.mark.asyncio
+async def test_run_agent_unrestricted_policy_bypasses_room_astra_guard(tmp_path: Path):
+    adapter = CodexAgentAdapter()
+    adapter._client = object()
+    adapter.RECONCILIATION_INTERVAL_SECONDS = 0.01
+    handle = HistoryHandle()
+    thread = HistoryThread(handle)
+    adapter._threads["agent-one"] = thread
+    agent = {"id": "agent-one", "thread_id": thread.id}
+
+    await adapter.run_agent(
+        agent,
+        tmp_path,
+        "prompt",
+        model="gpt-6-astra",
+        reasoning_effort="high",
+        unrestricted_model_access=True,
+    )
+
+    assert thread.turn_kwargs["model"] == "gpt-6-astra"
+    assert thread.turn_kwargs["effort"] == "high"
