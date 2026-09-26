@@ -49,6 +49,7 @@ class FakeAgentAdapter:
         profile_rebind_error: Exception | None = None,
         turn_id_namespace: str = "",
         tool_inventory: dict[str, Any] | None = None,
+        execution_configs: dict[str, dict[str, str]] | None = None,
     ) -> None:
         self.decisions = {
             key: deque(AgentDecision(outcome=outcome, message=message) for outcome, message in values)
@@ -67,6 +68,28 @@ class FakeAgentAdapter:
         self.profile_rebind_error = profile_rebind_error
         self.turn_id_namespace = turn_id_namespace
         self.tool_inventory = tool_inventory
+        self.execution_configs = execution_configs or {
+            "luna-low": {
+                "model": "gpt-5.6-luna",
+                "reasoning_effort": "low",
+                "display_name": "Luna",
+            },
+            "sol-high": {
+                "model": "gpt-5.6-sol",
+                "reasoning_effort": "high",
+                "display_name": "Sol",
+            },
+            "astra-high": {
+                "model": "gpt-6-astra",
+                "reasoning_effort": "high",
+                "display_name": "Astra",
+            },
+            "native:gpt-5.6-sol:max": {
+                "model": "gpt-5.6-sol",
+                "reasoning_effort": "max",
+                "display_name": "Sol",
+            },
+        }
         self._call_gates: dict[tuple[str, int], asyncio.Event] = {}
         self._inactive_agents: set[str] = set()
         self.starts: list[tuple[str, str]] = []
@@ -84,6 +107,9 @@ class FakeAgentAdapter:
 
     async def initialize(self) -> dict[str, Any]:
         return {"authenticated": True, "provider": "fake"}
+
+    async def list_execution_configs(self) -> dict[str, dict[str, str]]:
+        return dict(self.execution_configs)
 
     async def inspect_tools(
         self, cwd: Path, *, thread_id: str | None = None
@@ -127,6 +153,7 @@ class FakeAgentAdapter:
         model: str = "gpt-5.6-terra",
         reasoning_effort: str = "high",
         allow_astra: bool = False,
+        unrestricted_model_access: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
         self._inactive_agents.discard(agent["agent_key"])
@@ -138,6 +165,7 @@ class FakeAgentAdapter:
                 "model": model,
                 "reasoning_effort": reasoning_effort,
                 "allow_astra": allow_astra,
+                "unrestricted_model_access": unrestricted_model_access,
                 "transactional": transactional,
             }
         )
@@ -199,6 +227,7 @@ class FakeAgentAdapter:
         model: str = "gpt-5.6-terra",
         reasoning_effort: str = "high",
         allow_astra: bool = False,
+        unrestricted_model_access: bool = False,
         transactional: bool = False,
     ) -> AgentRunResult:
         contextual_agent = dict(agent)
@@ -212,6 +241,7 @@ class FakeAgentAdapter:
             model=model,
             reasoning_effort=reasoning_effort,
             allow_astra=allow_astra,
+            unrestricted_model_access=unrestricted_model_access,
             transactional=transactional,
         )
 
