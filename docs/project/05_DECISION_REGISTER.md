@@ -1,8 +1,8 @@
 # Codex Room — Decision Register
 
-**Initialized:** 2026-09-08  
-**Last updated:** 2026-09-26  
-**Scope:** Settled architectural, governance, product-direction, and development-order decisions.  
+**Initialized:** 2026-09-08
+**Last updated:** 2026-09-26
+**Scope:** Settled architectural, governance, product-direction, and development-order decisions.
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
 ## Decision status
@@ -13,13 +13,13 @@
 ---
 
 ### D-001 — Product name is Codex Room
-**Date:** 2026-09-08 or earlier  
+**Date:** 2026-09-08 or earlier
 **Status:** ACTIVE
 
 The multi-agent system/product is named **Codex Room**. “Technobabble” refers to the prior ChatGPT Project/context and should not be used as the system name.
 
 ### D-002 — Fixed Personal production triad
-**Date:** 2026-09-08 or earlier  
+**Date:** 2026-09-08 or earlier
 **Status:** ACTIVE
 
 For the foreseeable future, the Personal architecture contains exactly three persistent production agents: A, B, and C. Do not add a fourth persistent production agent without an explicit new decision.
@@ -27,7 +27,7 @@ For the foreseeable future, the Personal architecture contains exactly three per
 Temporary experimental participants do not themselves expand the production architecture.
 
 ### D-003 — A/B/C role differentiation and peer status
-**Date:** 2026-09-08 or earlier  
+**Date:** 2026-09-08 or earlier
 **Status:** SUPERSEDED
 
 The early formulation assigned occupational labels to A, B, and C. D-023 and D-024 superseded those permanent-role labels. Current Personal design treats A and B as operationally equivalent persistent epistemic peers with the same neutral default profile and no protected occupational or cognitive specialization. C is also an epistemic peer and retains protected coordination responsibilities.
@@ -37,13 +37,13 @@ The enduring principle survives in later active decisions:
 **Principle:** **C controls coordination, not judgment.**
 
 ### D-004 — Ratified six-clause Constitution
-**Date:** 2026-09-08 or earlier  
+**Date:** 2026-09-08 or earlier
 **Status:** ACTIVE
 
 The six clauses reproduced in `03_CONSTITUTION_AND_INSTITUTIONAL_RULES.md` govern agent conduct. Their wording should not be casually rewritten.
 
 ### D-005 — Token/usage efficiency is the top-level development concern
-**Date:** 2026-09-08  
+**Date:** 2026-09-08
 **Status:** ACTIVE
 
 Prioritize reductions in unnecessary model invocation, unnecessary context, duplicate cognition, retry waste, PASS waste, and other avoidable provider usage ahead of broader productization when those reductions materially improve operating economics without sacrificing correctness, safety, continuity, or useful work.
@@ -51,13 +51,13 @@ Prioritize reductions in unnecessary model invocation, unnecessary context, dupl
 The exact operational wording of “token efficiency” remains subject to deliberate refinement; do not silently harden provisional wording into constitutional interpretation.
 
 ### D-006 — Selective invocation is the immediate efficiency problem to solve
-**Date:** 2026-09-08  
+**Date:** 2026-09-08
 **Status:** SUPERSEDED
 
 Measured Room usage justified making unnecessary peer invocation the immediate efficiency problem. That investigation and implementation phase subsequently completed. Current work order is controlled by D-014 and Development Control.
 
 ### D-007 — Core/Room governance taxonomy
-**Date:** 2026-09-08  
+**Date:** 2026-09-08
 **Status:** ACTIVE
 
 Use:
@@ -69,7 +69,7 @@ Use:
 A running Room may investigate/specify/test/evaluate CORE work but does not hot-patch the protected runtime hosting itself. Actual CORE implementation occurs outside the protected running Room through the cheapest authorized execution layer capable of safely performing the work and producing adequate evidence. Prefer one controlled writer, with independent review where useful.
 
 ### D-008 — Review validity follows exact artifact version
-**Date:** 2026-09-08 or earlier  
+**Date:** 2026-09-08 or earlier
 **Status:** ACTIVE
 
 **Handoffs protect the validity of review, not access to the file.**
@@ -79,7 +79,7 @@ A review applies to the reviewed bytes/version. Later mutation invalidates the o
 **Principle:** **Coordinate conflicts, don't freeze the organization.**
 
 ### D-009 — Institutional memory uses three strata
-**Date:** 2026-09-08 or earlier  
+**Date:** 2026-09-08 or earlier
 **Status:** ACTIVE
 
 Distinguish:
@@ -93,25 +93,25 @@ Preferred retrieval direction: **Room archive → searchable index → targeted 
 **Principle:** **Index broadly, retrieve narrowly.**
 
 ### D-010 — Personal first; Enterprise later
-**Date:** 2026-09-08 or earlier  
+**Date:** 2026-09-08 or earlier
 **Status:** ACTIVE
 
 Prioritize a viable Personal architecture before Enterprise-scale workforce management, administration, or organizational expansion.
 
 ### D-011 — Provider neutrality is a longer-term design goal
-**Date:** 2026-09-08 or earlier  
+**Date:** 2026-09-08 or earlier
 **Status:** ACTIVE
 
 Develop OpenAI/Codex first while avoiding unnecessary architectural coupling that would prevent future provider-neutral or mixed-provider designs. Provider expansion is not the current priority.
 
 ### D-012 — Stable recurring cognition is a candidate for deterministic tooling
-**Date:** 2026-09-08  
+**Date:** 2026-09-08
 **Status:** ACTIVE
 
 When recurring model reasoning has become a stable deterministic procedure, consider compiling it into local software/state machines when the expected model-usage savings justify the maintenance cost.
 
 ### D-013 — Usage-limit failure should be recoverable without violating thread/overlap invariants
-**Date:** 2026-09-08  
+**Date:** 2026-09-08
 **Status:** ACTIVE
 
 Usage-limit failures should be recoverable while preserving agent identity, persistent thread continuity where safely possible, serialized execution, and fail-closed behavior when safe recovery cannot be established. Immediate retry storms are not acceptable.
@@ -119,7 +119,7 @@ Usage-limit failures should be recoverable while preserving agent identity, pers
 The implemented mechanism is summarized in Architecture & Current State and supported by the Evidence Register.
 
 ### D-014 — Finish the engineering foundation before Assurance Pass 2
-**Date:** 2026-09-09  
+**Date:** 2026-09-09
 **Status:** ACTIVE
 
 Before launching Assurance Pass 2, establish the minimum professional engineering baseline needed to make later review efficient and durable:
@@ -136,7 +136,7 @@ Before launching Assurance Pass 2, establish the minimum professional engineerin
 Avoid GitFlow, heavyweight process, enterprise tooling, or other ceremony that does not solve a demonstrated need.
 
 ### D-015 — Selective invocation separates readability from immediate cognition
-**Date:** 2026-09-09  
+**Date:** 2026-09-09
 **Status:** ACTIVE
 
 For agent MESSAGE outcomes, selective invocation may name the peers whose immediate cognition is useful while keeping the public message readable to authorized non-target peers.
@@ -153,13 +153,13 @@ Settled compatibility behavior:
 Do not infer routing from prose labels such as “B:” or “C:”.
 
 ### D-016 — Compaction growth uses a deferred post-compaction baseline
-**Date:** 2026-09-09  
+**Date:** 2026-09-09
 **Status:** ACTIVE
 
 After successful context compaction, do not use the pre-compaction input count as the 25,000-token growth baseline. Mark the baseline pending; the first later successful authoritative input measurement establishes it, and that establishment turn cannot compact again.
 
 ### D-017 — Usage walls schedule delayed same-agent continuation
-**Date:** 2026-09-09  
+**Date:** 2026-09-09
 **Status:** ACTIVE
 
 For a positively identified usage-limit wall with a parseable provider retry time, persist a continuation for the same agent/thread and release it through the normal serialized queue at the reported retry time plus a 60-second grace period.
@@ -167,8 +167,8 @@ For a positively identified usage-limit wall with a parseable provider retry tim
 Repeated walls replace the schedule; stale work is cancelled by lifecycle/stop rules; unknown retry formats fail closed.
 
 ### D-018 — Allocate cognition once; execute at the cheapest capable layer; hand off exact evidence through Git/GitHub
-**Date:** 2026-09-10  
-**Amended:** 2026-09-16  
+**Date:** 2026-09-10
+**Amended:** 2026-09-16
 **Status:** ACTIVE
 
 For external Codex Room development and maintenance, allocate cognition and execution to the cheapest authorized layer that can safely perform the work and produce adequate evidence. Do not delegate work to another model merely because that model has traditionally occupied an “execution” role.
@@ -188,7 +188,7 @@ The execution hierarchy is a cost and capability preference, not an authority sh
 
 **Principle:** **Reason where the relevant context already exists; execute at the cheapest capable layer; hand off exact evidence; duplicate cognition only when it earns its cost.**
 ### D-019 — Personal daily usage pacing limit is approved planned development
-**Date:** 2026-09-11  
+**Date:** 2026-09-11
 **Status:** ACTIVE
 
 Codex Room Personal should provide a user-configurable **daily usage limit expressed as a percentage of the user's weekly Codex usage allowance**.
@@ -210,7 +210,7 @@ Before implementation, deliberately resolve which usage pool the pacing policy g
 Other details intentionally left for implementation design include warning thresholds, UI presentation, carry-forward behavior, daily-period/time-zone semantics, polling cadence, and the exact SDK/app-server integration technique.
 
 ### D-020 — Permanent Personal triad, C-first coordination, and integration-before-closure
-**Date:** 2026-09-11  
+**Date:** 2026-09-11
 **Status:** ACTIVE
 
 Codex Room Personal should align runtime behavior with the settled three-agent production architecture rather than treating Agent C as an optional addition.
@@ -236,7 +236,7 @@ The implementation scope is **[CORE + ROOM migration]**: CORE changes establish 
 
 
 ### D-021 — Repository `docs/project/` is the canonical home for maintained Project sources
-**Date:** 2026-09-11  
+**Date:** 2026-09-11
 **Status:** ACTIVE
 
 The maintained Codex Room Project-source documents are canonically stored in the private GitHub repository `strigoi73-sudo/codex-room` under `docs/project/` on canonical `main`.
@@ -256,7 +256,7 @@ This decision changes the maintenance location and retrieval workflow, not the s
 
 
 ### D-022 — Agent-directed deterministic capabilities with rollover continuity
-**Date:** 2026-09-12  
+**Date:** 2026-09-12
 **Status:** ACTIVE
 
 P4 should build a deterministic capability system rather than attempt to predict all future Room-specific software needs.
@@ -277,7 +277,7 @@ This sets product architecture and continuity requirements. P4 subsequently impl
 **Principle:** **Agents decide when cognition should become software; Codex Room makes that software discoverable, verifiable, persistent, and reusable.**
 
 ### D-023 — Persistent agent identity is separate from replaceable personality
-**Date:** 2026-09-13  
+**Date:** 2026-09-13
 **Status:** ACTIVE
 
 Codex Room Personal should treat Agent A, Agent B, and Agent C as persistent organizational identities rather than permanent occupational roles.
@@ -297,7 +297,7 @@ This decision supersedes the historical occupational-role labels in D-003 and D-
 **Implementation status:** the protected-instruction / replaceable-profile composition model is **IMPLEMENTED / VERIFIED** by PR #28 and E-041. D-024 subsequently established neutral/empty standard profile bodies for A/B/C; occupational labels are not startup cognitive specializations.
 
 ### D-024 — Persistent agents start from neutral default cognition
-**Date:** 2026-09-14  
+**Date:** 2026-09-14
 **Status:** ACTIVE
 
 Codex Room Personal should not assign distinguishing personality, temperament, occupational identity, intellectual specialty, or stylistic role to Agent A, Agent B, or Agent C at startup.
@@ -318,7 +318,7 @@ D-024 supersedes D-023 only where D-023 requires every persistent agent to have 
 **Principle:** **Start neutral; specialize work when the objective warrants it.**
 
 ### D-025 — C may assign temporary cognitive frames during delegation
-**Date:** 2026-09-14  
+**Date:** 2026-09-14
 **Status:** ACTIVE
 
 Agent C's protected coordination responsibility includes discretion to shape delegated cognition for the current objective.
@@ -337,7 +337,7 @@ D-025 builds on D-020's C-first coordination and D-024's neutral startup. It doe
 **Principle:** **Start neutral; let C shape the cognition needed for the task without controlling the answer.**
 
 ### D-026 — Dual-peer delegation must be meaningfully differentiated
-**Date:** 2026-09-14  
+**Date:** 2026-09-14
 **Status:** ACTIVE
 
 Cognition should be allocated economically. Because A and B are neutral peers, substantially duplicate assignments are ordinarily redundant and do not justify the added token and coordination cost. C may select different admitted execution configurations for delegated peers, but model heterogeneity by itself does not make duplicate cognition valuable.
@@ -359,7 +359,7 @@ D-026 supersedes D-025 only where D-025 allowed identical or overlapping dual-pe
 **Principle:** **Use the fewest peers that add sufficient value; if both peers are invoked, buy complementary cognition rather than duplicate cognition.**
 
 ### D-027 — Invocation is for immediate cognition, not message visibility
-**Date:** 2026-09-14  
+**Date:** 2026-09-14
 **Status:** ACTIVE
 
 Runnable peer invocation should be treated as an explicit purchase of additional cognition rather than as a message-delivery mechanism.
@@ -382,7 +382,7 @@ D-027 generalizes the token-economy principle beyond C's initial allocation deci
 
 
 ### D-028 — Astra is prohibited for Codex Room execution
-**Date:** 2026-09-15  
+**Date:** 2026-09-15
 **Status:** SUPERSEDED by D-051
 
 Codex Room must not execute Room cognition on an Astra model.
@@ -398,7 +398,7 @@ Settled rule:
 This is a hard execution constraint, not an economic preference or default-selection heuristic.
 
 ### D-029 — Personal Rooms have bounded read access to CORE and other Room shared workspaces
-**Date:** 2026-09-15  
+**Date:** 2026-09-15
 **Status:** ACTIVE
 
 Personal Room agents should be able to inspect relevant evidence outside their current Room workspace without receiving cross-boundary mutation authority.
@@ -416,7 +416,7 @@ Settled design:
 This decision clarifies the CORE/Room boundary: **protection constrains mutation, not legitimate inspection.**
 
 ### D-030 — Transaction work state replaces conversational backlog as the authoritative scheduler
-**Date:** 2026-09-15  
+**Date:** 2026-09-15
 **Status:** ACTIVE
 
 The principal approves I-015 Stage A as Codex Room's coordination-stabilization architecture.
@@ -442,7 +442,7 @@ D-030 supersedes the **implementation mechanism**, but not the governing intent,
 **Principle:** **Agents decide the work; CORE makes declared work state reliable.**
 
 ### D-031 — Agents declare bounded deterministic intent; CORE owns source-evidence execution mechanics
-**Date:** 2026-09-16  
+**Date:** 2026-09-16
 **Status:** ACTIVE
 
 For transaction-enabled work, the ordinary agent interface for read-only source evidence should express the evidence needed, while CORE owns the mechanical invocation path.
@@ -462,8 +462,8 @@ This decision extends D-030's transaction principle into deterministic evidence 
 **Principle:** **Agents declare bounded deterministic intent; CORE owns deterministic execution mechanics.**
 
 ### D-032 — Provider context is transport; Assignment is the first bounded context unit
-**Date:** 2026-09-16  
-**Amended:** 2026-09-18 by D-037  
+**Date:** 2026-09-16
+**Amended:** 2026-09-18 by D-037
 **Status:** ACTIVE
 
 I-015 Stage C should test provider-context economy without redefining the persistent A/B/C organization or weakening the explicit transaction model.
@@ -485,8 +485,8 @@ This decision extends D-030 by separating **persistent organizational identity**
 **Principle:** **Preserve durable identity and explicit work state; bound provider context to the smallest unit that safely carries the work.**
 
 ### D-033 — Cross-Assignment continuity uses explicit bounded Room-history retrieval
-**Date:** 2026-09-16  
-**Amended:** 2026-09-18 by D-037  
+**Date:** 2026-09-16
+**Amended:** 2026-09-18 by D-037
 **Status:** ACTIVE
 
 Stage C.2 established that Assignment-bounded provider context materially reduces inherited replay cost but does not itself carry needed episodic continuity from earlier Rounds. The first continuity mechanism should therefore retrieve prior durable Room results explicitly rather than restore a forever-growing provider thread.
@@ -509,7 +509,7 @@ This decision extends D-032 by supplying deliberate continuity across Assignment
 
 
 ### D-034 — Work-model v2 becomes the public default by clean cutover
-**Date:** 2026-09-16  
+**Date:** 2026-09-16
 **Status:** ACTIVE
 
 After I-015 Stage D passed the preregistered viability gate, the principal approved activation of the version-2 task-transaction architecture as Codex Room's normal public work model.
@@ -530,7 +530,7 @@ This decision completes the product-direction question left open by D-030 throug
 **Principle:** **Stage-D-proven transaction semantics are the production path; do not spend migration complexity on Rooms we intend to delete.**
 
 ### D-035 — C sequences dependent work and allocates substantial fallback to low-context capable assignments
-**Date:** 2026-09-16  
+**Date:** 2026-09-16
 **Status:** ACTIVE
 
 Ordinary Common Cause implementation exposed a coordination-economics failure that is not adequately addressed by peer-count limits or differentiated delegation alone. C may choose distinct assignments that are individually sensible yet still waste cognition if they are launched before their prerequisite results exist, and C may later absorb expensive fallback onto an already accumulated coordination context.
@@ -559,8 +559,8 @@ Behavioral compliance remains an evidence question. Exact instruction regression
 **Principle:** **Parallelize independence; sequence dependencies; put substantial fallback where capable cognition has the least unnecessary accumulated context.**
 
 ### D-036 — Round completion policy separates bounded activity settlement from standing objectives
-**Date:** 2026-09-18  
-**Amended:** 2026-09-18 by D-037  
+**Date:** 2026-09-18
+**Amended:** 2026-09-18 by D-037
 **Status:** ACTIVE
 
 Codex Room needs an explicit lifecycle distinction between an ordinary Round that should finish when its work settles and a standing Round objective that should remain active until the human or a hard runtime boundary stops it.
@@ -585,8 +585,8 @@ This decision changes Round lifecycle semantics only. It does not change A/B/C e
 
 
 ### D-037 — Task is the bounded objective; provider context follows deliberate objective continuity
-**Date:** 2026-09-18  
-**Amended:** 2026-09-18 — coordinator refresh economics guidance after naturalistic adoption evidence  
+**Date:** 2026-09-18
+**Amended:** 2026-09-18 — coordinator refresh economics guidance after naturalistic adoption evidence
 **Status:** ACTIVE
 
 The principal approves the bounded-context architecture synthesized after the naturalistic continuous-Round acceptance and subsequent CORE mapping.
@@ -665,7 +665,7 @@ This decision narrows the previously deferred “dynamic model routing” questi
 **Principle:** **C may spend ordinary cognition autonomously; exceptional C cognition requires explicit human authority for the bounded Task that needs it.**
 
 ### D-040 — Human-facing Codex command inventory follows the exact running runtime and fails closed on mismatch
-**Date:** 2026-09-19  
+**Date:** 2026-09-19
 **Status:** SUPERSEDED BY D-041
 
 The principal authorized a trustworthy command-surface foundation before any Codex Room command-selection UI is built.
@@ -862,8 +862,8 @@ Settled boundary:
 **Principle:** **One frozen mission; one paste into Desktop; one paste into Room; no live cross-platform orchestration; deterministic comparison afterward.**
 
 ### D-049 — PBM v4 has one common protocol with thin platform adapters
-**Date:** 2026-09-21  
-**Status:** ACTIVE  
+**Date:** 2026-09-21
+**Status:** ACTIVE
 **Supersedes:** D-048 only where D-048 described the principal directly pasting into each measured execution
 
 The principal clarified the PBM operator requirement after the first v4 canary attempt: the human should point Desktop or Room at a named process once and the platform should perform the rest of its own procedure. Desktop and Room may require different native initiation mechanics, but those differences must be thin adapters around one common benchmark protocol rather than separate substantive procedures.
@@ -887,8 +887,8 @@ Settled boundary:
 
 
 ### D-050 — PBM compares platform outcomes, not prescribed internal orchestration
-**Date:** 2026-09-21  
-**Status:** ACTIVE  
+**Date:** 2026-09-21
+**Status:** ACTIVE
 **Supersedes:** D-049 where D-049 prescribed Desktop controller → one child → detached-monitor choreography; preserves D-049's common mission, deterministic evidence, no-substantive-principal-guidance, and automatic comparison principles
 
 The principal clarified the intended PBM abstraction boundary after the first paid v4 attempt exposed a managed-worktree failure in the prescribed Desktop child-task path.
@@ -910,8 +910,8 @@ Settled boundary:
 **Principle:** **Give each platform the same job and judge the result; let the platform decide how to do the work.**
 
 ### D-051 — Astra is default-denied but may be authorized by the opening Room prompt
-**Date:** 2026-09-24  
-**Status:** ACTIVE  
+**Date:** 2026-09-24
+**Status:** ACTIVE
 **Supersedes:** D-028
 
 The principal replaced D-028's blanket Astra prohibition with an explicit opening-prompt opt-in.
@@ -932,8 +932,8 @@ This makes the principal's opening Room prompt the authorization boundary. A new
 **Principle:** **Astra requires explicit principal opt-in at conversation creation, and that opt-in persists with the conversation lineage.**
 
 ### D-052 — Same-Task worker continuity is the default and public Room conversation is supplied incrementally
-**Date:** 2026-09-25  
-**Status:** ACTIVE  
+**Date:** 2026-09-25
+**Status:** ACTIVE
 **Amends:** D-033 and D-037
 
 Ordinary use exposed that D-033/D-037 had made worker context isolation too conservative for conversational multi-agent work. In a natural adversarial debate, later A/B Assignments repeatedly lacked already-public statements from the other participant and spent additional cognition requesting or reconstructing material that the Room had already recorded.
@@ -958,8 +958,8 @@ This retains assignment-thread isolation at real objective boundaries while rest
 **Principle:** **Keep context bounded at objective boundaries, not at every conversational turn; preserve private/provider independence without making peers forget the public Room.**
 
 ### D-053 — Room creation may explicitly enable unrestricted native model access
-**Date:** 2026-09-26  
-**Status:** ACTIVE  
+**Date:** 2026-09-26
+**Status:** ACTIVE
 **Amends:** D-039 and D-051 only when the principal selects unrestricted model access; default Room behavior remains unchanged
 
 The principal selected an explicit Room-creation control that preserves the existing bounded model policy by default while allowing a deliberately unrestricted Room when needed.
