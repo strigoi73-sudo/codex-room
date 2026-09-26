@@ -126,6 +126,29 @@ C_COGNITION_CEILING_RANK: dict[str, int] = {
 }
 
 
+def room_unrestricted_model_access(metadata: dict[str, Any] | None) -> bool:
+    return bool(metadata and metadata.get("model_policy") == "unrestricted")
+
+
+def execution_config_catalog(
+    metadata: dict[str, Any] | None,
+) -> dict[str, tuple[str, str]]:
+    if not room_unrestricted_model_access(metadata):
+        return dict(EXECUTION_CONFIGS)
+    raw = (metadata or {}).get("unrestricted_execution_configs") or {}
+    if not isinstance(raw, dict):
+        return {}
+    catalog: dict[str, tuple[str, str]] = {}
+    for config_id, item in raw.items():
+        if not isinstance(config_id, str) or not isinstance(item, dict):
+            continue
+        model = item.get("model")
+        effort = item.get("reasoning_effort")
+        if isinstance(model, str) and model and isinstance(effort, str) and effort:
+            catalog[config_id] = (model, effort)
+    return catalog
+
+
 def initial_prompt_authorizes_astra(prompt: str) -> bool:
     """Return whether the opening Room prompt explicitly authorizes Astra execution."""
     negative = re.compile(
