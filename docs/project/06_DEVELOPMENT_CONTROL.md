@@ -6,11 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-031 — **principal-selectable unrestricted Room model access** — is the principal-selected active implementation. A feature branch now carries the Room-creation toggle, native Codex model discovery/snapshotting, runtime enforcement, rollover persistence, UI/export visibility, and focused regressions; exact-head principal verification is the next gate.
-- **What just happened?** Controlled Meridian trials showed materially different five-hour allowance consumption across fixed model policies, and an attempted unrestricted trial exposed that prompt parsing plus stale profile text could silently leave Astra unavailable. The principal chose a deterministic UI policy toggle instead of removing default restrictions globally. D-053 records that boundary.
-- **What is next?** Finish source/doc review, run the focused I-031 regression set plus `verify-fast.cmd` on the exact feature head, then merge only if the principal verification passes.
-- **What remains behind it?** I-030 remains open. Natural debate-style acceptance after D-052 showed same-worker continuity improved, but concurrent peer messages can still fall behind the public-delta boundary and trigger HISTORY recovery. After I-031 closes, return to that concurrency defect before resuming I-028 utility benchmarking.
-- **What is blocked?** Nothing conceptual is blocked; I-031 is awaiting exact-head verification after implementation review.
+- **Where are we?** I-031 — **principal-selectable unrestricted Room model access** — is COMPLETE and merged. The active development priority returns to I-030's remaining concurrent public-delta continuity race.
+- **What just happened?** PR #215 merged I-031 after principal exact-head acceptance of `a189a9b9b0c03e118f5c5d9a862739a5d47f33fc`. The three repaired rollover recovery tests passed; the focused run produced 127 passes plus one unchanged rollover timing failure, and that unchanged test then passed 5/5 isolated reruns. The merge commit `0ddfc5d6411c4da749dd16a5a903f7b028bc1f09` has zero file differences from the accepted feature head. See E-184.
+- **What is next?** Resume I-030 and repair the remaining concurrency defect in public-delta visibility before resuming I-028 utility benchmarking.
+- **What remains behind it?** I-028 utility benchmarking remains behind I-030.
+- **What is blocked?** Nothing conceptual is blocked.
 - **What are we deliberately not doing?** We are not globally deleting default model safeguards, hard-coding a second unrestricted model list, or treating unrestricted authorization as a mandate to use maximum cognition.
 
 ## Current development state
@@ -19,9 +19,9 @@
 
 **Scope:** [Room setup UI / native model discovery / C model allocation / durable lineage policy]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** IMPLEMENTED ON FEATURE BRANCH / SOURCE REVIEW COMPLETE / EXACT-HEAD VERIFICATION PENDING
+**Reality / evidence:** IMPLEMENTED / PRINCIPAL EXACT-HEAD ACCEPTED / MERGED
 
 **Decision:** D-053
 
@@ -35,7 +35,7 @@ The principal selected a creation-time toggle rather than a global policy change
 - the setting is immutable after Room creation, survives restart through persisted metadata, and normal rollover successors inherit the exact policy/catalog;
 - Room UI and exports expose the active model policy.
 
-The implementation deliberately reuses native Codex `model/list` rather than creating a second Room-owned unrestricted catalog. Source review verified the pinned 0.154 native pagination contract and repaired the adapter integration before the verification freeze. Exact-head focused regression plus repository fast verification remain required before merge.
+The implementation deliberately reuses native Codex `model/list` rather than creating a second Room-owned unrestricted catalog. Source review verified the pinned 0.154 native pagination contract and repaired the adapter integration before the verification freeze. PR #215 merged after principal acceptance of exact head `a189a9b9b0c03e118f5c5d9a862739a5d47f33fc`. The focused run produced 127 passes and one unchanged rollover timing failure; that test then passed five consecutive isolated reruns. `verify-fast.cmd` was not run after the focused-suite failure, and the evidence does not represent the full suite as clean. GitHub comparison from the accepted feature head to merge commit `0ddfc5d6411c4da749dd16a5a903f7b028bc1f09` reported zero file differences. See E-184.
 
 ### I-030 — Same-Task conversational continuity repair
 

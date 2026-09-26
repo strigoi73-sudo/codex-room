@@ -2711,3 +2711,13 @@ This entry records principal-reported local verification. The assistant did not 
 
 **Assessment:** D-052 is implemented, exact-head verified, and merged. I-030 remains open for one natural provider-backed debate-style acceptance showing that peers can directly respond to already-public Room statements without context-recovery turns.
 
+
+
+### E-184 — I-031 exact-head acceptance and merge preservation
+
+**Date:** 2026-09-26  
+**Evidence qualification:** VERIFIED for the accepted and merged I-031 bytes; full focused-suite clean-pass status is not claimed.
+
+Principal verification targeted exact feature head `a189a9b9b0c03e118f5c5d9a862739a5d47f33fc` for I-031 / D-053. `git diff --check origin/main...HEAD` passed. The three previously failing rollover recovery tests passed. The focused I-031 regression run produced **127 passed, 1 failed**; the sole failure was the unchanged `test_rollover_http_endpoint_leaves_successor_preparing`, which returned a transient rollover-idle HTTP 409. Comparison with canonical `main` showed that test's relevant polling logic was unchanged. The same test then passed **5/5 consecutive isolated reruns** at the exact accepted head. Because the remaining evidence identified a timing/flakiness event rather than an I-031 regression, the expensive full focused suite was not rerun; `verify-fast.cmd` was not run after the focused-suite failure.
+
+PR #215 recorded this qualified evidence before merge and was merged with GitHub enforcing the expected head SHA. Merge commit `0ddfc5d6411c4da749dd16a5a903f7b028bc1f09` compares one commit ahead of the accepted feature head with **zero changed files**, establishing that the merged tree preserves the accepted I-031 feature bytes exactly.
