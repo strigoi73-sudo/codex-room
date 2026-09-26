@@ -14,8 +14,8 @@ from codex_room.models import AgentDecision, Outcome, TransactionAction, Transac
 class LegacyPairDatabase(Database):
     """Test-only persistence shim for pre-D-020 two-agent Room compatibility."""
 
-    async def create_room(self, request):
-        room_id = await super().create_room(request)
+    async def create_room(self, request, **kwargs):
+        room_id = await super().create_room(request, **kwargs)
         async with self.connect() as db:
             await db.execute("BEGIN IMMEDIATE")
             await db.execute(
