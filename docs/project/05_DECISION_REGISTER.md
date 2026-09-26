@@ -979,3 +979,23 @@ Settled boundary:
 
 **Principle:** **Keep economical restrictions as the default; when the principal explicitly opens the gate, let native Codex availability—not duplicated Room policy—define the model menu.**
 
+
+### D-054 — Ordinary Rooms automatically capture account-level provider usage at measured work-cycle boundaries
+**Date:** 2026-09-26
+**Status:** ACTIVE
+**Related:** D-005, D-019, D-046
+
+Codex Room Personal should automatically record the native provider usage/rate-limit meter around ordinary Room work, using the same normalized semantics already employed by PBM.
+
+Settled boundary:
+
+- Measurement is read-only and applies to ordinary production Rooms independently of PBM.
+- A measured cycle begins when Round work becomes active and ends when that work settles or is explicitly stopped/replaced; reopening/resuming previously completed work starts another cycle rather than overwriting the earlier one.
+- Native `account/rateLimits/read` and `account/usage/read` are the source of truth when available. Room token totals are not substituted for provider allowance readings.
+- Usage snapshots are durable mechanical state, not conversational events, and must not alter transcript sequence, agent readability, routing, or model choice.
+- Exports expose the recorded before/after readings and derived deltas.
+- A provider-window reset invalidates a simple percentage-point subtraction across that boundary; the reset must be represented explicitly instead of reporting a false negative delta.
+- Provider meters are account-level. Concurrent Codex activity outside a Room can contribute to its observed before/after delta; therefore the value is an observed account-meter change over the Room interval, not guaranteed exclusive billing attribution.
+- This decision does **not** activate D-019 pacing. No work is blocked or throttled from these readings until the separate mixed allowance/credit semantics required by D-019 are deliberately resolved.
+
+**Principle:** **Measure every Room automatically, preserve the provider's meter semantics, and keep observation separate from enforcement.**
