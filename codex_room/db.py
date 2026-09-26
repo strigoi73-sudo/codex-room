@@ -237,6 +237,21 @@ class Database:
                     required_contributors_json TEXT NOT NULL DEFAULT '[]'
                 );
 
+                CREATE TABLE IF NOT EXISTS usage_meter_snapshots (
+                    id TEXT PRIMARY KEY,
+                    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+                    round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
+                    cycle_id TEXT NOT NULL,
+                    phase TEXT NOT NULL CHECK(phase IN ('start', 'end')),
+                    captured_at TEXT NOT NULL,
+                    meter_json TEXT NOT NULL,
+                    delta_json TEXT,
+                    UNIQUE(round_id, cycle_id, phase)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_usage_meter_round_cycle
+                    ON usage_meter_snapshots(round_id, captured_at, id);
+
                 CREATE TABLE IF NOT EXISTS round_agent_state (
                     round_id TEXT NOT NULL REFERENCES rounds(id) ON DELETE CASCADE,
                     agent_id TEXT NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
@@ -2831,6 +2846,103 @@ class Database:
             tasks.append(item)
         return {"tasks": tasks}
 
+    async def get_open_usage_meter_cycle(
+        self, round_id: str
+    ) -> dict[str, Any] | None:
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT * FROM usage_meter_snapshots
+                   WHERE round_id=?
+                   ORDER BY captured_at DESC, id DESC
+                   LIMIT 1""",
+                (round_id,),
+            )
+        if not rows or rows[0]["phase"] != "start":
+            return None
+        row = rows[0]
+        return {
+            "cycle_id": row["cycle_id"],
+            "start": json.loads(row["meter_json"]),
+            "captured_at": row["captured_at"],
+        }
+
+    async def start_usage_meter_cycle(
+        self, room_id: str, round_id: str, meter: dict[str, Any]
+    ) -> str:
+        cycle_id = new_id("usagecycle")
+        async with self.connect() as db:
+            await db.execute(
+                """INSERT INTO usage_meter_snapshots
+                   (id, room_id, round_id, cycle_id, phase, captured_at, meter_json)
+                   VALUES (?, ?, ?, ?, 'start', ?, ?)""",
+                (
+                    new_id("usage"),
+                    room_id,
+                    round_id,
+                    cycle_id,
+                    meter.get("captured_at") or utc_now(),
+                    json.dumps(meter, ensure_ascii=False),
+                ),
+            )
+            await db.commit()
+        return cycle_id
+
+    async def finish_usage_meter_cycle(
+        self,
+        room_id: str,
+        round_id: str,
+        cycle_id: str,
+        meter: dict[str, Any],
+        delta: dict[str, Any] | None,
+    ) -> None:
+        async with self.connect() as db:
+            await db.execute(
+                """INSERT OR IGNORE INTO usage_meter_snapshots
+                   (id, room_id, round_id, cycle_id, phase, captured_at, meter_json, delta_json)
+                   VALUES (?, ?, ?, ?, 'end', ?, ?, ?)""",
+                (
+                    new_id("usage"),
+                    room_id,
+                    round_id,
+                    cycle_id,
+                    meter.get("captured_at") or utc_now(),
+                    json.dumps(meter, ensure_ascii=False),
+                    json.dumps(delta, ensure_ascii=False) if delta is not None else None,
+                ),
+            )
+            await db.commit()
+
+    async def get_round_usage_meter_cycles(
+        self, round_id: str
+    ) -> list[dict[str, Any]]:
+        async with self.connect() as db:
+            rows = await db.execute_fetchall(
+                """SELECT * FROM usage_meter_snapshots
+                   WHERE round_id=?
+                   ORDER BY captured_at ASC, id ASC""",
+                (round_id,),
+            )
+        cycles: dict[str, dict[str, Any]] = {}
+        order: list[str] = []
+        for row in rows:
+            cycle_id = row["cycle_id"]
+            if cycle_id not in cycles:
+                cycles[cycle_id] = {"cycle_id": cycle_id, "status": "open"}
+                order.append(cycle_id)
+            item = cycles[cycle_id]
+            meter = json.loads(row["meter_json"])
+            if row["phase"] == "start":
+                item["start"] = meter
+                item["start_captured_at"] = row["captured_at"]
+            else:
+                item["end"] = meter
+                item["end_captured_at"] = row["captured_at"]
+                item["delta"] = (
+                    json.loads(row["delta_json"]) if row["delta_json"] else None
+                )
+                item["status"] = "complete"
+        return [cycles[cycle_id] for cycle_id in order]
+
     async def snapshot(
         self, room_id: str, *, event_limit: int | None = 2000
     ) -> dict[str, Any] | None:
@@ -2858,6 +2970,9 @@ class Database:
                 event for event in room["events"] if event.get("round_id") == round_item["id"]
             ]
             round_item["agent_state"] = await self.get_round_agent_states(round_item["id"])
+            round_item["usage_cycles"] = await self.get_round_usage_meter_cycles(
+                round_item["id"]
+            )
             if round_item.get("work_model_version", 1) == 2:
                 round_item["transaction_state"] = await self.get_round_transaction_state(
                     round_item["id"]

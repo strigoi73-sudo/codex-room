@@ -288,6 +288,54 @@ class CodexAgentAdapter:
             raw["runtime"] = runtime_identity
         return raw
 
+    async def read_account_usage_meter(self) -> dict[str, Any]:
+        """Read native account/rate-limit meters without purchasing model cognition."""
+        self._require_client()
+        low_level = getattr(self._client, "_client", None)
+        request = getattr(low_level, "request", None)
+        if not callable(request):
+            unavailable = {"status": "unavailable", "error_type": "request_unavailable"}
+            return {
+                "rate_limits": unavailable,
+                "account_usage": dict(unavailable),
+            }
+        try:
+            from openai_codex.generated.v2_all import (
+                GetAccountRateLimitsResponse,
+                GetAccountTokenUsageResponse,
+            )
+        except (ImportError, AttributeError) as exc:
+            unavailable = {"status": "unavailable", "error_type": type(exc).__name__}
+            return {
+                "rate_limits": unavailable,
+                "account_usage": dict(unavailable),
+            }
+
+        async def read(method: str, response_model: type[Any]) -> dict[str, Any]:
+            try:
+                response = await request(method, {}, response_model=response_model)
+                if hasattr(response, "model_dump"):
+                    payload = response.model_dump(mode="json", by_alias=True)
+                elif isinstance(response, Mapping):
+                    payload = dict(response)
+                else:
+                    return {
+                        "status": "unavailable",
+                        "error_type": "unsupported_response",
+                    }
+                return {"status": "available", "data": payload}
+            except Exception as exc:
+                return {"status": "unavailable", "error_type": type(exc).__name__}
+
+        rate_limits, account_usage = await asyncio.gather(
+            read("account/rateLimits/read", GetAccountRateLimitsResponse),
+            read("account/usage/read", GetAccountTokenUsageResponse),
+        )
+        return {
+            "rate_limits": rate_limits,
+            "account_usage": account_usage,
+        }
+
     async def list_execution_configs(self) -> dict[str, dict[str, str]]:
         """Return every native Codex model/effort combination exposed by model/list."""
         self._require_client()

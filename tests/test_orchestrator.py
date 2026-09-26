@@ -1820,3 +1820,141 @@ async def test_agent_prompt_prefers_continuation_economy_before_registry_overhea
     assert "run each registry list/inspect operation" not in prompt
     assert "invoking the relevant ones separately" not in prompt
     assert "codex-room-cap assert-file RELATIVE_PATH" not in prompt
+
+
+@pytest.mark.asyncio
+async def test_round_usage_meter_records_start_end_delta_and_reopen_cycle(runtime_factory):
+    adapter = FakeAgentAdapter(
+        {
+            "agent_a": [
+                (Outcome.PASS, ""),
+                (Outcome.PASS, ""),
+            ]
+        }
+    )
+    meter_reads = iter(
+        [
+            {
+                "rate_limits": {
+                    "status": "available",
+                    "data": {
+                        "ordinaryUsageAllowed": True,
+                        "rateLimits": {
+                            "limitId": "codex",
+                            "primary": {
+                                "usedPercent": 10,
+                                "windowDurationMins": 300,
+                                "resetsAt": 12345,
+                            },
+                        },
+                    },
+                },
+                "account_usage": {
+                    "status": "available",
+                    "data": {"summary": {"lifetimeTokens": 1000}},
+                },
+            },
+            {
+                "rate_limits": {
+                    "status": "available",
+                    "data": {
+                        "ordinaryUsageAllowed": True,
+                        "rateLimits": {
+                            "limitId": "codex",
+                            "primary": {
+                                "usedPercent": 20,
+                                "windowDurationMins": 300,
+                                "resetsAt": 12345,
+                            },
+                        },
+                    },
+                },
+                "account_usage": {
+                    "status": "available",
+                    "data": {"summary": {"lifetimeTokens": 1500}},
+                },
+            },
+            {
+                "rate_limits": {
+                    "status": "available",
+                    "data": {
+                        "ordinaryUsageAllowed": True,
+                        "rateLimits": {
+                            "limitId": "codex",
+                            "primary": {
+                                "usedPercent": 20,
+                                "windowDurationMins": 300,
+                                "resetsAt": 12345,
+                            },
+                        },
+                    },
+                },
+                "account_usage": {
+                    "status": "available",
+                    "data": {"summary": {"lifetimeTokens": 1500}},
+                },
+            },
+            {
+                "rate_limits": {
+                    "status": "available",
+                    "data": {
+                        "ordinaryUsageAllowed": True,
+                        "rateLimits": {
+                            "limitId": "codex",
+                            "primary": {
+                                "usedPercent": 25,
+                                "windowDurationMins": 300,
+                                "resetsAt": 12345,
+                            },
+                        },
+                    },
+                },
+                "account_usage": {
+                    "status": "available",
+                    "data": {"summary": {"lifetimeTokens": 1700}},
+                },
+            },
+        ]
+    )
+
+    async def read_account_usage_meter():
+        return next(meter_reads)
+
+    adapter.read_account_usage_meter = read_account_usage_meter
+    runtime = await runtime_factory(adapter, "round-usage-meter.db")
+    room = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Measure provider usage",
+            starting_agent="agent_a",
+            max_consecutive_passes=1,
+        )
+    )
+    room_id = room["id"]
+    await wait_until(lambda: _room_has_status(runtime, room_id, RoomStatus.FINISHED))
+
+    first = await runtime.db.snapshot(room_id, event_limit=None)
+    cycles = first["active_round"]["usage_cycles"]
+    assert len(cycles) == 1
+    assert cycles[0]["status"] == "complete"
+    assert cycles[0]["delta"]["lifetime_tokens_delta"] == 500
+    five_hour = cycles[0]["delta"]["rate_limit_window_deltas"][0]
+    assert five_hour["window_duration_mins"] == 300
+    assert five_hour["before_used_percent"] == 10
+    assert five_hour["after_used_percent"] == 20
+    assert five_hour["delta_percentage_points"] == 10
+
+    await runtime.observer_message(
+        room_id,
+        ObserverMessageRequest(content="Run one more measured cycle.", target="agent_a"),
+    )
+    await wait_until(lambda: _room_has_status(runtime, room_id, RoomStatus.FINISHED))
+
+    second = await runtime.db.snapshot(room_id, event_limit=None)
+    cycles = second["active_round"]["usage_cycles"]
+    assert len(cycles) == 2
+    assert cycles[1]["status"] == "complete"
+    assert cycles[1]["delta"]["lifetime_tokens_delta"] == 200
+    assert (
+        cycles[1]["delta"]["rate_limit_window_deltas"][0]["delta_percentage_points"]
+        == 5
+    )

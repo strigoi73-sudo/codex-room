@@ -76,6 +76,7 @@ from .models import (
 from .runtime_info import collect_runtime_provenance
 from .room_skills import inherit_room_local_skills, summarize_room_local_skills
 from .transaction_evidence import execute_source_evidence
+from .usage_meter import normalize_usage_meter, usage_meter_delta
 
 
 @dataclass(slots=True)
@@ -874,6 +875,7 @@ class RoomRuntime:
             )
             await self.db.cancel_pending_deliveries(room_id, room["discussion_id"])
             await self.db.cancel_transaction_work(room_id, room["discussion_id"])
+            await self._finish_usage_meter_cycle(room_id, room["discussion_id"])
             round_item = await self.db.prepare_round(room_id, request)
             await self._record_round_preparation(room_id, round_item)
             await self.publish_state(room_id)
@@ -975,6 +977,7 @@ class RoomRuntime:
 
     async def _activate_round(self, room_id: str, round_id: str) -> None:
         round_item = await self.db.start_round(room_id, round_id)
+        await self._start_usage_meter_cycle(room_id, round_id)
         started = await self.db.create_event(
             room_id,
             "round_started",
@@ -1039,6 +1042,7 @@ class RoomRuntime:
             room = await self._required_room(room_id)
             if room["status"] == RoomStatus.FINISHED:
                 await self.db.reopen_finished_room(room_id)
+                await self._start_usage_meter_cycle(room_id, room["active_round_id"])
                 await self._system_event(
                     room_id,
                     "discussion_reopened",
@@ -1162,6 +1166,7 @@ class RoomRuntime:
             else:
                 await self.db.set_room_status(room_id, RoomStatus.RUNNING)
                 await self.db.resume_active_round(room_id)
+            await self._start_usage_meter_cycle(room_id, room["active_round_id"])
             await self._system_event(room_id, "room_resumed", "Room resumed.")
             round_item = await self.db.get_round(room["active_round_id"])
             transactional = bool(
@@ -1229,6 +1234,7 @@ class RoomRuntime:
                 room_id, room["discussion_id"]
             )
             await self.db.stop_active_round(room_id, reason)
+            await self._finish_usage_meter_cycle(room_id, room["discussion_id"])
             for agent in agents:
                 slot = self._worker_slots.get((room_id, agent["agent_key"]))
                 retired = (
@@ -1328,6 +1334,7 @@ class RoomRuntime:
                 raise RuntimeError("Reset returned duplicate Codex thread IDs")
             await self.db.replace_agent_threads(room_id, new_ids)
             _, discussion_id = await self.db.begin_new_topic(room_id, room["topic"])
+            await self._start_usage_meter_cycle(room_id, discussion_id)
             reset_event = await self.db.create_event(
                 room_id,
                 "room_reset",
@@ -5464,11 +5471,51 @@ class RoomRuntime:
                 )
         return boundaries
 
+    async def _read_usage_meter(self) -> dict[str, Any] | None:
+        reader = getattr(self.adapter, "read_account_usage_meter", None)
+        if not callable(reader):
+            return None
+        captured_at = utc_now()
+        try:
+            raw = await reader()
+        except Exception as exc:
+            unavailable = {"status": "unavailable", "error_type": type(exc).__name__}
+            raw = {
+                "rate_limits": unavailable,
+                "account_usage": dict(unavailable),
+            }
+        return normalize_usage_meter(raw, captured_at=captured_at)
+
+    async def _start_usage_meter_cycle(self, room_id: str, round_id: str) -> None:
+        if await self.db.get_open_usage_meter_cycle(round_id) is not None:
+            return
+        meter = await self._read_usage_meter()
+        if meter is None:
+            return
+        await self.db.start_usage_meter_cycle(room_id, round_id, meter)
+
+    async def _finish_usage_meter_cycle(self, room_id: str, round_id: str) -> None:
+        open_cycle = await self.db.get_open_usage_meter_cycle(round_id)
+        if open_cycle is None:
+            return
+        meter = await self._read_usage_meter()
+        if meter is None:
+            return
+        delta = usage_meter_delta(open_cycle["start"], meter)
+        await self.db.finish_usage_meter_cycle(
+            room_id,
+            round_id,
+            open_cycle["cycle_id"],
+            meter,
+            delta,
+        )
+
     async def _close_discussion(
         self, room_id: str, discussion_id: str, reason: str, content: str
     ) -> None:
         event = await self.db.close_discussion(room_id, discussion_id, reason, content)
         self._publish_event(event)
+        await self._finish_usage_meter_cycle(room_id, discussion_id)
 
     async def _handle_turn_failure(
         self,
