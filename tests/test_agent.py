@@ -1670,7 +1670,7 @@ def test_safe_activity_promotes_direct_source_bundle_cli() -> None:
 
 
 class ModelListClient:
-    async def model_list(self, include_hidden: bool = False):
+    async def models(self, include_hidden: bool = False):
         assert include_hidden is True
         payload = {
             "data": [
@@ -1746,7 +1746,7 @@ async def test_run_agent_unrestricted_policy_bypasses_room_astra_guard(tmp_path:
 
 
 class PaginatedModelListClient:
-    async def model_list(self, include_hidden: bool = False):
+    async def models(self, include_hidden: bool = False):
         assert include_hidden is True
         payload = {
             "data": [
