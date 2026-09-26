@@ -7016,7 +7016,13 @@ class Database:
         return result
 
     async def close_discussion(
-        self, room_id: str, discussion_id: str, reason: str, content: str
+        self,
+        room_id: str,
+        discussion_id: str,
+        reason: str,
+        content: str,
+        *,
+        usage_meter_end: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Atomically close a live discussion and write its audit event."""
         event_id = new_id("event")
@@ -7056,6 +7062,32 @@ class Database:
                    WHERE room_id=?""",
                 (AgentStatus.FINISHED, now, room_id),
             )
+            if usage_meter_end is not None:
+                meter = usage_meter_end.get("meter")
+                cycle_id = usage_meter_end.get("cycle_id")
+                if isinstance(meter, dict) and isinstance(cycle_id, str) and cycle_id:
+                    await db.execute(
+                        """INSERT OR IGNORE INTO usage_meter_snapshots
+                           (id, room_id, round_id, cycle_id, phase, captured_at,
+                            meter_json, delta_json)
+                           VALUES (?, ?, ?, ?, 'end', ?, ?, ?)""",
+                        (
+                            new_id("usage"),
+                            room_id,
+                            discussion_id,
+                            cycle_id,
+                            meter.get("captured_at") or now,
+                            json.dumps(meter, ensure_ascii=False),
+                            (
+                                json.dumps(
+                                    usage_meter_end.get("delta"),
+                                    ensure_ascii=False,
+                                )
+                                if usage_meter_end.get("delta") is not None
+                                else None
+                            ),
+                        ),
+                    )
             sequence_cursor = await db.execute(
                 """SELECT COALESCE(MAX(sequence_no), 0) + 1 AS next_sequence
                    FROM events WHERE room_id=?""",

@@ -5513,9 +5513,24 @@ class RoomRuntime:
     async def _close_discussion(
         self, room_id: str, discussion_id: str, reason: str, content: str
     ) -> None:
-        event = await self.db.close_discussion(room_id, discussion_id, reason, content)
+        usage_meter_end: dict[str, Any] | None = None
+        open_cycle = await self.db.get_open_usage_meter_cycle(discussion_id)
+        if open_cycle is not None:
+            meter = await self._read_usage_meter()
+            if meter is not None:
+                usage_meter_end = {
+                    "cycle_id": open_cycle["cycle_id"],
+                    "meter": meter,
+                    "delta": usage_meter_delta(open_cycle["start"], meter),
+                }
+        event = await self.db.close_discussion(
+            room_id,
+            discussion_id,
+            reason,
+            content,
+            usage_meter_end=usage_meter_end,
+        )
         self._publish_event(event)
-        await self._finish_usage_meter_cycle(room_id, discussion_id)
 
     async def _handle_turn_failure(
         self,
