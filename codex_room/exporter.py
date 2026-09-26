@@ -48,7 +48,15 @@ def as_markdown(snapshot: dict[str, Any]) -> str:
         )
         usage_cycles = round_item.get("usage_cycles") or []
         if usage_cycles:
-            lines.extend(["### Provider usage cycles", ""])
+            lines.extend(
+                [
+                    "### Provider usage cycles",
+                    "",
+                    "_These are account-level provider-meter snapshots. Concurrent Codex activity "
+                    "outside this Room can contribute to the observed delta._",
+                    "",
+                ]
+            )
             for cycle_index, cycle in enumerate(usage_cycles, start=1):
                 start = cycle.get("start") or {}
                 end = cycle.get("end") or {}
