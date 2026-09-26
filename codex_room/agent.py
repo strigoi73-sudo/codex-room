@@ -289,7 +289,7 @@ class CodexAgentAdapter:
     async def list_execution_configs(self) -> dict[str, dict[str, str]]:
         """Return every native Codex model/effort combination exposed by model/list."""
         self._require_client()
-        response = await self._client.model_list(include_hidden=True)
+        response = await self._client.models(include_hidden=True)
         if hasattr(response, "model_dump"):
             raw = response.model_dump(mode="json", by_alias=False)
         elif isinstance(response, Mapping):
