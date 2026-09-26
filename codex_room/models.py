@@ -207,6 +207,10 @@ class DelegationRequest(BaseModel):
             raise ValueError(
                 "fresh_context cannot be combined with context_from_assignment_id"
             )
+        if self.config in EXCEPTIONAL_C_EXECUTION_CONFIGS:
+            raise ValueError(
+                "Exceptional C execution configs cannot be assigned directly to peers"
+            )
         return self
 
 
