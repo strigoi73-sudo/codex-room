@@ -68,7 +68,7 @@ class FakeAgentAdapter:
         self.profile_rebind_error = profile_rebind_error
         self.turn_id_namespace = turn_id_namespace
         self.tool_inventory = tool_inventory
-        self.execution_configs = execution_configs or {
+        self.execution_configs = execution_configs if execution_configs is not None else {
             "luna-low": {
                 "model": "gpt-5.6-luna",
                 "reasoning_effort": "low",
