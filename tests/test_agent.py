@@ -1742,3 +1742,32 @@ async def test_run_agent_unrestricted_policy_bypasses_room_astra_guard(tmp_path:
 
     assert thread.turn_kwargs["model"] == "gpt-6-astra"
     assert thread.turn_kwargs["effort"] == "high"
+
+
+
+class PaginatedModelListClient:
+    async def model_list(self, include_hidden: bool = False):
+        assert include_hidden is True
+        payload = {
+            "data": [
+                {
+                    "model": "gpt-5.6-sol",
+                    "display_name": "Sol",
+                    "supported_reasoning_efforts": [
+                        {"reasoning_effort": "high"},
+                    ],
+                    "default_reasoning_effort": "high",
+                }
+            ],
+            "next_cursor": "more-models",
+        }
+        return SimpleNamespace(model_dump=lambda **_kwargs: payload)
+
+
+@pytest.mark.asyncio
+async def test_list_execution_configs_rejects_partial_paginated_catalog():
+    adapter = CodexAgentAdapter()
+    adapter._client = PaginatedModelListClient()
+
+    with pytest.raises(RuntimeError, match="partial native catalog"):
+        await adapter.list_execution_configs()
