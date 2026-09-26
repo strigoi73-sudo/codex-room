@@ -77,14 +77,13 @@ Legacy work-model-v1 code/tests may remain internally for historical compatibili
 
 ## Model allocation
 
-The compatibility/default execution boundary remains **Terra/high**. Agent C can explicitly allocate delegated peer work to one of the admitted bounded configurations:
+New Rooms use the **Default** model policy unless the principal explicitly selects **Unrestricted model access** during Room setup.
 
-- `luna-medium`
-- `terra-medium`
-- `terra-high`
-- `sol-medium`
+Under the default policy, the compatibility execution boundary remains **Terra/high** and C allocates among the admitted bounded configurations. Stronger cognition is available when complexity, uncertainty, risk, or verification trouble justifies it. Astra remains default-denied; an explicit Astra model direction in the opening Room prompt authorizes Astra Low/Medium/High for that conversation lineage, including normal rollover successors. Exceptional C-only cognition retains its Task-scoped principal-approval rules.
 
-Routine bounded delegated work is guided toward lower-cost cognition when sufficient. Stronger configurations are available when complexity, uncertainty, risk, or verification trouble justifies them. **Astra is default-denied; an explicit Astra model direction in the opening Room prompt authorizes Astra Low/Medium/High for that conversation lineage, including normal rollover successors.** Later messages cannot unlock Astra in an unauthorized lineage. There is no automatic model router.
+When **Unrestricted model access** is selected, CORE snapshots the native Codex model catalog and every reasoning effort exposed for those models at Room creation. C may then allocate any snapshotted native model/effort configuration to A, B, or C without the default Room model-family, peer-role, Astra, or exceptional-cognition restrictions. C still allocates cognition economically; unrestricted authorization does not mean strongest-by-default. The policy and exact catalog persist with normal rollover successors, and Room creation fails closed if a complete usable native catalog cannot be established.
+
+There is no automatic model router: C remains the model-allocation decision maker.
 
 ## Deterministic capabilities
 

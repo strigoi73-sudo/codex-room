@@ -62,6 +62,7 @@ def test_http_create_state_and_exports(tmp_path):
         assert payload["active_round"]["starting_agent"] == "agent_c"
         assert payload["active_round"]["work_model_version"] == 2
         assert payload["active_round"]["provider_context_mode"] == "assignment_thread"
+        assert payload["metadata"]["model_policy"] == "default"
 
         room_id = payload["id"]
         state = client.get(f"/api/rooms/{room_id}")
@@ -331,3 +332,69 @@ def test_snapshot_returns_latest_window_and_export_returns_full_history(tmp_path
         assert any(event["id"] == "bulk-1" for event in exported["events"])
         assert exported["events"][-1]["id"] == "bulk-2005"
 
+
+
+
+def test_http_unrestricted_model_policy_snapshots_native_catalog(tmp_path):
+    adapter = FakeAgentAdapter(
+        execution_configs={
+            "sol-max": {
+                "model": "gpt-5.6-sol",
+                "reasoning_effort": "max",
+                "display_name": "Sol",
+            },
+            "native:gpt-test-frontier:ultra": {
+                "model": "gpt-test-frontier",
+                "reasoning_effort": "ultra",
+                "display_name": "Test Frontier",
+            },
+        }
+    )
+    app = create_app(
+        database_path=tmp_path / "unrestricted-api.db",
+        data_root=tmp_path / "data",
+        adapter=adapter,
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/rooms",
+            json={
+                "title": "Unrestricted",
+                "topic": "Use normal coordination.",
+                "auto_start": False,
+                "model_policy": "unrestricted",
+            },
+        )
+
+    assert response.status_code == 201, response.text
+    metadata = response.json()["metadata"]
+    assert metadata["model_policy"] == "unrestricted"
+    assert metadata["astra_authorized"] is True
+    assert metadata["astra_authorization"]["source"] == (
+        "room_setup_unrestricted_model_access"
+    )
+    assert metadata["unrestricted_execution_configs"] == adapter.execution_configs
+
+
+def test_http_unrestricted_model_policy_fails_closed_without_native_catalog(tmp_path):
+    adapter = FakeAgentAdapter(execution_configs={})
+    app = create_app(
+        database_path=tmp_path / "unrestricted-empty-api.db",
+        data_root=tmp_path / "data",
+        adapter=adapter,
+    )
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/rooms",
+            json={
+                "title": "Unrestricted",
+                "topic": "No native catalog is available.",
+                "auto_start": False,
+                "model_policy": "unrestricted",
+            },
+        )
+
+    assert response.status_code == 503
+    assert "no usable model/effort configurations" in response.json()["detail"].lower()

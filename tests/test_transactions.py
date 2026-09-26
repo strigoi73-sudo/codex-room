@@ -3024,3 +3024,107 @@ async def test_recover_interrupted_work_settles_nonrunning_assignment_execution_
     agent_c = await runtime.db.get_agent(room_id, "agent_c")
     assert agent_c is not None
     assert agent_c["status"] == AgentStatus.IDLE
+
+
+
+@pytest.mark.asyncio
+async def test_transaction_unrestricted_policy_allows_native_peer_and_self_configs(
+    transaction_runtime_factory,
+):
+    native_config = "native:gpt-test-frontier:ultra"
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                message="Use the native unrestricted configuration.",
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Return the unrestricted result.",
+                        "config": native_config,
+                    }
+                ],
+                next_self_config=native_config,
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated unrestricted result.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Unrestricted peer result.",
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "unrestricted-transaction.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Exercise unrestricted native model access.",
+            model_policy="unrestricted",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_c"]) == 2
+    assert len(adapter.calls["agent_a"]) == 1
+    assert adapter.calls["agent_c"][0]["model"] == "gpt-5.6-terra"
+    assert adapter.calls["agent_c"][1]["model"] == "gpt-test-frontier"
+    assert adapter.calls["agent_c"][1]["reasoning_effort"] == "ultra"
+    assert adapter.calls["agent_a"][0]["model"] == "gpt-test-frontier"
+    assert adapter.calls["agent_a"][0]["reasoning_effort"] == "ultra"
+    assert adapter.calls["agent_a"][0]["unrestricted_model_access"] is True
+    assert adapter.calls["agent_c"][1]["unrestricted_model_access"] is True
+    assert "UNRESTRICTED MODEL ACCESS" in adapter.calls["agent_c"][0]["prompt"]
+    assert native_config in adapter.calls["agent_c"][0]["prompt"]
+
+    current = await runtime.db.get_room(room_id)
+    assert current is not None
+    assert current["metadata"]["model_policy"] == "unrestricted"
+
+
+@pytest.mark.asyncio
+async def test_transaction_default_policy_rejects_native_unrestricted_peer_config(
+    transaction_runtime_factory,
+):
+    native_config = "native:gpt-test-frontier:ultra"
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.DELEGATE,
+            message="This native config should be rejected.",
+            delegations=[
+                {
+                    "target": "agent_a",
+                    "instruction": "This should never execute.",
+                    "config": native_config,
+                }
+            ],
+        )
+    )
+
+    runtime = await transaction_runtime_factory(adapter, "default-native-denied.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Ordinary default model policy.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _room_finished(runtime, room_id))
+
+    assert not adapter.calls["agent_a"]
+    events = await runtime.db.get_events(room_id)
+    assert any(
+        event["event_type"] == "agent_error"
+        and "execution configuration is unavailable in this Room"
+        in event["content"]
+        for event in events
+    )

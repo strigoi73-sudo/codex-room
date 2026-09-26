@@ -58,6 +58,8 @@ from .models import (
     EXCEPTIONAL_C_EXECUTION_CONFIGS,
     EXECUTION_CONFIGS,
     ORDINARY_EXECUTION_CONFIGS,
+    execution_config_catalog,
+    room_unrestricted_model_access,
     NewTopicRequest,
     ObserverMessageRequest,
     PrincipalReplyRequest,
@@ -354,7 +356,23 @@ class RoomRuntime:
         await self.adapter.close()
 
     async def create_room(self, request: CreateRoomRequest) -> dict[str, Any]:
-        room_id = await self.db.create_room(request)
+        unrestricted_execution_configs = None
+        if request.model_policy == "unrestricted":
+            try:
+                unrestricted_execution_configs = await self.adapter.list_execution_configs()
+            except Exception as exc:
+                raise RuntimeError(
+                    "Could not discover the native Codex model/effort catalog required "
+                    "for unrestricted model access"
+                ) from exc
+            if not unrestricted_execution_configs:
+                raise RuntimeError(
+                    "Codex exposed no usable model/effort configurations for unrestricted access"
+                )
+        room_id = await self.db.create_room(
+            request,
+            unrestricted_execution_configs=unrestricted_execution_configs,
+        )
         workspace = self.workspace(room_id)
         workspace.mkdir(parents=True, exist_ok=True)
         agents = await self.db.get_agents(room_id)
@@ -2148,6 +2166,8 @@ class RoomRuntime:
         agent: dict[str, Any],
         *,
         astra_authorized: bool = False,
+        unrestricted_model_access: bool = False,
+        available_execution_configs: dict[str, tuple[str, str]] | None = None,
     ) -> str:
         round_item = await self.db.get_round(batch["round_id"])
         if round_item is None:
@@ -2667,6 +2687,8 @@ class RoomRuntime:
                     (batch.get("execution") or {}).get("model"),
                     (batch.get("execution") or {}).get("reasoning_effort"),
                     astra_authorized=astra_authorized,
+                    unrestricted_model_access=unrestricted_model_access,
+                    available_execution_configs=available_execution_configs,
                 ),
             ]
         )
@@ -2931,10 +2953,10 @@ class RoomRuntime:
         if agent is None:
             return
         room_record = await self.db.get_room(room_id)
-        astra_authorized = bool(
-            room_record
-            and (room_record.get("metadata") or {}).get("astra_authorized") is True
-        )
+        room_metadata = (room_record or {}).get("metadata") or {}
+        astra_authorized = room_metadata.get("astra_authorized") is True
+        unrestricted_model_access = room_unrestricted_model_access(room_metadata)
+        available_execution_configs = execution_config_catalog(room_metadata)
         execution = batch.get("execution") or {}
         if execution.get("state") == "quarantined":
             slot = self._worker_slots.get((room_id, agent_key))
@@ -3022,7 +3044,11 @@ class RoomRuntime:
                 # Compose only after assignment-thread binding so C's first prompt can
                 # report exact-thread coordinator economics truthfully.
                 prompt = await self._assignment_prompt(
-                    batch, agent, astra_authorized=astra_authorized
+                    batch,
+                    agent,
+                    astra_authorized=astra_authorized,
+                    unrestricted_model_access=unrestricted_model_access,
+                    available_execution_configs=available_execution_configs,
                 )
 
                 if batch.get("usage_continuation"):
@@ -3067,6 +3093,7 @@ class RoomRuntime:
                             or ROOM_REASONING_EFFORT
                         ),
                         allow_astra=astra_authorized,
+                        unrestricted_model_access=unrestricted_model_access,
                         transactional=True,
                     )
                     if provider_context_mode == "assignment_thread"
@@ -3082,6 +3109,7 @@ class RoomRuntime:
                             or ROOM_REASONING_EFFORT
                         ),
                         allow_astra=astra_authorized,
+                        unrestricted_model_access=unrestricted_model_access,
                         transactional=True,
                     )
                 )
@@ -3210,8 +3238,13 @@ class RoomRuntime:
                         "CONSULT_PRINCIPAL is valid only for Agent C's root coordinator Assignment"
                     )
             if decision.next_self_config is not None:
+                if decision.next_self_config not in available_execution_configs:
+                    raise ValueError(
+                        "next_self_config is unavailable under this Room model policy"
+                    )
                 if (
-                    decision.next_self_config in ASTRA_EXECUTION_CONFIGS
+                    not unrestricted_model_access
+                    and decision.next_self_config in ASTRA_EXECUTION_CONFIGS
                     and not astra_authorized
                 ):
                     raise ValueError(
@@ -3227,7 +3260,10 @@ class RoomRuntime:
                     raise ValueError(
                         "next_self_config is valid only for Agent C's root coordinator Assignment"
                     )
-                if decision.next_self_config in EXCEPTIONAL_C_EXECUTION_CONFIGS:
+                if (
+                    not unrestricted_model_access
+                    and decision.next_self_config in EXCEPTIONAL_C_EXECUTION_CONFIGS
+                ):
                     if (
                         C_COGNITION_CEILING_RANK[decision.next_self_config]
                         > C_COGNITION_CEILING_RANK.get(
@@ -3238,6 +3274,10 @@ class RoomRuntime:
                             "Exceptional next_self_config exceeds this Task's approved cognition ceiling"
                         )
             if decision.requested_task_cognition_ceiling is not None:
+                if unrestricted_model_access:
+                    raise ValueError(
+                        "Task cognition escalation is unnecessary when unrestricted model access is enabled"
+                    )
                 if decision.action != TransactionAction.CONSULT_PRINCIPAL:
                     raise ValueError(
                         "Task cognition escalation requires CONSULT_PRINCIPAL"
@@ -3254,9 +3294,12 @@ class RoomRuntime:
                     raise ValueError(
                         "Requested Task cognition ceiling is already authorized"
                     )
-            allowed_peer_configs = set(ORDINARY_EXECUTION_CONFIGS)
-            if astra_authorized:
-                allowed_peer_configs.update(ASTRA_EXECUTION_CONFIGS)
+            if unrestricted_model_access:
+                allowed_peer_configs = set(available_execution_configs)
+            else:
+                allowed_peer_configs = set(ORDINARY_EXECUTION_CONFIGS)
+                if astra_authorized:
+                    allowed_peer_configs.update(ASTRA_EXECUTION_CONFIGS)
             for item in delegations:
                 if item["target"] == agent_key or item["target"] not in participants:
                     raise ValueError("Transaction delegation must target an available peer")
@@ -3265,7 +3308,8 @@ class RoomRuntime:
                         "Only Agent C may select a peer execution configuration"
                     )
                 if (
-                    item.get("config") in ASTRA_EXECUTION_CONFIGS
+                    not unrestricted_model_access
+                    and item.get("config") in ASTRA_EXECUTION_CONFIGS
                     and not astra_authorized
                 ):
                     raise ValueError(
@@ -5791,6 +5835,8 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
         current_effort: str | None = None,
         *,
         astra_authorized: bool = False,
+        unrestricted_model_access: bool = False,
+        available_execution_configs: dict[str, tuple[str, str]] | None = None,
     ) -> str:
         if agent_key != "agent_c":
             return (
@@ -5798,6 +5844,30 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
                 "set each delegation record's config to null. If stronger cognition "
                 "appears necessary, say why in your substantive result so C can decide."
             )
+        current = (
+            f"{current_model}/{current_effort}"
+            if current_model and current_effort
+            else "the compatibility Terra/high fallback"
+        )
+        if unrestricted_model_access:
+            choices = ", ".join(sorted((available_execution_configs or {}).keys()))
+            return (
+                "The human principal enabled UNRESTRICTED MODEL ACCESS when this Room "
+                "was created. CORE's native Codex model/list snapshot is authoritative "
+                "for this lineage. Your current execution used "
+                f"{current}. For your own next nonterminal execution, next_self_config "
+                "may use any exact config ID in this catalog: "
+                f"{choices}. Each peer DELEGATE config may use any exact ID in the same "
+                "catalog. These choices include every model/reasoning-effort combination "
+                "Codex exposed through native model/list at Room creation; Room-side Astra gates, "
+                "peer-vs-C model restrictions, and Task cognition ceilings do not apply. "
+                "requested_task_cognition_ceiling must remain null because advance "
+                "principal authorization was granted by the Room-creation toggle. A null "
+                "config retains the ordinary Terra/high compatibility fallback. Continue "
+                "to allocate cognition economically: use stronger or more expensive "
+                "configurations only when they are expected to add material value."
+            )
+
         peer_configs = list(ORDINARY_EXECUTION_CONFIGS)
         allowed_self = list(ORDINARY_EXECUTION_CONFIGS)
         if astra_authorized:
@@ -5809,11 +5879,6 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
             config
             for config in EXCEPTIONAL_C_EXECUTION_CONFIGS
             if C_COGNITION_CEILING_RANK[config] <= ceiling_rank
-        )
-        current = (
-            f"{current_model}/{current_effort}"
-            if current_model and current_effort
-            else "the compatibility Terra/high fallback"
         )
         astra_note = (
             "The opening Room prompt explicitly authorized Astra for this conversation "

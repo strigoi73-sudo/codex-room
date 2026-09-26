@@ -103,6 +103,12 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert "Approve for this Task" in javascript
     assert "Task cognition escalation approved" in javascript
     assert "cognition_approval" in javascript
+    assert 'name="model_policy"' in html
+    assert 'value="unrestricted"' in html
+    assert "Unrestricted model access" in html
+    assert 'id="model-policy-summary"' in html
+    assert 'room.metadata?.model_policy === "unrestricted"' in javascript
+    assert 'Model policy · ${unrestrictedModelAccess ? "Unrestricted" : "Default"}' in javascript
 
 
 def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Path) -> None:
@@ -125,6 +131,9 @@ def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Pa
         ids = {agent["agent_key"]: agent["thread_id"] for agent in created["agents"]}
         assert set(ids) == {"agent_a", "agent_b", "agent_c"}
         assert len(set(ids.values())) == 3
+        agent_c = next(agent for agent in created["agents"] if agent["agent_key"] == "agent_c")
+        assert "Follow CORE's model-policy block" in agent_c["developer_instructions"]
+        assert "Sol/Ultra, Astra, and legacy GPT-5.5 are not available" not in agent_c["developer_instructions"]
         assert created["active_round"]["starting_agent"] == "agent_c"
         assert adapter.calls["agent_c"] == []
 

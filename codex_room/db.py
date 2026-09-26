@@ -31,7 +31,9 @@ from .models import (
     EXCEPTIONAL_C_EXECUTION_CONFIGS,
     EXECUTION_CONFIGS,
     ORDINARY_EXECUTION_CONFIGS,
+    execution_config_catalog,
     initial_prompt_authorizes_astra,
+    room_unrestricted_model_access,
 )
 
 
@@ -934,20 +936,42 @@ class Database:
                     ),
                 )
 
-    async def create_room(self, request: CreateRoomRequest) -> str:
+    async def create_room(
+        self,
+        request: CreateRoomRequest,
+        *,
+        unrestricted_execution_configs: dict[str, dict[str, str]] | None = None,
+    ) -> str:
         room_id = new_id("room")
         round_id = new_id("round")
         now = utc_now()
         a_id = f"{room_id}:agent_a"
         b_id = f"{room_id}:agent_b"
         c_id = f"{room_id}:agent_c"
-        astra_authorized = initial_prompt_authorizes_astra(request.topic)
+        unrestricted_model_access = request.model_policy == "unrestricted"
+        if unrestricted_model_access and not unrestricted_execution_configs:
+            raise ValueError(
+                "Unrestricted model access requires a non-empty native Codex model catalog"
+            )
+        astra_authorized = (
+            unrestricted_model_access
+            or initial_prompt_authorizes_astra(request.topic)
+        )
         room_metadata: dict[str, Any] = {
             "schema_version": 2,
             "created_by": "local_observer",
+            "model_policy": request.model_policy,
             "astra_authorized": astra_authorized,
         }
-        if astra_authorized:
+        if unrestricted_model_access:
+            room_metadata["unrestricted_execution_configs"] = (
+                unrestricted_execution_configs
+            )
+            room_metadata["astra_authorization"] = {
+                "source": "room_setup_unrestricted_model_access",
+                "scope": "conversation_lineage",
+            }
+        elif astra_authorized:
             room_metadata["astra_authorization"] = {
                 "source": "initial_room_prompt",
                 "scope": "conversation_lineage",
@@ -1185,6 +1209,7 @@ class Database:
                 "schema_version": 2,
                 "created_by": "room_rollover",
                 "rollover_state": "staging",
+                "model_policy": source_metadata.get("model_policy", "default"),
                 "lineage": {
                     "operation_id": operation_id,
                     "predecessor_room_id": source_room_id,
@@ -1197,6 +1222,10 @@ class Database:
             }
             if not predecessor_has_c:
                 successor_metadata["lineage"]["successor_added_participants"] = ["agent_c"]
+            if room_unrestricted_model_access(source_metadata):
+                successor_metadata["unrestricted_execution_configs"] = source_metadata.get(
+                    "unrestricted_execution_configs", {}
+                )
             if source_metadata.get("astra_authorized") is True:
                 successor_metadata["astra_authorized"] = True
                 successor_metadata["astra_authorization"] = {
@@ -3105,6 +3134,7 @@ class Database:
                 db,
                 """SELECT a.*, r.status AS room_status, r.active_round_id,
                           r.max_turns, r.lifecycle_version,
+                          r.metadata_json AS room_metadata_json,
                           ro.turn_count AS round_turn_count, ro.work_model_version,
                           ro.provider_context_mode
                    FROM agents a JOIN rooms r ON r.id=a.room_id
@@ -3219,7 +3249,8 @@ class Database:
             selected_effort = reasoning_effort
             config_id = assignment["execution_config_id"]
             if config_id:
-                resolved = EXECUTION_CONFIGS.get(config_id)
+                room_metadata = json.loads(agent["room_metadata_json"] or "{}")
+                resolved = execution_config_catalog(room_metadata).get(config_id)
                 if resolved is None:
                     await db.rollback()
                     raise RuntimeError("Assignment contains an unsupported execution config")
@@ -4298,6 +4329,8 @@ class Database:
                 else {}
             )
             astra_authorized = room_metadata.get("astra_authorized") is True
+            unrestricted_model_access = room_unrestricted_model_access(room_metadata)
+            available_execution_configs = execution_config_catalog(room_metadata)
             if execution["decision_recorded_at"] is not None:
                 await db.commit()
                 return {
@@ -4339,32 +4372,38 @@ class Database:
                     raise ValueError(
                         "Only Agent C's root coordinator Assignment may select next_self_config"
                     )
-                if next_self_config not in EXECUTION_CONFIGS:
+                if next_self_config not in available_execution_configs:
                     await db.rollback()
                     raise ValueError("next_self_config is unsupported")
-                if (
-                    next_self_config in ASTRA_EXECUTION_CONFIGS
-                    and not astra_authorized
-                ):
-                    await db.rollback()
-                    raise ValueError(
-                        "Astra execution was not authorized by the opening Room prompt"
-                    )
-                if next_self_config in EXCEPTIONAL_C_EXECUTION_CONFIGS:
-                    ceiling = (
-                        task_policy["c_cognition_ceiling"]
-                        if task_policy is not None
-                        else "sol-high"
-                    )
+                if not unrestricted_model_access:
                     if (
-                        C_COGNITION_CEILING_RANK.get(next_self_config, 99)
-                        > C_COGNITION_CEILING_RANK.get(ceiling, 0)
+                        next_self_config in ASTRA_EXECUTION_CONFIGS
+                        and not astra_authorized
                     ):
                         await db.rollback()
                         raise ValueError(
-                            "Exceptional next_self_config exceeds this Task's approved cognition ceiling"
+                            "Astra execution was not authorized by the opening Room prompt"
                         )
+                    if next_self_config in EXCEPTIONAL_C_EXECUTION_CONFIGS:
+                        ceiling = (
+                            task_policy["c_cognition_ceiling"]
+                            if task_policy is not None
+                            else "sol-high"
+                        )
+                        if (
+                            C_COGNITION_CEILING_RANK.get(next_self_config, 99)
+                            > C_COGNITION_CEILING_RANK.get(ceiling, 0)
+                        ):
+                            await db.rollback()
+                            raise ValueError(
+                                "Exceptional next_self_config exceeds this Task's approved cognition ceiling"
+                            )
             if requested_task_cognition_ceiling is not None:
+                if unrestricted_model_access:
+                    await db.rollback()
+                    raise ValueError(
+                        "Task cognition escalation is unnecessary when unrestricted model access is enabled"
+                    )
                 if action != "CONSULT_PRINCIPAL" or not is_root_c:
                     await db.rollback()
                     raise ValueError(
@@ -4484,11 +4523,15 @@ class Database:
                         await db.rollback()
                         raise ValueError(f"Delegation target {target_key} is unavailable")
                     config_id = item.get("config")
-                    allowed_peer_configs = set(ORDINARY_EXECUTION_CONFIGS)
-                    if astra_authorized:
-                        allowed_peer_configs.update(ASTRA_EXECUTION_CONFIGS)
+                    if unrestricted_model_access:
+                        allowed_peer_configs = set(available_execution_configs)
+                    else:
+                        allowed_peer_configs = set(ORDINARY_EXECUTION_CONFIGS)
+                        if astra_authorized:
+                            allowed_peer_configs.update(ASTRA_EXECUTION_CONFIGS)
                     if (
-                        config_id in ASTRA_EXECUTION_CONFIGS
+                        not unrestricted_model_access
+                        and config_id in ASTRA_EXECUTION_CONFIGS
                         and not astra_authorized
                     ):
                         await db.rollback()

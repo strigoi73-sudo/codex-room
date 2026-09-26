@@ -88,6 +88,11 @@ input:focus, textarea:focus, select:focus { border-color: #5d6470; box-shadow: 0
 .text-button { border: 0; padding: 8px 0 0; background: transparent; color: var(--muted); font-size: 11px; }
 .text-button:hover { color: var(--text); }
 .profile-hint { display: block; color: var(--muted); font-size: 10px; margin: -5px 0 12px 48px; }
+.model-policy-toggle { display: flex; gap: 12px; align-items: flex-start; margin: 22px 0; padding: 15px 16px; border: 1px solid var(--line); border-radius: 10px; background: #111317; text-transform: none; letter-spacing: normal; cursor: pointer; }
+.model-policy-toggle input { width: auto; flex: 0 0 auto; margin: 2px 0 0; padding: 0; accent-color: var(--observer); }
+.model-policy-toggle span { display: grid; gap: 4px; }
+.model-policy-toggle strong { color: var(--text); font-size: 12px; }
+.model-policy-toggle small { color: var(--muted); font-size: 11px; line-height: 1.45; font-weight: 400; text-transform: none; letter-spacing: normal; }
 .limits { margin: 22px 0; border: 1px solid var(--line); border-radius: 10px; padding: 14px; color: var(--muted); font-size: 12px; }
 .limits summary { cursor: pointer; }
 .limit-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 15px; padding-top: 15px; }

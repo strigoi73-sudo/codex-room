@@ -94,6 +94,7 @@ async def _finished_source(
     *,
     include_c: bool = False,
     topic: str = "source topic",
+    model_policy: str = "default",
 ) -> dict:
     snapshot = await runtime.create_room(
         CreateRoomRequest(
@@ -102,6 +103,7 @@ async def _finished_source(
             starting_agent="agent_a",
             max_consecutive_passes=1,
             auto_start=False,
+            model_policy=model_policy,
         )
     )
     if not include_c:
@@ -1147,7 +1149,7 @@ async def test_restart_recovers_staged_rollover_without_split_brain(
     )
     successor_id = reservation["successor_room_id"]
     runtime._materialize_rollover_workspace(  # noqa: SLF001 - exercise saga crash boundary
-        reservation["operation_id"], successor_id, None
+        reservation["operation_id"], source["id"], successor_id, None
     )
     inherit_room_custom_capabilities(
         runtime.data_root,
@@ -1254,7 +1256,7 @@ async def test_restart_aborts_fully_provisioned_rollover_if_staged_release_drift
     )
     successor_id = reservation["successor_room_id"]
     runtime._materialize_rollover_workspace(  # noqa: SLF001
-        reservation["operation_id"], successor_id, release
+        reservation["operation_id"], source["id"], successor_id, release
     )
     successor_agents = await runtime.db.get_agents(successor_id)
     expected_orphans: set[str] = set()
@@ -1282,3 +1284,48 @@ async def test_restart_aborts_fully_provisioned_rollover_if_staged_release_drift
         assert not recovered.workspace(successor_id).exists()
     finally:
         await recovered.close()
+
+
+
+@pytest.mark.asyncio
+async def test_rollover_preserves_unrestricted_model_policy_and_catalog(tmp_path):
+    adapter = FakeAgentAdapter(
+        execution_configs={
+            "sol-max": {
+                "model": "gpt-5.6-sol",
+                "reasoning_effort": "max",
+                "display_name": "Sol",
+            },
+            "native:gpt-test-frontier:ultra": {
+                "model": "gpt-test-frontier",
+                "reasoning_effort": "ultra",
+                "display_name": "Test Frontier",
+            },
+        }
+    )
+    runtime = RoomRuntime(Database(tmp_path / "unrestricted-rollover.db"), adapter, tmp_path / "data")
+    await runtime.initialize()
+    try:
+        source = await _finished_source(
+            runtime,
+            include_c=True,
+            topic="Unrestricted source lineage.",
+            model_policy="unrestricted",
+        )
+        source_metadata = source["metadata"]
+        assert source_metadata["model_policy"] == "unrestricted"
+
+        successor = await runtime.rollover(
+            source["id"],
+            RolloverRoomRequest(checkpoint="Carry unrestricted model policy forward."),
+        )
+
+        metadata = successor["metadata"]
+        assert metadata["model_policy"] == "unrestricted"
+        assert metadata["unrestricted_execution_configs"] == (
+            source_metadata["unrestricted_execution_configs"]
+        )
+        assert metadata["astra_authorized"] is True
+        assert metadata["astra_authorization"]["source"] == "inherited_room_lineage"
+    finally:
+        await runtime.close()

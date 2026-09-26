@@ -1,19 +1,41 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-25
+**Last updated:** 2026-09-26
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
 ## Operator summary
 
-- **Where are we?** I-030 — **same-Task conversational continuity repair** — is IN PROGRESS with implementation verified and merged; only natural debate-style runtime acceptance remains.
-- **What just happened?** PR #213 merged D-052 as `2985b714dce70e0fe7540e8b2e8b3eb3fc7a4c17` after principal exact-head verification of `03fb490d6b924f6268a29ceeda62a8f7bab6300a`. The focused continuity block and `verify-fast.cmd` passed; GitHub comparison showed zero file differences between the verified feature head and merge commit. See E-183.
-- **What is next?** Run one natural debate-style acceptance confirming that A/B can directly respond to prior public peer statements without context-recovery turns. If that passes, close I-030 and resume I-028.
-- **What remains behind it?** I-028 — the Codex Room utility gate — remains the broader product-value priority, but fair utility benchmarking should resume only after I-030 closes because conversational continuity is a prerequisite for evaluating Room's persistent-participant value.
-- **What is blocked?** Nothing technical is blocked; natural provider-backed acceptance is pending.
-- **What are we deliberately not doing?** We are not restoring a forever-growing full transcript, replaying mechanical/tool/economics events, weakening Task boundaries, or making cross-Task worker continuity automatic.
+- **Where are we?** I-031 — **principal-selectable unrestricted Room model access** — is the principal-selected active implementation. A feature branch now carries the Room-creation toggle, native Codex model discovery/snapshotting, runtime enforcement, rollover persistence, UI/export visibility, and focused regressions; exact-head principal verification is the next gate.
+- **What just happened?** Controlled Meridian trials showed materially different five-hour allowance consumption across fixed model policies, and an attempted unrestricted trial exposed that prompt parsing plus stale profile text could silently leave Astra unavailable. The principal chose a deterministic UI policy toggle instead of removing default restrictions globally. D-053 records that boundary.
+- **What is next?** Finish source/doc review, run the focused I-031 regression set plus `verify-fast.cmd` on the exact feature head, then merge only if the principal verification passes.
+- **What remains behind it?** I-030 remains open. Natural debate-style acceptance after D-052 showed same-worker continuity improved, but concurrent peer messages can still fall behind the public-delta boundary and trigger HISTORY recovery. After I-031 closes, return to that concurrency defect before resuming I-028 utility benchmarking.
+- **What is blocked?** Nothing conceptual is blocked; I-031 is awaiting exact-head verification after implementation review.
+- **What are we deliberately not doing?** We are not globally deleting default model safeguards, hard-coding a second unrestricted model list, or treating unrestricted authorization as a mandate to use maximum cognition.
 
 ## Current development state
+
+### I-031 — Principal-selectable unrestricted Room model access
+
+**Scope:** [Room setup UI / native model discovery / C model allocation / durable lineage policy]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** IMPLEMENTED ON FEATURE BRANCH / SOURCE REVIEW COMPLETE / EXACT-HEAD VERIFICATION PENDING
+
+**Decision:** D-053
+
+The principal selected a creation-time toggle rather than a global policy change:
+
+- unchecked/default Rooms retain D-039/D-051 behavior unchanged;
+- checked Rooms ask native Codex model discovery for the native model catalog and supported reasoning efforts, then snapshot that exact catalog into Room metadata;
+- C may allocate any snapshotted native model/effort configuration to A, B, or C;
+- unrestricted mode bypasses Room-side Astra gates, peer-versus-C config restrictions, and exceptional C Task cognition ceilings, while preserving C's responsibility to allocate cognition economically;
+- creation fails closed if native discovery is unavailable, empty, or demonstrably partial;
+- the setting is immutable after Room creation, survives restart through persisted metadata, and normal rollover successors inherit the exact policy/catalog;
+- Room UI and exports expose the active model policy.
+
+The implementation deliberately reuses native Codex `model/list` rather than creating a second Room-owned unrestricted catalog. Source review verified the pinned 0.154 native pagination contract and repaired the adapter integration before the verification freeze. Exact-head focused regression plus repository fast verification remain required before merge.
 
 ### I-030 — Same-Task conversational continuity repair
 
@@ -21,7 +43,7 @@
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURAL RUNTIME ACCEPTANCE PENDING
+**Reality / evidence:** IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURAL RUNTIME ACCEPTANCE PARTIAL — CONCURRENT PUBLIC-DELTA RACE REMAINS
 
 **Decision:** D-052
 
@@ -39,7 +61,7 @@ D-052 changes the worker boundary without returning to permanent transcript repl
 
 PR #213 merged the implementation after principal exact-head verification of `03fb490d6b924f6268a29ceeda62a8f7bab6300a`. The focused D-052 continuity regression block passed and `verify-fast.cmd` passed. GitHub comparison from that exact verified head to merge commit `2985b714dce70e0fe7540e8b2e8b3eb3fc7a4c17` reported zero file differences. See E-183.
 
-Remaining acceptance gate: one natural debate-style Room in which B can directly inspect/respond to A's prior public statement (and vice versa) without a recovery delegation/HISTORY detour.
+Natural provider-backed debate acceptance confirmed same-worker continuity but exposed a remaining concurrency race: a peer message published while another worker's provider execution is in flight can predate that worker's own result without ever having been supplied to its provider context, then be skipped by the next delta boundary and require HISTORY recovery. I-030 therefore remains open. The next repair should track what external public transcript was actually supplied to each worker context rather than inferring visibility from the worker's result sequence, with bounded-backlog semantics that cannot silently skip capped events.
 
 ### I-029 — Opening-prompt Astra opt-in
 
