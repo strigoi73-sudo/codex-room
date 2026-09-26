@@ -1709,7 +1709,7 @@ async def test_list_execution_configs_uses_native_model_effort_catalog():
         "reasoning_effort": "medium",
         "display_name": "Sol",
     }
-    assert catalog["sol-max"] == {
+    assert catalog["native:gpt-5.6-sol:max"] == {
         "model": "gpt-5.6-sol",
         "reasoning_effort": "max",
         "display_name": "Sol",
