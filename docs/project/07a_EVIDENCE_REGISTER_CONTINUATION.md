@@ -2841,3 +2841,33 @@ This does not mean C should avoid concurrency to conceal I-030. Independent para
 The debate itself recovered and completed normally. Both A and B ultimately chose to press the hypothetical button; B changed from its assigned opening no-press position, while A retained its final position but narrowed its justification. That outcome is incidental to the coordination evidence.
 
 **Assessment:** The natural God Button run supports amending D-035 so C considers both mechanical dependency and interaction value when choosing parallel versus sequential peer execution. It independently strengthens the natural evidence for the remaining I-030 concurrency race. I-034 should change only C's protected structural guidance and its composition regression; it must not add a debate-specific mode, deterministic scheduler, permanent A/B precedence, or serialization workaround for I-030.
+
+### E-189 — I-034 interaction-aware sequencing exact-head verification and merge
+**Date:** 2026-09-26
+**Status:** VERIFIED BY PRINCIPAL
+**Kind:** [CORE protected C instructions / coordination topology / exact-head local verification]
+**Decision:** D-035
+**Issue:** I-034
+
+The principal reported a successful exact-head verification of feature head `72ea8a50001862ed7de08d8f8f6eb61fa692358c` for the I-034 interaction-aware C sequencing refinement.
+
+The successful gate used a temporary full clone rather than a linked Git worktree because the repository verifier writes a temporary Bash script under `$repoRoot\.git`, while a linked worktree exposes `.git` as a file. Two earlier attempts had already established that the feature-specific structural regression passed; the final clone-based gate completed the full intended verification path successfully.
+
+The principal-reported successful gate established:
+
+- exact remote feature-head match and unchanged canonical base;
+- clean detached exact-head checkout in the temporary clone;
+- exact seven-file change scope;
+- `git diff --check`: PASS;
+- Python compilation of the changed structural instruction/test modules: PASS;
+- focused `tests/test_c_structural_coordination.py`: PASS;
+- repository-standard `verify-fast.cmd`: PASS;
+- final exact HEAD unchanged and tracked tree clean.
+
+The implementation changes only C's protected structural coordination instructions plus their regression coverage and maintained documentation. It adds **interaction value** to the existing D-035 dependency test for parallel-versus-sequential peer work, preserves explicit principal ordering, assigns no permanent precedence to A or B, and explicitly retains concurrency as a first-class behavior rather than a workaround target for I-030.
+
+PR #220 was marked ready only after the successful exact-head gate and merged with GitHub enforcing expected head `72ea8a50001862ed7de08d8f8f6eb61fa692358c`. Merge commit: `a63df21ccd910885df1dbf59b06c89ea012e4b58`. GitHub comparison from the verified feature head to the merge commit reported **zero changed files**.
+
+The earlier verification failures were non-product gate failures: first, trailing whitespace introduced in the new E-188 Markdown entry stopped `git diff --check`; second, WSL path conversion failed for a no-space temporary worktree path; third, the repository verifier's `.git`-directory assumption failed inside a linked worktree. These failures did not establish defects in the I-034 coordination behavior and were resolved without changing the verified feature semantics after the formatting correction.
+
+**Assessment:** I-034 / amended D-035 is implemented, principal exact-head verified, and merged. Active development returns to I-030's concurrent public-delta visibility repair.
