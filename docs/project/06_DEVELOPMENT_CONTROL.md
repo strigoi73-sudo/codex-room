@@ -6,9 +6,9 @@
 
 ## Operator summary
 
-- **Where are we?** I-033 — **compact advisory model-selection guidance for C** — is the principal-directed bounded insertion currently in verification on PR #219. I-030's concurrent public-delta continuity race remains the underlying active development priority immediately after this insertion.
-- **What just happened?** The principal selected D-055: C should receive a compact advisory description of available model families/reasoning efforts without creating a router, ranking, threshold, or escalation recipe. PR #219 implements that prompt-only layer on feature branch `feature/i033-model-selection-guide`; verification is not yet complete.
-- **What is next?** Exact-head verify I-033 / PR #219, then resume I-030 and repair the remaining concurrency defect in public-delta visibility before resuming I-028 utility benchmarking.
+- **Where are we?** I-033 — **compact advisory model-selection guidance for C** — is COMPLETE and merged. The active development priority is again I-030's concurrent public-delta continuity race.
+- **What just happened?** PR #219 merged I-033 after principal exact-head verification of `055afd4b0789b3137efa90ee4396aefaf4f458e2`. GitHub merged that exact expected head as `774a6e3caa6dd83c556e23fe6ffebca992c12961`, and comparison reported zero changed files between the verified feature head and merge commit. See E-186.
+- **What is next?** Resume I-030 and repair the remaining concurrency defect in public-delta visibility before resuming I-028 utility benchmarking.
 - **What remains behind it?** I-028 utility benchmarking remains behind I-030.
 - **What is blocked?** Nothing conceptual is blocked.
 - **What are we deliberately not doing?** We are not globally deleting default model safeguards, hard-coding a second unrestricted model list, or treating unrestricted authorization as a mandate to use maximum cognition.
@@ -19,9 +19,9 @@
 
 **Scope:** [C cognition allocation / model-policy prompt / native-catalog interpretation]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** IMPLEMENTED ON FEATURE BRANCH / PR OPEN / NEEDS EXACT-HEAD VERIFICATION
+**Reality / evidence:** IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED
 
 **Decision:** D-055
 
@@ -34,7 +34,7 @@ The principal selected a deliberately compact descriptive guide rather than a ri
 - unrestricted Rooms derive the guide from the snapshotted native catalog, but an unknown native model/effort remains selectable even when Codex Room has no maintained description for it;
 - native discovery, authorization, validation, persistence, rollover inheritance, and provider execution remain unchanged.
 
-PR #219 currently contains the implementation and focused regression coverage. Exact-head local verification is still required before merge. After this bounded insertion closes, resume I-030's public-delta concurrency repair.
+PR #219 was principal-verified at exact head `055afd4b0789b3137efa90ee4396aefaf4f458e2`. The focused gate passed the exact-head check, detached clean-worktree check, `git diff --check`, Python compilation, import smoke, the dedicated model-guidance tests, unrestricted native-config regression, default-policy native-config rejection, and default-policy Astra denial regression. GitHub merged that exact expected head as `774a6e3caa6dd83c556e23fe6ffebca992c12961`; comparison from the verified feature head to the merge commit reported zero changed files. No hosted CI/status run was attached to the verified head. See E-186.
 
 ### I-032 — Automatic per-Round provider usage-meter capture
 
