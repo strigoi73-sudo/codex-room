@@ -382,6 +382,7 @@ class Database:
                     worker_generation INTEGER NOT NULL,
                     model TEXT,
                     reasoning_effort TEXT,
+                    public_context_through_sequence INTEGER,
                     sdk_thread_id TEXT,
                     sdk_turn_id TEXT,
                     state TEXT NOT NULL,
@@ -460,6 +461,12 @@ class Database:
             await self._ensure_column(db, "agent_executions", "model", "TEXT")
             await self._ensure_column(
                 db, "agent_executions", "reasoning_effort", "TEXT"
+            )
+            await self._ensure_column(
+                db,
+                "agent_executions",
+                "public_context_through_sequence",
+                "INTEGER",
             )
             await self._ensure_column(db, "rounds", "last_activity_at", "TEXT")
             await self._ensure_column(db, "rounds", "participant_private_json", "TEXT NOT NULL DEFAULT '{}'")
@@ -2456,10 +2463,10 @@ class Database:
 
     async def get_assignment_public_context_delta(
         self, assignment_id: str, *, max_events: int = 50
-    ) -> list[dict[str, Any]]:
-        """Return the public conversational messages a worker has not yet seen."""
+    ) -> tuple[list[dict[str, Any]], int | None, bool]:
+        """Return the oldest contiguous public Room delta unseen by this provider context."""
         if max_events < 1:
-            return []
+            return [], None, False
         async with self.connect() as db:
             assignment = await self._fetchone(
                 db,
@@ -2470,7 +2477,7 @@ class Database:
                 (assignment_id,),
             )
             if assignment is None or assignment["origin_event_id"] is None:
-                return []
+                return [], None, False
 
             upper = await self._fetchone(
                 db,
@@ -2478,48 +2485,62 @@ class Database:
                 (assignment["origin_event_id"], assignment["room_id"]),
             )
             if upper is None or upper["sequence_no"] is None:
-                return []
-
-            lower_event_id = assignment["task_origin_event_id"]
-            if assignment["context_parent_assignment_id"] is not None:
-                parent = await self._fetchone(
-                    db,
-                    "SELECT result_event_id FROM assignments WHERE id=?",
-                    (assignment["context_parent_assignment_id"],),
-                )
-                if parent is not None and parent["result_event_id"] is not None:
-                    lower_event_id = parent["result_event_id"]
+                return [], None, False
+            upper_sequence = int(upper["sequence_no"])
 
             lower_sequence = 0
-            if lower_event_id is not None:
-                lower = await self._fetchone(
+            if assignment["task_origin_event_id"] is not None:
+                task_origin = await self._fetchone(
                     db,
                     "SELECT sequence_no FROM events WHERE id=? AND room_id=?",
-                    (lower_event_id, assignment["room_id"]),
+                    (assignment["task_origin_event_id"], assignment["room_id"]),
                 )
-                if lower is not None and lower["sequence_no"] is not None:
-                    lower_sequence = int(lower["sequence_no"])
+                if task_origin is not None and task_origin["sequence_no"] is not None:
+                    lower_sequence = int(task_origin["sequence_no"])
+
+            context_thread_id = assignment["context_thread_id"]
+            if context_thread_id:
+                visibility = await self._fetchone(
+                    db,
+                    """SELECT MAX(public_context_through_sequence) AS through_sequence
+                       FROM agent_executions
+                       WHERE room_id=? AND agent_id=? AND sdk_thread_id=?
+                         AND public_context_through_sequence IS NOT NULL""",
+                    (
+                        assignment["room_id"],
+                        assignment["agent_id"],
+                        context_thread_id,
+                    ),
+                )
+                if (
+                    visibility is not None
+                    and visibility["through_sequence"] is not None
+                ):
+                    lower_sequence = int(visibility["through_sequence"])
 
             rows = await db.execute_fetchall(
-                """SELECT * FROM (
-                       SELECT * FROM events
-                       WHERE room_id=? AND round_id=?
-                         AND sequence_no>? AND sequence_no<=?
-                         AND conversational=1 AND agent_readable=1
-                         AND visibility='public'
-                       ORDER BY sequence_no DESC
-                       LIMIT ?
-                   )
-                   ORDER BY sequence_no ASC""",
+                """SELECT * FROM events
+                   WHERE room_id=? AND round_id=?
+                     AND sequence_no>? AND sequence_no<=?
+                     AND conversational=1 AND agent_readable=1
+                     AND visibility='public'
+                   ORDER BY sequence_no ASC
+                   LIMIT ?""",
                 (
                     assignment["room_id"],
                     assignment["round_id"],
                     lower_sequence,
-                    int(upper["sequence_no"]),
-                    max_events,
+                    upper_sequence,
+                    max_events + 1,
                 ),
             )
-        return [self._decode_row(row) for row in rows]
+        has_more = len(rows) > max_events
+        selected = rows[:max_events]
+        return (
+            [self._decode_row(row) for row in selected],
+            upper_sequence,
+            has_more,
+        )
 
     async def get_events(
         self, room_id: str, limit: int | None = 2000
@@ -6123,6 +6144,8 @@ class Database:
         thread_id: str,
         turn_id: str,
         worker_generation: int,
+        *,
+        public_context_through_sequence: int | None = None,
     ) -> bool:
         """Durably bind a claimed Room batch to its one exact Codex turn."""
         now = utc_now()
@@ -6162,9 +6185,19 @@ class Database:
                     """UPDATE agent_executions
                        SET sdk_thread_id=?, sdk_turn_id=?, state='active',
                            turn_started_at=?, last_reconciled_at=?,
-                           last_verified_progress_at=?
+                           last_verified_progress_at=?,
+                           public_context_through_sequence=?
                        WHERE batch_id=? AND state='claimed' AND worker_generation=?""",
-                    (thread_id, turn_id, now, now, now, batch_id, worker_generation),
+                    (
+                        thread_id,
+                        turn_id,
+                        now,
+                        now,
+                        now,
+                        public_context_through_sequence,
+                        batch_id,
+                        worker_generation,
+                    ),
                 )
             except aiosqlite.IntegrityError:
                 await db.rollback()
