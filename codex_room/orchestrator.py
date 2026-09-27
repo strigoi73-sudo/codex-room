@@ -47,6 +47,7 @@ from .institutional import (
     stage_institutional_release,
     verify_materialized_release,
 )
+from .model_guidance import render_model_selection_guide
 from .models import (
     AddAgentRequest,
     AgentDecision,
@@ -5912,7 +5913,9 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
             else "the compatibility Terra/high fallback"
         )
         if unrestricted_model_access:
-            choices = ", ".join(sorted((available_execution_configs or {}).keys()))
+            unrestricted_catalog = available_execution_configs or {}
+            choices = ", ".join(sorted(unrestricted_catalog.keys()))
+            guidance = render_model_selection_guide(unrestricted_catalog)
             return (
                 "The human principal enabled UNRESTRICTED MODEL ACCESS when this Room "
                 "was created. CORE's native Codex model/list snapshot is authoritative "
@@ -5928,6 +5931,8 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
                 "config retains the ordinary Terra/high compatibility fallback. Continue "
                 "to allocate cognition economically: use stronger or more expensive "
                 "configurations only when they are expected to add material value."
+                "\n\n"
+                + guidance
             )
 
         peer_configs = list(ORDINARY_EXECUTION_CONFIGS)
@@ -5942,6 +5947,13 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
             for config in EXCEPTIONAL_C_EXECUTION_CONFIGS
             if C_COGNITION_CEILING_RANK[config] <= ceiling_rank
         )
+        guidance_config_ids = dict.fromkeys([*peer_configs, *allowed_self])
+        guidance_catalog = {
+            config_id: EXECUTION_CONFIGS[config_id]
+            for config_id in guidance_config_ids
+            if config_id in EXECUTION_CONFIGS
+        }
+        guidance = render_model_selection_guide(guidance_catalog)
         astra_note = (
             "The opening Room prompt explicitly authorized Astra for this conversation "
             "lineage, so Astra Low/Medium/High may be selected where that opening prompt "
@@ -5970,6 +5982,8 @@ For MESSAGE, execution_configs is null or an array of target/config records, for
             "sufficient; spend more only for affirmative complexity, uncertainty, risk, "
             "or verification reasons. A null peer config retains the Terra/high "
             "compatibility fallback."
+            "\n\n"
+            + guidance
         )
 
     @staticmethod
