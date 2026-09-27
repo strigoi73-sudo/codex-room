@@ -3158,3 +3158,49 @@ Source inspection confirms that all three selected CooperBench tasks include ups
 Phase 3 owns deterministic local sanity/oracle validation. Under E-194, a task may be replaced only if Phase 3 demonstrates a benchmark-invalidating defect or an environment requirement that makes the task unusable; apparent difficulty, low contrast, no likely peer benefit, or unfavorable characteristics are not replacement grounds.
 
 **Assessment:** I-028 Phase 2 — External Task Sample is COMPLETE. The three-task sample is frozen before any OUB v2 measured run. Phase 3 is the next gate.
+
+### E-196 — I-028 OUB v2 Phase-3 deterministic sample validation
+**Date:** 2026-09-27  
+**Status:** VERIFIED BY PRINCIPAL  
+**Kind:** [organizational utility benchmark / CooperBench / deterministic sanity gate / WSL environment repair]  
+**Issue:** I-028
+
+The principal completed OUB v2 Phase 3 against the exact three-task sample frozen by E-195.
+
+The first two execution attempts failed before benchmark-task work:
+
+- the Docker-backed validator correctly returned environment code 3 because Docker was not installed;
+- the first WSL fallback exposed a recurring WSL systemd-user-session startup failure plus a PowerShell/WSL wrapper defect in which CRLF multiline text caused Bash to parse `pipefail\r` as an invalid option.
+
+Neither attempt constituted a task/sample failure.
+
+The WSL environment was then repaired through repository-owned `Repair-WSL-Codex-Room.ps1`. The repair:
+
+- reported WSL 2.7.14.0 / kernel 6.18.33.2-2;
+- created timestamped backup `/etc/wsl.conf.codex-room-backup-20260927T193355Z`;
+- set `[boot] systemd=false` while preserving the configured default user;
+- executed `wsl.exe --shutdown`;
+- restarted successfully with PID 1 reported as `init(Ubuntu)` and user `strigoi73`;
+- emitted no further `Failed to start the systemd user session` warning;
+- reported **WSL systemd repair: PASS**.
+
+The corrected WSL-native Phase-3 validator then established:
+
+- frozen CooperBench asset identity: **24 Git blobs verified**;
+- O2-1 / LlamaIndex task 18813 feature 2: untouched base rejected / combined oracle passed;
+- O2-1 / LlamaIndex task 18813 feature 5: untouched base rejected / combined oracle passed;
+- O2-2 / Typst task 6554 feature 4: untouched base rejected / combined oracle passed;
+- O2-2 / Typst task 6554 feature 9: untouched base rejected / combined oracle passed;
+- O2-3 / dirty-equals task 43 feature 3: untouched base rejected / combined oracle passed;
+- O2-3 / dirty-equals task 43 feature 7: untouched base rejected / combined oracle passed;
+- overall validator result: **PASS**;
+- validator exit code: **0**;
+- local machine-readable result: `data/oub-v2/phase3/phase3-validation-20260927T200300Z.json`.
+
+The environment provisioning step experienced two transient network faults: DNS resolution for `security.ubuntu.com` failed during one package-index attempt, and the first uv binary download encountered an OpenSSL read error. Both paths recovered automatically; package/toolchain installation completed, uv 0.12.19 and Rust/Cargo 1.80.0 were available, and the full deterministic gate subsequently passed. These transient network events do not alter task validity.
+
+No task was replaced or resampled, no Desktop/Room cognition was purchased, and no CooperBench-prescribed orchestration was imported.
+
+The repository WSL runner was then made idempotent so already-present Ubuntu packages, Python runtimes, and Rust toolchains are reused rather than reprovisioned on every invocation.
+
+**Assessment:** I-028 Phase 3 — Deterministic Sanity Check is **COMPLETE / PRINCIPAL VERIFIED**. The entire frozen three-task external sample is usable under the Phase-1 contract. Phase 4 — minimal OUB harness adaptation — is next.
