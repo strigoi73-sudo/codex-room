@@ -1076,7 +1076,6 @@ class RoomRuntime:
                 request.images,
             )
             attachment_metadata = [item.descriptor() for item in stored_images]
-            event_created = False
             try:
                 event = await self.db.create_event(
                     room_id,
@@ -1092,7 +1091,6 @@ class RoomRuntime:
                     deliver_to=() if transactional else targets,
                     runnable_to=() if transactional else None,
                 )
-                event_created = True
             except BaseException:
                 remove_observer_images(stored_images)
                 raise
