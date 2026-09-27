@@ -1,6 +1,6 @@
 # Codex Room — Development Control
 
-**Last updated:** 2026-09-26
+**Last updated:** 2026-09-27
 **Scope:** Volatile current focus, ordered priorities, known issues, planned work, and unresolved questions.
 **Freshness:** High volatility. Replace dated state promptly when newer evidence or user direction exists.
 
@@ -8,12 +8,37 @@
 
 - **Where are we?** I-034 — **interaction-aware C sequencing** — is COMPLETE, principal exact-head verified, and merged. The active development priority is again I-030's concurrent public-delta continuity race.
 - **What just happened?** PR #220 merged the D-035 interaction-aware sequencing refinement after principal verification of exact head `72ea8a50001862ed7de08d8f8f6eb61fa692358c`. The natural God Button debate remains both the motivating C-topology evidence and a fresh reproduction of I-030 recovery waste. See E-188 and E-189.
-- **What is next?** Resume I-030 and repair the remaining CORE public-delta visibility defect before returning to I-028 utility benchmarking.
-- **What remains behind it?** I-028 utility benchmarking remains behind I-030.
+- **What is next?** Resume I-030 and repair the remaining CORE public-delta visibility defect. Then implement I-035 — directed principal file/image attachments — before returning to I-028 utility benchmarking.
+- **What remains behind it?** I-035 is queued immediately behind I-030. I-028 utility benchmarking follows I-035 unless the principal reprioritizes.
 - **What is blocked?** Nothing conceptual is blocked.
 - **What are we deliberately not doing?** We are not globally deleting default model safeguards, hard-coding a second unrestricted model list, or treating unrestricted authorization as a mandate to use maximum cognition.
 
 ## Current development state
+
+### I-035 — Directed principal file and image handoff
+
+**Scope:** [principal attachment handoff / directed routing / files + images / native Codex input reuse]
+
+**Work state:** PLANNED
+
+**Reality / evidence:** DECIDED / NOT IMPLEMENTED
+
+**Principal selection:** 2026-09-27
+
+The principal selected a Room-host capability to hand off files and images through observer input with the same addressing model already used for directed chat messages.
+
+Minimum product boundary:
+
+- an observer turn may include one or more file/image attachments plus optional accompanying text;
+- the turn can target `all`, `both`, `agent_a`, `agent_b`, or `agent_c` using the existing directed-message semantics;
+- the addressed participant(s) must receive usable access to the actual artifact as part of their work, while unaddressed agents must not be routed a directed attachment;
+- native Codex structured image/local-image inputs should be reused where they safely satisfy the requirement, and generic-file handling should reuse existing Codex/workspace/runtime primitives where practical instead of recreating equivalent capability;
+- attachment identity and provenance must remain durable enough to associate an artifact with its originating observer event and intended recipients;
+- implementation must preserve directed-message visibility semantics: an agent-specific attachment must not become visible to other agents merely because A/B/C currently share a Room workspace.
+
+Priority boundary: I-035 begins after I-030 closes. I-028 utility benchmarking follows I-035 unless the principal reprioritizes.
+
+Storage/materialization details, upload limits, supported MIME/type policy, binary export behavior, and rollover retention remain implementation-design work. This roadmap addition does not itself authorize a runtime change beyond the selected capability.
 
 ### I-034 — Interaction-aware C sequencing
 
@@ -561,6 +586,7 @@ Current unresolved questions are feature-local rather than roadmap-global:
 
 - if ordinary use later demonstrates material friction from native-host plugin administration, what exact gap justifies reopening I-021;
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
-- if browser/computer use, worktrees, remote execution, attachments, native review, steering, approvals, or other I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
+- for I-035, what is the smallest native/runtime reuse that supports directed file/image handoff while preserving existing per-agent visibility semantics over the shared Room workspace;
+- if browser/computer use, worktrees, remote execution, native review, steering, approvals, or other remaining I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
 I-027 is the current benchmark implementation. Unqualified **Run PBM** resolves to canonical PBM v5. PBM v1–v4 remain available only for historical/reproducibility purposes unless the principal explicitly selects an older version.
