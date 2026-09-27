@@ -2781,3 +2781,36 @@ PR #219 was then marked ready and merged with GitHub enforcing expected head `05
 This evidence records principal-reported local verification; the assistant did not independently execute the local verification commands.
 
 **Assessment:** I-033 / D-055 is implemented, principal exact-head verified, and merged. C now receives compact advisory model-family/reasoning-effort context without changing native availability, Room authorization, validation, persistence, rollover lineage, or execution policy. I-030 resumes as the active development priority.
+
+### E-187 — Post-D-055 Project Helix dynamic-allocation acceptance
+**Date:** 2026-09-26  
+**Status:** VERIFIED FROM ROOM EXPORT  
+**Kind:** [ROOM controlled benchmark / dynamic cognition allocation / advisory model guidance]  
+**Decision:** D-055  
+**Issue:** I-033
+
+After I-033 merged, the principal reran the previously used **Project Helix — Dynamic Cognition Allocation Benchmark** in a fresh Room with unrestricted model access enabled and supplied the completed Room JSON export for inspection.
+
+The export records:
+
+- Room status **finished** after **17 counted turns**;
+- `model_policy="unrestricted"` and `astra_authorized=true`;
+- an unrestricted native catalog that included Astra Low/Medium/High plus higher native Astra effort variants;
+- no benchmark instruction prescribing a model family or reasoning effort;
+- explicit benchmark controls requiring C to choose configurations independently per assignment and prohibiting disclosure to A/B that an assignment was intended to correspond to any difficulty/model tier.
+
+Observed substantive peer allocations were:
+
+- A Step 1 factual extraction — `luna-low`;
+- B Step 2 operational screening — `luna-medium`;
+- A Step 3 contingency comparison — `terra-high`;
+- B Step 4 adversarial failure analysis — `terra-high`;
+- A Step 5 audit — `terra-high`;
+- B Step 6 final decision analysis — `sol-high`;
+- A Step 7 independent final decision — `terra-high`.
+
+No A/B assignment used Astra. C's coordinator assignment remained Terra-family; the runtime report recorded C movement from Terra/High to Terra/Medium and back to Terra/High, followed by Terra/High after bounded coordinator context refresh. The export records no stated reason for the individual model/reasoning changes, so none is inferred here.
+
+The benchmark also supplied a useful adequacy check on the middle-tier choices. B completed the prescribed multi-scenario adversarial failure analysis on `terra-high`; A's subsequent `terra-high` audit reported no arithmetic, unsupported-assumption, dependency, probability, nominal-versus-available-capacity, or evidentiary errors in that analysis. C later selected `sol-high` for B's final decision analysis, then selected `terra-high` for A's independent final decision rather than preserving the prior Sol configuration merely for consistency. Both A and B selected Strategy Blue under their stated criteria; C's synthesis preserved that agreement without presenting it as proof of objective correctness.
+
+**Assessment:** This controlled post-merge acceptance supports D-055's intended boundary. C used the advisory information while continuing to vary model family and effort by assignment, and unrestricted Astra availability did **not** produce automatic Astra use. The run does not establish a universal optimal routing policy, a numeric escalation threshold, or that Astra is never warranted; it establishes only the observed allocation behavior and successful completion of this bounded Helix workload. I-033 remains COMPLETE. I-030 remains the active development priority.
