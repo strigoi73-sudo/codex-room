@@ -87,5 +87,7 @@ def test_local_verifier_uses_inherited_wsl_working_directory() -> None:
     assert "wslpath" not in verifier
     assert 'repo="$(pwd -P)"' in verifier
     assert 'Push-Location $repoRoot' in verifier
-    assert '$wslScript = ".git/$scriptName"' in verifier
+    assert '"bash", "-s"' in verifier
+    assert '$bash | & $wsl @args' in verifier
     assert "CODEX_ROOM_REPO=" not in verifier
+    assert "WriteAllText" not in verifier
