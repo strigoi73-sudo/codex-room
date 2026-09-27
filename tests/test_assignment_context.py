@@ -308,6 +308,8 @@ async def test_observer_image_routes_only_to_addressed_assignment_first_turn(
     integration_c = adapter.calls["agent_c"][1]
 
     assert len(first_a["local_image_paths"]) == 1
+    assert "pixel.png" in first_a["prompt"]
+    assert "native Codex image input" in first_a["prompt"]
     assert second_a["local_image_paths"] == []
     assert integration_c["local_image_paths"] == []
     assert adapter.calls["agent_b"] == []
