@@ -767,6 +767,248 @@ async def test_worker_receives_missed_public_room_delta_and_same_task_history(
 
 
 @pytest.mark.asyncio
+async def test_same_task_worker_delta_tracks_actual_provider_visibility(
+    context_runtime_factory,
+):
+    marker = "PUBLIC-INFLIGHT-PEER-MARKER-914"
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_a": {1}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Begin the first A pass and stay in flight long enough for B to finish.",
+                        "config": None,
+                    },
+                    {
+                        "target": "agent_b",
+                        "instruction": "Publish the peer fact while A is already running.",
+                        "config": None,
+                    },
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Continue A on the same Task and incorporate all unseen public peer input.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Integrated the visibility-race regression.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A first pass completed after B had already published.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A second pass consumed the unseen peer result.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_b"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message=marker,
+        )
+    )
+
+    runtime = await context_runtime_factory(adapter, "provider-visibility-race.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Reproduce the concurrent public-delta visibility race.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+
+    async def peer_marker_event():
+        events = await runtime.db.get_events(room_id)
+        return next((event for event in events if event["content"] == marker), None)
+
+    await wait_until(peer_marker_event)
+    peer_event = await peer_marker_event()
+    assert peer_event is not None
+    assert len(adapter.calls["agent_a"]) == 1
+    assert len(adapter.completed_calls["agent_a"]) == 0
+
+    async with runtime.db.connect() as db:
+        first_execution = await runtime.db._fetchone(
+            db,
+            """SELECT e.public_context_through_sequence
+               FROM agent_executions e
+               JOIN agents a ON a.id=e.agent_id
+               WHERE e.room_id=? AND a.agent_key='agent_a'
+               ORDER BY e.created_at, e.batch_id
+               LIMIT 1""",
+            (room_id,),
+        )
+    assert first_execution is not None
+    assert first_execution["public_context_through_sequence"] is not None
+    assert int(first_execution["public_context_through_sequence"]) < int(
+        peer_event["sequence_no"]
+    )
+
+    adapter.release_call("agent_a", 1)
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_a"]) == 2
+    assert (
+        adapter.calls["agent_a"][0]["thread_id"]
+        == adapter.calls["agent_a"][1]["thread_id"]
+    )
+    second_a_prompt = adapter.calls["agent_a"][1]["prompt"]
+    assert "<public_room_delta>" in second_a_prompt
+    assert marker in second_a_prompt
+
+    async with runtime.db.connect() as db:
+        executions = await db.execute_fetchall(
+            """SELECT e.public_context_through_sequence
+               FROM agent_executions e
+               JOIN agents a ON a.id=e.agent_id
+               WHERE e.room_id=? AND a.agent_key='agent_a'
+               ORDER BY e.created_at, e.batch_id""",
+            (room_id,),
+        )
+    assert len(executions) == 2
+    assert executions[1]["public_context_through_sequence"] is not None
+    assert int(executions[1]["public_context_through_sequence"]) >= int(
+        peer_event["sequence_no"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_worker_public_delta_drains_oldest_first_without_skipping_event_cap(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter(
+        {"agent_a": [], "agent_b": [], "agent_c": []},
+        blocked_calls={"agent_c": {2}},
+    )
+    adapter.decisions["agent_c"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Establish the A provider context.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Consume the first bounded public backlog prefix.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.DELEGATE,
+                delegations=[
+                    {
+                        "target": "agent_a",
+                        "instruction": "Consume the remaining public backlog.",
+                        "config": None,
+                    }
+                ],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Backlog drain complete.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A context established.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="First backlog prefix consumed.",
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="Remaining backlog consumed.",
+            ),
+        ]
+    )
+
+    runtime = await context_runtime_factory(adapter, "provider-visibility-backlog.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Drain a bounded public-context backlog without gaps.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    round_id = snapshot["active_round_id"]
+
+    await wait_until(
+        lambda: len(adapter.completed_calls["agent_a"]) == 1
+        and len(adapter.calls["agent_c"]) >= 2
+    )
+
+    markers = [f"PUBLIC-BACKLOG-{index:02d}" for index in range(60)]
+    for marker in markers:
+        await runtime.db.create_event(
+            room_id,
+            "agent_message",
+            "agent_b",
+            "all",
+            marker,
+            discussion_id=round_id,
+            round_id=round_id,
+            conversational=True,
+            counts_as_turn=False,
+            visibility="public",
+            agent_readable=True,
+            turn_triggering=False,
+        )
+
+    adapter.release_call("agent_c", 2)
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    assert len(adapter.calls["agent_a"]) == 3
+    first_backlog_prompt = adapter.calls["agent_a"][1]["prompt"]
+    second_backlog_prompt = adapter.calls["agent_a"][2]["prompt"]
+    first_seen = {marker for marker in markers if marker in first_backlog_prompt}
+    second_seen = {marker for marker in markers if marker in second_backlog_prompt}
+
+    assert markers[0] in first_seen
+    assert markers[-1] not in first_seen
+    assert markers[-1] in second_seen
+    assert first_seen.isdisjoint(second_seen)
+    assert first_seen | second_seen == set(markers)
+    assert (
+        "Additional newer public Room messages remain queued for a later worker Assignment"
+        in first_backlog_prompt
+    )
+
+
+@pytest.mark.asyncio
 async def test_explicit_worker_context_lineage_recovers_exact_active_turn_after_restart(
     context_runtime_factory,
 ):
