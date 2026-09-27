@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. Phases 1 and 2 are complete: the OUB v2 comparison contract and three-task external sample are frozen; no v2 task has been mechanically validated or measured yet.
-- **What just happened?** Phase 2 deterministically selected three CooperBench flash pairs from exact upstream revision `63b9d44d9f39a02fccf5bf0052db48a917a011fd`, with no pre-draw exclusions or expected-Room-benefit screening: LlamaIndex 18813 (2+5), Typst 6554 (4+9), and dirty-equals 43 (3+7). See E-195.
-- **What is next?** I-028 Phase 3 — run deterministic sanity/oracle validation for the frozen three-task sample and classify any genuine environment or benchmark defects without changing the sample for performance or contrast reasons.
+- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. Phases 1 and 2 are complete; Phase 3 deterministic validation is active. The frozen task/source identities are verified and a repository-owned exact validator is prepared, but the Docker execution gate has not yet run.
+- **What just happened?** Phase 3 source preparation verified the three selected upstream base commits and froze the exact CooperBench runner/spec/gold/test/combined-patch Git blobs. `benchmarks/oub/v2/validate_phase3.py` now owns the execution gate: for each of six selected features, upstream tests must reject the untouched base and pass against the combined oracle, using the exact dataset runner over the published task image.
+- **What is next?** Execute the Phase-3 validator on the principal machine. A PASS advances to Phase 4. An environment or task failure must be classified under the frozen Phase-1 contract before any replacement decision.
 - **What remains behind it?** No newly selected implementation item is queued behind I-028; later work remains subject to principal prioritization and demonstrated need.
 - **What is blocked?** Nothing currently blocks ordinary Codex Room use or the next I-028 design step.
-- **What are we deliberately not doing?** We are not resampling because of apparent difficulty or expected contrast, adapting the OUB harness before Phase-3 validation, prescribing agent roles/topology, or purchasing an OUB v2 model run before the frozen sample passes its deterministic sanity gate.
+- **What are we deliberately not doing?** We are not resampling because of apparent difficulty or expected contrast, adapting the OUB measurement harness before Phase-3 validation passes, prescribing agent roles/topology, or purchasing an OUB v2 model run.
 
 ## Current development state
 
@@ -242,11 +242,13 @@ PR #210 merged the implementation after exact-head verification of `b923e1654bae
 
 Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
 
-Current phase state: **Phase 1 — Comparison Contract: COMPLETE. Phase 2 — External Task Sample: COMPLETE. Phase 3 — Deterministic Sanity Check: NEXT.**
+Current phase state: **Phase 1 — Comparison Contract: COMPLETE. Phase 2 — External Task Sample: COMPLETE. Phase 3 — Deterministic Sanity Check: IN PROGRESS / EXECUTION GATE PENDING.**
 
 OUB v2's comparison contract is now frozen in `benchmarks/oub/v2/PROTOCOL.md`. The initial sample will contain three externally authored tasks selected before any measured v2 run. Selection may exclude candidates for practical benchmark suitability only; it must not optimize for expected Room advantage, expected peer use, a preferred difficulty band, or a particular coordination topology. Both Desktop and Room receive the same frozen task and may organize naturally. Correctness, tokens, duration, orchestration, and human intervention remain separate outcome dimensions, with no composite winner score. A no-peer or otherwise nondiscriminating result remains valid evidence rather than grounds for replacement. See E-194.
 
 Phase 2 freezes the three-task sample in `benchmarks/oub/v2/SAMPLE.md` and `sample.json`. Selection was deterministic across all 50 pairs in CooperBench's published flash subset at upstream revision `63b9d44d9f39a02fccf5bf0052db48a917a011fd`, using the Phase-1 merge SHA as the fixed selection seed and no pre-draw exclusions. The selected pairs are LlamaIndex task 18813 features 2+5, Typst task 6554 features 4+9, and dirty-equals task 43 features 3+7. Phase 3 must validate those exact tasks before any harness adaptation or measured model run. See E-195.
+
+Phase 3 uses `benchmarks/oub/v2/phase3_plan.json` plus `validate_phase3.py`. The plan freezes exact upstream asset Git-blob identities, task-image tags, and base commits. The validator verifies those identities, verifies each task image contains the frozen base commit, records the resolved Docker image identity, and runs only the pair-level checks needed for this gate: each selected feature's tests must fail on untouched base and pass against the task's combined oracle patch. Generated results stay under ignored `data/oub-v2/phase3/`. Phase 3 is not complete until this execution gate passes.
 
 The gate must test situations where Room's architecture should matter intrinsically rather than merely giving both products another generic coding battery. Candidate dimensions are:
 
