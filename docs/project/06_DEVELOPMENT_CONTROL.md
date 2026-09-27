@@ -11,7 +11,7 @@
 - **What is next?** I-028 Phase 4 — minimally adapt the existing OUB harness to prepare the three frozen external tasks, launch equivalent Desktop/Room workspaces, invoke the official grading contract, and capture the agreed measurements without importing CooperBench's prescribed multi-agent orchestration.
 - **What remains behind it?** No newly selected implementation item is queued behind I-028; later work remains subject to principal prioritization and demonstrated need.
 - **What is blocked?** Nothing currently blocks ordinary Codex Room use or the next I-028 design step.
-- **What are we deliberately not doing?** We are not resampling because of apparent difficulty or expected contrast, adapting the OUB measurement harness before Phase-3 validation passes, prescribing agent roles/topology, or purchasing an OUB v2 model run.
+- **What are we deliberately not doing?** We are not changing the frozen sample, importing CooperBench's prescribed multi-agent orchestration, prescribing Desktop/Room agent roles or topology, or purchasing an OUB v2 measured model run during Phase 4 harness adaptation.
 
 ## Current development state
 
