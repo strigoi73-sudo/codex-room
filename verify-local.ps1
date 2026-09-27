@@ -188,16 +188,10 @@ fi
         $startInfo.UseShellExecute = $false
         $startInfo.RedirectStandardInput = $true
 
-        @(
-            "-d", $Distro,
-            "--",
-            "env",
-            "CODEX_ROOM_PYTHON_SERIES=$Series",
-            "CODEX_ROOM_VERIFY_MODE=$Mode",
-            "bash", "-s"
-        ) | ForEach-Object {
-            [void]$startInfo.ArgumentList.Add($_)
-        }
+        $startInfo.Arguments = (
+            '-d "{0}" -- env CODEX_ROOM_PYTHON_SERIES={1} ' +
+            'CODEX_ROOM_VERIFY_MODE={2} bash -s'
+        ) -f $Distro, $Series, $Mode
 
         $process = New-Object System.Diagnostics.Process
         $process.StartInfo = $startInfo
