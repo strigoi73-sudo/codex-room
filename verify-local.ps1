@@ -178,25 +178,35 @@ fi
     # Windows checkouts may convert this PowerShell file to CRLF. Bash requires LF.
     $bash = $bash.Replace("`r`n", "`n").Replace("`r", "")
 
-    # Stream the Bash program over stdin rather than materializing a temporary
-    # script. WSL inherits $repoRoot as its working directory, so neither explicit
-    # Windows-path conversion nor assumptions about .git being a directory are needed.
+    # Write the normalized Bash program directly to WSL stdin. Avoid the
+    # PowerShell object pipeline here: its native-command text transport is not a
+    # byte-preserving script channel and can corrupt heredoc-sensitive input.
     Invoke-NativeStep $Label {
-        Push-Location $repoRoot
-        try {
-            $args = @(
-                "-d", $Distro,
-                "--",
-                "env",
-                "CODEX_ROOM_PYTHON_SERIES=$Series",
-                "CODEX_ROOM_VERIFY_MODE=$Mode",
-                "bash", "-s"
-            )
-            $bash | & $wsl @args
+        $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $startInfo.FileName = $wsl
+        $startInfo.WorkingDirectory = $repoRoot
+        $startInfo.UseShellExecute = $false
+        $startInfo.RedirectStandardInput = $true
+
+        @(
+            "-d", $Distro,
+            "--",
+            "env",
+            "CODEX_ROOM_PYTHON_SERIES=$Series",
+            "CODEX_ROOM_VERIFY_MODE=$Mode",
+            "bash", "-s"
+        ) | ForEach-Object {
+            [void]$startInfo.ArgumentList.Add($_)
         }
-        finally {
-            Pop-Location
-        }
+
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $startInfo
+        [void]$process.Start()
+        $process.StandardInput.Write($bash)
+        $process.StandardInput.Close()
+        $process.WaitForExit()
+        $global:LASTEXITCODE = $process.ExitCode
+        $process.Dispose()
     }
 }
 
