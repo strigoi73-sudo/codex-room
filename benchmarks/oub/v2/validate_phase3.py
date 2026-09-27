@@ -4,6 +4,7 @@ import argparse
 import json
 import platform
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -287,9 +288,14 @@ def main() -> int:
         print(json.dumps({"sample": sample, "phase3_plan": plan}, indent=2))
         return 0
 
-    git_check = _run(["git", "--version"])
-    if git_check.returncode != 0:
+    if shutil.which("git") is None:
         print("ERROR: git is required for Phase 3.", file=sys.stderr)
+        return 3
+    if shutil.which("docker") is None:
+        print(
+            "ERROR: Docker is not installed or is not available on PATH. "
+            "This is an environment prerequisite, not a task failure."
+        )
         return 3
 
     docker_check = _run(
@@ -312,30 +318,43 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="oub-v2-phase3-") as tmp:
         tmp_root = Path(tmp)
         cb = tmp_root / "CooperBench"
-        _run(["git", "init", str(cb)], check=True)
-        _run(
-            ["git", "-C", str(cb), "remote", "add", "origin", plan["upstream_url"]],
-            check=True,
-        )
-        _run(
-            [
-                "git",
-                "-C",
-                str(cb),
-                "fetch",
-                "--depth",
-                "1",
-                "origin",
-                plan["upstream_revision"],
-            ],
-            timeout=1200,
-            check=True,
-        )
-        _run(
-            ["git", "-C", str(cb), "checkout", "--detach", "FETCH_HEAD"],
-            check=True,
-        )
-        assets = _verify_source_assets(cb, plan)
+        try:
+            _run(["git", "init", str(cb)], check=True)
+            _run(
+                ["git", "-C", str(cb), "remote", "add", "origin", plan["upstream_url"]],
+                check=True,
+            )
+            _run(
+                [
+                    "git",
+                    "-C",
+                    str(cb),
+                    "fetch",
+                    "--depth",
+                    "1",
+                    "origin",
+                    plan["upstream_revision"],
+                ],
+                timeout=1200,
+                check=True,
+            )
+            _run(
+                ["git", "-C", str(cb), "checkout", "--detach", "FETCH_HEAD"],
+                check=True,
+            )
+        except (RuntimeError, subprocess.TimeoutExpired, OSError) as exc:
+            print(
+                f"ERROR: could not materialize the frozen CooperBench revision: {exc}"
+            )
+            print("This is an environment/source-access failure, not a task result.")
+            return 3
+
+        try:
+            assets = _verify_source_assets(cb, plan)
+        except RuntimeError as exc:
+            print(f"ERROR: frozen upstream asset identity check failed: {exc}")
+            return 4
+
         print(
             f"Frozen upstream assets: PASS "
             f"({len(assets)} blob identities verified)"
@@ -348,7 +367,17 @@ def main() -> int:
                 f"{task['cooperbench_repo']}/task{task['task_id']} "
                 f"features {task['features']}"
             )
-            task_results.append(_validate_task(cb, task))
+            try:
+                task_results.append(_validate_task(cb, task))
+            except (subprocess.TimeoutExpired, OSError) as exc:
+                task_results.append(
+                    {
+                        "sample_id": task["sample_id"],
+                        "image": task["image"],
+                        "status": "ENVIRONMENT_FAILURE",
+                        "note": f"{type(exc).__name__}: {exc}",
+                    }
+                )
 
     finished = datetime.now(timezone.utc)
     if any(t["status"] == "ENVIRONMENT_FAILURE" for t in task_results):
