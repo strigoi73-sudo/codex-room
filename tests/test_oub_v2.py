@@ -175,3 +175,59 @@ def test_oub_v2_parser_supports_mechanical_only_preparation() -> None:
     assert args.command == "prepare"
     assert args.task_id == "o2-3"
     assert args.no_start is True
+
+def test_oub_v2_materialized_workspace_pins_cross_host_line_endings(
+    tmp_path: Path,
+) -> None:
+    upstream = tmp_path / "upstream"
+    upstream.mkdir()
+    subprocess.run(["git", "init"], cwd=upstream, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "oub@example.invalid"],
+        cwd=upstream,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "OUB Test"],
+        cwd=upstream,
+        check=True,
+    )
+    (upstream / "source.txt").write_text("base\n", encoding="utf-8")
+    subprocess.run(["git", "add", "source.txt"], cwd=upstream, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "base"],
+        cwd=upstream,
+        check=True,
+        capture_output=True,
+    )
+    base_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=upstream,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    workspace = tmp_path / "workspace"
+    state = oub_v2._materialize_workspace(
+        workspace,
+        {
+            "id": "cross-host-test",
+            "project_url": str(upstream),
+            "base_commit": base_commit,
+            "features": [],
+        },
+    )
+
+    autocrlf = subprocess.run(
+        ["git", "config", "--get", "core.autocrlf"],
+        cwd=workspace,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    assert autocrlf == "false"
+    assert state["head"] == base_commit
+    assert state["status"] == ""
+
