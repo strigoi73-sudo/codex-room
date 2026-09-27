@@ -1490,7 +1490,10 @@ def grade_command(task_id: str, workspace: Path) -> dict[str, Any]:
 
 
 def _json_out(value: Any) -> None:
-    print(json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False))
+    # Keep CLI JSON safe on Windows consoles that still expose legacy code pages
+    # such as cp1252. JSON unicode escapes preserve the exact string value while
+    # avoiding host-terminal encoding failures after successful grading.
+    print(json.dumps(value, indent=2, sort_keys=True, ensure_ascii=True))
 
 
 def build_parser() -> argparse.ArgumentParser:
