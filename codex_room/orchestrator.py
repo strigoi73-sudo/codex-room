@@ -1108,9 +1108,16 @@ class RoomRuntime:
 
             if transactional:
                 instruction = request.content
-                if not instruction.strip() and stored_images:
+                if stored_images:
+                    attachment_names = ", ".join(item.filename for item in stored_images)
+                    attachment_note = (
+                        "Observer image attachment(s), supplied through native Codex image input: "
+                        f"{attachment_names}."
+                    )
                     instruction = (
-                        "Observer supplied image attachment(s) without accompanying text."
+                        f"{instruction}\n\n{attachment_note}"
+                        if instruction.strip()
+                        else attachment_note
                     )
                 transaction = await self.db.create_observer_transaction_work(
                     room_id,
