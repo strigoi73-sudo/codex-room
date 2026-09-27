@@ -2925,3 +2925,61 @@ GitHub comparison from exact verified feature head `08baf90e...` to merge commit
 
 **Assessment:** I-030 / D-052 is **IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED**. The remaining same-Task concurrent public-delta visibility defect is closed. Independent concurrency remains a supported first-class Room behavior; I-034 may serialize responsive dialogue when interaction value warrants it, but no coordination workaround is required to preserve provider visibility. Active development moves to I-035.
 
+### E-191 — I-035 native directed image handoff exact-head verification and merge
+**Date:** 2026-09-27  
+**Status:** VERIFIED BY PRINCIPAL  
+**Kind:** [principal attachment handoff / native Codex image input / directed routing / exact-head local verification]  
+**Issue:** I-035
+
+The principal selected an image-first implementation slice for I-035 with an explicit native-first boundary: observer images should use Codex's existing structured image/local-image turn input, with no OCR, transcription layer, host vision preprocessing, or custom image interpretation mechanism.
+
+Exact Codex 0.154 SDK source establishes the relevant substrate:
+
+- `TextInput(text)` for normal text turn input;
+- `LocalImageInput(path)` for a local image path;
+- `AsyncThread.turn(...)` accepts a list of structured input items and converts them to App Server turn input.
+
+PR #225, `Add I-035 native observer image handoff`, implements the corresponding Room host/routing layer:
+
+- observer messages may carry up to four PNG/JPEG/WebP images, each bounded to 8 MiB;
+- image bytes are validated against the declared image type and written immutably under the Room host area outside `shared/`;
+- safe observer-event provenance includes attachment ID, original filename, MIME type, byte count, and SHA-256, but not the host path or image bytes;
+- the existing `all`, `both`, `agent_a`, `agent_b`, and `agent_c` addressing model determines which logical Assignment receives the attachment;
+- the addressed Assignment receives normal text plus native Codex `LocalImageInput` items on the Assignment's first provider execution;
+- the original human filename remains in the addressed Assignment instruction while the host path remains internal;
+- same-Assignment HISTORY/EVIDENCE/retry continuations do not resend the image;
+- unaddressed agents are not routed the image, and the bytes are not copied into the common agent workspace;
+- image-only observer messages are valid;
+- text-only observer payload shape remains unchanged;
+- Markdown export records safe attachment provenance without path or binary data;
+- malformed/mismatched image bytes fail before a finished Room is reopened or other lifecycle mutation occurs.
+
+The first exact-head gate at `ce0dc201176c62a4227266d4f746901c414aa70a` reached the complete Python/Windows portions successfully — **75 Linux focused tests, 2 warnings; 119 Windows focused tests** — but the browser transcript suite found two compatibility regressions. The implementation had changed the established composer hint string and added an unnecessary empty `images: []` field to text-only observer API payloads. Those were treated as compatibility defects rather than test expectations to be relaxed.
+
+The feature branch then restored the exact existing hint text and preserved the established `{target, content}` payload shape for text-only messages while retaining image-bearing payloads and the image picker. The principal reran the exact-head gate at:
+
+`7ac076b62978e318493c1a904f38a2071aa14210`
+
+from the normal `C:\Codex Room` checkout. The successful gate established:
+
+- Codex Room server not listening on port 8765 before checkout mutation;
+- exact remote feature-head match and unchanged canonical base `e36014ff37cbb9854342d136df780124400cdade`;
+- clean tracked tree at the exact feature head;
+- `git diff --check`: PASS;
+- Linux Python 3.12 focused core: **75 passed, 2 warnings**;
+- Windows focused portability: **119 passed**;
+- browser transcript stability: **9 passed**;
+- repository-standard verification result: **PASS**;
+- focused I-035 image verification: **5 passed, 2 warnings**;
+- original local branch restored to `main` after verification.
+
+The persistent WSL systemd-user-session warning appeared during the successful run but did not prevent Linux execution or any verifier phase from passing.
+
+At merge time, PR #225 still pointed to exact verified head `7ac076b62978e318493c1a904f38a2071aa14210`. GitHub merged it as:
+
+`4e09f0b84851c12edb43eca6f74fc40ca2586f0a`
+
+GitHub comparison from the verified feature head to the merge commit reported **zero changed files**, establishing byte-equivalent merged implementation and regression content.
+
+**Assessment:** The I-035 **image handoff slice** is **IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED**. I-035 itself remains **IN PROGRESS** because generic non-image file handoff and attachment rollover/lifecycle semantics are not yet implemented. The next implementation decision should inspect the exact native Codex non-image file-input surface before Codex Room adds any new generic file transport.
+
