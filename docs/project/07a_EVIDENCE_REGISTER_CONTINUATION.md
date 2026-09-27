@@ -2814,3 +2814,30 @@ No A/B assignment used Astra. C's coordinator assignment remained Terra-family; 
 The benchmark also supplied a useful adequacy check on the middle-tier choices. B completed the prescribed multi-scenario adversarial failure analysis on `terra-high`; A's subsequent `terra-high` audit reported no arithmetic, unsupported-assumption, dependency, probability, nominal-versus-available-capacity, or evidentiary errors in that analysis. C later selected `sol-high` for B's final decision analysis, then selected `terra-high` for A's independent final decision rather than preserving the prior Sol configuration merely for consistency. Both A and B selected Strategy Blue under their stated criteria; C's synthesis preserved that agreement without presenting it as proof of objective correctness.
 
 **Assessment:** This controlled post-merge acceptance supports D-055's intended boundary. C used the advisory information while continuing to vary model family and effort by assignment, and unrestricted Astra availability did **not** produce automatic Astra use. The run does not establish a universal optimal routing policy, a numeric escalation threshold, or that Astra is never warranted; it establishes only the observed allocation behavior and successful completion of this bounded Helix workload. I-033 remains COMPLETE. I-030 remains the active development priority.
+
+### E-188 — God Button natural debate exposes interaction-topology gap and reproduces I-030 recovery waste
+**Date:** 2026-09-26
+**Status:** VERIFIED FROM ROOM EXPORT
+**Kind:** [ROOM natural debate / C coordination topology / worker public-context continuity]
+**Decision:** D-035
+**Issues:** I-034, I-030
+
+The principal supplied the completed export of a fresh ordinary Room titled **God Button**. The Room finished normally after **43 counted turns** under the default model policy.
+
+The debate prompt assigned A an opening pro-press position and B an opening no-press position, then required opening cases, cross-examination, steelmanning, hard cases, position reversal, and final independent judgments. The prompt did not specify a peer speaking order. C therefore used concurrent A/B delegation for several stages.
+
+The run exposed two distinct findings that must not be conflated.
+
+**1. C coordination topology:** D-035's existing instruction asked C to sequence work whose useful completion depended on a prerequisite artifact, evidence, or result. C correctly treated paired steelman generation as independently executable, but later also launched the two steelman-assessment assignments concurrently. That assessment work was dialectically responsive: each peer's useful task depended not merely on mechanical completion of the pair, but on receiving the other peer's just-published contribution as substantive reasoning input. The existing dependency wording did not explicitly tell C to consider this **interaction value** when choosing parallel versus sequential execution.
+
+The principal noted that manually appending an instruction such as **“A goes first”** had historically prevented this conversational topology, but selected a domain-general C-side responsibility instead of relying on prompt-specific ordering ceremony. The intended refinement is that C should decide when responsive reasoning benefits from serialization, while explicit principal ordering remains authoritative.
+
+**2. I-030 continuity:** C's concurrent topology also naturally reproduced the already-open public-delta visibility defect. A's Round-3 steelman became a public Room message while B's paired provider execution was in flight. When C later asked B to assess A's steelman, B reported that it needed A's completed text and requested deterministic HISTORY. The first phrase search selected **0** prior results. B then spent another continuation requesting recent A results, after which CORE selected four prior durable results and B recovered enough context to proceed.
+
+The two B recovery executions consumed **32,146** and **34,282** execution tokens respectively, for **66,428 execution tokens** spent on recovering already-public Room context before the requested assessment could proceed.
+
+This does not mean C should avoid concurrency to conceal I-030. Independent parallel work remains a required first-class Room behavior, and CORE must still repair the visibility boundary so a peer message published during another peer's in-flight execution cannot be silently skipped from that worker's next public delta.
+
+The debate itself recovered and completed normally. Both A and B ultimately chose to press the hypothetical button; B changed from its assigned opening no-press position, while A retained its final position but narrowed its justification. That outcome is incidental to the coordination evidence.
+
+**Assessment:** The natural God Button run supports amending D-035 so C considers both mechanical dependency and interaction value when choosing parallel versus sequential peer execution. It independently strengthens the natural evidence for the remaining I-030 concurrency race. I-034 should change only C's protected structural guidance and its composition regression; it must not add a debate-specific mode, deterministic scheduler, permanent A/B precedence, or serialization workaround for I-030.

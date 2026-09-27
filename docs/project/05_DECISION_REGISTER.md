@@ -529,17 +529,22 @@ This decision completes the product-direction question left open by D-030 throug
 
 **Principle:** **Stage-D-proven transaction semantics are the production path; do not spend migration complexity on Rooms we intend to delete.**
 
-### D-035 — C sequences dependent work and allocates substantial fallback to low-context capable assignments
+### D-035 — C sequences dependent and interaction-sensitive work and allocates substantial fallback to low-context capable assignments
 **Date:** 2026-09-16
+**Amended:** 2026-09-26 — interaction-aware sequencing
 **Status:** ACTIVE
 
 Ordinary Common Cause implementation exposed a coordination-economics failure that is not adequately addressed by peer-count limits or differentiated delegation alone. C may choose distinct assignments that are individually sensible yet still waste cognition if they are launched before their prerequisite results exist, and C may later absorb expensive fallback onto an already accumulated coordination context.
 
 Settled coordination policy:
 
-- before delegating multiple assignments concurrently, C must determine whether each assignment can produce a useful result without another assignment's output;
-- genuinely independent work should remain parallel;
-- work whose useful completion depends on a prerequisite artifact, evidence, or result should be sequenced after that prerequisite exists;
+- before delegating multiple assignments concurrently, C must consider both **dependency** and **interaction value**;
+- C must determine whether each assignment can produce useful work without another assignment's output **and** whether seeing another participant's contribution before reasoning would materially improve the work;
+- independent cognition should remain parallel when neither assignment materially benefits from receiving the other's contribution first;
+- work should be sequenced when useful completion depends on a prerequisite artifact, evidence, or result, or when one participant's contribution should become substantive input to another participant's reasoning;
+- responsive work includes rebuttal, critique, cross-examination responses, negotiation, iterative refinement, and dialogue where responsiveness is part of the objective;
+- when the principal specifies an order, C must follow it; otherwise C chooses order from the objective, relevant context continuity, and execution economy without assigning permanent precedence to A or B;
+- C must not serialize genuinely independent work merely as a workaround for context-visibility defects; concurrency remains a supported first-class behavior and CORE remains responsible for making it mechanically safe;
 - verification of an artifact should not be treated as concurrent with creation or modification of that same artifact unless the peer assigned verification has meaningful independent work it can complete before the artifact exists;
 - when delegated implementation, correction, or investigation fails to produce needed work, **or when fallback work reaches C because another assignment failed or settled without producing it**, C should normally place substantial tool-heavy execution in a fresh bounded peer assignment rather than perform it itself;
 - that fallback rule applies whether C is acting in its root coordination assignment or in a child assignment created by a peer;
@@ -550,13 +555,13 @@ Settled coordination policy:
 - the rule is domain-general and does not make A a permanent implementer or B a permanent verifier in cognitive terms. Assignment responsibility is chosen from the task;
 - the rule does not weaken A/B/C peer judgment and does not give C authority over conclusions.
 
-The implementation is intentionally an instruction-level coordination refinement rather than a new CORE scheduler or persistent role system. PR #109 introduced dependency-aware sequencing plus the first context-aware fallback rule. PR #110 tightened the fallback wording so it covers substantial fallback reaching C from any failed/empty delegated path, including C child assignments, and replaces the earlier weaker “consider another bounded peer” wording.
+The implementation is intentionally an instruction-level coordination refinement rather than a new CORE scheduler or persistent role system. PR #109 introduced dependency-aware sequencing plus the first context-aware fallback rule. PR #110 tightened the fallback wording so it covers substantial fallback reaching C from any failed/empty delegated path, including C child assignments, and replaces the earlier weaker “consider another bounded peer” wording. I-034 extends the sequencing side of this same decision from mechanical prerequisite dependency to interaction-aware coordination; it does not add debate mode, a deterministic scheduler, or an I-030 workaround.
 
 Adoption boundary: the refined protected C structural instructions apply to **freshly composed Rooms going forward**. Existing Room snapshots are not retroactively rewritten. Rollover successors retain predecessor instructions unless a later deliberate mechanism changes that behavior.
 
 Behavioral compliance remains an evidence question. Exact instruction regression/PR verification proves composition rather than universal compliance. E-125 later supplied naturalistic support for dependency-aware sequencing, and E-126 naturally exercised the tightened failed-delegation fallback successfully. Continue ordinary-use monitoring; Development Control owns current status and sequencing.
 
-**Principle:** **Parallelize independence; sequence dependencies; put substantial fallback where capable cognition has the least unnecessary accumulated context.**
+**Principle:** **Parallelize independent cognition; sequence dependencies and materially responsive interaction; put substantial fallback where capable cognition has the least unnecessary accumulated context.**
 
 ### D-036 — Round completion policy separates bounded activity settlement from standing objectives
 **Date:** 2026-09-18

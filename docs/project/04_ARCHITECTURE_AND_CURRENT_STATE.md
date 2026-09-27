@@ -38,7 +38,11 @@ C's protected coordination policy currently includes:
 - use the fewest peer invocations expected to add sufficient value;
 - if both A and B are invoked, give them meaningfully differentiated cognitive responsibilities;
 - treat invocation as a purchase of cognition, not as message visibility;
-- before concurrent delegation, determine whether each assignment can produce useful work independently; parallelize genuinely independent work and sequence work whose useful completion depends on a prerequisite artifact, evidence, or result;
+- before concurrent delegation, consider both dependency and interaction value: determine whether each assignment can produce useful work independently and whether seeing another participant's contribution first would materially improve the reasoning;
+- parallelize independent cognition when neither assignment materially benefits from receiving the other's contribution first;
+- sequence work whose useful completion depends on a prerequisite artifact, evidence, or result, or when one participant's contribution should become substantive input to another participant's reasoning, including rebuttal, critique, cross-examination responses, negotiation, iterative refinement, and dialogue where responsiveness is part of the objective;
+- follow explicit principal ordering when supplied; otherwise choose order from the objective, relevant context continuity, and execution economy without permanent A/B precedence;
+- do not serialize independent work merely to work around context-visibility defects; concurrency remains a supported behavior that CORE must make mechanically safe;
 - do not treat verification of an artifact as concurrent with creation/modification of that same artifact unless the peer assigned verification has meaningful independent pre-artifact work;
 - when delegated implementation, correction, or investigation fails to produce needed work, or fallback work reaches C because another assignment failed or settled without producing it, substantial tool-heavy fallback should normally move to a fresh bounded peer assignment rather than remain on C's accumulated coordinator context;
 - that fallback rule applies whether C is in its root coordination assignment or a child assignment created by a peer;
@@ -46,7 +50,9 @@ C's protected coordination policy currently includes:
 - C may still execute directly when work is demonstrably small in expected execution/context cost, urgent, inseparable from integration, or no fresh peer is likely to perform it reliably at lower total cost;
 - do not infer that model execution will be cheap merely because a code/file change appears small.
 
-PR #109 introduced dependency-aware sequencing plus the first context-aware fallback rule. A fresh design-only Common Cause rerun then supplied useful naturalistic evidence for the sequencing side: C deliberately ran two genuinely independent design assignments in parallel, with no tools/retries, using **93,939 raw execution tokens** versus the historical **98,996** Stage-1 baseline. This is a behavioral **PASS for avoiding over-serialization**; it is not an implementation/fallback test.
+PR #109 introduced dependency-aware sequencing plus the first context-aware fallback rule. I-034 later extends that same protected C-side policy from mechanical prerequisite dependency to **interaction-aware sequencing**: technically independent tasks may still warrant serialization when one participant's contribution is valuable reasoning input to the other. The change remains instruction-level; it adds no debate mode, scheduler, persistent A/B order, or substitute for I-030's CORE visibility repair.
+
+A fresh design-only Common Cause rerun then supplied useful naturalistic evidence for the sequencing side: C deliberately ran two genuinely independent design assignments in parallel, with no tools/retries, using **93,939 raw execution tokens** versus the historical **98,996** Stage-1 baseline. This is a behavioral **PASS for avoiding over-serialization**; it is not an implementation/fallback test.
 
 A controlled implementation rerun then exercised the dependency boundary directly. C ran A's implementation concurrently with B's artifact-independent verification-matrix design, waited for the implementation artifact before auditing actual code, found a genuine defect, and delegated a bounded correction. That sequence supports the dependency-aware rule. The same run exposed a remaining fallback loophole: after the correction assignment settled without applying its patch, substantial tool-heavy work reached C in a peer-created child assignment and C executed the fallback itself. PR #110 tightened the fallback wording specifically for that failure mode.
 
