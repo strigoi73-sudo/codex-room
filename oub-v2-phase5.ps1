@@ -93,36 +93,46 @@ function Invoke-OubV2GradeWithHeartbeat {
     $stderrTask = $process.StandardError.ReadToEndAsync()
     $heartbeat = 0
 
-    while (-not $process.HasExited) {
-        Start-Sleep -Seconds $HeartbeatSeconds
+    try {
+        while (-not $process.HasExited) {
+            Start-Sleep -Seconds $HeartbeatSeconds
 
-        if (-not $process.HasExited) {
-            $heartbeat++
-            Write-Host ""
-            Write-Host ("[grade heartbeat {0}] {1} still running - {2}" -f $heartbeat, $TaskId, (Get-Date -Format "HH:mm:ss"))
+            if (-not $process.HasExited) {
+                $heartbeat++
+                Write-Host ""
+                Write-Host ("[grade heartbeat {0}] {1} still running - {2}" -f $heartbeat, $TaskId, (Get-Date -Format "HH:mm:ss"))
 
-            $activity = & wsl.exe -e sh -lc @'
+                $activity = & wsl.exe -e sh -lc @'
 ps -eo pid,ppid,etime,stat,pcpu,pmem,args |
 grep -E 'grade_workspace_native|uv (venv|pip)|pytest|cargo|rustc|git clone|python.*pytest' |
 grep -v grep
 '@ 2>&1
-            $activityExit = $LASTEXITCODE
-            $activityText = ($activity | Out-String).Trim()
+                $activityExit = $LASTEXITCODE
+                $activityText = ($activity | Out-String).Trim()
 
-            if ($activityText -match "Failed to start the systemd user session") {
-                throw "WSL reported a failed systemd user session during grading. Run .\Repair-WSL-Codex-Room.ps1 before retrying."
-            }
+                if ($activityText -match "Failed to start the systemd user session") {
+                    throw "WSL reported a failed systemd user session during grading. Run .\Repair-WSL-Codex-Room.ps1 before retrying."
+                }
 
-            if ($activityExit -eq 0 -and -not [string]::IsNullOrWhiteSpace($activityText)) {
-                Write-Host $activityText
-            }
-            else {
-                Write-Host "No matching grader child process visible at this instant."
+                if ($activityExit -eq 0 -and -not [string]::IsNullOrWhiteSpace($activityText)) {
+                    Write-Host $activityText
+                }
+                else {
+                    Write-Host "No matching grader child process visible at this instant."
+                }
             }
         }
-    }
 
-    $process.WaitForExit()
+        $process.WaitForExit()
+    }
+    catch {
+        if (-not $process.HasExited) {
+            $process.Kill($true)
+            $process.WaitForExit()
+        }
+
+        throw
+    }
 
     $stdout = $stdoutTask.GetAwaiter().GetResult().Trim()
     $stderr = $stderrTask.GetAwaiter().GetResult().Trim()
@@ -380,9 +390,11 @@ try {
 
         Assert-Phase5 -Condition ($null -ne $readme) -Message "$taskId has no root README for replay sentinel."
 
+        $newline = [Environment]::NewLine
+
         [IO.File]::AppendAllText(
             $readme.FullName,
-            "\n<!-- OUB Phase 5 replay sentinel: $taskId -->\n",
+            $newline + "<!-- OUB Phase 5 replay sentinel: $taskId -->" + $newline,
             [Text.UTF8Encoding]::new($false)
         )
 
@@ -391,7 +403,7 @@ try {
 
         [IO.File]::WriteAllText(
             $untrackedPath,
-            "OUB Phase 5 replay sentinel for $taskId\n",
+            "OUB Phase 5 replay sentinel for $taskId" + $newline,
             [Text.UTF8Encoding]::new($false)
         )
 
