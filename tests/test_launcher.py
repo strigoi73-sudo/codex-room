@@ -1,4 +1,5 @@
 from pathlib import Path
+import shutil
 import subprocess
 
 
@@ -121,6 +122,9 @@ def test_phase5_runner_owns_mechanical_operator_guardrails() -> None:
 
 
 def test_phase5_runner_parses_as_powershell() -> None:
+    if shutil.which("powershell.exe") is None:
+        return
+
     script = ROOT / "oub-v2-phase5.ps1"
     escaped = str(script).replace("'", "''")
     command = (
@@ -147,4 +151,3 @@ def test_phase5_runner_parses_as_powershell() -> None:
     )
 
     assert completed.returncode == 0, completed.stderr or completed.stdout
-
