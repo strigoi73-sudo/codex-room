@@ -1046,15 +1046,12 @@ class RoomRuntime:
         reopen_events: list[dict[str, Any]] = []
         async with self._lifecycle_locks[room_id]:
             room = await self._required_room(room_id)
-            if room["status"] == RoomStatus.FINISHED:
-                await self.db.reopen_finished_room(room_id)
-                await self._start_usage_meter_cycle(room_id, room["active_round_id"])
-                await self._system_event(
-                    room_id,
-                    "discussion_reopened",
-                    "Discussion reopened by a new observer message; agent thread identities were retained.",
-                )
-            elif room["status"] not in {RoomStatus.RUNNING, RoomStatus.PAUSED}:
+            room_was_finished = room["status"] == RoomStatus.FINISHED
+            if room["status"] not in {
+                RoomStatus.RUNNING,
+                RoomStatus.PAUSED,
+                RoomStatus.FINISHED,
+            }:
                 raise ValueError(f"Cannot send messages while room is {room['status']}")
             members = [agent["agent_key"] for agent in await self.db.get_agents(room_id)]
             target = "all" if request.target in {"all", "both"} else request.target
@@ -1076,6 +1073,20 @@ class RoomRuntime:
                 request.images,
             )
             attachment_metadata = [item.descriptor() for item in stored_images]
+
+            if room_was_finished:
+                try:
+                    await self.db.reopen_finished_room(room_id)
+                    await self._start_usage_meter_cycle(room_id, room["active_round_id"])
+                    await self._system_event(
+                        room_id,
+                        "discussion_reopened",
+                        "Discussion reopened by a new observer message; agent thread identities were retained.",
+                    )
+                except BaseException:
+                    remove_observer_images(stored_images)
+                    raise
+
             try:
                 event = await self.db.create_event(
                     room_id,
