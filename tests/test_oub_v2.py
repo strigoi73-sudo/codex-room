@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import subprocess
 from pathlib import Path
@@ -230,3 +231,18 @@ def test_oub_v2_materialized_workspace_pins_cross_host_line_endings(
     assert autocrlf == "false"
     assert state["head"] == base_commit
     assert state["status"] == ""
+
+def test_oub_v2_json_output_is_safe_for_legacy_windows_code_pages(
+    monkeypatch,
+) -> None:
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252", write_through=True)
+    monkeypatch.setattr(oub_v2.sys, "stdout", stream)
+
+    oub_v2._json_out({"status": "❌"})
+
+    stream.flush()
+    rendered = raw.getvalue().decode("cp1252")
+    assert "\\u274c" in rendered
+    assert json.loads(rendered) == {"status": "❌"}
+
