@@ -158,9 +158,31 @@ def _evidence_dir(state: dict[str, Any], arm: str) -> Path:
 
 
 def _git_blob_sha(path: Path) -> str:
-    data = path.read_bytes()
-    header = f"blob {len(data)}\0".encode("ascii")
-    return hashlib.sha1(header + data).hexdigest()
+    try:
+        relative = path.resolve().relative_to(oub.PROJECT_ROOT.resolve()).as_posix()
+    except ValueError as exc:
+        raise OUBV2Error(f"Asset is outside the Codex Room repository: {path}") from exc
+    proc = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(oub.PROJECT_ROOT),
+            "hash-object",
+            f"--path={relative}",
+            str(path.resolve()),
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise OUBV2Error(
+            f"Unable to hash canonical Git asset {relative}: "
+            + (proc.stdout or "").strip()[-1000:]
+        )
+    return proc.stdout.strip()
 
 
 def _sha256(path: Path) -> str:
