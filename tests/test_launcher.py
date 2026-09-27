@@ -79,3 +79,23 @@ def test_restart_script_waits_for_api_readiness_before_success() -> None:
     assert "Codex Room API is ready." in restart
     assert "Restart failed because Codex Room API readiness was not confirmed." in restart
     assert restart.count("Kill-Codex-Room.bat") >= 2
+
+
+def test_feature_verifier_owns_exact_head_operator_guardrails() -> None:
+    verifier = (ROOT / "verify-feature.ps1").read_text(encoding="utf-8")
+
+    assert "Kill-Codex-Room.bat" in verifier
+    assert "verify-fast.cmd" in verifier
+    assert "verify-full.cmd" in verifier
+    assert '$verifyCommandName = if ($Mode -eq "Full") {' in verifier
+    assert "$verifyCommand = Join-Path $repoRoot $verifyCommandName" in verifier
+    assert "$verifyCommand = Join-Path $repoRoot (" not in verifier
+    assert "git fetch origin --prune" in verifier
+    assert "git switch --detach $Head" in verifier
+    assert "git diff --check" in verifier
+    assert "FocusedTests" in verifier
+    assert "RESTORE" in verifier
+    assert not any(
+        line.strip().lower().startswith("exit ")
+        for line in verifier.splitlines()
+    )
