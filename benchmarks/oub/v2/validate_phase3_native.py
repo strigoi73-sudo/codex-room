@@ -142,7 +142,7 @@ def reset_repo(repo: Path, base_commit: str) -> None:
     reset = run(["git", "reset", "--hard", base_commit], cwd=repo)
     if reset.returncode != 0:
         raise RuntimeError(reset.stdout)
-    clean = run(["git", "clean", "-fd"], cwd=repo)
+    clean = run(["git", "clean", "-fd", "-e", ".venv/", "-e", "target/"], cwd=repo)
     if clean.returncode != 0:
         raise RuntimeError(clean.stdout)
 
