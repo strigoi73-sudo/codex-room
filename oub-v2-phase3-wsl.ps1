@@ -25,31 +25,40 @@ if ($probeText -match "Failed to start the systemd user session") {
 }
 
 Write-Host ""
-Write-Host "=== Provisioning Ubuntu build prerequisites ==="
+Write-Host "=== Checking Ubuntu build prerequisites ==="
 
-wsl.exe -u root -- env DEBIAN_FRONTEND=noninteractive apt-get update -o Acquire::ForceIPv4=true -o Acquire::Retries=3
-$aptUpdateExit = $LASTEXITCODE
-if ($aptUpdateExit -ne 0) {
-    Write-Host "ERROR: Ubuntu package-index refresh failed with exit code $aptUpdateExit."
-    return
-}
+$packageProbe = @(wsl.exe -u root -- dpkg-query -W '-f=${Status}\n' build-essential pkg-config libssl-dev ca-certificates curl git python3 python3-venv 2>&1)
+$packageProbeExit = $LASTEXITCODE
 
-wsl.exe -u root -- env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends build-essential pkg-config libssl-dev ca-certificates curl git python3 python3-venv
-$aptInstallExit = $LASTEXITCODE
-if ($aptInstallExit -ne 0) {
-    Write-Host "ERROR: Ubuntu prerequisite installation failed with exit code $aptInstallExit."
-    return
+if ($packageProbeExit -ne 0) {
+    Write-Host "Ubuntu build prerequisites are incomplete; provisioning them now."
+
+    wsl.exe -u root -- env DEBIAN_FRONTEND=noninteractive apt-get update -o Acquire::ForceIPv4=true -o Acquire::Retries=3
+    $aptUpdateExit = $LASTEXITCODE
+    if ($aptUpdateExit -ne 0) {
+        Write-Host "ERROR: Ubuntu package-index refresh failed with exit code $aptUpdateExit."
+        return
+    }
+
+    wsl.exe -u root -- env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends build-essential pkg-config libssl-dev ca-certificates curl git python3 python3-venv
+    $aptInstallExit = $LASTEXITCODE
+    if ($aptInstallExit -ne 0) {
+        Write-Host "ERROR: Ubuntu prerequisite installation failed with exit code $aptInstallExit."
+        return
+    }
+} else {
+    Write-Host "Ubuntu build prerequisites: already present."
 }
 
 Write-Host ""
-Write-Host "=== Provisioning isolated user toolchains ==="
+Write-Host "=== Checking isolated user toolchains ==="
 
-$toolchainCommand = 'set -eu; export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"; if ! command -v uv >/dev/null 2>&1; then curl -LsSf https://astral.sh/uv/install.sh | sh; fi; export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"; uv python install 3.10 3.11; if ! command -v rustup >/dev/null 2>&1; then curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain 1.80.0; fi; export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"; rustup toolchain install 1.80.0 --profile minimal; printf "uv: "; uv --version; printf "rustc: "; RUSTUP_TOOLCHAIN=1.80.0 rustc --version; printf "cargo: "; RUSTUP_TOOLCHAIN=1.80.0 cargo --version'
+$toolchainCommand = 'set -eu; export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"; if ! command -v uv >/dev/null 2>&1; then curl -LsSf https://astral.sh/uv/install.sh | sh; fi; export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"; if ! uv python find 3.10 >/dev/null 2>&1; then uv python install 3.10; fi; if ! uv python find 3.11 >/dev/null 2>&1; then uv python install 3.11; fi; if ! command -v rustup >/dev/null 2>&1; then curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain 1.80.0; fi; export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"; if ! rustup toolchain list | grep -q "^1\.80\.0"; then rustup toolchain install 1.80.0 --profile minimal; fi; printf "uv: "; uv --version; printf "python 3.10: "; uv python find 3.10; printf "python 3.11: "; uv python find 3.11; printf "rustc: "; RUSTUP_TOOLCHAIN=1.80.0 rustc --version; printf "cargo: "; RUSTUP_TOOLCHAIN=1.80.0 cargo --version'
 
 wsl.exe -e bash -lc $toolchainCommand
 $toolchainExit = $LASTEXITCODE
 if ($toolchainExit -ne 0) {
-    Write-Host "ERROR: WSL user-toolchain provisioning failed with exit code $toolchainExit."
+    Write-Host "ERROR: WSL user-toolchain check/provisioning failed with exit code $toolchainExit."
     return
 }
 
