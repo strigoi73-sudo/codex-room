@@ -1,4 +1,6 @@
 from pathlib import Path
+import subprocess
+
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -99,3 +101,50 @@ def test_feature_verifier_owns_exact_head_operator_guardrails() -> None:
         line.strip().lower().startswith("exit ")
         for line in verifier.splitlines()
     )
+
+def test_phase5_runner_owns_mechanical_operator_guardrails() -> None:
+    runner = (ROOT / "oub-v2-phase5.ps1").read_text(encoding="utf-8")
+
+    assert "ExpectedHead" in runner
+    assert '"prepare", "--task-id", $taskId, "--no-start"' in runner
+    assert "No Desktop benchmark worker will be started." in runner
+    assert "No Room Round will be started." in runner
+    assert "Failed to start the systemd user session" in runner
+    assert "$process.Kill($true)" in runner
+    assert "Attempting fail-safe abort" in runner
+    assert "I-028 PHASE 5 REQUESTED TASK SET: PASS" in runner
+    assert "all_frozen_tasks_covered_by_this_run" in runner
+    assert not any(
+        line.strip().lower().startswith("exit ")
+        for line in runner.splitlines()
+    )
+
+
+def test_phase5_runner_parses_as_powershell() -> None:
+    script = ROOT / "oub-v2-phase5.ps1"
+    escaped = str(script).replace("'", "''")
+    command = (
+        "$tokens = $null; $errors = $null; "
+        f"[System.Management.Automation.Language.Parser]::ParseFile('{escaped}', "
+        "[ref]$tokens, [ref]$errors) | Out-Null; "
+        "if ($errors.Count -gt 0) { "
+        "$errors | ForEach-Object { Write-Error $_.Message }; exit 1 }"
+    )
+
+    completed = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            command,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr or completed.stdout
+
