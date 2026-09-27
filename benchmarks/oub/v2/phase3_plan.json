@@ -1,0 +1,74 @@
+{
+  "schema": "oub-v2-phase3-plan-v1",
+  "upstream_url": "https://github.com/cooperbench/CooperBench.git",
+  "upstream_revision": "63b9d44d9f39a02fccf5bf0052db48a917a011fd",
+  "method": "For each selected feature: exact upstream tests must reject the untouched base task image, and the same tests must pass after applying the exact task combined.patch. The exact dataset runner.sh is mounted over the image runner.",
+  "tasks": [
+    {
+      "sample_id": "o2-1",
+      "cooperbench_repo": "llama_index_task",
+      "task_id": 18813,
+      "task_path": "dataset/llama_index_task/task18813",
+      "base_commit": "5eca4973cef04eca5d817d3e1515c8cbe7d1cf9e",
+      "image": "akhatua/cooperbench-llama-index:task18813",
+      "features": [
+        2,
+        5
+      ],
+      "asset_git_blobs": {
+        "dataset/llama_index_task/task18813/combined.patch": "d3a7bf8e3cc402aabe7351210016b116fa69e20c",
+        "dataset/llama_index_task/task18813/runner.sh": "ae0360c39c637c12b0d78ab908c68c4013832995",
+        "dataset/llama_index_task/task18813/feature2/feature.md": "528bed9d497c25033b71c746b46953c18178d816",
+        "dataset/llama_index_task/task18813/feature2/feature.patch": "4646db1cbc721687753a2d5dc442f9256a8df136",
+        "dataset/llama_index_task/task18813/feature2/tests.patch": "0427cfe9cee6eea6c76279b63a82e4f1e3b0caa5",
+        "dataset/llama_index_task/task18813/feature5/feature.md": "9ec0a8b45f0dbe1f8864ceb7c39face4fa775e82",
+        "dataset/llama_index_task/task18813/feature5/feature.patch": "b821a6109aa6219f35b3438beefc4c95f260606a",
+        "dataset/llama_index_task/task18813/feature5/tests.patch": "72e6fd18ca519d5acf99f86c92e8201baa160bf6"
+      }
+    },
+    {
+      "sample_id": "o2-2",
+      "cooperbench_repo": "typst_task",
+      "task_id": 6554,
+      "task_path": "dataset/typst_task/task6554",
+      "base_commit": "b8034a343831e8609aec2ec81eb7eeda57aa5d81",
+      "image": "akhatua/cooperbench-typst:task6554",
+      "features": [
+        4,
+        9
+      ],
+      "asset_git_blobs": {
+        "dataset/typst_task/task6554/combined.patch": "8ff97fd5bd4f0e11587fc5bed94f0be16bebda6a",
+        "dataset/typst_task/task6554/runner.sh": "0b1ffb1b97f0a36fdf0ac89ffe195740b34c943c",
+        "dataset/typst_task/task6554/feature4/feature.md": "8ea2c04093d20a58cd1d2912afb98c79cf63b71b",
+        "dataset/typst_task/task6554/feature4/feature.patch": "e5668d8b605972f522ac9fc3dfe639dac891e8af",
+        "dataset/typst_task/task6554/feature4/tests.patch": "76662ae865bf7665e9fa82d63c69b0627985d35f",
+        "dataset/typst_task/task6554/feature9/feature.md": "1ae76030751b356a0ffa5044537f7a5d0399f3d0",
+        "dataset/typst_task/task6554/feature9/feature.patch": "92924b588b528283236f259ba55bad6b2bdbbc45",
+        "dataset/typst_task/task6554/feature9/tests.patch": "ee7539e3404d2e8b824c705d76c43523ecd5ba5c"
+      }
+    },
+    {
+      "sample_id": "o2-3",
+      "cooperbench_repo": "samuelcolvin_dirty_equals_task",
+      "task_id": 43,
+      "task_path": "dataset/samuelcolvin_dirty_equals_task/task43",
+      "base_commit": "593bcccf738ab8b724d7cb860881d74344171f5f",
+      "image": "akhatua/cooperbench-samuelcolvin-dirty-equals:task43",
+      "features": [
+        3,
+        7
+      ],
+      "asset_git_blobs": {
+        "dataset/samuelcolvin_dirty_equals_task/task43/combined.patch": "02ff8e719d982a494b7d264ea2082d6cb3db48b1",
+        "dataset/samuelcolvin_dirty_equals_task/task43/runner.sh": "df52763ab8ecca601dc3907ed683b08f538594d9",
+        "dataset/samuelcolvin_dirty_equals_task/task43/feature3/feature.md": "d1102dc82e7f74ed63ad8733ca1553a90303f17f",
+        "dataset/samuelcolvin_dirty_equals_task/task43/feature3/feature.patch": "4debceaf2b2f4b3f6ac6968ee1290646ac293b21",
+        "dataset/samuelcolvin_dirty_equals_task/task43/feature3/tests.patch": "677edf54d1499670b0386d450463ca39d95aaf02",
+        "dataset/samuelcolvin_dirty_equals_task/task43/feature7/feature.md": "c1c85204f37ab584199283c0504343ada8f541a7",
+        "dataset/samuelcolvin_dirty_equals_task/task43/feature7/feature.patch": "72d009e1dc9cc9a34d4fe415765462717092dc3b",
+        "dataset/samuelcolvin_dirty_equals_task/task43/feature7/tests.patch": "22fcf2043f460d261e482e717e92e72c96dc3ae7"
+      }
+    }
+  ]
+}
