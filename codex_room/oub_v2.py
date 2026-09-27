@@ -297,6 +297,10 @@ def _materialize_workspace(
     commands = [
         ["init"],
         ["config", "core.longpaths", "true"],
+        # The same measured workspace is inspected by Windows Git and WSL Git.
+        # Pin line-ending conversion in the repository itself so WSL does not
+        # reinterpret a Windows autocrlf checkout as a repository-wide change.
+        ["config", "core.autocrlf", "false"],
         ["remote", "add", "origin", str(task["project_url"])],
         ["fetch", "--depth", "1", "origin", str(task["base_commit"])],
         ["checkout", "--detach", "FETCH_HEAD"],
