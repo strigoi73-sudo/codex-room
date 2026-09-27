@@ -3204,3 +3204,49 @@ No task was replaced or resampled, no Desktop/Room cognition was purchased, and 
 The repository WSL runner was then made idempotent so already-present Ubuntu packages, Python runtimes, and Rust toolchains are reused rather than reprovisioned on every invocation.
 
 **Assessment:** I-028 Phase 3 — Deterministic Sanity Check is **COMPLETE / PRINCIPAL VERIFIED**. The entire frozen three-task external sample is usable under the Phase-1 contract. Phase 4 — minimal OUB harness adaptation — is next.
+
+### E-197 — I-028 OUB v2 Phase-4 external-task harness adaptation
+**Date:** 2026-09-27  
+**Status:** VERIFIED BY SOURCE REVIEW  
+**Kind:** [organizational utility benchmark / CooperBench / harness adaptation / naturalistic platform comparison]  
+**Issue:** I-028
+
+Phase 4 implemented the minimal OUB v2 adapter around the three external tasks frozen in E-195 and validated in E-196.
+
+The implementation deliberately preserves historical OUB v1. OUB v2 is explicit through `oub-v2.ps1`; `benchmarks/oub/CURRENT` remains `v1` until the v2 mechanical dry-run gate succeeds.
+
+Frozen task/evaluation material added under `benchmarks/oub/v2/` consists of:
+
+- the exact six public CooperBench feature specifications selected by E-195;
+- the exact six corresponding upstream CooperBench test patches;
+- a manifest binding task IDs, upstream repositories, exact base commits, feature IDs, source Git-blob identities, test Git-blob identities, native validation runtimes, and naturalistic platform protocol;
+- no gold feature patches and no combined oracle patch in the measured harness.
+
+The exact copied external specs/test patches are pinned to LF working-tree line endings for Windows/WSL stability. Runtime asset audit uses path-aware Git hashing rather than raw Windows working-tree bytes, avoiding false identity failure from checkout line-ending conversion.
+
+For each selected pair, the harness is designed to:
+
+- materialize the exact upstream base commit independently for Desktop and Room;
+- generate the same `BENCHMARK.md` from only the two selected public specifications;
+- require no agent count, peer invocation, delegation, role split, review pattern, or model choice;
+- use the same one-line principal mission for both platforms;
+- keep hidden test patches out of the measured task workspace;
+- treat source-code changes as expected candidate work rather than fixture mutation;
+- bind starting HEAD, tree, clean source status, and mission SHA-256;
+- use a harness-only ignored `OUB_COMPLETE.json` exact marker as a lifecycle signal after implementation/self-verification;
+- measure Desktop root + native descendants through existing rollout lineage accounting;
+- measure the whole Room Round through existing execution-economics/provenance accounting;
+- capture Room peer invocations and model/reasoning configurations where exposed;
+- capture intervention/validity state;
+- grade only after measured work by reconstructing an isolated WSL clone, replaying the candidate change, applying one exact official CooperBench test patch at a time, and running the task-specific validation target;
+- report feature pass/fail, provider tokens, elapsed duration, organization, tools, model provenance where available, and human involvement separately;
+- produce no composite score, selected winner, or arbitrary correctness/cost exchange rate;
+- retain compact candidate patch/untracked-file evidence rather than copying entire external repositories into the evidence bundle.
+
+The v2 CLI includes `prepare --task-id <o2-1|o2-2|o2-3> --no-start`. That path prepares the real equivalent Desktop/Room workspaces and creates the Room/round state but does **not** spawn Desktop/Room workers or start the Room Round. It exists specifically so Phase 5 can validate the apparatus without purchasing benchmark cognition.
+
+Source-review regressions cover frozen sample/asset binding, neutral mission construction, naturalistic Room payload, exact completion-marker semantics, clean-repository handling for harness-only files, separate quality/cost/orchestration reporting, and the non-cognitive `--no-start` parser path.
+
+No measured Desktop task or Room Round was started during Phase 4. No task was resampled, no CooperBench multi-agent orchestration was imported, and no claim of runtime dry-run verification is made by this evidence.
+
+**Assessment:** I-028 Phase 4 — OUB Harness Adaptation is **COMPLETE / IMPLEMENTED / SOURCE-REVIEWED**. Phase 5 must now exercise the actual preparation, isolation, WSL grading, cleanup, and serialization mechanics before v2 may be treated as runtime-ready.

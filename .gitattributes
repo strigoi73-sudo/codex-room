@@ -1,0 +1,4 @@
+# OUB v2 external benchmark assets are copied from Linux upstream sources and
+# must retain LF working-tree line endings for exact WSL git-apply behavior.
+benchmarks/oub/v2/tasks/** text eol=lf
+benchmarks/oub/v2/grading/** text eol=lf

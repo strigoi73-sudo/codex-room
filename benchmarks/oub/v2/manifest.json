@@ -1,0 +1,129 @@
+{
+  "schema": "oub-v2-manifest-v1",
+  "version": "v2",
+  "mode": "naturalistic",
+  "external_source": {
+    "repository": "cooperbench/CooperBench",
+    "revision": "63b9d44d9f39a02fccf5bf0052db48a917a011fd",
+    "license": "MIT"
+  },
+  "mission_paste": "Read BENCHMARK.md and execute it exactly. Do not ask me questions. When complete, stop.",
+  "completion_marker": {
+    "file": "OUB_COMPLETE.json",
+    "value": {
+      "status": "complete"
+    }
+  },
+  "protocol": {
+    "comparison_unit": "platform",
+    "same_mission": true,
+    "same_starting_repository": true,
+    "same_grader": true,
+    "principal_guidance_after_start": false,
+    "platform_internal_orchestration": "unconstrained",
+    "desktop_measurement_scope": "root-thread-and-descendants",
+    "room_measurement_scope": "measured-round-all-agents",
+    "composite_winner_score": false
+  },
+  "tasks": [
+    {
+      "id": "o2-1",
+      "title": "LlamaIndex content-block resolution features",
+      "project_url": "https://github.com/run-llama/llama_index.git",
+      "base_commit": "5eca4973cef04eca5d817d3e1515c8cbe7d1cf9e",
+      "features": [
+        {
+          "id": 2,
+          "spec_file": "tasks/o2-1/feature2.md",
+          "spec_git_blob": "528bed9d497c25033b71c746b46953c18178d816",
+          "tests_file": "grading/o2-1/feature2.tests.patch",
+          "tests_git_blob": "0427cfe9cee6eea6c76279b63a82e4f1e3b0caa5"
+        },
+        {
+          "id": 5,
+          "spec_file": "tasks/o2-1/feature5.md",
+          "spec_git_blob": "9ec0a8b45f0dbe1f8864ceb7c39face4fa775e82",
+          "tests_file": "grading/o2-1/feature5.tests.patch",
+          "tests_git_blob": "72e6fd18ca519d5acf99f86c92e8201baa160bf6"
+        }
+      ],
+      "native_runtime": {
+        "kind": "python",
+        "python": "3.10",
+        "test_command": [
+          "python",
+          "-m",
+          "pytest",
+          "llama-index-core/tests/base/llms/test_types.py",
+          "-v"
+        ]
+      },
+      "room_max_turns": 60,
+      "safety_timeout_seconds": 3600
+    },
+    {
+      "id": "o2-2",
+      "title": "Typst string first/last parameter features",
+      "project_url": "https://github.com/typst/typst.git",
+      "base_commit": "b8034a343831e8609aec2ec81eb7eeda57aa5d81",
+      "features": [
+        {
+          "id": 4,
+          "spec_file": "tasks/o2-2/feature4.md",
+          "spec_git_blob": "8ea2c04093d20a58cd1d2912afb98c79cf63b71b",
+          "tests_file": "grading/o2-2/feature4.tests.patch",
+          "tests_git_blob": "76662ae865bf7665e9fa82d63c69b0627985d35f"
+        },
+        {
+          "id": 9,
+          "spec_file": "tasks/o2-2/feature9.md",
+          "spec_git_blob": "1ae76030751b356a0ffa5044537f7a5d0399f3d0",
+          "tests_file": "grading/o2-2/feature9.tests.patch",
+          "tests_git_blob": "ee7539e3404d2e8b824c705d76c43523ecd5ba5c"
+        }
+      ],
+      "native_runtime": {
+        "kind": "rust",
+        "toolchain": "1.80.0",
+        "test_mode": "typst_patch_blocks"
+      },
+      "room_max_turns": 60,
+      "safety_timeout_seconds": 3600
+    },
+    {
+      "id": "o2-3",
+      "title": "dirty-equals email/hash validators",
+      "project_url": "https://github.com/samuelcolvin/dirty-equals.git",
+      "base_commit": "593bcccf738ab8b724d7cb860881d74344171f5f",
+      "features": [
+        {
+          "id": 3,
+          "spec_file": "tasks/o2-3/feature3.md",
+          "spec_git_blob": "d1102dc82e7f74ed63ad8733ca1553a90303f17f",
+          "tests_file": "grading/o2-3/feature3.tests.patch",
+          "tests_git_blob": "677edf54d1499670b0386d450463ca39d95aaf02"
+        },
+        {
+          "id": 7,
+          "spec_file": "tasks/o2-3/feature7.md",
+          "spec_git_blob": "c1c85204f37ab584199283c0504343ada8f541a7",
+          "tests_file": "grading/o2-3/feature7.tests.patch",
+          "tests_git_blob": "22fcf2043f460d261e482e717e92e72c96dc3ae7"
+        }
+      ],
+      "native_runtime": {
+        "kind": "python",
+        "python": "3.11",
+        "test_command": [
+          "python",
+          "-m",
+          "pytest",
+          "tests/test_other.py",
+          "-v"
+        ]
+      },
+      "room_max_turns": 60,
+      "safety_timeout_seconds": 3600
+    }
+  ]
+}
