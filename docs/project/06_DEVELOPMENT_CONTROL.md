@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. Phases 1–3 are complete. The frozen three-task CooperBench sample passed deterministic local sanity/oracle validation without resampling.
-- **What just happened?** Principal-local Phase-3 validation repaired the recurring WSL systemd-user-session failure, verified 24 frozen CooperBench asset identities, and passed all six selected feature gates: each upstream test patch rejected the untouched base and passed against the frozen combined oracle. Overall validator result: PASS / exit 0. See E-196.
-- **What is next?** I-028 Phase 4 — minimally adapt the existing OUB harness to prepare the three frozen external tasks, launch equivalent Desktop/Room workspaces, invoke the official grading contract, and capture the agreed measurements without importing CooperBench's prescribed multi-agent orchestration.
+- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. Phases 1–4 are complete. OUB v2 now has a source-reviewed naturalistic platform harness for the frozen three-task CooperBench sample; runtime mechanics have not yet been dry-run.
+- **What just happened?** Phase 4 added exact public feature/task assets, exact hidden CooperBench test patches for post-run grading, exact-base Desktop/Room workspace preparation, neutral same-mission delivery, natural Desktop/Room lifecycle accounting, isolated WSL grading, compact candidate evidence, and a `--no-start` path that can exercise preparation without model cognition. `benchmarks/oub/CURRENT` intentionally remains `v1`. See E-197.
+- **What is next?** I-028 Phase 5 — mechanically dry-run the v2 apparatus with no paid benchmark cognition: audit/fingerprints, real external-repository workspace preparation for all three task pairs, equivalent Desktop/Room starting state, hidden-test isolation, WSL grading/replay mechanics, cleanup/abort behavior, and result/state serialization.
 - **What remains behind it?** No newly selected implementation item is queued behind I-028; later work remains subject to principal prioritization and demonstrated need.
 - **What is blocked?** Nothing currently blocks ordinary Codex Room use or the next I-028 design step.
-- **What are we deliberately not doing?** We are not changing the frozen sample, importing CooperBench's prescribed multi-agent orchestration, prescribing Desktop/Room agent roles or topology, or purchasing an OUB v2 measured model run during Phase 4 harness adaptation.
+- **What are we deliberately not doing?** We are not changing the frozen sample, importing CooperBench's prescribed multi-agent orchestration, prescribing Desktop/Room agent roles or topology, promoting v2 to `CURRENT` before the mechanical dry run, or purchasing a measured OUB v2 model run during Phase 5.
 
 ## Current development state
 
@@ -236,13 +236,13 @@ PR #210 merged the implementation after exact-head verification of `b923e1654bae
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** OUB v1/O1 FIRST MEASURED COMPARISON COMPLETE; OUB v2 PHASES 1–3 COMPLETE; THREE-TASK SAMPLE FROZEN + PRINCIPAL-VALIDATED; PHASE 4 HARNESS ADAPTATION NEXT
+**Reality / evidence:** OUB v1/O1 FIRST MEASURED COMPARISON COMPLETE; OUB v2 PHASES 1–4 COMPLETE; HARNESS IMPLEMENTED + SOURCE-REVIEWED; PHASE 5 MECHANICAL DRY RUN NEXT
 
-**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179, E-180, E-194, E-195, E-196
+**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179, E-180, E-194, E-195, E-196, E-197
 
 Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
 
-Current phase state: **Phase 1 — Comparison Contract: COMPLETE. Phase 2 — External Task Sample: COMPLETE. Phase 3 — Deterministic Sanity Check: COMPLETE. Phase 4 — OUB Harness Adaptation: NEXT.**
+Current phase state: **Phase 1 — Comparison Contract: COMPLETE. Phase 2 — External Task Sample: COMPLETE. Phase 3 — Deterministic Sanity Check: COMPLETE. Phase 4 — OUB Harness Adaptation: COMPLETE / SOURCE-REVIEWED. Phase 5 — Mechanical Dry Run: NEXT.**
 
 OUB v2's comparison contract is now frozen in `benchmarks/oub/v2/PROTOCOL.md`. The initial sample will contain three externally authored tasks selected before any measured v2 run. Selection may exclude candidates for practical benchmark suitability only; it must not optimize for expected Room advantage, expected peer use, a preferred difficulty band, or a particular coordination topology. Both Desktop and Room receive the same frozen task and may organize naturally. Correctness, tokens, duration, orchestration, and human intervention remain separate outcome dimensions, with no composite winner score. A no-peer or otherwise nondiscriminating result remains valid evidence rather than grounds for replacement. See E-194.
 
@@ -255,6 +255,8 @@ The first principal-local execution on 2026-09-27 stopped before task work becau
 The first invocation of that fallback then failed before package installation. Root cause of the wrapper failure: Windows CRLF newlines in a PowerShell here-string were passed verbatim as the `bash -lc` command argument, so Bash parsed the carriage return as part of `pipefail` (`invalid option name` / `pipefail\r`). Separately, every WSL launch was emitting `Failed to start the systemd user session`; current Microsoft WSL issues document this failure class, and Codex Room source contains no `systemd`/`systemctl` dependency. The repair path explicitly sets `boot.systemd=false` in `/etc/wsl.conf` after creating a timestamped backup, restarts WSL, and verifies the warning no longer appears. The corrected Phase-3 wrapper uses direct `apt-get` argument passing and single-line shell commands, avoiding the CRLF command-boundary defect.
 
 Principal execution then completed the gate successfully. The repair backed up `/etc/wsl.conf`, set `boot.systemd=false`, restarted WSL, and verified startup as the ordinary `strigoi73` user with no failed systemd-user-session warning. The Phase-3 validator verified all 24 frozen CooperBench asset Git blobs and all six selected feature pairs: LlamaIndex features 2 and 5, Typst features 4 and 9, and dirty-equals features 3 and 7 each **failed on untouched base as required and passed with the frozen combined oracle**. Overall result: **PASS / exit 0**. The run recorded `data/oub-v2/phase3/phase3-validation-20260927T200300Z.json` locally. Transient DNS failure against `security.ubuntu.com` during package-index refresh and an initial uv TLS read failure both recovered automatically and did not affect the deterministic gate. The WSL runner now skips package installation and version installation when prerequisites are already present, reducing repeated network exposure. See E-196.
+
+Phase 4 then implemented a separate `codex_room.oub_v2` harness without mutating historical OUB v1. The adapter binds the three frozen task/base identities, copies the exact six public feature specifications plus the exact six selected upstream test patches, and generates identical measured `BENCHMARK.md` missions. Hidden test patches are never placed in the measured workspaces; they are replayed only after work in an isolated WSL grading clone. Coding changes are expected rather than treated as fixture tampering. The harness records starting HEAD/tree/mission identity, completion through a harness-only `OUB_COMPLETE.json`, Desktop lineage usage/descendants, Room executions/peer invocations/model configurations, duration, tool calls, intervention state, feature-test outcomes, and compact candidate patch/untracked evidence. No composite score or platform winner is produced. `prepare --no-start` creates both task workspaces and the Room without spawning workers or starting the Round, establishing the Phase-5 non-cognitive dry-run path. Source review also hardened Windows portability by using path-aware Git blob hashing and forcing copied external specs/test patches to LF checkout. `CURRENT` remains `v1` until the v2 dry run establishes runtime mechanics. See E-197.
 
 The gate must test situations where Room's architecture should matter intrinsically rather than merely giving both products another generic coding battery. Candidate dimensions are:
 
