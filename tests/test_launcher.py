@@ -79,3 +79,13 @@ def test_restart_script_waits_for_api_readiness_before_success() -> None:
     assert "Codex Room API is ready." in restart
     assert "Restart failed because Codex Room API readiness was not confirmed." in restart
     assert restart.count("Kill-Codex-Room.bat") >= 2
+
+
+def test_local_verifier_uses_inherited_wsl_working_directory() -> None:
+    verifier = (ROOT / "verify-local.ps1").read_text(encoding="utf-8")
+
+    assert "wslpath" not in verifier
+    assert 'repo="$(pwd -P)"' in verifier
+    assert 'Push-Location $repoRoot' in verifier
+    assert '$wslScript = ".git/$scriptName"' in verifier
+    assert "CODEX_ROOM_REPO=" not in verifier
