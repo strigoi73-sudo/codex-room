@@ -81,15 +81,10 @@ function Invoke-LinuxPytest {
         throw "WSL was not found at $wsl."
     }
 
-    $wslRepo = (& $wsl -d $Distro -- wslpath -a $repoRoot).Trim()
-    if ($LASTEXITCODE -ne 0 -or -not $wslRepo) {
-        throw "Could not resolve the repository path inside WSL."
-    }
-
     $bash = @'
 set -euo pipefail
 
-repo="$CODEX_ROOM_REPO"
+repo="$(pwd -P)"
 series="$CODEX_ROOM_PYTHON_SERIES"
 mode="$CODEX_ROOM_VERIFY_MODE"
 
@@ -184,26 +179,33 @@ fi
     $bash = $bash.Replace("`r`n", "`n").Replace("`r", "")
 
     # Do not pass a multiline Bash program through the Windows -> WSL command line.
-    # Store the exact UTF-8/LF script under .git, whose WSL path is already known
-    # from $wslRepo. This avoids a second Windows-path -> WSL-path conversion.
+    # Store the exact UTF-8/LF script under .git and invoke WSL from $repoRoot.
+    # wsl.exe inherits the caller's Windows working directory and exposes that same
+    # checkout as the Linux current directory, so no Windows-path -> WSL-path
+    # conversion is needed.
     $scriptName = "codex-room-verify-" + [guid]::NewGuid().ToString("N") + ".sh"
     $tempScript = Join-Path (Join-Path $repoRoot ".git") $scriptName
-    $wslScript = "$wslRepo/.git/$scriptName"
+    $wslScript = ".git/$scriptName"
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($tempScript, $bash, $utf8NoBom)
 
     try {
         Invoke-NativeStep $Label {
-            $args = @(
-                "-d", $Distro,
-                "--",
-                "env",
-                "CODEX_ROOM_REPO=$wslRepo",
-                "CODEX_ROOM_PYTHON_SERIES=$Series",
-                "CODEX_ROOM_VERIFY_MODE=$Mode",
-                "bash", $wslScript
-            )
-            & $wsl @args
+            Push-Location $repoRoot
+            try {
+                $args = @(
+                    "-d", $Distro,
+                    "--",
+                    "env",
+                    "CODEX_ROOM_PYTHON_SERIES=$Series",
+                    "CODEX_ROOM_VERIFY_MODE=$Mode",
+                    "bash", $wslScript
+                )
+                & $wsl @args
+            }
+            finally {
+                Pop-Location
+            }
         }
     }
     finally {
