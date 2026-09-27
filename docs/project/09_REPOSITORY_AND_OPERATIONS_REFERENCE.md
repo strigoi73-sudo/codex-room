@@ -1,6 +1,6 @@
 # Codex Room — Repository & Operations Reference
 
-**Last synthesized:** 2026-09-20  
+**Last synthesized:** 2026-09-27  
 **Scope:** Compact technical reference for source/runtime layout, maintenance boundaries, source-control workflow, recovery, and verification practices.  
 **Freshness:** Repository details are time-bounded. Prefer current live source and Git state when available.
 
@@ -66,6 +66,16 @@ Current clean-development procedure:
 `constraints-test.txt` records the known-good application/test dependency set while `pyproject.toml` retains broader supported dependency ranges. The supported Python floor is 3.11+. As of E-071, the standard Codex pair is `openai-codex==0.154.0` with `openai-codex-cli-bin==0.154.0`, and the package floor is `openai-codex>=0.154,<1`; production Room model policy remains separately pinned in source. The exact code-bearing verification for that upgrade passed **327 tests, 2 warnings**. `test-transcript-stability.ps1` remains separate from the raw Python suite because it requires Node.js plus Chrome or Edge, but it is included by the repository verification wrappers.
 
 Routine cross-platform verification uses the repository-root wrappers `verify-fast.cmd` and `verify-full.cmd`, both implemented by `verify-local.ps1`. Fast mode runs the focused Linux/Python 3.12 core set, synchronizes/checks pinned Windows dependencies, runs the focused Windows portability set, and runs browser transcript stability. Full mode runs the complete Python suite under Linux/Python 3.12 and 3.11, the complete Windows Python suite, browser transcript stability, and pinned `pip-audit==2.10.1`. The verifier caches its local environments, synchronizes dependencies only when needed, reports the exact commit, distinguishes tracked-source modifications from untracked local artifacts, and fails on any failing phase.
+
+For repeated exact-head PR/feature verification, use repository-root `verify-feature.ps1` instead of regenerating checkout/restore guardrails in chat. It accepts an exact canonical `-Base` SHA, exact `-Head` SHA, optional `-FocusedTests`, and `-Mode Fast|Full`. The script requires a clean tracked tree, stops a running Room through `Kill-Codex-Room.bat`, fetches/prunes `origin`, requires `origin/main` to equal the requested base, verifies that the base is an ancestor of the exact head (or its direct parent when `-RequireDirectParent` is selected), runs `git diff --check`, verifies the detached exact head, runs focused Windows pytest targets when supplied, invokes the canonical broad verifier, confirms the final exact head/tree, and restores the caller's original branch or detached HEAD. If the cached Windows verification environment does not yet exist and focused tests were requested, the broad gate runs first to provision it. The script never uses `exit`, so direct invocation from the principal's interactive PowerShell session does not terminate that shell. It leaves a Room stopped after verification rather than silently restarting production.
+
+Typical invocation:
+
+```powershell
+.\verify-feature.ps1 -Base <canonical-main-sha> -Head <feature-head-sha> -RequireDirectParent -FocusedTests @(
+    "tests/test_example.py::test_changed_behavior"
+)
+```
 
 ### Human-operated PowerShell procedure standard
 
@@ -188,7 +198,7 @@ Current canonical source includes these useful areas/symbols:
 - `codex_room/custom_capabilities.py`, `custom_capability_registration.py`, `custom_registry.py` — custom package validation, deterministic verification/publication, protected binding, unified custom discovery/invocation;
 - `codex_room/transaction_evidence.py` — bounded transaction EVIDENCE execution over authorized sources;
 - `codex_room/rollover.py` and rollover paths in runtime/database code — lineage continuation, checkpoint/provenance handling, and exact inherited custom-capability bindings;
-- `Start-Codex-Room.cmd`, `Kill-Codex-Room.bat`, `Restart-Codex-Room.bat`, `codex-room-cap.cmd`, `codex-room-maint.cmd` — normal Windows launch/shutdown/restart, capability, and offline-maintenance wrappers;
+- `Start-Codex-Room.cmd`, `Kill-Codex-Room.bat`, `Restart-Codex-Room.bat`, `verify-feature.ps1`, `verify-fast.cmd`, `verify-full.cmd`, `codex-room-cap.cmd`, `codex-room-maint.cmd` — normal Windows launch/shutdown/restart, exact-head and repository verification, capability, and offline-maintenance wrappers;
 - `codex_room/maintenance.py` — persistent-data check/backup/verify/guarded-restore implementation;
 - `tests/` — regression coverage for transaction settlement, exact execution recovery, provider-context continuity, profiles, capabilities, rollover, Windows launcher contracts, API, and UI behavior.
 
