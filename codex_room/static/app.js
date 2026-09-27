@@ -1015,8 +1015,8 @@ $("#message-form").addEventListener("submit", async (event) => {
     const values = {
       target: form.elements.target.value,
       content,
-      images,
     };
+    if (images.length) values.images = images;
     if (await roomAction("messages", values)) {
       clearObserverDraft(roomId);
       if (state.room?.id === roomId) {
