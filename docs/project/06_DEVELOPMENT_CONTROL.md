@@ -6,9 +6,9 @@
 
 ## Operator summary
 
-- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. Phases 1 and 2 are complete; Phase 3 deterministic validation is active. The first principal-local attempt correctly classified missing Docker as an environment prerequisite rather than a task failure. A WSL-native fallback is prepared against the same frozen tasks and assets.
-- **What just happened?** The first WSL fallback exposed two environment/operator problems before any benchmark task executed: WSL is repeatedly failing to create systemd user sessions, and the initial PowerShell wrapper passed CRLF multi-line text directly to `bash -lc`, causing Bash to parse `pipefail\r` as an invalid option. Codex Room has no repository dependency on systemd. The repair branch therefore disables unused WSL systemd with backup/verification and replaces CRLF-sensitive Bash here-strings with direct native arguments or single-line shell commands.
-- **What is next?** Repair the Ubuntu WSL init configuration with `Repair-WSL-Codex-Room.ps1`, verify the systemd-user-session warning is gone, then rerun the corrected repository-owned WSL-native Phase-3 runner. A PASS advances to Phase 4.
+- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. Phases 1–3 are complete. The frozen three-task CooperBench sample passed deterministic local sanity/oracle validation without resampling.
+- **What just happened?** Principal-local Phase-3 validation repaired the recurring WSL systemd-user-session failure, verified 24 frozen CooperBench asset identities, and passed all six selected feature gates: each upstream test patch rejected the untouched base and passed against the frozen combined oracle. Overall validator result: PASS / exit 0. See E-196.
+- **What is next?** I-028 Phase 4 — minimally adapt the existing OUB harness to prepare the three frozen external tasks, launch equivalent Desktop/Room workspaces, invoke the official grading contract, and capture the agreed measurements without importing CooperBench's prescribed multi-agent orchestration.
 - **What remains behind it?** No newly selected implementation item is queued behind I-028; later work remains subject to principal prioritization and demonstrated need.
 - **What is blocked?** Nothing currently blocks ordinary Codex Room use or the next I-028 design step.
 - **What are we deliberately not doing?** We are not resampling because of apparent difficulty or expected contrast, adapting the OUB measurement harness before Phase-3 validation passes, prescribing agent roles/topology, or purchasing an OUB v2 model run.
@@ -236,13 +236,13 @@ PR #210 merged the implementation after exact-head verification of `b923e1654bae
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** OUB v1/O1 FIRST MEASURED COMPARISON COMPLETE; OUB v2 PHASE 1 CONTRACT + PHASE 2 THREE-TASK EXTERNAL SAMPLE FROZEN; PHASE 3 DETERMINISTIC SANITY CHECK NEXT
+**Reality / evidence:** OUB v1/O1 FIRST MEASURED COMPARISON COMPLETE; OUB v2 PHASES 1–3 COMPLETE; THREE-TASK SAMPLE FROZEN + PRINCIPAL-VALIDATED; PHASE 4 HARNESS ADAPTATION NEXT
 
-**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179, E-180, E-194, E-195
+**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179, E-180, E-194, E-195, E-196
 
 Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
 
-Current phase state: **Phase 1 — Comparison Contract: COMPLETE. Phase 2 — External Task Sample: COMPLETE. Phase 3 — Deterministic Sanity Check: IN PROGRESS / EXECUTION GATE PENDING.**
+Current phase state: **Phase 1 — Comparison Contract: COMPLETE. Phase 2 — External Task Sample: COMPLETE. Phase 3 — Deterministic Sanity Check: COMPLETE. Phase 4 — OUB Harness Adaptation: NEXT.**
 
 OUB v2's comparison contract is now frozen in `benchmarks/oub/v2/PROTOCOL.md`. The initial sample will contain three externally authored tasks selected before any measured v2 run. Selection may exclude candidates for practical benchmark suitability only; it must not optimize for expected Room advantage, expected peer use, a preferred difficulty band, or a particular coordination topology. Both Desktop and Room receive the same frozen task and may organize naturally. Correctness, tokens, duration, orchestration, and human intervention remain separate outcome dimensions, with no composite winner score. A no-peer or otherwise nondiscriminating result remains valid evidence rather than grounds for replacement. See E-194.
 
@@ -253,6 +253,8 @@ Phase 3 uses `benchmarks/oub/v2/phase3_plan.json` plus `validate_phase3.py`. The
 The first principal-local execution on 2026-09-27 stopped before task work because Docker was absent. That is an environment prerequisite result, not a sample failure. The fallback path reuses the already-present Ubuntu 24.04 WSL environment instead of introducing Docker Desktop: `oub-v2-phase3-wsl.ps1` installs only the Linux build prerequisites plus user-scoped `uv`, Python 3.10/3.11, and Rust 1.80.0, then runs `validate_phase3_native.py`. Native validation materializes each exact upstream base commit, preserves the frozen CooperBench test and combined-patch blobs, applies patches in the benchmark runner's order, and uses the same task-specific test targets. The task sample and acceptance rule are unchanged.
 
 The first invocation of that fallback then failed before package installation. Root cause of the wrapper failure: Windows CRLF newlines in a PowerShell here-string were passed verbatim as the `bash -lc` command argument, so Bash parsed the carriage return as part of `pipefail` (`invalid option name` / `pipefail\r`). Separately, every WSL launch was emitting `Failed to start the systemd user session`; current Microsoft WSL issues document this failure class, and Codex Room source contains no `systemd`/`systemctl` dependency. The repair path explicitly sets `boot.systemd=false` in `/etc/wsl.conf` after creating a timestamped backup, restarts WSL, and verifies the warning no longer appears. The corrected Phase-3 wrapper uses direct `apt-get` argument passing and single-line shell commands, avoiding the CRLF command-boundary defect.
+
+Principal execution then completed the gate successfully. The repair backed up `/etc/wsl.conf`, set `boot.systemd=false`, restarted WSL, and verified startup as the ordinary `strigoi73` user with no failed systemd-user-session warning. The Phase-3 validator verified all 24 frozen CooperBench asset Git blobs and all six selected feature pairs: LlamaIndex features 2 and 5, Typst features 4 and 9, and dirty-equals features 3 and 7 each **failed on untouched base as required and passed with the frozen combined oracle**. Overall result: **PASS / exit 0**. The run recorded `data/oub-v2/phase3/phase3-validation-20260927T200300Z.json` locally. Transient DNS failure against `security.ubuntu.com` during package-index refresh and an initial uv TLS read failure both recovered automatically and did not affect the deterministic gate. The WSL runner now skips package installation and version installation when prerequisites are already present, reducing repeated network exposure. See E-196.
 
 The gate must test situations where Room's architecture should matter intrinsically rather than merely giving both products another generic coding battery. Candidate dimensions are:
 
