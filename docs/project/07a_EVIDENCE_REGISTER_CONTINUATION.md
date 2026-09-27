@@ -2,7 +2,7 @@
 
 **Continues:** `07_EVIDENCE_REGISTER.md`  
 **Initialized:** 2026-09-17  
-**Last updated:** 2026-09-24  
+**Last updated:** 2026-09-26  
 **Scope:** Continuation of the canonical Evidence Register. Evidence identifiers continue the existing `E-###` sequence without a new namespace.  
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
@@ -2750,3 +2750,34 @@ PR #217 was marked ready only after this exact-head pass and merged with GitHub 
 Evidence boundary: the implementation records **account-level** provider-meter changes over each measured Room interval. It does not prove that every observed delta was caused exclusively by that Room when other Codex activity overlaps the interval. It also does not implement D-019 pacing or resolve mixed subscription-allowance versus purchased-credit semantics.
 
 **Assessment:** I-032 / D-054 is implemented, focused exact-head verified, and merged. Ordinary production Rooms now automatically retain provider-meter evidence suitable for later usage analysis without manual UI transcription.
+
+### E-186 — I-033 advisory model-selection guidance exact-head verification and merge
+**Date:** 2026-09-26  
+**Status:** VERIFIED BY PRINCIPAL  
+**Kind:** [CORE model-allocation context / advisory prompt guidance / exact-head local verification]  
+**Decision:** D-055  
+**Issue:** I-033
+
+The principal locally verified exact feature head `055afd4b0789b3137efa90ee4396aefaf4f458e2` for the compact advisory model-selection guidance implementation.
+
+The reported focused gate passed:
+
+- exact remote feature-head match;
+- clean detached verification worktree;
+- `git diff --check origin/main...HEAD`;
+- Python compilation of `codex_room/model_guidance.py`, `codex_room/orchestrator.py`, and `tests/test_model_guidance.py`;
+- I-033 import smoke;
+- the dedicated `tests/test_model_guidance.py` regression file;
+- unrestricted native peer/self configuration regression;
+- default-policy rejection of an unrestricted native configuration;
+- default-policy Astra-denial regression.
+
+The regression design establishes the intended boundary: C receives compact descriptions only for known model families/reasoning efforts already selectable under the current Room policy; A/B do not receive the guide; default-denied Astra is omitted from ordinary guidance; and an unknown native configuration remains selectable in unrestricted mode without Codex Room inventing capability guidance for it.
+
+No hosted GitHub CI/status run was attached to the verified head, so no hosted-CI claim is made.
+
+PR #219 was then marked ready and merged with GitHub enforcing expected head `055afd4b0789b3137efa90ee4396aefaf4f458e2`. Merge commit: `774a6e3caa6dd83c556e23fe6ffebca992c12961`. GitHub comparison from the exact verified feature head to the merge commit reported **zero changed files**, establishing byte-equivalent merged implementation/documentation content.
+
+This evidence records principal-reported local verification; the assistant did not independently execute the local verification commands.
+
+**Assessment:** I-033 / D-055 is implemented, principal exact-head verified, and merged. C now receives compact advisory model-family/reasoning-effort context without changing native availability, Room authorization, validation, persistence, rollover lineage, or execution policy. I-030 resumes as the active development priority.
