@@ -11,8 +11,8 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const views = [$("#welcome-view"), $("#create-view"), $("#room-view")];
 const agentFallbackNames = { agent_a: "Agent A", agent_b: "Agent B", agent_c: "Agent C" };
-const OBSERVER_IMAGE_LIMIT = 4;
-const OBSERVER_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+const OBSERVER_ATTACHMENT_LIMIT = 4;
+const OBSERVER_ATTACHMENT_MAX_BYTES = 8 * 1024 * 1024;
 const OBSERVER_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 function observerImageMediaType(file) {
@@ -24,7 +24,7 @@ function observerImageMediaType(file) {
   return null;
 }
 
-function readObserverImageDataUrl(file, mediaType) {
+function readObserverAttachmentDataUrl(file, mediaType) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
@@ -41,29 +41,32 @@ function readObserverImageDataUrl(file, mediaType) {
   });
 }
 
-async function serializeObserverImages(files) {
-  if (files.length > OBSERVER_IMAGE_LIMIT) {
-    throw new Error(`Attach at most ${OBSERVER_IMAGE_LIMIT} images to one message.`);
+async function serializeObserverAttachments(selectedFiles) {
+  if (selectedFiles.length > OBSERVER_ATTACHMENT_LIMIT) {
+    throw new Error(`Attach at most ${OBSERVER_ATTACHMENT_LIMIT} files/images to one message.`);
   }
-  return Promise.all(files.map(async (file) => {
-    const mediaType = observerImageMediaType(file);
-    if (!mediaType) {
-      throw new Error(`${file.name} is not a supported PNG, JPEG, or WebP image.`);
+  const images = [];
+  const files = [];
+  for (const file of selectedFiles) {
+    if (file.size > OBSERVER_ATTACHMENT_MAX_BYTES) {
+      throw new Error(`${file.name} exceeds the 8 MiB attachment limit.`);
     }
-    if (file.size > OBSERVER_IMAGE_MAX_BYTES) {
-      throw new Error(`${file.name} exceeds the 8 MiB image limit.`);
-    }
-    return {
+    const imageMediaType = observerImageMediaType(file);
+    const mediaType = imageMediaType || file.type || "application/octet-stream";
+    const item = {
       filename: file.name,
       media_type: mediaType,
-      data_url: await readObserverImageDataUrl(file, mediaType),
+      data_url: await readObserverAttachmentDataUrl(file, mediaType),
     };
-  }));
+    if (imageMediaType) images.push(item);
+    else files.push(item);
+  }
+  return { images, files };
 }
 
-function updateObserverImageStatus() {
-  const input = $("#message-form input[name=images]");
-  const status = $("#image-attachment-status");
+function updateObserverAttachmentStatus() {
+  const input = $("#message-form input[name=attachments]");
+  const status = $("#attachment-status");
   const files = [...(input?.files || [])];
   if (!files.length) {
     status.textContent = "";
@@ -119,8 +122,8 @@ function restoreObserverDraft(roomId) {
   const form = $("#message-form");
   const draft = loadObserverDraft(roomId);
   form.elements.content.value = draft?.content || "";
-  form.elements.images.value = "";
-  updateObserverImageStatus();
+  form.elements.attachments.value = "";
+  updateObserverAttachmentStatus();
   form.elements.target.value = "all";
   if (draft?.target && [...form.elements.target.options].some((option) => option.value === draft.target)) {
     form.elements.target.value = draft.target;
@@ -853,10 +856,10 @@ function appendEvent(event, { follow = true } = {}) {
     meta.append(batch);
   }
   (event.metadata?.attachments || []).forEach((attachment) => {
-    if (attachment?.kind !== "image") return;
+    if (!["image", "file"].includes(attachment?.kind)) return;
     const badge = document.createElement("span");
     badge.className = "event-badge attachment";
-    badge.textContent = `image · ${attachment.filename || "attachment"}`;
+    badge.textContent = `${attachment.kind} · ${attachment.filename || "attachment"}`;
     meta.append(badge);
   });
   if (event.metadata?.private) {
@@ -1001,28 +1004,29 @@ $("#message-form").addEventListener("submit", async (event) => {
   const form = event.currentTarget;
   const button = form.querySelector("button[type=submit]");
   const roomId = state.room?.id;
-  const files = [...form.elements.images.files];
+  const selectedFiles = [...form.elements.attachments.files];
   const content = form.elements.content.value;
-  if (!content.trim() && !files.length) {
-    showRoomError("Write a message or attach at least one image.");
+  if (!content.trim() && !selectedFiles.length) {
+    showRoomError("Write a message or attach at least one file or image.");
     focusObserverComposer();
     return;
   }
 
   button.disabled = true;
   try {
-    const images = await serializeObserverImages(files);
+    const attachments = await serializeObserverAttachments(selectedFiles);
     const values = {
       target: form.elements.target.value,
       content,
     };
-    if (images.length) values.images = images;
+    if (attachments.images.length) values.images = attachments.images;
+    if (attachments.files.length) values.files = attachments.files;
     if (await roomAction("messages", values)) {
       clearObserverDraft(roomId);
       if (state.room?.id === roomId) {
         form.elements.content.value = "";
-        form.elements.images.value = "";
-        updateObserverImageStatus();
+        form.elements.attachments.value = "";
+        updateObserverAttachmentStatus();
         resizeObserverComposer();
         focusObserverComposer();
       }
@@ -1037,7 +1041,7 @@ $("#message-form textarea").addEventListener("input", () => {
   saveObserverDraft();
 });
 $("#message-form select[name=target]").addEventListener("change", saveObserverDraft);
-$("#message-form input[name=images]").addEventListener("change", updateObserverImageStatus);
+$("#message-form input[name=attachments]").addEventListener("change", updateObserverAttachmentStatus);
 
 $("#message-form textarea").addEventListener("keydown", (event) => {
   if (event.key !== "Enter" || event.isComposing || event.shiftKey) return;

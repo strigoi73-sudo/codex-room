@@ -49,8 +49,11 @@ from .institutional import (
 )
 from .model_guidance import render_model_selection_guide
 from .observer_attachments import (
+    materialize_observer_files,
     materialize_observer_images,
+    remove_observer_files,
     remove_observer_images,
+    resolve_observer_file_path,
     resolve_observer_image_path,
 )
 from .models import (
@@ -1062,9 +1065,9 @@ class RoomRuntime:
             transactional = bool(
                 round_item and round_item.get("work_model_version", 1) == 2
             )
-            if request.images and not transactional:
+            if (request.images or request.files) and not transactional:
                 raise ValueError(
-                    "Observer image attachments require the version-2 Room work model"
+                    "Observer attachments require the version-2 Room work model"
                 )
 
             stored_images = materialize_observer_images(
@@ -1072,7 +1075,19 @@ class RoomRuntime:
                 room_id,
                 request.images,
             )
-            attachment_metadata = [item.descriptor() for item in stored_images]
+            try:
+                stored_files = materialize_observer_files(
+                    self.data_root,
+                    room_id,
+                    request.files,
+                )
+            except BaseException:
+                remove_observer_images(stored_images)
+                raise
+            attachment_metadata = [
+                *(item.descriptor() for item in stored_images),
+                *(item.descriptor() for item in stored_files),
+            ]
 
             if room_was_finished:
                 try:
@@ -1085,6 +1100,7 @@ class RoomRuntime:
                     )
                 except BaseException:
                     remove_observer_images(stored_images)
+                    remove_observer_files(stored_files)
                     raise
 
             try:
@@ -1104,16 +1120,26 @@ class RoomRuntime:
                 )
             except BaseException:
                 remove_observer_images(stored_images)
+                remove_observer_files(stored_files)
                 raise
 
             if transactional:
                 instruction = request.content
+                attachment_notes: list[str] = []
                 if stored_images:
                     attachment_names = ", ".join(item.filename for item in stored_images)
-                    attachment_note = (
+                    attachment_notes.append(
                         "Observer image attachment(s), supplied through native Codex image input: "
                         f"{attachment_names}."
                     )
+                if stored_files:
+                    attachment_names = ", ".join(item.filename for item in stored_files)
+                    attachment_notes.append(
+                        "Observer file attachment(s), available through Codex local filesystem "
+                        f"tools: {attachment_names}."
+                    )
+                if attachment_notes:
+                    attachment_note = "\n".join(attachment_notes)
                     instruction = (
                         f"{instruction}\n\n{attachment_note}"
                         if instruction.strip()
@@ -2289,6 +2315,7 @@ class RoomRuntime:
                 max_events=self.TRANSACTION_PUBLIC_CONTEXT_MAX_EVENTS,
             )
         local_image_paths: tuple[Path, ...] = ()
+        local_file_attachments: list[dict[str, str]] = []
         if not has_prior_assignment_execution and assignment.get("origin_event_id"):
             origin_event = await self.db.get_event(assignment["origin_event_id"])
             attachment_items = (
@@ -2298,15 +2325,32 @@ class RoomRuntime:
             )
             resolved_images: list[Path] = []
             for descriptor in attachment_items:
-                if not isinstance(descriptor, dict) or descriptor.get("kind") != "image":
+                if not isinstance(descriptor, dict):
                     continue
-                resolved_images.append(
-                    resolve_observer_image_path(
+                if descriptor.get("kind") == "image":
+                    resolved_images.append(
+                        resolve_observer_image_path(
+                            self.data_root,
+                            batch["room_id"],
+                            descriptor,
+                        )
+                    )
+                elif descriptor.get("kind") == "file":
+                    file_path = resolve_observer_file_path(
                         self.data_root,
                         batch["room_id"],
                         descriptor,
                     )
-                )
+                    local_file_attachments.append(
+                        {
+                            "filename": str(descriptor.get("filename") or "attachment"),
+                            "media_type": str(
+                                descriptor.get("media_type")
+                                or "application/octet-stream"
+                            ),
+                            "path": str(file_path.resolve()),
+                        }
+                    )
             local_image_paths = tuple(resolved_images)
 
         coordinator_context_economics = None
@@ -2356,6 +2400,26 @@ class RoomRuntime:
             f"Round objective:\n{round_item['prompt']}",
             f"Current assignment:\n{assignment['instruction']}",
         ]
+        if local_file_attachments:
+            context_parts.extend(
+                [
+                    "<directed_file_attachments>",
+                    json.dumps(
+                        local_file_attachments,
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
+                    "</directed_file_attachments>",
+                    (
+                        "The files above are immutable observer attachments routed to this "
+                        "Assignment. Use Codex's normal local filesystem or command tools to "
+                        "inspect the exact paths when the work requires their contents. The "
+                        "paths are provider-only delivery data, not shared Room context; do "
+                        "not copy an attachment into the shared workspace unless the current "
+                        "Assignment itself requires creating a deliberately shared artifact."
+                    ),
+                ]
+            )
         public_context_through_sequence: int | None = None
         if public_context_upper_sequence is not None:
             selected_public_events: list[tuple[dict[str, Any], str]] = []

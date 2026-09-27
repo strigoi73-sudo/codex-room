@@ -8,8 +8,11 @@ from pydantic import BaseModel, Field, model_validator
 
 
 from .observer_attachments import (
+    MAX_OBSERVER_ATTACHMENTS,
     MAX_OBSERVER_IMAGES,
     MAX_OBSERVER_IMAGE_DATA_URL_CHARS,
+    MAX_OBSERVER_FILES,
+    MAX_OBSERVER_FILE_DATA_URL_CHARS,
 )
 from .personalities import (
     AGENT_A_DEFAULT_INSTRUCTIONS,
@@ -870,6 +873,16 @@ class ObserverImageAttachmentInput(BaseModel):
     data_url: str = Field(min_length=1, max_length=MAX_OBSERVER_IMAGE_DATA_URL_CHARS)
 
 
+class ObserverFileAttachmentInput(BaseModel):
+    filename: str = Field(min_length=1, max_length=240)
+    media_type: str = Field(
+        min_length=3,
+        max_length=255,
+        pattern=r"^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+$",
+    )
+    data_url: str = Field(min_length=1, max_length=MAX_OBSERVER_FILE_DATA_URL_CHARS)
+
+
 class ObserverMessageRequest(BaseModel):
     target: Literal["all", "both", "agent_a", "agent_b", "agent_c"]
     content: str = Field(default="", max_length=50_000)
@@ -877,11 +890,22 @@ class ObserverMessageRequest(BaseModel):
         default_factory=list,
         max_length=MAX_OBSERVER_IMAGES,
     )
+    files: list[ObserverFileAttachmentInput] = Field(
+        default_factory=list,
+        max_length=MAX_OBSERVER_FILES,
+    )
 
     @model_validator(mode="after")
     def validate_observer_message_payload(self) -> "ObserverMessageRequest":
-        if not self.content.strip() and not self.images:
-            raise ValueError("Observer message requires text or at least one image")
+        attachment_count = len(self.images) + len(self.files)
+        if attachment_count > MAX_OBSERVER_ATTACHMENTS:
+            raise ValueError(
+                f"Observer message may contain at most {MAX_OBSERVER_ATTACHMENTS} total attachments"
+            )
+        if not self.content.strip() and not attachment_count:
+            raise ValueError(
+                "Observer message requires text or at least one attachment"
+            )
         return self
 
 

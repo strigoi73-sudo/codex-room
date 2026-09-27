@@ -163,10 +163,14 @@ def as_markdown(snapshot: dict[str, Any]) -> str:
             )
             attachments = event.get("metadata", {}).get("attachments") or []
             for attachment in attachments:
-                if not isinstance(attachment, dict) or attachment.get("kind") != "image":
+                if not isinstance(attachment, dict):
                     continue
+                kind = attachment.get("kind")
+                if kind not in {"image", "file"}:
+                    continue
+                label = "Image attachment" if kind == "image" else "File attachment"
                 lines.append(
-                    "- Image attachment: "
+                    f"- {label}: "
                     f"{attachment.get('filename') or 'attachment'} · "
                     f"{attachment.get('media_type') or 'unknown type'} · "
                     f"{attachment.get('size_bytes') or 0} bytes · "
