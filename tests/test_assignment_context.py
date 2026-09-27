@@ -326,6 +326,57 @@ async def test_observer_image_routes_only_to_addressed_assignment_first_turn(
 
 
 @pytest.mark.asyncio
+async def test_invalid_observer_image_does_not_reopen_finished_room(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Initial task complete.",
+        )
+    )
+    runtime = await context_runtime_factory(adapter, "invalid-observer-image.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Initial task.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+    before_events = await runtime.db.get_events(room_id)
+
+    with pytest.raises(ValueError, match="bytes do not match"):
+        await runtime.observer_message(
+            room_id,
+            ObserverMessageRequest(
+                target="agent_a",
+                images=[
+                    {
+                        "filename": "not-a-jpeg.jpg",
+                        "media_type": "image/jpeg",
+                        "data_url": (
+                            "data:image/jpeg;base64,"
+                            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8"
+                            "/x8AAusB9WlF9xQAAAAASUVORK5CYII="
+                        ),
+                    }
+                ],
+            ),
+        )
+
+    room = await runtime.db.get_room(room_id)
+    assert room is not None
+    assert room["status"] == RoomStatus.FINISHED
+    after_events = await runtime.db.get_events(room_id)
+    assert [item["id"] for item in after_events] == [item["id"] for item in before_events]
+    attachment_root = runtime.data_root / "rooms" / room_id / "attachments"
+    assert not attachment_root.exists() or not any(attachment_root.iterdir())
+
+
+@pytest.mark.asyncio
 async def test_assignment_context_mode_gives_same_agent_new_thread_for_new_assignment(
     context_runtime_factory,
 ):
