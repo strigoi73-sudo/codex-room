@@ -52,7 +52,7 @@ for line in lines:
         out.append(line)
         continue
 
-    if in_boot and stripped.lower().startswith("systemd") and "=" in stripped:
+    if in_boot and "=" in stripped and stripped.split("=", 1)[0].strip().lower() == "systemd":
         if not systemd_written:
             out.append("systemd=false")
             systemd_written = True
