@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** I-035 — **directed principal file and image handoff** — is COMPLETE, principal exact-head verified, and merged. Both image and generic-file delivery are implemented; raw attachments remain with an archived predecessor rather than inheriting through rollover.
-- **What just happened?** PR #227 completed generic-file handoff using ordinary Codex local filesystem/command access because exact Codex 0.154 exposes no arbitrary non-image file turn item. The repeated exact-head operator procedure was also codified as `verify-feature.ps1` and verified on merged `main`. See E-192 and E-193.
-- **What is next?** Resume I-028 — the Codex Room utility gate — from its existing OUB evidence and design the next utility task/version around stronger intrinsic organizational pressure and an explicit grader contract.
+- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. Phase 1 has frozen the OUB v2 comparison contract; no v2 task has been selected or measured yet.
+- **What just happened?** OUB v2 now has a canonical fairness/validity contract: three externally authored tasks will be selected before measurement, neither platform is told how to organize, low-contrast or unfavorable results remain valid evidence, and correctness/cost/organization stay separate. See E-194.
+- **What is next?** I-028 Phase 2 — select and freeze a three-task externally authored sample under the canonical OUB v2 comparison contract. Selection uses only practical suitability exclusions and must not filter for expected Room advantage, peer usefulness, or a preferred coordination pattern.
 - **What remains behind it?** No newly selected implementation item is queued behind I-028; later work remains subject to principal prioritization and demonstrated need.
 - **What is blocked?** Nothing currently blocks ordinary Codex Room use or the next I-028 design step.
-- **What are we deliberately not doing?** We are not adding a parallel generic-file ingestion engine, OCR/image-text preprocessing, raw-attachment rollover inheritance, or a claim of hostile per-agent filesystem isolation that the current sandbox does not provide.
+- **What are we deliberately not doing?** We are not selecting tasks for expected Room advantage, prescribing agent roles/topology, discarding low-contrast outcomes, modifying the OUB harness before task selection, or purchasing an OUB v2 model run during Phase 1.
 
 ## Current development state
 
@@ -236,11 +236,15 @@ PR #210 merged the implementation after exact-head verification of `b923e1654bae
 
 **Work state:** IN PROGRESS
 
-**Reality / evidence:** OUB v1/O1 FIRST MEASURED COMPARISON COMPLETE; COST/ORCHESTRATION EVIDENCE VALID; NUMERIC QUALITY SCORE NOT AUTHORITATIVE DUE GRADER-CONTRACT DEFECT
+**Reality / evidence:** OUB v1/O1 FIRST MEASURED COMPARISON COMPLETE; OUB v2 PHASE 1 COMPARISON CONTRACT FROZEN; PHASE 2 EXTERNAL SAMPLE SELECTION NEXT
 
-**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179, E-180
+**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179, E-180, E-194
 
 Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
+
+Current phase state: **Phase 1 — Comparison Contract: COMPLETE. Phase 2 — External Task Sample: NEXT.**
+
+OUB v2's comparison contract is now frozen in `benchmarks/oub/v2/PROTOCOL.md`. The initial sample will contain three externally authored tasks selected before any measured v2 run. Selection may exclude candidates for practical benchmark suitability only; it must not optimize for expected Room advantage, expected peer use, a preferred difficulty band, or a particular coordination topology. Both Desktop and Room receive the same frozen task and may organize naturally. Correctness, tokens, duration, orchestration, and human intervention remain separate outcome dimensions, with no composite winner score. A no-peer or otherwise nondiscriminating result remains valid evidence rather than grounds for replacement. See E-194.
 
 The gate must test situations where Room's architecture should matter intrinsically rather than merely giving both products another generic coding battery. Candidate dimensions are:
 
@@ -628,7 +632,6 @@ Current unresolved questions are feature-local rather than roadmap-global:
 
 - if ordinary use later demonstrates material friction from native-host plugin administration, what exact gap justifies reopening I-021;
 - if D-019 is selected again, how should mixed subscription allowance and purchased credits interact;
-- for I-035, what is the smallest native/runtime reuse that supports directed file/image handoff while preserving existing per-agent visibility semantics over the shared Room workspace;
 - if browser/computer use, worktrees, remote execution, native review, steering, approvals, or other remaining I-022 families are selected, what is the smallest native reuse that preserves Room semantics and execution economics.
 
 I-027 is the current benchmark implementation. Unqualified **Run PBM** resolves to canonical PBM v5. PBM v1–v4 remain available only for historical/reproducibility purposes unless the principal explicitly selects an older version.

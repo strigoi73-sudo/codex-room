@@ -3074,3 +3074,35 @@ At merge time PR #227 still pointed to the exact verified head. GitHub merged it
 GitHub comparison from verified head `1a2997d...` to merge commit `c19328b...` reported one merge commit ahead and **zero changed files**, establishing byte-equivalent merged implementation and regression content.
 
 **Assessment:** I-035 is **COMPLETE / IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED** for both images and generic files. Rollover semantics are settled: raw attachments remain with the archived predecessor and are not inherited into the successor. Active development returns to I-028.
+
+### E-194 — I-028 OUB v2 comparison contract freeze
+**Date:** 2026-09-27  
+**Status:** VERIFIED BY SOURCE REVIEW  
+**Kind:** [organizational utility benchmark / experimental contract / external-task sampling]  
+**Issue:** I-028
+
+After the first measured OUB v1/O1 comparison, I-028 remained unresolved because O1 did not produce meaningful organizational contrast and its hidden exact-label grader contract made the numeric quality scores non-authoritative. Subsequent roadmap review identified an opposite risk: over-engineering a replacement task around expected Codex Room strengths could make the benchmark too finely tuned to produce broadly meaningful contrasts.
+
+Phase 1 therefore freezes the OUB v2 comparison contract **before external task selection or any paid v2 model run**.
+
+The canonical contract is `benchmarks/oub/v2/PROTOCOL.md`. Its principal boundaries are:
+
+- the comparison unit remains the platform;
+- Desktop and Room receive the same frozen task, starting workspace, and completion target;
+- neither platform is told how many agents to use or how to organize work;
+- Desktop descendants and Room A/B invocations are observed behavior, not requirements;
+- the initial v2 sample contains three externally authored tasks, all selected and frozen before the first measured v2 run;
+- candidate selection may exclude tasks for practical suitability but may not filter for expected Room advantage, expected peer usefulness, a preferred difficulty band, or a desired coordination pattern;
+- official upstream executable tests/graders are preferred over new hidden semantic labels;
+- no substantive principal intervention is allowed after measured launch;
+- correctness, tokens, duration, organization, and human involvement are reported separately;
+- no composite platform winner score or arbitrary correctness/cost exchange rate is defined;
+- a no-peer, easy, equal-outcome, unfavorable, or otherwise low-contrast result remains valid evidence and is not replaced merely because it fails to showcase Room organization;
+- task replacement after measurement begins is allowed only for a demonstrated benchmark-invalidating defect or unusable environment requirement;
+- mechanical infrastructure failures are distinguished from substantive model/platform outcomes.
+
+The contract deliberately treats the cross-task pattern as the primary I-028 evidence. This preserves the possibility that organization helps, hurts, or is irrelevant on different task classes instead of selecting one showcase task expected to activate A/B.
+
+No OUB v2 task was selected, adapted, or run during Phase 1. No benchmark-model usage was purchased.
+
+**Assessment:** I-028 Phase 1 — Comparison Contract is COMPLETE. Phase 2 may now select the three-task external sample under the frozen contract without modifying the fairness rules in response to candidate characteristics.
