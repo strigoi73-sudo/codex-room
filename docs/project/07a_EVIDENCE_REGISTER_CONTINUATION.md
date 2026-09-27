@@ -2983,3 +2983,94 @@ GitHub comparison from the verified feature head to the merge commit reported **
 
 **Assessment:** The I-035 **image handoff slice** is **IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED**. I-035 itself remains **IN PROGRESS** because generic non-image file handoff and attachment rollover/lifecycle semantics are not yet implemented. The next implementation decision should inspect the exact native Codex non-image file-input surface before Codex Room adds any new generic file transport.
 
+### E-192 — Repository-owned exact-head feature verifier bootstrap verification
+**Date:** 2026-09-27  
+**Status:** VERIFIED BY PRINCIPAL  
+**Kind:** [repository operations / exact-head verification / interactive PowerShell safety]
+
+Repeated PR verification had accumulated large one-off PowerShell wrappers for Room shutdown, ref checks, exact detached checkout, focused tests, broad verification, and restoration. The canonical operations rule already required recurring operator procedures to graduate into maintained tooling rather than be regenerated in chat.
+
+PR #229 added repository-root `verify-feature.ps1`. The maintained verifier:
+
+- requires exact 40-character base/head SHAs and a clean tracked tree;
+- stops a running Room through `Kill-Codex-Room.bat`;
+- fetches/prunes `origin` and requires `origin/main` to equal the requested base;
+- verifies base ancestry and optionally direct-parent identity;
+- runs `git diff --check`;
+- checks out the exact head detached;
+- optionally runs supplied focused Windows pytest targets;
+- invokes `verify-fast.cmd` or `verify-full.cmd`;
+- confirms the final exact head and clean tracked tree;
+- restores the caller's original branch or detached HEAD;
+- never calls PowerShell `exit`, so direct use does not terminate the principal's interactive shell.
+
+The first bootstrap attempt exposed a verifier bug before any product verification: an `if/else` construct had been embedded as a `Join-Path` argument and PowerShell treated `if` as a command. The implementation was corrected to select the verification command name first and then call `Join-Path`; a launcher-contract regression now guards the maintained verifier shape.
+
+PR #229 merged the corrected tool as `6e99d70372ae598186996f4c294f52fad9aecf9a`. The principal then invoked the merged verifier against that exact merged-main commit. The successful self-verification established:
+
+- focused verifier-contract regression: **1 passed**;
+- Linux Python 3.12 focused core: **75 passed, 2 warnings**;
+- Windows focused portability: **120 passed**;
+- browser transcript stability: **9 passed**;
+- repository fast result: **PASS**;
+- final exact-head check: PASS;
+- checkout restoration: PASS.
+
+The recurring WSL systemd-user-session warning appeared but did not prevent WSL execution or any gate phase from passing.
+
+**Assessment:** `verify-feature.ps1` is now the verified repository-owned entrypoint for repeated exact-head feature/PR verification. Future chats should use its short invocation rather than reconstructing defensive checkout/restore scaffolding in ad hoc PowerShell.
+
+### E-193 — I-035 generic-file handoff and rollover exact-head verification and merge
+**Date:** 2026-09-27  
+**Status:** VERIFIED BY PRINCIPAL  
+**Kind:** [principal attachment handoff / generic files / directed routing / rollover semantics / exact-head local verification]  
+**Issue:** I-035
+
+After E-191 completed native image handoff, exact Codex 0.154 inspection found no arbitrary generic non-image file turn item analogous to `LocalImageInput`. Python SDK turn inputs expose text, image/local-image, skill, and mention inputs; the App Server adds audio variants but still no arbitrary file-input item. The selected native-first design therefore reuses Codex's existing local filesystem/command substrate rather than inventing a Room-owned content-ingestion engine.
+
+PR #227 implements the remaining I-035 boundary:
+
+- observer messages may carry generic files alongside images, with **four total attachments maximum** and **8 MiB per attachment**;
+- generic attachment bytes are validated/materialized immutably under the Room host area outside `shared/`;
+- PNG/JPEG/WebP are rejected from the generic-file route so images continue through native `LocalImageInput`;
+- event metadata records safe attachment kind/id/filename/MIME/size/SHA-256 without a host path or binary body;
+- the addressed Assignment's first provider execution receives a bounded `<directed_file_attachments>` JSON block containing filename, MIME type, and the exact absolute provider-local path;
+- the prompt directs Codex to use normal local filesystem/command tools when the Assignment requires file contents;
+- HISTORY/EVIDENCE/retry continuation of the same logical Assignment does not resend the path block;
+- unaddressed agents are not routed the private path, and attachment bytes are not copied into the common workspace;
+- browser file uploads preserve text-only `{target, content}` compatibility and use `application/octet-stream` for an unknown/empty browser MIME;
+- invalid generic base64 fails before a finished Room is reopened, and materialized attachments are removed if event creation fails;
+- Markdown export exposes safe provenance only;
+- rollover retains raw attachment files with the archived predecessor and does **not** copy them into the successor Room.
+
+The privacy boundary is deliberately qualified: storing attachments outside `shared/` prevents normal common-workspace discovery and routing does not disclose a private path to unaddressed agents, but the underlying `workspace_write` sandbox is not a hostile per-agent filesystem ACL. I-035 therefore provides directed delivery semantics, not adversarial OS-level isolation.
+
+An initial focused Windows verification found one test-only portability defect. The regression asserted that an unescaped raw Windows path string appeared literally inside a JSON-serialized prompt. Since `json.dumps` correctly doubles backslashes, the assertion failed while the delivered semantic path was correct. Production code was left unchanged; the regression was rewritten to parse the JSON block and compare the decoded path.
+
+The final exact feature head was:
+
+`1a2997dfa5597d9e953b092538d5a0d3ee18ce26`
+
+against canonical base:
+
+`6e99d70372ae598186996f4c294f52fad9aecf9a`
+
+The principal ran the newly verified `verify-feature.ps1` with the eight I-035 attachment/rollover targets. The successful result established:
+
+- focused I-035 gate: **8 passed, 2 warnings**;
+- Linux Python 3.12 focused core: **78 passed, 2 warnings**;
+- Windows focused portability: **120 passed**;
+- browser transcript stability: **10 passed**;
+- repository fast result: **PASS**;
+- final exact-head/tree check: PASS;
+- checkout restoration: PASS.
+
+The WSL systemd-user-session warning appeared again but did not prevent any Linux or repository verification phase.
+
+At merge time PR #227 still pointed to the exact verified head. GitHub merged it as:
+
+`c19328b8cfe24a69c649c592297f28d9877ff60d`
+
+GitHub comparison from verified head `1a2997d...` to merge commit `c19328b...` reported one merge commit ahead and **zero changed files**, establishing byte-equivalent merged implementation and regression content.
+
+**Assessment:** I-035 is **COMPLETE / IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED** for both images and generic files. Rollover semantics are settled: raw attachments remain with the archived predecessor and are not inherited into the successor. Active development returns to I-028.

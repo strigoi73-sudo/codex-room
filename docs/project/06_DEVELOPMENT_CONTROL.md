@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** I-035 — **directed principal file and image handoff** — is IN PROGRESS. The image-handoff slice is implemented, principal exact-head verified, and merged; generic-file handoff remains unimplemented.
-- **What just happened?** PR #225 added directed PNG/JPEG/WebP observer images using Codex 0.154 native `LocalImageInput`, with immutable host-side storage outside the shared agent workspace, durable provenance, first-turn-only delivery, and no OCR/transcription shim. See E-191.
-- **What is next?** Continue I-035 with generic-file handoff and rollover/lifecycle semantics. First determine the exact native Codex/runtime primitive available for non-image files before designing any Room-specific file transport.
-- **What remains behind it?** I-028 utility benchmarking follows I-035 unless the principal reprioritizes.
-- **What is blocked?** Nothing conceptual is blocked. Generic-file delivery still needs exact substrate inspection plus bounded decisions for supported types/limits and rollover retention.
-- **What are we deliberately not doing?** We are not copying directed attachments into the shared A/B/C workspace, adding OCR or image-to-text preprocessing, or inventing a generic file subsystem before checking the underlying Codex capability.
+- **Where are we?** I-035 — **directed principal file and image handoff** — is COMPLETE, principal exact-head verified, and merged. Both image and generic-file delivery are implemented; raw attachments remain with an archived predecessor rather than inheriting through rollover.
+- **What just happened?** PR #227 completed generic-file handoff using ordinary Codex local filesystem/command access because exact Codex 0.154 exposes no arbitrary non-image file turn item. The repeated exact-head operator procedure was also codified as `verify-feature.ps1` and verified on merged `main`. See E-192 and E-193.
+- **What is next?** Resume I-028 — the Codex Room utility gate — from its existing OUB evidence and design the next utility task/version around stronger intrinsic organizational pressure and an explicit grader contract.
+- **What remains behind it?** No newly selected implementation item is queued behind I-028; later work remains subject to principal prioritization and demonstrated need.
+- **What is blocked?** Nothing currently blocks ordinary Codex Room use or the next I-028 design step.
+- **What are we deliberately not doing?** We are not adding a parallel generic-file ingestion engine, OCR/image-text preprocessing, raw-attachment rollover inheritance, or a claim of hostile per-agent filesystem isolation that the current sandbox does not provide.
 
 ## Current development state
 
@@ -19,9 +19,11 @@
 
 **Scope:** [principal attachment handoff / directed routing / files + images / native Codex input reuse]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED for images; DECIDED / NOT IMPLEMENTED for generic files
+**Reality / evidence:** IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED
+
+**Evidence:** E-191, E-193
 
 **Principal selection:** 2026-09-27
 
@@ -29,32 +31,29 @@
 
 The principal selected a Room-host capability to hand off files and images through observer input with the same addressing model already used for directed chat messages.
 
-Minimum product boundary:
+Completed product boundary:
 
-- an observer turn may include one or more file/image attachments plus optional accompanying text;
-- the turn can target `all`, `both`, `agent_a`, `agent_b`, or `agent_c` using the existing directed-message semantics;
-- the addressed participant(s) must receive usable access to the actual artifact as part of their work, while unaddressed agents must not be routed a directed attachment;
-- native Codex structured image/local-image inputs should be reused where they safely satisfy the requirement, and generic-file handling should reuse existing Codex/workspace/runtime primitives where practical instead of recreating equivalent capability;
-- attachment identity and provenance must remain durable enough to associate an artifact with its originating observer event and intended recipients;
-- implementation must preserve directed-message visibility semantics: an agent-specific attachment must not become visible to other agents merely because A/B/C currently share a Room workspace.
+- an observer turn may include text plus up to four total file/image attachments, or attachments without text;
+- each attachment is bounded to 8 MiB;
+- the existing `all`, `both`, `agent_a`, `agent_b`, and `agent_c` addressing model controls logical attachment routing;
+- PNG/JPEG/WebP images reuse Codex 0.154 native `LocalImageInput`;
+- exact Codex 0.154 inspection found no arbitrary generic-file turn item, so non-image files reuse ordinary Codex local filesystem/command access rather than a new Room ingestion subsystem;
+- attachment bytes are materialized immutably under the Room host area outside `shared/`, and safe event/export provenance records kind, identity, filename, MIME type, byte count, and SHA-256 without host paths or binary content;
+- the addressed Assignment receives attachment delivery only on its first provider execution; HISTORY/EVIDENCE/retry continuations do not resend it;
+- generic files are represented to the addressed provider by filename, MIME type, and an absolute provider-local path in a bounded `<directed_file_attachments>` block;
+- unaddressed agents are not routed private attachment paths/inputs, and directed attachment bytes are not copied into the common workspace;
+- this is a routing/workspace-discoverability guarantee rather than hostile per-agent OS ACL isolation;
+- malformed payloads fail closed before lifecycle mutation, and materialized files are cleaned up if event creation fails;
+- text-only observer API behavior remains compatible, and Markdown export records safe provenance only;
+- rollover retains attachments with the archived predecessor Room and does not copy them into the successor. Cross-Room durable meaning travels through reviewed checkpoint/allowlisted institutional state, not raw attachment inheritance.
 
-Priority boundary: I-030 is closed; I-035 is now the active development priority. I-028 utility benchmarking follows I-035 unless the principal reprioritizes.
+The image slice was principal exact-head verified and merged through PR #225; see E-191.
 
-Image handoff is now implemented and verified through PR #225:
+For the generic-file slice, an initial Windows-focused run exposed one brittle regression assertion: the test searched serialized JSON for an unescaped Windows pathname even though `json.dumps` correctly escapes backslashes. Production code was unchanged; the regression was corrected to parse the `<directed_file_attachments>` JSON and compare the decoded semantic path.
 
-- observer messages may carry up to four PNG/JPEG/WebP images, each bounded to 8 MiB;
-- image bytes are stored immutably under the Room host area outside `shared/`, so a directed image is not discoverable merely through the common agent workspace;
-- observer-event metadata stores attachment identity, original filename, MIME type, byte count, and SHA-256, but not the host path or image bytes;
-- addressed version-2 Assignments receive the image through Codex 0.154 native `LocalImageInput` alongside normal text input;
-- image delivery occurs only on the first provider execution of the originating logical Assignment, so HISTORY/EVIDENCE/retry continuation does not resend an already-seen image;
-- text-only observer payload shape and established browser composer behavior remain compatible;
-- Markdown export records safe attachment provenance without host paths or binary content;
-- invalid image bytes fail closed before lifecycle mutation;
-- no OCR, transcription, host vision preprocessing, or shared-workspace copy is introduced.
+The principal then verified exact feature head `1a2997dfa5597d9e953b092538d5a0d3ee18ce26` through the repository-owned exact-head verifier. The successful gate passed **8 focused tests, 2 warnings; 78 Linux focused tests, 2 warnings; 120 Windows focused portability tests; and 10 browser transcript tests**, with final exact-head/tree confirmation and checkout restoration. PR #227 merged as `c19328b8cfe24a69c649c592297f28d9877ff60d`; GitHub comparison from the verified feature head to the merge commit reported zero changed files. See E-193.
 
-Principal exact-head verification of `7ac076b62978e318493c1a904f38a2071aa14210` passed the repository-standard fast gate: **75 Linux focused tests, 2 warnings; 119 Windows focused tests; 9 browser transcript tests**. The image-specific focused gate then passed **5 tests, 2 warnings**. PR #225 merged that exact verified content as `4e09f0b84851c12edb43eca6f74fc40ca2586f0a`; GitHub comparison from verified feature head to merge commit reported zero changed files. See E-191.
-
-Generic-file handoff remains unimplemented. Rollover inheritance/retention policy for attachments also remains unresolved and must be settled before I-035 can close. The next step is exact inspection of the native non-image file input surface so Codex Room adds only the host/routing layer that is actually missing.
+I-035 is closed. Active development returns to I-028.
 
 ### I-030 — Same-Task worker continuity repair
 
