@@ -1,6 +1,6 @@
 # Codex Room — GPT Project Runtime Instructions
 
-**Last updated:** 2026-09-20  
+**Last updated:** 2026-09-27  
 **Authority:** Canonical maintained runtime guidance for ChatGPT work on Codex Room.  
 **Canonical location:** `strigoi73-sudo/codex-room` → `docs/project/01_GPT_PROJECT_RUNTIME_INSTRUCTIONS.md` on canonical `main`.  
 **Scope:** Stable project-specific operating instructions. Volatile roadmap/status belongs in Development Control, not here.
@@ -11,6 +11,7 @@ At the first substantive Codex Room turn in a new chat, retrieve this file from 
 
 After loading this file:
 
+- **before substantive project work, visibly surface the principal's terminal-operation rules in one concise startup acknowledgment**: commands are for an already-open interactive PowerShell session; provide complete directly pasteable blocks; keep dependent clauses such as `} else {`, `} elseif {`, `} catch {`, and `} finally {` in the same syntactic submission; capture `$LASTEXITCODE` immediately after the native command it represents; never terminate the principal's shell merely to propagate an error; and use the repository-root `Kill-Codex-Room.bat` when a procedure requires the running Room to be stopped;
 - treat it as the current project-specific runtime guidance, subordinate to platform/system/developer policies;
 - retrieve only the additional canonical Project sources materially needed for the task;
 - for “where are we?”, “what’s next?”, current priority, or resume questions, read `06_DEVELOPMENT_CONTROL.md` first and verify consequential volatile repository/runtime facts;
@@ -143,6 +144,8 @@ Assume commands are pasted directly into an **already-open interactive PowerShel
 
 Rules:
 
+- At the first substantive Codex Room turn in every new chat, explicitly tell the principal that these interactive-shell rules are loaded before proceeding. Keep that acknowledgment concise.
+- When a verification, checkout, migration, or other operator procedure requires Codex Room to be stopped, **prefer invoking the repository-root `Kill-Codex-Room.bat`** from the supplied command block. Do not make the principal manually reproduce its cleanup logic unless the task specifically requires diagnosing or replacing the kill script.
 - Always provide the **complete runnable block**.
 - Never ask the principal to find/replace, splice, patch, append, or manually edit pieces of an earlier command block.
 - When correcting a command procedure, reissue the **complete corrected runnable block**.
@@ -177,4 +180,4 @@ The GPT Project custom-instructions field should contain only a compact bootstra
 >
 > Fail-safe invariants before the repo instructions are loaded: Personal production uses exactly Agents A, B, and C; A/B are equivalent neutral epistemic peers; C is an epistemic peer with protected coordination responsibility and controls coordination, not judgment; do not add a fourth persistent production agent; do not hot-patch the protected runtime hosting a running Room; preserve human authority and exact-version verification.
 >
-> Assume principal terminal commands are pasted into an already-open interactive PowerShell session. Provide complete directly pasteable blocks; never require patching earlier commands; keep dependent clauses such as `} else {` in one syntactic submission; capture `$LASTEXITCODE` immediately after the command it represents; never terminate the principal's shell merely to propagate an error.
+> At the first substantive Codex Room turn after loading the canonical runtime instructions, visibly acknowledge the operator rules before proceeding: principal terminal commands are pasted into an already-open interactive PowerShell session; provide complete directly pasteable blocks; never require patching earlier commands; keep dependent clauses such as `} else {`, `} elseif {`, `} catch {`, and `} finally {` in one syntactic submission; capture `$LASTEXITCODE` immediately after the command it represents; never terminate the principal's shell merely to propagate an error. When a procedure requires Codex Room to be stopped, prefer invoking the repository-root `Kill-Codex-Room.bat` from the supplied block.
