@@ -230,4 +230,3 @@ def test_oub_v2_materialized_workspace_pins_cross_host_line_endings(
     assert autocrlf == "false"
     assert state["head"] == base_commit
     assert state["status"] == ""
-
