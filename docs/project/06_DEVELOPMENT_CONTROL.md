@@ -6,9 +6,9 @@
 
 ## Operator summary
 
-- **Where are we?** I-034 — **interaction-aware C sequencing** — is the selected immediate refinement and is implemented on a feature branch pending exact-head verification. The underlying roadmap priority remains I-030's concurrent public-delta continuity race.
-- **What just happened?** A natural God Button debate showed that C's existing dependency-only sequencing rule could parallelize work that was mechanically independent but conversationally better treated as responsive. The same run also naturally reproduced I-030 recovery waste: B spent two HISTORY continuations recovering A's already-public steelman. See E-188.
-- **What is next?** Verify and merge I-034, then resume I-030's CORE public-delta visibility repair before returning to I-028 utility benchmarking.
+- **Where are we?** I-034 — **interaction-aware C sequencing** — is COMPLETE, principal exact-head verified, and merged. The active development priority is again I-030's concurrent public-delta continuity race.
+- **What just happened?** PR #220 merged the D-035 interaction-aware sequencing refinement after principal verification of exact head `72ea8a50001862ed7de08d8f8f6eb61fa692358c`. The natural God Button debate remains both the motivating C-topology evidence and a fresh reproduction of I-030 recovery waste. See E-188 and E-189.
+- **What is next?** Resume I-030 and repair the remaining CORE public-delta visibility defect before returning to I-028 utility benchmarking.
 - **What remains behind it?** I-028 utility benchmarking remains behind I-030.
 - **What is blocked?** Nothing conceptual is blocked.
 - **What are we deliberately not doing?** We are not globally deleting default model safeguards, hard-coding a second unrestricted model list, or treating unrestricted authorization as a mandate to use maximum cognition.
@@ -19,13 +19,13 @@
 
 **Scope:** [C protected structural coordination / parallel-vs-sequential judgment / responsive peer work]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** DECIDED / IMPLEMENTED ON FEATURE BRANCH / NEEDS EXACT-HEAD VERIFICATION
+**Reality / evidence:** IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED
 
 **Decision:** D-035 (amended 2026-09-26)
 
-**Evidence:** E-188
+**Evidence:** E-188, E-189
 
 The principal selected a domain-general refinement to C's existing dependency-aware sequencing responsibility after the natural God Button debate exposed a coordination-topology gap.
 
@@ -43,7 +43,9 @@ The implementation remains instruction-level. It does **not** add a debate mode,
 
 Adoption remains consistent with D-035: freshly composed Rooms receive the refined instructions; existing Room snapshots are not retroactively rewritten. I-030 remains separately responsible for making concurrent public-context delivery mechanically safe.
 
-After exact-head verification and merge, I-034 should close and active development should return directly to I-030.
+PR #220 was principal-verified at exact head `72ea8a50001862ed7de08d8f8f6eb61fa692358c`. The successful clone-based gate passed exact-head/base/scope checks, `git diff --check`, Python compilation, the focused C structural regression, `verify-fast.cmd`, and final clean/head checks. GitHub merged that exact expected head as `a63df21ccd910885df1dbf59b06c89ea012e4b58`; comparison from the verified feature head to the merge commit reported zero changed files. See E-189.
+
+I-034 is closed. Active development returns directly to I-030.
 
 ### I-033 — Compact advisory model-selection guidance for C
 
