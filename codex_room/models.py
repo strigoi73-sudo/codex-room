@@ -7,6 +7,10 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
 
+from .observer_attachments import (
+    MAX_OBSERVER_IMAGES,
+    MAX_OBSERVER_IMAGE_DATA_URL_CHARS,
+)
 from .personalities import (
     AGENT_A_DEFAULT_INSTRUCTIONS,
     AGENT_B_DEFAULT_INSTRUCTIONS,
@@ -860,9 +864,25 @@ class BindInstitutionalReleaseRequest(BaseModel):
     institutional_release_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+class ObserverImageAttachmentInput(BaseModel):
+    filename: str = Field(min_length=1, max_length=240)
+    media_type: Literal["image/png", "image/jpeg", "image/webp"]
+    data_url: str = Field(min_length=1, max_length=MAX_OBSERVER_IMAGE_DATA_URL_CHARS)
+
+
 class ObserverMessageRequest(BaseModel):
     target: Literal["all", "both", "agent_a", "agent_b", "agent_c"]
-    content: str = Field(min_length=1, max_length=50_000)
+    content: str = Field(default="", max_length=50_000)
+    images: list[ObserverImageAttachmentInput] = Field(
+        default_factory=list,
+        max_length=MAX_OBSERVER_IMAGES,
+    )
+
+    @model_validator(mode="after")
+    def validate_observer_message_payload(self) -> "ObserverMessageRequest":
+        if not self.content.strip() and not self.images:
+            raise ValueError("Observer message requires text or at least one image")
+        return self
 
 
 class PrincipalReplyRequest(BaseModel):

@@ -117,13 +117,15 @@ class TurningThread:
 
     def __init__(self, handle: BlockingHandle) -> None:
         self.handle = handle
+        self.turn_input = None
         self.turn_kwargs: dict = {}
 
     async def read(self, **_kwargs):
         status = SimpleNamespace(type="idle")
         return SimpleNamespace(thread=SimpleNamespace(status=SimpleNamespace(root=status)))
 
-    async def turn(self, _prompt: str, **kwargs):
+    async def turn(self, prompt, **kwargs):
+        self.turn_input = prompt
         self.turn_kwargs = kwargs
         return self.handle
 
@@ -761,6 +763,35 @@ async def test_run_agent_uses_explicit_per_turn_model_and_effort(tmp_path: Path)
 
     assert thread.turn_kwargs["model"] == "gpt-5.6-luna"
     assert thread.turn_kwargs["effort"] == "medium"
+
+
+@pytest.mark.asyncio
+async def test_run_agent_uses_native_text_and_local_image_inputs(tmp_path: Path):
+    from openai_codex import LocalImageInput, TextInput
+
+    adapter = CodexAgentAdapter()
+    adapter._client = object()
+    adapter.RECONCILIATION_INTERVAL_SECONDS = 0.01
+    handle = HistoryHandle()
+    thread = HistoryThread(handle)
+    adapter._threads["agent-one"] = thread
+    agent = {"id": "agent-one", "thread_id": thread.id}
+    image_path = tmp_path / "sample.png"
+    image_path.write_bytes(b"image-bytes")
+
+    await adapter.run_agent(
+        agent,
+        tmp_path,
+        "inspect the attached image",
+        local_image_paths=(image_path,),
+    )
+
+    assert isinstance(thread.turn_input, list)
+    assert len(thread.turn_input) == 2
+    assert isinstance(thread.turn_input[0], TextInput)
+    assert thread.turn_input[0].text == "inspect the attached image"
+    assert isinstance(thread.turn_input[1], LocalImageInput)
+    assert thread.turn_input[1].path == str(image_path.resolve())
 
 
 @pytest.mark.asyncio

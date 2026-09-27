@@ -48,6 +48,11 @@ from .institutional import (
     verify_materialized_release,
 )
 from .model_guidance import render_model_selection_guide
+from .observer_attachments import (
+    materialize_observer_images,
+    remove_observer_images,
+    resolve_observer_image_path,
+)
 from .models import (
     AddAgentRequest,
     AgentDecision,
@@ -1041,15 +1046,12 @@ class RoomRuntime:
         reopen_events: list[dict[str, Any]] = []
         async with self._lifecycle_locks[room_id]:
             room = await self._required_room(room_id)
-            if room["status"] == RoomStatus.FINISHED:
-                await self.db.reopen_finished_room(room_id)
-                await self._start_usage_meter_cycle(room_id, room["active_round_id"])
-                await self._system_event(
-                    room_id,
-                    "discussion_reopened",
-                    "Discussion reopened by a new observer message; agent thread identities were retained.",
-                )
-            elif room["status"] not in {RoomStatus.RUNNING, RoomStatus.PAUSED}:
+            room_was_finished = room["status"] == RoomStatus.FINISHED
+            if room["status"] not in {
+                RoomStatus.RUNNING,
+                RoomStatus.PAUSED,
+                RoomStatus.FINISHED,
+            }:
                 raise ValueError(f"Cannot send messages while room is {room['status']}")
             members = [agent["agent_key"] for agent in await self.db.get_agents(room_id)]
             target = "all" if request.target in {"all", "both"} else request.target
@@ -1060,26 +1062,69 @@ class RoomRuntime:
             transactional = bool(
                 round_item and round_item.get("work_model_version", 1) == 2
             )
-            event = await self.db.create_event(
+            if request.images and not transactional:
+                raise ValueError(
+                    "Observer image attachments require the version-2 Room work model"
+                )
+
+            stored_images = materialize_observer_images(
+                self.data_root,
                 room_id,
-                "observer_message",
-                "observer",
-                target,
-                request.content,
-                metadata={
-                    "private": target != "all",
-                    "work_model_version": 2 if transactional else 1,
-                },
-                deliver_to=() if transactional else targets,
-                runnable_to=() if transactional else None,
+                request.images,
             )
+            attachment_metadata = [item.descriptor() for item in stored_images]
+
+            if room_was_finished:
+                try:
+                    await self.db.reopen_finished_room(room_id)
+                    await self._start_usage_meter_cycle(room_id, room["active_round_id"])
+                    await self._system_event(
+                        room_id,
+                        "discussion_reopened",
+                        "Discussion reopened by a new observer message; agent thread identities were retained.",
+                    )
+                except BaseException:
+                    remove_observer_images(stored_images)
+                    raise
+
+            try:
+                event = await self.db.create_event(
+                    room_id,
+                    "observer_message",
+                    "observer",
+                    target,
+                    request.content,
+                    metadata={
+                        "private": target != "all",
+                        "work_model_version": 2 if transactional else 1,
+                        "attachments": attachment_metadata,
+                    },
+                    deliver_to=() if transactional else targets,
+                    runnable_to=() if transactional else None,
+                )
+            except BaseException:
+                remove_observer_images(stored_images)
+                raise
+
             if transactional:
+                instruction = request.content
+                if stored_images:
+                    attachment_names = ", ".join(item.filename for item in stored_images)
+                    attachment_note = (
+                        "Observer image attachment(s), supplied through native Codex image input: "
+                        f"{attachment_names}."
+                    )
+                    instruction = (
+                        f"{instruction}\n\n{attachment_note}"
+                        if instruction.strip()
+                        else attachment_note
+                    )
                 transaction = await self.db.create_observer_transaction_work(
                     room_id,
                     room["active_round_id"],
                     event["id"],
                     targets,
-                    request.content,
+                    instruction,
                 )
                 targets = tuple(transaction["agent_keys"])
             else:
@@ -2176,7 +2221,7 @@ class RoomRuntime:
         astra_authorized: bool = False,
         unrestricted_model_access: bool = False,
         available_execution_configs: dict[str, tuple[str, str]] | None = None,
-    ) -> tuple[str, int | None]:
+    ) -> tuple[str, int | None, tuple[Path, ...]]:
         round_item = await self.db.get_round(batch["round_id"])
         if round_item is None:
             raise RuntimeError(f"Round {batch['round_id']} is missing")
@@ -2243,6 +2288,27 @@ class RoomRuntime:
                 assignment["id"],
                 max_events=self.TRANSACTION_PUBLIC_CONTEXT_MAX_EVENTS,
             )
+        local_image_paths: tuple[Path, ...] = ()
+        if not has_prior_assignment_execution and assignment.get("origin_event_id"):
+            origin_event = await self.db.get_event(assignment["origin_event_id"])
+            attachment_items = (
+                (origin_event.get("metadata") or {}).get("attachments") or []
+                if origin_event is not None
+                else []
+            )
+            resolved_images: list[Path] = []
+            for descriptor in attachment_items:
+                if not isinstance(descriptor, dict) or descriptor.get("kind") != "image":
+                    continue
+                resolved_images.append(
+                    resolve_observer_image_path(
+                        self.data_root,
+                        batch["room_id"],
+                        descriptor,
+                    )
+                )
+            local_image_paths = tuple(resolved_images)
+
         coordinator_context_economics = None
         if is_root_coordinator:
             coordinator_context_economics = self._coordinator_context_economics(
@@ -2717,7 +2783,11 @@ class RoomRuntime:
                 ),
             ]
         )
-        return "\n\n".join(context_parts), public_context_through_sequence
+        return (
+            "\n\n".join(context_parts),
+            public_context_through_sequence,
+            local_image_paths,
+        )
 
     async def _record_invalid_decision_telemetry(
         self,
@@ -3071,6 +3141,7 @@ class RoomRuntime:
                 (
                     prompt,
                     public_context_through_sequence,
+                    local_image_paths,
                 ) = await self._assignment_prompt(
                     batch,
                     agent,
@@ -3129,6 +3200,7 @@ class RoomRuntime:
                         allow_astra=astra_authorized,
                         unrestricted_model_access=unrestricted_model_access,
                         transactional=True,
+                        local_image_paths=local_image_paths,
                     )
                     if provider_context_mode == "assignment_thread"
                     else self.adapter.run_agent(
@@ -3145,6 +3217,7 @@ class RoomRuntime:
                         allow_astra=astra_authorized,
                         unrestricted_model_access=unrestricted_model_access,
                         transactional=True,
+                        local_image_paths=local_image_paths,
                     )
                 )
                 result = await self._await_with_inactivity_lease(

@@ -190,6 +190,7 @@ class AgentAdapter(Protocol):
         allow_astra: bool = False,
         unrestricted_model_access: bool = False,
         transactional: bool = False,
+        local_image_paths: tuple[Path, ...] = (),
     ) -> AgentRunResult: ...
 
     async def run_agent_on_thread(
@@ -206,6 +207,7 @@ class AgentAdapter(Protocol):
         allow_astra: bool = False,
         unrestricted_model_access: bool = False,
         transactional: bool = False,
+        local_image_paths: tuple[Path, ...] = (),
     ) -> AgentRunResult: ...
 
     async def resume_agent(
@@ -611,6 +613,7 @@ class CodexAgentAdapter:
         allow_astra: bool = False,
         unrestricted_model_access: bool = False,
         transactional: bool = False,
+        local_image_paths: tuple[Path, ...] = (),
     ) -> AgentRunResult:
         _assert_room_model_allowed(
             model,
@@ -622,8 +625,16 @@ class CodexAgentAdapter:
         await self._wait_until_thread_idle(
             thread, allow_usage_system_error=usage_continuation
         )
+        turn_input: Any = prompt
+        if local_image_paths:
+            from openai_codex import LocalImageInput, TextInput
+
+            turn_input = [
+                TextInput(prompt),
+                *(LocalImageInput(str(path.resolve())) for path in local_image_paths),
+            ]
         handle = await thread.turn(
-            prompt,
+            turn_input,
             effort=reasoning_effort,
             model=model,
             output_schema=(
@@ -652,6 +663,7 @@ class CodexAgentAdapter:
         allow_astra: bool = False,
         unrestricted_model_access: bool = False,
         transactional: bool = False,
+        local_image_paths: tuple[Path, ...] = (),
     ) -> AgentRunResult:
         _assert_room_model_allowed(
             model,
@@ -670,6 +682,7 @@ class CodexAgentAdapter:
             allow_astra=allow_astra,
             unrestricted_model_access=unrestricted_model_access,
             transactional=transactional,
+            local_image_paths=local_image_paths,
         )
 
     async def run_agent_on_thread(
@@ -686,6 +699,7 @@ class CodexAgentAdapter:
         allow_astra: bool = False,
         unrestricted_model_access: bool = False,
         transactional: bool = False,
+        local_image_paths: tuple[Path, ...] = (),
     ) -> AgentRunResult:
         _assert_room_model_allowed(
             model,
@@ -704,6 +718,7 @@ class CodexAgentAdapter:
             allow_astra=allow_astra,
             unrestricted_model_access=unrestricted_model_access,
             transactional=transactional,
+            local_image_paths=local_image_paths,
         )
 
     async def resume_agent(

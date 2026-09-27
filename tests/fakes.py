@@ -160,6 +160,7 @@ class FakeAgentAdapter:
         allow_astra: bool = False,
         unrestricted_model_access: bool = False,
         transactional: bool = False,
+        local_image_paths: tuple[Path, ...] = (),
     ) -> AgentRunResult:
         self._inactive_agents.discard(agent["agent_key"])
         self.calls[agent["agent_key"]].append(
@@ -172,6 +173,7 @@ class FakeAgentAdapter:
                 "allow_astra": allow_astra,
                 "unrestricted_model_access": unrestricted_model_access,
                 "transactional": transactional,
+                "local_image_paths": [str(path) for path in local_image_paths],
             }
         )
         if self.synchronize_first_topic and "NEW TOPIC" in prompt and len(self.calls[agent["agent_key"]]) == 1:
@@ -234,6 +236,7 @@ class FakeAgentAdapter:
         allow_astra: bool = False,
         unrestricted_model_access: bool = False,
         transactional: bool = False,
+        local_image_paths: tuple[Path, ...] = (),
     ) -> AgentRunResult:
         contextual_agent = dict(agent)
         contextual_agent["thread_id"] = thread_id
@@ -248,6 +251,7 @@ class FakeAgentAdapter:
             allow_astra=allow_astra,
             unrestricted_model_access=unrestricted_model_access,
             transactional=transactional,
+            local_image_paths=local_image_paths,
         )
 
     async def resume_agent(

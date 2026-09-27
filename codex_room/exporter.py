@@ -159,7 +159,18 @@ def as_markdown(snapshot: dict[str, Any]) -> str:
                     f"_{event['created_at']} · {event['event_type']} · {' · '.join(flags)} · `{event['id']}`_",
                     "",
                     event["content"] or "_(no message text)_",
-                    "",
                 ]
             )
+            attachments = event.get("metadata", {}).get("attachments") or []
+            for attachment in attachments:
+                if not isinstance(attachment, dict) or attachment.get("kind") != "image":
+                    continue
+                lines.append(
+                    "- Image attachment: "
+                    f"{attachment.get('filename') or 'attachment'} · "
+                    f"{attachment.get('media_type') or 'unknown type'} · "
+                    f"{attachment.get('size_bytes') or 0} bytes · "
+                    f"sha256={attachment.get('sha256') or 'unknown'}"
+                )
+            lines.append("")
     return "\n".join(lines)

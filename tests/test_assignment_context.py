@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -237,6 +238,144 @@ async def test_assignment_context_mode_reuses_one_thread_per_logical_assignment(
     }
     assert context_by_agent["agent_c"] == c_thread
     assert context_by_agent["agent_a"] == a_thread
+
+
+@pytest.mark.asyncio
+async def test_observer_image_routes_only_to_addressed_assignment_first_turn(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Initial task complete.",
+        )
+    )
+    runtime = await context_runtime_factory(adapter, "observer-image.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Initial task.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.HISTORY,
+                history_requests=[HistoryRequest(operation="RECENT", max_results=1)],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A inspected the supplied image.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="C integrated A's image work.",
+        )
+    )
+
+    event = await runtime.observer_message(
+        room_id,
+        ObserverMessageRequest(
+            target="agent_a",
+            images=[
+                {
+                    "filename": "pixel.png",
+                    "media_type": "image/png",
+                    "data_url": (
+                        "data:image/png;base64,"
+                        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8"
+                        "/x8AAusB9WlF9xQAAAAASUVORK5CYII="
+                    ),
+                }
+            ],
+        ),
+    )
+
+    await wait_until(lambda: len(adapter.completed_calls["agent_a"]) == 2)
+    await wait_until(lambda: len(adapter.completed_calls["agent_c"]) == 2)
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    first_a = adapter.calls["agent_a"][0]
+    second_a = adapter.calls["agent_a"][1]
+    integration_c = adapter.calls["agent_c"][1]
+
+    assert len(first_a["local_image_paths"]) == 1
+    assert "pixel.png" in first_a["prompt"]
+    assert "native Codex image input" in first_a["prompt"]
+    assert second_a["local_image_paths"] == []
+    assert integration_c["local_image_paths"] == []
+    assert adapter.calls["agent_b"] == []
+
+    image_path = Path(first_a["local_image_paths"][0])
+    assert image_path.is_file()
+    assert runtime.workspace(room_id) not in image_path.parents
+    assert image_path.parent.name == "attachments"
+
+    attachments = event["metadata"]["attachments"]
+    assert len(attachments) == 1
+    assert attachments[0]["filename"] == "pixel.png"
+    assert attachments[0]["media_type"] == "image/png"
+    assert "path" not in attachments[0]
+    assert event["metadata"]["private"] is True
+
+
+@pytest.mark.asyncio
+async def test_invalid_observer_image_does_not_reopen_finished_room(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Initial task complete.",
+        )
+    )
+    runtime = await context_runtime_factory(adapter, "invalid-observer-image.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Initial task.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+    before_events = await runtime.db.get_events(room_id)
+
+    with pytest.raises(ValueError, match="bytes do not match"):
+        await runtime.observer_message(
+            room_id,
+            ObserverMessageRequest(
+                target="agent_a",
+                images=[
+                    {
+                        "filename": "not-a-jpeg.jpg",
+                        "media_type": "image/jpeg",
+                        "data_url": (
+                            "data:image/jpeg;base64,"
+                            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8"
+                            "/x8AAusB9WlF9xQAAAAASUVORK5CYII="
+                        ),
+                    }
+                ],
+            ),
+        )
+
+    room = await runtime.db.get_room(room_id)
+    assert room is not None
+    assert room["status"] == RoomStatus.FINISHED
+    after_events = await runtime.db.get_events(room_id)
+    assert [item["id"] for item in after_events] == [item["id"] for item in before_events]
+    attachment_root = runtime.data_root / "rooms" / room_id / "attachments"
+    assert not attachment_root.exists() or not any(attachment_root.iterdir())
 
 
 @pytest.mark.asyncio

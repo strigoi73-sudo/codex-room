@@ -121,9 +121,14 @@
               <select name="target" aria-label="Message target">
                 <option value="all">All agents</option>
               </select>
-              <textarea name="content" rows="2" maxlength="50000" placeholder="Intervene as the observer…" required></textarea>
+              <textarea name="content" rows="2" maxlength="50000" placeholder="Intervene as the observer…"></textarea>
+              <label class="image-attach-button" title="Attach up to 4 PNG, JPEG, or WebP images (8 MiB each)" aria-label="Attach images">
+                ＋
+                <input name="images" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" multiple />
+              </label>
               <button class="send-button" type="submit" aria-label="Send message">↑</button>
               <small class="composer-hint">Enter to send · Shift+Enter for newline</small>
+              <small id="image-attachment-status" class="image-attachment-status hidden"></small>
             </form>
             <div id="room-error" class="error-banner hidden"></div>
           </div>
