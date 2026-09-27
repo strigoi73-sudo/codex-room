@@ -2,7 +2,7 @@
   "schema": "oub-v2-phase3-plan-v1",
   "upstream_url": "https://github.com/cooperbench/CooperBench.git",
   "upstream_revision": "63b9d44d9f39a02fccf5bf0052db48a917a011fd",
-  "method": "For each selected feature: exact upstream tests must reject the untouched base task image, and the same tests must pass after applying the exact task combined.patch. The exact dataset runner.sh is mounted over the image runner.",
+  "method": "For each selected feature, validate exact frozen CooperBench tests against the exact upstream base commit. Tests must reject untouched base and pass after applying exact task combined.patch. Docker mode uses the frozen dataset runner over the published task image; native mode reproduces the same patch order/test target directly in an isolated exact-commit checkout.",
   "tasks": [
     {
       "sample_id": "o2-1",
@@ -24,6 +24,18 @@
         "dataset/llama_index_task/task18813/feature5/feature.md": "9ec0a8b45f0dbe1f8864ceb7c39face4fa775e82",
         "dataset/llama_index_task/task18813/feature5/feature.patch": "b821a6109aa6219f35b3438beefc4c95f260606a",
         "dataset/llama_index_task/task18813/feature5/tests.patch": "72e6fd18ca519d5acf99f86c92e8201baa160bf6"
+      },
+      "project_url": "https://github.com/run-llama/llama_index.git",
+      "native_runtime": {
+        "kind": "python",
+        "python": "3.10",
+        "test_command": [
+          "python",
+          "-m",
+          "pytest",
+          "llama-index-core/tests/base/llms/test_types.py",
+          "-v"
+        ]
       }
     },
     {
@@ -46,6 +58,12 @@
         "dataset/typst_task/task6554/feature9/feature.md": "1ae76030751b356a0ffa5044537f7a5d0399f3d0",
         "dataset/typst_task/task6554/feature9/feature.patch": "92924b588b528283236f259ba55bad6b2bdbbc45",
         "dataset/typst_task/task6554/feature9/tests.patch": "ee7539e3404d2e8b824c705d76c43523ecd5ba5c"
+      },
+      "project_url": "https://github.com/typst/typst.git",
+      "native_runtime": {
+        "kind": "rust",
+        "toolchain": "1.80.0",
+        "test_mode": "typst_patch_blocks"
       }
     },
     {
@@ -68,6 +86,18 @@
         "dataset/samuelcolvin_dirty_equals_task/task43/feature7/feature.md": "c1c85204f37ab584199283c0504343ada8f541a7",
         "dataset/samuelcolvin_dirty_equals_task/task43/feature7/feature.patch": "72d009e1dc9cc9a34d4fe415765462717092dc3b",
         "dataset/samuelcolvin_dirty_equals_task/task43/feature7/tests.patch": "22fcf2043f460d261e482e717e92e72c96dc3ae7"
+      },
+      "project_url": "https://github.com/samuelcolvin/dirty-equals.git",
+      "native_runtime": {
+        "kind": "python",
+        "python": "3.11",
+        "test_command": [
+          "python",
+          "-m",
+          "pytest",
+          "tests/test_other.py",
+          "-v"
+        ]
       }
     }
   ]
