@@ -88,6 +88,8 @@ def test_local_verifier_uses_inherited_wsl_working_directory() -> None:
     assert 'repo="$(pwd -P)"' in verifier
     assert '$startInfo.WorkingDirectory = $repoRoot' in verifier
     assert '$startInfo.RedirectStandardInput = $true' in verifier
+    assert '$startInfo.Arguments =' in verifier
+    assert '.ArgumentList' not in verifier
     assert '$process.StandardInput.Write($bash)' in verifier
     assert '$process.StandardInput.Close()' in verifier
     assert '$global:LASTEXITCODE = $process.ExitCode' in verifier
