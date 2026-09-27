@@ -1,9 +1,9 @@
 # Codex Room — Evidence Register, Continuation
 
-**Continues:** `07_EVIDENCE_REGISTER.md`  
-**Initialized:** 2026-09-17  
-**Last updated:** 2026-09-26  
-**Scope:** Continuation of the canonical Evidence Register. Evidence identifiers continue the existing `E-###` sequence without a new namespace.  
+**Continues:** `07_EVIDENCE_REGISTER.md`
+**Initialized:** 2026-09-17
+**Last updated:** 2026-09-26
+**Scope:** Continuation of the canonical Evidence Register. Evidence identifiers continue the existing `E-###` sequence without a new namespace.
 **Freshness:** Evidence proves what was observed at a stated time/version. It does not automatically prove every later version behaves identically.
 
 ## Continuation rule
@@ -13,8 +13,8 @@ This file is the second physical volume of the single Codex Room Evidence Regist
 ---
 
 ### E-125 — Post-PR-#110 Common Cause controlled replication
-**Date:** 2026-09-17  
-**Kind:** [ROOM controlled replication / coordination behavior / execution economics]  
+**Date:** 2026-09-17
+**Kind:** [ROOM controlled replication / coordination behavior / execution economics]
 **Decision:** D-035
 
 A fresh controlled implementation replication was run after PR #110 using:
@@ -73,8 +73,8 @@ The replication used more raw tokens than the interrupted partial rerun because 
 ---
 
 ### E-126 — Common Cause ordinary continuation naturally exercised PR #110 fallback
-**Date:** 2026-09-17  
-**Kind:** [ROOM ordinary-use continuation / coordination behavior / fallback allocation]  
+**Date:** 2026-09-17
+**Kind:** [ROOM ordinary-use continuation / coordination behavior / fallback allocation]
 **Decision:** D-035
 
 The principal chose to continue the existing Common Cause Room and workspace rather than discard already-spent work. In Round `round_f82ce430abd74a058982df25f8b4d087` of Room `room_01f030b67b0a44f08922391836a6fdd8`, the agents were given bounded authority to bring the game to a playable state before any separately authorized competitive match.
@@ -94,7 +94,7 @@ Observed sequence relevant to PR #110:
 ---
 
 ### E-127 — False coordinator interruption forensics and exact-turn reconciliation repair
-**Date:** 2026-09-17  
+**Date:** 2026-09-17
 **Kind:** [CORE observed issue / forensic diagnosis / bounded repair / verification]
 
 The Common Cause continuation in E-126 ended with `close_reason="transaction_failed"` after CORE recorded C's final exact execution as failed with `Codex turn was interrupted`. Forensic comparison of the Room database and the local Codex SDK rollout for the same thread/turn showed the apparent interruption was false:
@@ -137,7 +137,7 @@ The commit was pushed to canonical `main`, and local `HEAD` and `origin/main` we
 ---
 
 ### E-128 — Windows Codex sandbox helper failure from redirected TEMP/TMP and deterministic recovery
-**Date:** 2026-09-17  
+**Date:** 2026-09-17
 **Kind:** [LOCAL environment issue / Codex sandbox provisioning / operational recovery]
 
 After the CORE repair was restarted, the next Common Cause continuation could not execute shell commands. A, B, and C encountered the same pre-command failure: `helper_unknown_error: setup refresh had errors`. No game runtime verification actually began in that Round.
@@ -167,7 +167,7 @@ No repository code change was required.
 ---
 
 ### E-129 — Common Cause final exact-artifact verification and play-readiness closeout
-**Date:** 2026-09-17  
+**Date:** 2026-09-17
 **Kind:** [ROOM final verification / game artifact / ordinary-use post-repair evidence]
 
 After E-128 restored shell execution, the existing Common Cause Room and workspace were continued without rebuilding or redesigning the game:
@@ -207,8 +207,8 @@ Coordination note: C announced one independent verifier, but the actual path was
 ---
 
 ### E-130 — Continuous Round completion policy exact-head verification and merge
-**Date:** 2026-09-18  
-**Kind:** [CORE lifecycle feature / exact-head review / local verification / merge]  
+**Date:** 2026-09-18
+**Kind:** [CORE lifecycle feature / exact-head review / local verification / merge]
 **Decision:** D-036
 
 PR #113 implemented explicit Round-level `completion_policy` values:
@@ -254,8 +254,8 @@ Canonical `main` was then confirmed to point to that merge commit.
 ---
 
 ### E-131 — Naturalistic continuous-Round `Stay busy.` acceptance
-**Date:** 2026-09-18  
-**Kind:** [ROOM naturalistic acceptance / CORE lifecycle / execution economics]  
+**Date:** 2026-09-18
+**Kind:** [ROOM naturalistic acceptance / CORE lifecycle / execution economics]
 **Decision:** D-036
 
 A fresh Room exercised the merged continuous Round policy under ordinary runtime conditions rather than a synthetic fixture:
@@ -688,9 +688,9 @@ Post-merge GitHub inspection confirmed canonical `main` at that commit and exact
 **Assessment at implementation close:** the coordinator economics/guidance refinement was **IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED**. Live naturalistic effectiveness was still unverified at that point; E-139 subsequently supplies the bounded behavioral revalidation. The refinement does not reopen the completed BCTX program or authorize an automatic refresh controller.
 
 ### E-139 — Coordinator refresh-economics guidance succeeded in bounded naturalistic revalidation
-**Date:** 2026-09-18  
-**Kind:** [ROOM naturalistic revalidation / coordinator refresh adoption / execution-economics observation]  
-**Decision:** D-037  
+**Date:** 2026-09-18
+**Kind:** [ROOM naturalistic revalidation / coordinator refresh adoption / execution-economics observation]
+**Decision:** D-037
 **Related evidence:** E-137, E-138
 
 After PR #127 was merged and the local runtime was updated to canonical `main`, the principal staged a fresh continuous Room from the authoritative source fixture `codex-room-spontaneous-work-test.zip`. The ZIP contained exactly **17 files**; extraction into the new Room workspace was verified file-for-file with SHA-256 before the Round began.
@@ -785,8 +785,8 @@ No GitHub-hosted workflow run was attached; verification is the exact-head local
 **Assessment:** the T8 hard-restart defect is **RESOLVED / IMPLEMENTED / EXACT-HEAD VERIFIED / MERGED / NATURALISTICALLY VERIFIED**. The original failing run remains preserved as evidence of the pre-repair behavior.
 
 ### E-141 — Functional acceptance campaign T0–T14 completed with all tests PASS
-**Date:** 2026-09-19  
-**Kind:** [CORE + ROOM functional acceptance / integrated operational verification]  
+**Date:** 2026-09-19
+**Kind:** [CORE + ROOM functional acceptance / integrated operational verification]
 **Related evidence:** E-140
 
 The repeatable functional acceptance campaign in `docs/CODEX_ROOM_FUNCTIONAL_ACCEPTANCE_TEST_PLAN.md` completed T0 through T14 with every test recorded **PASS** against preserved exact-HEAD and Room/export evidence.
@@ -832,8 +832,8 @@ T14 exact tested state:
 
 ## E-142 — I-016 private principal channel exact-head verification and merge closeout
 
-**Date:** 2026-09-19  
-**Kind:** [CORE + ROOM UI implementation verification / closeout]  
+**Date:** 2026-09-19
+**Kind:** [CORE + ROOM UI implementation verification / closeout]
 **Related decision:** D-038
 **Related work:** I-016
 
@@ -1149,9 +1149,9 @@ No model-driven acceptance Room was run because source plus current official pro
 
 **Current status:** HISTORICAL / SUPERSEDED BY D-041. The verified catalog implementation below is retained as provenance but is being removed from the current Codex Room product surface.
 
-**Date:** 2026-09-19  
-**Kind:** [CORE implementation / deterministic verification / source provenance]  
-**Related work:** I-019 / D-040  
+**Date:** 2026-09-19
+**Kind:** [CORE implementation / deterministic verification / source provenance]
+**Related work:** I-019 / D-040
 **Exact implementation head verified:** `466fdb39cc60dd99fd3cd690061ab2feaea67c8d`
 
 The first bounded I-019 implementation slice established a read-only authority layer for the Codex host-command inventory before any command dropdown or dispatcher is built.
@@ -1184,9 +1184,9 @@ The principal then ran deterministic verification on Windows/WSL against exact h
 
 **Current status:** HISTORICAL FOR THE REMOVED CATALOG PORTION. The broader Status & Tools acceptance remains relevant; D-041 supersedes the catalog-specific product behavior described below.
 
-**Date:** 2026-09-19  
-**Kind:** [CORE + ROOM UI implementation / deterministic verification / live runtime check / natural rendered-UI acceptance]  
-**Related work:** I-019 / D-040  
+**Date:** 2026-09-19
+**Kind:** [CORE + ROOM UI implementation / deterministic verification / live runtime check / natural rendered-UI acceptance]
+**Related work:** I-019 / D-040
 **Exact implementation head verified:** `cc785e34d9332e479e4e8b62af7ca465f5d01cc8`
 
 The I-019 Status & Tools candidate was evaluated in two natural browser passes around one acceptance-blocking defect, with deterministic verification attached to the exact repaired implementation bytes.
@@ -1734,10 +1734,10 @@ No runtime probe or real plugin mutation was necessary for this decision because
 ---
 
 ### E-163 — PBM v1 exact-head verification and canonical merge equivalence
-**Date:** 2026-09-20  
-**Kind:** [deterministic exact-head verification / benchmark-harness verification / Git provenance]  
-**Related work:** I-023 / D-045  
-**Runtime/model benchmark traffic changed:** none  
+**Date:** 2026-09-20
+**Kind:** [deterministic exact-head verification / benchmark-harness verification / Git provenance]
+**Related work:** I-023 / D-045
+**Runtime/model benchmark traffic changed:** none
 **Evidence state:** VERIFIED for the PBM v1 implementation bytes; no live PBM performance result is claimed
 
 PBM v1 was verified on exact feature head:
@@ -1793,10 +1793,10 @@ PBM v1 now includes:
 ---
 
 ### E-164 — PBM v2 contextual baseline exact-head verification and non-cognitive native preflight
-**Date:** 2026-09-20  
-**Kind:** [deterministic exact-head verification / read-only native runtime preflight / benchmark protocol verification / Git provenance]  
-**Related work:** I-024 / D-046 / D-039  
-**Runtime/model benchmark traffic changed:** none  
+**Date:** 2026-09-20
+**Kind:** [deterministic exact-head verification / read-only native runtime preflight / benchmark protocol verification / Git provenance]
+**Related work:** I-024 / D-046 / D-039
+**Runtime/model benchmark traffic changed:** none
 **Evidence state:** VERIFIED for PBM v2 implementation bytes and read-only context-snapshot behavior; no live paid PBM result is claimed
 
 PBM v2 was verified on exact feature head:
@@ -1865,10 +1865,10 @@ Therefore the canonical merged PBM v2 implementation bytes are exactly the bytes
 ---
 
 ### E-165 — PBM v3 one-paste exact-head verification, controller preflights, launcher repair, and canonical merge equivalence
-**Date:** 2026-09-20  
-**Kind:** [deterministic exact-head verification / native Desktop controller preflight / Room controller preflight / defect repair / Git provenance]  
-**Related work:** I-025 / D-047 / D-039  
-**Runtime/model benchmark traffic changed:** controller-only cognition was used for bounded preflights; **zero PBM benchmark tasks were executed**  
+**Date:** 2026-09-20
+**Kind:** [deterministic exact-head verification / native Desktop controller preflight / Room controller preflight / defect repair / Git provenance]
+**Related work:** I-025 / D-047 / D-039
+**Runtime/model benchmark traffic changed:** controller-only cognition was used for bounded preflights; **zero PBM benchmark tasks were executed**
 **Evidence state:** VERIFIED for PBM v3 implementation bytes and both controller mechanics; no live paid PBM performance result is claimed
 
 PBM v3 preserves the frozen PBM v1 eight-task workload, PBM v2 contextual snapshot/accounting semantics, alternating arm order, and D-039 naturalistic Room cognition while changing the operator workflow to one initial principal instruction per platform.
@@ -1943,10 +1943,10 @@ Thus the canonical merged PBM v3 implementation bytes are the exact bytes that p
 ---
 
 ### E-166 — PBM v3 first-live initialization failure and Desktop controller import-path repair
-**Date:** 2026-09-20  
-**Kind:** [first-live workflow evidence / fail-closed launch defect / deterministic repair / exact-head verification / Git provenance]  
-**Related work:** I-025 / D-047  
-**Runtime/model benchmark traffic changed:** one Desktop controller conversation was opened for the requested live PBM invocation; **PBM initialization failed before any benchmark task executed**  
+**Date:** 2026-09-20
+**Kind:** [first-live workflow evidence / fail-closed launch defect / deterministic repair / exact-head verification / Git provenance]
+**Related work:** I-025 / D-047
+**Runtime/model benchmark traffic changed:** one Desktop controller conversation was opened for the requested live PBM invocation; **PBM initialization failed before any benchmark task executed**
 **Evidence state:** VERIFIED for the launch-path defect and repair; no Desktop-versus-Room performance result is claimed
 
 The principal invoked the canonical **“Run PBM”** workflow after E-165 closeout. A fresh Codex Desktop controller task was opened at:
@@ -2014,10 +2014,10 @@ Git comparison from the exact tested feature head to the canonical merge commit 
 ---
 
 ### E-167 — PBM v3 first substantial live run aborted after protocol and benchmark-integrity failures
-**Date:** 2026-09-20  
-**Kind:** [live benchmark postmortem / orchestration failure / validity failure / workload defect / principal abort]  
-**Related work:** I-025 / I-026 / D-047 / D-048  
-**Run:** `pbm-v3-20260920T234823Z`  
+**Date:** 2026-09-20
+**Kind:** [live benchmark postmortem / orchestration failure / validity failure / workload defect / principal abort]
+**Related work:** I-025 / I-026 / D-047 / D-048
+**Run:** `pbm-v3-20260920T234823Z`
 **Evidence state:** VERIFIED for the observed failure modes; **NO VALID DESKTOP-VERSUS-ROOM PERFORMANCE RESULT**
 
 The first substantial live PBM v3 run initialized successfully after the E-166 import-path repair. The coordinator, controller Room, detached Room worker, native Desktop child-task creation, benchmark fingerprinting, and early task execution all operated far enough to exercise the real end-to-end workflow.
@@ -2051,10 +2051,10 @@ Postmortem review also identified an evidence-discipline issue: earlier exact-he
 ---
 
 ### E-168 — PBM v4 exact-head deterministic implementation verification
-**Date:** 2026-09-20  
-**Kind:** [benchmark implementation / exact-head verification / mission-grader audit / repository verification / Git provenance]  
-**Related work:** I-026 / D-048  
-**Runtime/model benchmark traffic changed:** **NONE**; this verification did not execute a Desktop or Room benchmark cognition session  
+**Date:** 2026-09-20
+**Kind:** [benchmark implementation / exact-head verification / mission-grader audit / repository verification / Git provenance]
+**Related work:** I-026 / D-048
+**Runtime/model benchmark traffic changed:** **NONE**; this verification did not execute a Desktop or Room benchmark cognition session
 **Evidence state:** VERIFIED for deterministic implementation and merge provenance; live one-paste canaries remain pending
 
 PBM v4 was implemented on feature branch `i026-pbm-v4-implementation` as the D-048 replacement for v3's live alternating cross-platform controller. The implementation provides:
@@ -2119,9 +2119,9 @@ Git comparison from the exact tested feature head to the canonical merge commit 
 ---
 
 ### E-169 — PBM v4 manual canary exposed operator-choreography and Desktop evidence-parser defects
-**Date:** 2026-09-21  
-**Kind:** [live canary evidence / operator-workflow defect / evidence-parser defect / no-cognition operations verification]  
-**Related work:** I-026 / D-049  
+**Date:** 2026-09-21
+**Kind:** [live canary evidence / operator-workflow defect / evidence-parser defect / no-cognition operations verification]
+**Related work:** I-026 / D-049
 **Evidence state:** VERIFIED for the observed operations-probe and Desktop-capture behavior; no valid Desktop-versus-Room canary pair is claimed
 
 After E-168 deterministic implementation verification, the bounded v4 canary exercised real operating boundaries.
@@ -2146,10 +2146,10 @@ More importantly, the live canary workflow required the principal to prepare a p
 ---
 
 ### E-170 — PBM v4 D-049 common protocol exact-head verification and Room-history collision repair
-**Date:** 2026-09-21  
-**Kind:** [benchmark implementation / exact-head verification / CORE regression repair / repository verification / Git provenance]  
-**Related work:** I-026 / D-049  
-**Runtime/model benchmark traffic changed:** **NONE**; this verification did not execute a Desktop or Room canary/benchmark cognition session  
+**Date:** 2026-09-21
+**Kind:** [benchmark implementation / exact-head verification / CORE regression repair / repository verification / Git provenance]
+**Related work:** I-026 / D-049
+**Runtime/model benchmark traffic changed:** **NONE**; this verification did not execute a Desktop or Room canary/benchmark cognition session
 **Evidence state:** VERIFIED for deterministic D-049 implementation and merge provenance; live common-protocol canaries remain pending
 
 During exact-head verification of PR #188, the repository fast verifier intermittently failed the existing assignment-thread Room-history SEARCH test. Repeated isolated execution reproduced the failure outside the PBM verifier. A controlled diagnostic then forced two consecutive Rounds to share the same millisecond `created_at` timestamp and deterministically reproduced the exact missing-history assertion.
@@ -2189,9 +2189,9 @@ The merged D-049 implementation provides the common PBM v4 protocol, thin Deskto
 ---
 
 ### E-171 — PBM v4 real common-protocol canary evidence, Desktop provenance repair, and seven-task battery exact-head verification
-**Date:** 2026-09-21  
-**Kind:** [live canary evidence / benchmark redesign / validity repair / exact-head verification / repository verification / Git provenance]  
-**Related work:** I-026 / D-049  
+**Date:** 2026-09-21
+**Kind:** [live canary evidence / benchmark redesign / validity repair / exact-head verification / repository verification / Git provenance]
+**Related work:** I-026 / D-049
 **Evidence state:** VERIFIED for the observed live canary behavior, PR #190 deterministic repair, and exact tested-to-merged file equivalence; final merged-bytes common-protocol canary pair remains pending
 
 The first real D-049 common-protocol canary pair exercised both native platform paths without principal run-id shuttling.
@@ -2258,9 +2258,9 @@ Git comparison from the exact tested feature head to that canonical merge establ
 ---
 
 ### E-172 — PBM v4 provisional Desktop-id repair, final merged-bytes canary pass, and canonical promotion
-**Date:** 2026-09-21  
-**Kind:** [live canary evidence / native Desktop identity repair / exact-head verification / repository verification / benchmark promotion]  
-**Related work:** I-026 / D-049  
+**Date:** 2026-09-21
+**Kind:** [live canary evidence / native Desktop identity repair / exact-head verification / repository verification / benchmark promotion]
+**Related work:** I-026 / D-049
 **Evidence state:** VERIFIED for repaired implementation, final common-protocol canary, and PBM v4 promotion
 
 After E-171, the final merged-bytes canary exposed one additional native Desktop boundary: fresh-task creation could return a provisional UI identity of the form `client-new-thread:<uuid>` rather than the durable rollout/session thread id. The detached PBM monitor originally passed that provisional identifier directly to rollout lookup and therefore remained in `monitoring` even though the measured Desktop child had executed.
@@ -2336,7 +2336,7 @@ All I-026 promotion gates are therefore satisfied. Canonical `benchmarks/pbm/CUR
 
 
 ### E-173 — PBM v5 platform-outcome harness exact-head verification and promotion
-**Date:** 2026-09-21  
+**Date:** 2026-09-21
 **Status:** VERIFIED
 
 The PBM v5 platform-outcome implementation at exact feature head `098e4b1cb8a77a0dd440a1f4cad30ee935440280` passed the requested deterministic verification without any additional benchmark/canary model traffic:
@@ -2360,7 +2360,7 @@ No paid seven-task PBM v5 comparison has yet completed. The next live benchmark 
 
 
 ### E-174 — First live PBM v5 Desktop-versus-Room comparison
-**Date:** 2026-09-21  
+**Date:** 2026-09-21
 **Status:** VERIFIED
 
 Run `pbm-v5-benchmark-20260921T130735334526Z` completed automatically under the D-050 platform-outcome contract.
@@ -2412,7 +2412,7 @@ The provider/account usage meter was corroborating context only. It reported unc
 
 
 ### E-175 — Controlled PBM v5 C-only Room comparison
-**Date:** 2026-09-21  
+**Date:** 2026-09-21
 **Status:** VERIFIED
 
 Controlled run `pbm-v5-c-only-20260921T134611828882Z` reused the already-verified Desktop arm from E-174 and executed a new Room arm under a mechanically enforced C-only condition.
@@ -2463,7 +2463,7 @@ Interpretation:
 
 
 ### E-176 — Assignment-thread context-economy repair exact-head verification
-**Date:** 2026-09-21  
+**Date:** 2026-09-21
 **Status:** VERIFIED
 
 Follow-up investigation of E-175 traced the dominant C-only residual to provider-thread input replay rather than output verbosity. Two concrete mechanisms were identified in production work-model-v2 assignment-thread execution:
@@ -2499,7 +2499,7 @@ PR #200 merged as `f09a575881915256c0f7311f4bcce152bd18aeed`. GitHub comparison 
 
 
 ### E-177 — OUB v1/O1 asset and harness promotion
-**Date:** 2026-09-21  
+**Date:** 2026-09-21
 **Status:** VERIFIED
 
 I-028's first Organizational Utility Benchmark slice is now deterministically ready for a measured platform comparison.
@@ -2547,7 +2547,7 @@ PR #203 merged as `21b427a68a582ce3f717f4c64759bebd0c710edc`. GitHub comparison 
 
 
 ### E-178 — OUB launch readiness race repair
-**Date:** 2026-09-21  
+**Date:** 2026-09-21
 **Status:** VERIFIED
 
 The first attempted live OUB v1/O1 launch failed before a measured Room or Desktop arm was created. The launch sequence successfully synchronized canonical `main`, verified the frozen OUB fingerprint, invoked `Restart-Codex-Room.bat`, and then immediately ran `oub-v1.ps1 prepare`. The prepare step failed at `http://127.0.0.1:8765/api/health` with `ConnectionRefusedError`.
@@ -2579,7 +2579,7 @@ PR #205 merged as `e0897b692aa985c6aa676a63a55df4cfe247ca17`. GitHub comparison 
 
 
 ### E-179 — OUB live Room workspace preparation repair
-**Date:** 2026-09-21  
+**Date:** 2026-09-21
 **Status:** VERIFIED
 
 The second attempted live OUB v1/O1 launch passed canonical-main synchronization, Room API readiness, and stale-run checks, then failed during Room workspace preparation with Windows `WinError 32` on the newly created Room's `shared` directory. No measured OUB turn had started.
@@ -2611,7 +2611,7 @@ PR #207 merged as `4b8d9a4335fd3abddd02b7ba36a90b20c685a13e`. GitHub comparison 
 
 
 ### E-180 — First measured OUB v1/O1 comparison and grader-contract diagnosis
-**Date:** 2026-09-21  
+**Date:** 2026-09-21
 **Status:** VERIFIED
 
 Run `oub-v1-o01-20260921T164303033477Z` completed as the first measured Organizational Utility Benchmark comparison.
@@ -2643,10 +2643,10 @@ The organizational-utility signal is separate and valid. O1 was designed for app
 **Assessment:** O1 did not create enough intrinsic organizational pressure to test the intended Room advantage. It provides valid platform cost/time evidence and a valid observation that ordinary Room coordination chose not to use its peers on this task. It does not provide a reliable numeric quality comparison because of the hidden exact-label grader contract. Do not spend another paid run merely repeating O1. The next OUB version/task should (1) make independent perspectives materially useful to task success, (2) remain fair to Desktop native orchestration, and (3) use a grading contract whose accepted semantics are fully specified or otherwise robust to equivalent wording.
 
 ### E-181 — D-051 opening-prompt Astra opt-in exact-head verification and merge
-**Date:** 2026-09-24  
-**Status:** VERIFIED  
-**Kind:** [CORE model allocation / fail-closed authorization / exact-head local verification]  
-**Decision:** D-051  
+**Date:** 2026-09-24
+**Status:** VERIFIED
+**Kind:** [CORE model allocation / fail-closed authorization / exact-head local verification]
+**Decision:** D-051
 **Issue:** I-029
 
 The principal locally verified exact feature head `b923e1654bae39291ff7f3211c1062b1005615b4` for the D-051 opening-prompt Astra opt-in implementation.
@@ -2669,10 +2669,10 @@ PR #210 was then marked ready and merged. Merge commit: `8132fac9df2d4fc06fcb59a
 **Assessment:** D-051 is implemented, exact-head locally verified, and merged. The remaining I-029 acceptance step is one natural provider-backed Room demonstrating that an opening prompt can keep A and B on the requested Astra configuration across the conversation while C remains on its separately requested Terra configuration, with actual execution evidence confirming model/effort selection.
 
 ### E-182 — Natural provider-backed Astra acceptance verified by the principal
-**Date:** 2026-09-24  
-**Status:** VERIFIED BY PRINCIPAL  
-**Kind:** [natural Room acceptance / provider execution / model-allocation policy]  
-**Decision:** D-051  
+**Date:** 2026-09-24
+**Status:** VERIFIED BY PRINCIPAL
+**Kind:** [natural Room acceptance / provider execution / model-allocation policy]
+**Decision:** D-051
 **Issue:** I-029
 
 After PR #210 merged the exact-head-verified D-051 implementation, the principal ran a fresh ordinary Codex Room using the intended opening-prompt Astra authorization behavior and reported that it worked.
@@ -2689,10 +2689,10 @@ This entry records **principal verification of the live behavior**. The assistan
 **Assessment:** Combined with E-181's exact-head local verification and byte-equivalent merge evidence, the principal's natural provider-backed acceptance closes I-029. D-051 is implemented, verified, merged, and accepted in ordinary use.
 
 ### E-183 — D-052 conversational continuity exact-head verification and merge
-**Date:** 2026-09-25  
-**Status:** VERIFIED BY PRINCIPAL  
-**Kind:** [worker context continuity / public Room delta / same-Task HISTORY / exact-head local verification]  
-**Decision:** D-052  
+**Date:** 2026-09-25
+**Status:** VERIFIED BY PRINCIPAL
+**Kind:** [worker context continuity / public Room delta / same-Task HISTORY / exact-head local verification]
+**Decision:** D-052
 **Issue:** I-030
 
 The principal locally verified exact feature head `03fb490d6b924f6268a29ceeda62a8f7bab6300a` for the D-052 same-Task conversational continuity repair.
@@ -2715,7 +2715,7 @@ This entry records principal-reported local verification. The assistant did not 
 
 ### E-184 — I-031 exact-head acceptance and merge preservation
 
-**Date:** 2026-09-26  
+**Date:** 2026-09-26
 **Evidence qualification:** VERIFIED for the accepted and merged I-031 bytes; full focused-suite clean-pass status is not claimed.
 
 Principal verification targeted exact feature head `a189a9b9b0c03e118f5c5d9a862739a5d47f33fc` for I-031 / D-053. `git diff --check origin/main...HEAD` passed. The three previously failing rollover recovery tests passed. The focused I-031 regression run produced **127 passed, 1 failed**; the sole failure was the unchanged `test_rollover_http_endpoint_leaves_successor_preparing`, which returned a transient rollover-idle HTTP 409. Comparison with canonical `main` showed that test's relevant polling logic was unchanged. The same test then passed **5/5 consecutive isolated reruns** at the exact accepted head. Because the remaining evidence identified a timing/flakiness event rather than an I-031 regression, the expensive full focused suite was not rerun; `verify-fast.cmd` was not run after the focused-suite failure.
@@ -2723,10 +2723,10 @@ Principal verification targeted exact feature head `a189a9b9b0c03e118f5c5d9a8627
 PR #215 recorded this qualified evidence before merge and was merged with GitHub enforcing the expected head SHA. Merge commit `0ddfc5d6411c4da749dd16a5a903f7b028bc1f09` compares one commit ahead of the accepted feature head with **zero changed files**, establishing that the merged tree preserves the accepted I-031 feature bytes exactly.
 
 ### E-185 — I-032 ordinary-Room provider usage capture exact-head verification and merge
-**Date:** 2026-09-26  
-**Status:** VERIFIED BY PRINCIPAL  
-**Kind:** [provider usage meter / ordinary Room lifecycle / focused exact-head verification]  
-**Decision:** D-054  
+**Date:** 2026-09-26
+**Status:** VERIFIED BY PRINCIPAL
+**Kind:** [provider usage meter / ordinary Room lifecycle / focused exact-head verification]
+**Decision:** D-054
 **Issue:** I-032
 
 The principal locally verified the automatic ordinary-Room provider usage-meter implementation at exact feature head `ba5de09a0bc441691db318d16611bf8fc0ca6d57`.
@@ -2752,10 +2752,10 @@ Evidence boundary: the implementation records **account-level** provider-meter c
 **Assessment:** I-032 / D-054 is implemented, focused exact-head verified, and merged. Ordinary production Rooms now automatically retain provider-meter evidence suitable for later usage analysis without manual UI transcription.
 
 ### E-186 — I-033 advisory model-selection guidance exact-head verification and merge
-**Date:** 2026-09-26  
-**Status:** VERIFIED BY PRINCIPAL  
-**Kind:** [CORE model-allocation context / advisory prompt guidance / exact-head local verification]  
-**Decision:** D-055  
+**Date:** 2026-09-26
+**Status:** VERIFIED BY PRINCIPAL
+**Kind:** [CORE model-allocation context / advisory prompt guidance / exact-head local verification]
+**Decision:** D-055
 **Issue:** I-033
 
 The principal locally verified exact feature head `055afd4b0789b3137efa90ee4396aefaf4f458e2` for the compact advisory model-selection guidance implementation.
@@ -2783,10 +2783,10 @@ This evidence records principal-reported local verification; the assistant did n
 **Assessment:** I-033 / D-055 is implemented, principal exact-head verified, and merged. C now receives compact advisory model-family/reasoning-effort context without changing native availability, Room authorization, validation, persistence, rollover lineage, or execution policy. I-030 resumes as the active development priority.
 
 ### E-187 — Post-D-055 Project Helix dynamic-allocation acceptance
-**Date:** 2026-09-26  
-**Status:** VERIFIED FROM ROOM EXPORT  
-**Kind:** [ROOM controlled benchmark / dynamic cognition allocation / advisory model guidance]  
-**Decision:** D-055  
+**Date:** 2026-09-26
+**Status:** VERIFIED FROM ROOM EXPORT
+**Kind:** [ROOM controlled benchmark / dynamic cognition allocation / advisory model guidance]
+**Decision:** D-055
 **Issue:** I-033
 
 After I-033 merged, the principal reran the previously used **Project Helix — Dynamic Cognition Allocation Benchmark** in a fresh Room with unrestricted model access enabled and supplied the completed Room JSON export for inspection.
@@ -2816,10 +2816,10 @@ The benchmark also supplied a useful adequacy check on the middle-tier choices. 
 **Assessment:** This controlled post-merge acceptance supports D-055's intended boundary. C used the advisory information while continuing to vary model family and effort by assignment, and unrestricted Astra availability did **not** produce automatic Astra use. The run does not establish a universal optimal routing policy, a numeric escalation threshold, or that Astra is never warranted; it establishes only the observed allocation behavior and successful completion of this bounded Helix workload. I-033 remains COMPLETE. I-030 remains the active development priority.
 
 ### E-188 — God Button natural debate exposes interaction-topology gap and reproduces I-030 recovery waste
-**Date:** 2026-09-26  
-**Status:** VERIFIED FROM ROOM EXPORT  
-**Kind:** [ROOM natural debate / C coordination topology / worker public-context continuity]  
-**Decision:** D-035  
+**Date:** 2026-09-26
+**Status:** VERIFIED FROM ROOM EXPORT
+**Kind:** [ROOM natural debate / C coordination topology / worker public-context continuity]
+**Decision:** D-035
 **Issues:** I-034, I-030
 
 The principal supplied the completed export of a fresh ordinary Room titled **God Button**. The Room finished normally after **43 counted turns** under the default model policy.
@@ -2841,4 +2841,3 @@ This does not mean C should avoid concurrency to conceal I-030. Independent para
 The debate itself recovered and completed normally. Both A and B ultimately chose to press the hypothetical button; B changed from its assigned opening no-press position, while A retained its final position but narrowed its justification. That outcome is incidental to the coordination evidence.
 
 **Assessment:** The natural God Button run supports amending D-035 so C considers both mechanical dependency and interaction value when choosing parallel versus sequential peer execution. It independently strengthens the natural evidence for the remaining I-030 concurrency race. I-034 should change only C's protected structural guidance and its composition regression; it must not add a debate-specific mode, deterministic scheduler, permanent A/B precedence, or serialization workaround for I-030.
-
