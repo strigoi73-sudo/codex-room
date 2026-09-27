@@ -227,5 +227,6 @@ dialog p:not(.eyebrow) { color: var(--muted); font-size: 13px; line-height: 1.5;
   .observer-dock { padding: 9px 10px 12px; }
   .room-controls { overflow-x: auto; }
   .control { white-space: nowrap; }
-  .composer { grid-template-columns: 110px 1fr 40px; }
+  .composer { grid-template-columns: 100px minmax(0, 1fr) 36px 36px; }
+  .composer-hint, .image-attachment-status { grid-column: 1 / 5; }
 }
