@@ -245,4 +245,3 @@ def test_oub_v2_json_output_is_safe_for_legacy_windows_code_pages(
     rendered = raw.getvalue().decode("cp1252")
     assert "\\u274c" in rendered
     assert json.loads(rendered) == {"status": "❌"}
-
