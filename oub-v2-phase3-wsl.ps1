@@ -72,16 +72,17 @@ if (($wslPathExit -ne 0) -or [string]::IsNullOrWhiteSpace($repoWsl)) {
     return
 }
 
-$escapedRepo = $repoWsl.Replace("'", "'"'"'")
+$repoForBash = $repoWsl.Replace('"', '\"')
 
 Write-Host ""
 Write-Host "=== Running frozen Phase 3 checks ==="
-$command = @"
+$command = @'
 set -euo pipefail
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-cd '$escapedRepo'
+cd "__REPO__"
 python3 benchmarks/oub/v2/validate_phase3_native.py
-"@
+'@
+$command = $command.Replace("__REPO__", $repoForBash)
 
 wsl.exe -e bash -lc $command
 $phase3Exit = $LASTEXITCODE
