@@ -1,0 +1,72 @@
+{
+  "schema": "oub-v2-external-sample-v1",
+  "phase1_contract_commit": "e608f08bf0ab24e33f3d67293913e1dcaf4223df",
+  "upstream": {
+    "repository": "cooperbench/CooperBench",
+    "revision": "63b9d44d9f39a02fccf5bf0052db48a917a011fd",
+    "subset_path": "dataset/subsets/flash.json",
+    "subset_name": "flash",
+    "subset_pairs": 50,
+    "subset_tasks": 20,
+    "subset_repos": 11,
+    "license": "MIT"
+  },
+  "selection": {
+    "exclusions_before_draw": [],
+    "method": "For every feature pair in the frozen flash subset, compute SHA-256 over UTF-8 '<phase1_contract_commit>|<repo>|<task_id>|<feature1>,<feature2>'; sort ascending by lowercase hexadecimal digest; select the first three pairs.",
+    "selected_count": 3
+  },
+  "tasks": [
+    {
+      "sample_id": "o2-1",
+      "rank": 1,
+      "selection_digest": "08df8e29812980335c86738471d40ec7e3b77d80db388356de7dede11b91bd64",
+      "cooperbench_repo": "llama_index_task",
+      "task_id": 18813,
+      "features": [
+        2,
+        5
+      ],
+      "upstream_project": "run-llama/llama_index",
+      "base_commit": "5eca4973cef04eca5d817d3e1515c8cbe7d1cf9e",
+      "feature_titles": [
+        "Add max_bytes limit to resolve methods for content blocks",
+        "Add Progress Callback Hook to Audio Resolution for Byte Tracking"
+      ]
+    },
+    {
+      "sample_id": "o2-2",
+      "rank": 2,
+      "selection_digest": "0e4ecde99af0eb3a68046c3a7c9c16162ab3656918e5ea28895b694c8ee2abdb",
+      "cooperbench_repo": "typst_task",
+      "task_id": 6554,
+      "features": [
+        4,
+        9
+      ],
+      "upstream_project": "typst/typst",
+      "base_commit": "b8034a343831e8609aec2ec81eb7eeda57aa5d81",
+      "feature_titles": [
+        "Add repeat parameter to str.first and str.last",
+        "Add strip parameter to str.first and str.last"
+      ]
+    },
+    {
+      "sample_id": "o2-3",
+      "rank": 3,
+      "selection_digest": "27765789b34219244172387cb103979b1a065b61a63b5b195e07334d6ee98c30",
+      "cooperbench_repo": "samuelcolvin_dirty_equals_task",
+      "task_id": 43,
+      "features": [
+        3,
+        7
+      ],
+      "upstream_project": "samuelcolvin/dirty-equals",
+      "base_commit": "593bcccf738ab8b724d7cb860881d74344171f5f",
+      "feature_titles": [
+        "Add IsEmail validator class for email address validation with optional domain filtering",
+        "Add IsHash validator for cryptographic hash value validation"
+      ]
+    }
+  ]
+}

@@ -3106,3 +3106,55 @@ The contract deliberately treats the cross-task pattern as the primary I-028 evi
 No OUB v2 task was selected, adapted, or run during Phase 1. No benchmark-model usage was purchased.
 
 **Assessment:** I-028 Phase 1 — Comparison Contract is COMPLETE. Phase 2 may now select the three-task external sample under the frozen contract without modifying the fairness rules in response to candidate characteristics.
+
+### E-195 — I-028 OUB v2 external sample selection and freeze
+**Date:** 2026-09-27  
+**Status:** VERIFIED BY SOURCE REVIEW  
+**Kind:** [organizational utility benchmark / external benchmark sampling / deterministic selection]  
+**Issue:** I-028
+
+Phase 2 selected the initial three-task OUB v2 sample under the frozen E-194 comparison contract without using expected Codex Room benefit, expected peer invocation, preferred difficulty, or desired coordination topology as selection criteria.
+
+The external source is CooperBench at exact upstream repository revision:
+
+`cooperbench/CooperBench@63b9d44d9f39a02fccf5bf0052db48a917a011fd`
+
+At that revision, `dataset/subsets/flash.json` declares a 50-pair development subset across 20 tasks and 11 repositories. CooperBench's repository/dataset documentation identifies the benchmark as MIT-licensed and states that its feature tests, individual gold patches, and combined patches were constructed and audited so that each feature is gradeable and the combined implementation satisfies all feature tests.
+
+No flash-pair candidate was excluded before the Phase-2 draw.
+
+To avoid hand-selection, Phase 2 used this deterministic procedure over all 50 frozen flash pairs:
+
+1. for each pair, construct exact UTF-8 text `<phase1_contract_commit>|<repo>|<task_id>|<feature1>,<feature2>`;
+2. use Phase-1 canonical merge `e608f08bf0ab24e33f3d67293913e1dcaf4223df` as `<phase1_contract_commit>`;
+3. compute SHA-256;
+4. sort ascending by lowercase hexadecimal digest;
+5. take the first three pairs.
+
+The resulting frozen sample is:
+
+1. **O2-1 — LlamaIndex task 18813, features 2+5**
+   - digest `08df8e29812980335c86738471d40ec7e3b77d80db388356de7dede11b91bd64`;
+   - upstream project `run-llama/llama_index`;
+   - base commit `5eca4973cef04eca5d817d3e1515c8cbe7d1cf9e`;
+   - selected specifications: `max_bytes` limits for content-block resolution and an `on_resolve` audio-byte callback.
+
+2. **O2-2 — Typst task 6554, features 4+9**
+   - digest `0e4ecde99af0eb3a68046c3a7c9c16162ab3656918e5ea28895b694c8ee2abdb`;
+   - upstream project `typst/typst`;
+   - base commit `b8034a343831e8609aec2ec81eb7eeda57aa5d81`;
+   - selected specifications: `repeat` and `strip` parameters for `str.first` / `str.last`.
+
+3. **O2-3 — dirty-equals task 43, features 3+7**
+   - digest `27765789b34219244172387cb103979b1a065b61a63b5b195e07334d6ee98c30`;
+   - upstream project `samuelcolvin/dirty-equals`;
+   - base commit `593bcccf738ab8b724d7cb860881d74344171f5f`;
+   - selected specifications: `IsEmail` and `IsHash` validators.
+
+The exact sample identity and selection method are frozen in `benchmarks/oub/v2/SAMPLE.md` and machine-readable `sample.json`.
+
+Source inspection confirms that all three selected CooperBench tasks include upstream setup/build/test material and Docker definitions. Phase 2 does not treat that as local validation. No gold/oracle patch was executed locally, no OUB harness code was changed, and no Desktop or Room benchmark model run occurred.
+
+Phase 3 owns deterministic local sanity/oracle validation. Under E-194, a task may be replaced only if Phase 3 demonstrates a benchmark-invalidating defect or an environment requirement that makes the task unusable; apparent difficulty, low contrast, no likely peer benefit, or unfavorable characteristics are not replacement grounds.
+
+**Assessment:** I-028 Phase 2 — External Task Sample is COMPLETE. The three-task sample is frozen before any OUB v2 measured run. Phase 3 is the next gate.
