@@ -200,6 +200,9 @@ D-051 supersedes D-028's blanket Astra prohibition. Under the **default Room mod
 
 D-053 adds a separate creation-time **unrestricted model access** policy. When selected in New Room setup, CORE calls native Codex model discovery, snapshots every model/reasoning-effort combination it can resolve, persists that exact catalog in Room metadata, and uses the snapshot as the allowed execution-config boundary for A, B, and C. In that lineage, Room-side Astra restrictions, peer-versus-C configuration restrictions, and Task-scoped exceptional cognition ceilings do not apply; C still owns economic allocation judgment. The setting is immutable after Room creation and normal rollover successors inherit both the policy and exact catalog. Creation fails closed if native model discovery is unavailable, empty, or demonstrably partial. Default Rooms preserve D-039/D-051 behavior unchanged.
 
+
+D-055 adds a compact advisory interpretation layer to C's model-policy prompt. CORE renders short descriptions only for known model families and reasoning-effort levels that are already selectable under the current Room policy. The guide explicitly carries no routing, ranking, threshold, escalation, authorization, or validation authority; A/B do not receive it. In unrestricted Rooms, unknown native configurations remain selectable even when no Codex Room guidance exists for them, preserving native `model/list` as the authority boundary rather than recreating a Room-owned model catalog.
+
 No automatic model router is authorized. The dedicated synthetic P1 benchmark phase is closed because the experiments were expensive and did not establish a trustworthy general ranking. Naturalistic useful work is the evidence source. See E-073 through E-077.
 
 ## 9. Execution economics and continuation control
