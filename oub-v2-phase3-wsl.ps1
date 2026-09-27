@@ -64,8 +64,9 @@ if ($toolchainExit -ne 0) {
     return
 }
 
-$repoWsl = (wsl.exe wslpath -a -u "$RepoRoot" | Select-Object -Last 1).Trim()
+$repoWslLines = @(wsl.exe wslpath -a -u "$RepoRoot")
 $wslPathExit = $LASTEXITCODE
+$repoWsl = ($repoWslLines | Select-Object -Last 1).Trim()
 if (($wslPathExit -ne 0) -or [string]::IsNullOrWhiteSpace($repoWsl)) {
     Write-Host "ERROR: Could not resolve the repository path inside WSL."
     return
