@@ -6,8 +6,8 @@
 
 ## Operator summary
 
-- **Where are we?** I-033 — **compact advisory model-selection guidance for C** — is COMPLETE and merged. The active development priority is again I-030's concurrent public-delta continuity race.
-- **What just happened?** PR #219 merged I-033 after principal exact-head verification of `055afd4b0789b3137efa90ee4396aefaf4f458e2`. GitHub merged that exact expected head as `774a6e3caa6dd83c556e23fe6ffebca992c12961`, and comparison reported zero changed files between the verified feature head and merge commit. See E-186.
+- **Where are we?** I-033 — **compact advisory model-selection guidance for C** — is COMPLETE, merged, and now has controlled post-merge allocation acceptance evidence. The active development priority remains I-030's concurrent public-delta continuity race.
+- **What just happened?** A post-merge Project Helix rerun completed in 17 counted turns with unrestricted model access. C varied A/B work across Luna, Terra, and Sol, used Sol-High only for B's final decision analysis, returned A's independent final decision to Terra-High, and did not allocate Astra despite Astra being authorized and present in the native catalog. See E-187.
 - **What is next?** Resume I-030 and repair the remaining concurrency defect in public-delta visibility before resuming I-028 utility benchmarking.
 - **What remains behind it?** I-028 utility benchmarking remains behind I-030.
 - **What is blocked?** Nothing conceptual is blocked.
@@ -21,7 +21,7 @@
 
 **Work state:** COMPLETE
 
-**Reality / evidence:** IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED
+**Reality / evidence:** IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED / CONTROLLED ROOM ACCEPTANCE
 
 **Decision:** D-055
 
@@ -35,6 +35,8 @@ The principal selected a deliberately compact descriptive guide rather than a ri
 - native discovery, authorization, validation, persistence, rollover inheritance, and provider execution remain unchanged.
 
 PR #219 was principal-verified at exact head `055afd4b0789b3137efa90ee4396aefaf4f458e2`. The focused gate passed the exact-head check, detached clean-worktree check, `git diff --check`, Python compilation, import smoke, the dedicated model-guidance tests, unrestricted native-config regression, default-policy native-config rejection, and default-policy Astra denial regression. GitHub merged that exact expected head as `774a6e3caa6dd83c556e23fe6ffebca992c12961`; comparison from the verified feature head to the merge commit reported zero changed files. No hosted CI/status run was attached to the verified head. See E-186.
+
+Post-merge controlled acceptance then reran Project Helix in a fresh unrestricted Room. The Room finished in 17 counted turns. C assigned A/B work across `luna-low`, `luna-medium`, `terra-high`, and `sol-high`, with no Astra assignment despite Astra authorization and native-catalog availability. In particular, C used `sol-high` for B's final decision analysis and then returned A's independent final decision to `terra-high` rather than preserving Sol merely for consistency. B's `terra-high` adversarial failure analysis was subsequently audited by A at `terra-high` with no reported arithmetic, dependency, probability, nominal-capacity, assumption, or evidentiary errors. The runtime record did not state reasons for individual model changes, so none are inferred. This supports the intended advisory-not-router boundary without establishing a universal routing rule or Astra threshold. See E-187.
 
 ### I-032 — Automatic per-Round provider usage-meter capture
 
