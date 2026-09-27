@@ -82,6 +82,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-032` | Automatic per-Round provider usage-meter capture | Development Control / D-054 / E-185 |
 | `I-033` | Compact advisory model-selection guidance for C | Development Control / D-055 |
 | `I-034` | Interaction-aware C sequencing — choose parallel versus sequential peer work from dependency and interaction value | Development Control / D-035 / E-188 |
+| `I-035` | Directed principal file and image handoff — observer attachments routable to all, both peers, or a specific agent | Development Control |
 
 ## 4. Decision and evidence identifiers
 
