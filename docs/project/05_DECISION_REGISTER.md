@@ -999,3 +999,24 @@ Settled boundary:
 - This decision does **not** activate D-019 pacing. No work is blocked or throttled from these readings until the separate mixed allowance/credit semantics required by D-019 are deliberately resolved.
 
 **Principle:** **Measure every Room automatically, preserve the provider's meter semantics, and keep observation separate from enforcement.**
+
+### D-055 — Agent C receives compact advisory model-selection guidance
+**Date:** 2026-09-26
+**Status:** ACTIVE
+**Related:** D-039, D-051, D-053
+
+The principal selected a compact descriptive guide so Agent C can understand the general character of available model families and reasoning-effort levels without turning that information into a routing policy.
+
+Settled boundary:
+
+- CORE may append a compact **advisory model-selection guide** to Agent C's model-policy prompt.
+- The guide describes only model families and reasoning-effort levels that are already selectable under the current Room policy. It does not make an otherwise unavailable configuration available.
+- The maintained known-family descriptions are intentionally short: Luna is fast/economical for focused bounded work; Terra balances capability, speed, and cost for general professional work; Sol is a high-capability model for complex professional work; Astra is the highest-capability model for especially difficult, ambiguous, or demanding end-to-end work.
+- The maintained reasoning-effort descriptions are likewise compact: Low for efficient straightforward reasoning, Medium for balanced substantive reasoning, High for deeper difficult reasoning, and XHigh/Max for progressively greater reasoning investment where those efforts are actually selectable.
+- The guide explicitly states that it is background information rather than a routing rule, ranking, threshold, or required escalation path. C retains independent cognition-allocation judgment and the existing economic expected-value duty.
+- The guide is supplied to C only. A and B do not receive it because they do not own Room cognition allocation.
+- In unrestricted Rooms, native `model/list` plus the persisted Room snapshot remain authoritative. A native configuration without maintained advisory text remains selectable; CORE must not invent capabilities or infer a ranking from an unknown model identifier.
+- The advisory layer must not change model discovery, availability, Astra authorization, Task cognition ceilings, execution validation, persistence, rollover lineage, or provider execution.
+- The guide deliberately omits quantitative prices, model scores, task-specific triggers, and escalation recipes that could turn descriptive context into an implicit router.
+
+**Principle:** **Inform C's model judgment without replacing it.**

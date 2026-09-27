@@ -6,14 +6,35 @@
 
 ## Operator summary
 
-- **Where are we?** I-032 — **automatic per-Round provider usage-meter capture** — is COMPLETE and merged. The active development priority remains I-030's concurrent public-delta continuity race.
-- **What just happened?** PR #217 merged I-032 after principal exact-head verification of `ba5de09a0bc441691db318d16611bf8fc0ca6d57`. The focused validation passed **4/4** tests after repairing a reopen-cycle settlement race. Ordinary production Rooms now persist account-level provider-meter snapshots at each measured work-cycle boundary and export the observed before/after/delta. See E-185.
-- **What is next?** Resume I-030 and repair the remaining concurrency defect in public-delta visibility before resuming I-028 utility benchmarking.
+- **Where are we?** I-033 — **compact advisory model-selection guidance for C** — is the principal-directed bounded insertion currently in verification on PR #219. I-030's concurrent public-delta continuity race remains the underlying active development priority immediately after this insertion.
+- **What just happened?** The principal selected D-055: C should receive a compact advisory description of available model families/reasoning efforts without creating a router, ranking, threshold, or escalation recipe. PR #219 implements that prompt-only layer on feature branch `feature/i033-model-selection-guide`; verification is not yet complete.
+- **What is next?** Exact-head verify I-033 / PR #219, then resume I-030 and repair the remaining concurrency defect in public-delta visibility before resuming I-028 utility benchmarking.
 - **What remains behind it?** I-028 utility benchmarking remains behind I-030.
 - **What is blocked?** Nothing conceptual is blocked.
 - **What are we deliberately not doing?** We are not globally deleting default model safeguards, hard-coding a second unrestricted model list, or treating unrestricted authorization as a mandate to use maximum cognition.
 
 ## Current development state
+
+### I-033 — Compact advisory model-selection guidance for C
+
+**Scope:** [C cognition allocation / model-policy prompt / native-catalog interpretation]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** IMPLEMENTED ON FEATURE BRANCH / PR OPEN / NEEDS EXACT-HEAD VERIFICATION
+
+**Decision:** D-055
+
+The principal selected a deliberately compact descriptive guide rather than a richer task-routing catalog:
+
+- C receives short general descriptions for known model families and reasoning efforts that are already selectable in the current Room;
+- the guide is explicitly advisory only and does not define routing rules, rankings, thresholds, escalation triggers, or quantitative cost policy;
+- A/B do not receive the guide;
+- default Rooms show guidance only for configurations actually available under D-039/D-051, so default-denied Astra is not described as an available choice;
+- unrestricted Rooms derive the guide from the snapshotted native catalog, but an unknown native model/effort remains selectable even when Codex Room has no maintained description for it;
+- native discovery, authorization, validation, persistence, rollover inheritance, and provider execution remain unchanged.
+
+PR #219 currently contains the implementation and focused regression coverage. Exact-head local verification is still required before merge. After this bounded insertion closes, resume I-030's public-delta concurrency repair.
 
 ### I-032 — Automatic per-Round provider usage-meter capture
 

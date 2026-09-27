@@ -80,6 +80,7 @@ Issue titles remain useful after resolution, but status belongs only in Developm
 | `I-030` | Same-Task conversational continuity repair | Development Control / D-052 / E-183 |
 | `I-031` | Principal-selectable unrestricted Room model access | Development Control / D-053 / E-184 |
 | `I-032` | Automatic per-Round provider usage-meter capture | Development Control / D-054 / E-185 |
+| `I-033` | Compact advisory model-selection guidance for C | Development Control / D-055 |
 
 ## 4. Decision and evidence identifiers
 
