@@ -6,14 +6,44 @@
 
 ## Operator summary
 
-- **Where are we?** I-033 — **compact advisory model-selection guidance for C** — is COMPLETE, merged, and now has controlled post-merge allocation acceptance evidence. The active development priority remains I-030's concurrent public-delta continuity race.
-- **What just happened?** A post-merge Project Helix rerun completed in 17 counted turns with unrestricted model access. C varied A/B work across Luna, Terra, and Sol, used Sol-High only for B's final decision analysis, returned A's independent final decision to Terra-High, and did not allocate Astra despite Astra being authorized and present in the native catalog. See E-187.
-- **What is next?** Resume I-030 and repair the remaining concurrency defect in public-delta visibility before resuming I-028 utility benchmarking.
+- **Where are we?** I-034 — **interaction-aware C sequencing** — is the selected immediate refinement and is implemented on a feature branch pending exact-head verification. The underlying roadmap priority remains I-030's concurrent public-delta continuity race.
+- **What just happened?** A natural God Button debate showed that C's existing dependency-only sequencing rule could parallelize work that was mechanically independent but conversationally better treated as responsive. The same run also naturally reproduced I-030 recovery waste: B spent two HISTORY continuations recovering A's already-public steelman. See E-188.
+- **What is next?** Verify and merge I-034, then resume I-030's CORE public-delta visibility repair before returning to I-028 utility benchmarking.
 - **What remains behind it?** I-028 utility benchmarking remains behind I-030.
 - **What is blocked?** Nothing conceptual is blocked.
 - **What are we deliberately not doing?** We are not globally deleting default model safeguards, hard-coding a second unrestricted model list, or treating unrestricted authorization as a mandate to use maximum cognition.
 
 ## Current development state
+
+### I-034 — Interaction-aware C sequencing
+
+**Scope:** [C protected structural coordination / parallel-vs-sequential judgment / responsive peer work]
+
+**Work state:** IN PROGRESS
+
+**Reality / evidence:** DECIDED / IMPLEMENTED ON FEATURE BRANCH / NEEDS EXACT-HEAD VERIFICATION
+
+**Decision:** D-035 (amended 2026-09-26)
+
+**Evidence:** E-188
+
+The principal selected a domain-general refinement to C's existing dependency-aware sequencing responsibility after the natural God Button debate exposed a coordination-topology gap.
+
+The protected C instructions now require C to:
+
+- consider both **dependency** and **interaction value** before concurrent peer delegation;
+- parallelize independent cognition when neither assignment materially benefits from receiving the other's contribution first;
+- serialize work when a prerequisite artifact/evidence/result is required **or** when one participant's contribution should become substantive input to another participant's reasoning;
+- treat rebuttal, critique, cross-examination responses, negotiation, iterative refinement, and responsive dialogue as examples where interaction value may justify sequencing;
+- obey explicit principal ordering when supplied;
+- otherwise choose order from the objective, relevant context continuity, and execution economy without permanent A/B precedence;
+- preserve concurrency as a first-class behavior and never serialize independent work merely to conceal or work around context-visibility defects.
+
+The implementation remains instruction-level. It does **not** add a debate mode, deterministic scheduler, new transaction primitive, persistent role specialization, or workaround for I-030. The existing structural-coordination regression is extended so these requirements appear in C's protected instructions and not in A/B's.
+
+Adoption remains consistent with D-035: freshly composed Rooms receive the refined instructions; existing Room snapshots are not retroactively rewritten. I-030 remains separately responsible for making concurrent public-context delivery mechanically safe.
+
+After exact-head verification and merge, I-034 should close and active development should return directly to I-030.
 
 ### I-033 — Compact advisory model-selection guidance for C
 
