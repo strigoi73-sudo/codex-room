@@ -109,6 +109,12 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert 'id="model-policy-summary"' in html
     assert 'room.metadata?.model_policy === "unrestricted"' in javascript
     assert 'Model policy · ${unrestrictedModelAccess ? "Unrestricted" : "Default"}' in javascript
+    assert 'name="images"' in html
+    assert 'accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"' in html
+    assert "serializeObserverImages(files)" in javascript
+    assert "OBSERVER_IMAGE_LIMIT = 4" in javascript
+    assert "OBSERVER_IMAGE_MAX_BYTES = 8 * 1024 * 1024" in javascript
+    assert 'attachment?.kind !== "image"' in javascript
 
 
 def test_http_new_room_snapshot_and_ui_contract_are_permanent_triad(tmp_path: Path) -> None:
