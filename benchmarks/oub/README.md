@@ -8,4 +8,4 @@ The comparison unit remains the platform. Desktop and Codex Room receive the sam
 
 OUB v1 begins with a compact forensic task intended to require roughly 10–15 minutes of capable-model work per platform rather than long continuous runs that would consume a large fraction of the principal's usage allotment.
 
-See `v1/PROTOCOL.md` for the historical O1 protocol. OUB v2 resumes I-028 under `v2/PROTOCOL.md`. The Phase-2 external sample is frozen in `v2/SAMPLE.md` and `v2/sample.json`; deterministic task validation follows in Phase 3.
+See `v1/PROTOCOL.md` for the historical O1 protocol. OUB v2 resumes I-028 under `v2/PROTOCOL.md`. The three-task external sample is frozen in `v2/SAMPLE.md` / `v2/sample.json`, passed deterministic sanity validation in Phase 3, and now has an explicit naturalistic platform harness described in `v2/README.md`. `CURRENT` remains `v1` until the v2 mechanical dry-run gate is complete.
