@@ -6,12 +6,12 @@
 
 ## Operator summary
 
-- **Where are we?** I-034 — **interaction-aware C sequencing** — is COMPLETE, principal exact-head verified, and merged. The active development priority is again I-030's concurrent public-delta continuity race.
-- **What just happened?** PR #220 merged the D-035 interaction-aware sequencing refinement after principal verification of exact head `72ea8a50001862ed7de08d8f8f6eb61fa692358c`. The natural God Button debate remains both the motivating C-topology evidence and a fresh reproduction of I-030 recovery waste. See E-188 and E-189.
-- **What is next?** Resume I-030 and repair the remaining CORE public-delta visibility defect. Then implement I-035 — directed principal file/image attachments — before returning to I-028 utility benchmarking.
-- **What remains behind it?** I-035 is queued immediately behind I-030. I-028 utility benchmarking follows I-035 unless the principal reprioritizes.
-- **What is blocked?** Nothing conceptual is blocked.
-- **What are we deliberately not doing?** We are not globally deleting default model safeguards, hard-coding a second unrestricted model list, or treating unrestricted authorization as a mandate to use maximum cognition.
+- **Where are we?** I-030 — **same-Task worker continuity repair** — is COMPLETE, principal exact-head verified, and merged. The active development priority is now I-035 — directed principal file and image handoff.
+- **What just happened?** PR #222 repaired the remaining public-delta visibility race by recording what public Room context was actually supplied to a provider thread at provider-turn start, then merged the exact principal-verified feature head. See E-190.
+- **What is next?** Design and implement I-035's directed observer file/image handoff while preserving the existing `all`, `both`, `agent_a`, `agent_b`, and `agent_c` addressing model and private-routing boundary.
+- **What remains behind it?** I-028 utility benchmarking follows I-035 unless the principal reprioritizes.
+- **What is blocked?** Nothing conceptual is blocked. I-035 still requires bounded implementation decisions for storage/materialization, supported types/limits, provenance, and rollover behavior.
+- **What are we deliberately not doing?** We are not treating shared workspace presence as permission to expose directed attachments to unaddressed agents, and we are not adding a parallel attachment-routing system when native Codex/runtime primitives can be safely reused.
 
 ## Current development state
 
@@ -19,11 +19,13 @@
 
 **Scope:** [principal attachment handoff / directed routing / files + images / native Codex input reuse]
 
-**Work state:** PLANNED
+**Work state:** IN PROGRESS
 
 **Reality / evidence:** DECIDED / NOT IMPLEMENTED
 
 **Principal selection:** 2026-09-27
+
+**Activated:** 2026-09-27 after I-030 closeout
 
 The principal selected a Room-host capability to hand off files and images through observer input with the same addressing model already used for directed chat messages.
 
@@ -36,9 +38,36 @@ Minimum product boundary:
 - attachment identity and provenance must remain durable enough to associate an artifact with its originating observer event and intended recipients;
 - implementation must preserve directed-message visibility semantics: an agent-specific attachment must not become visible to other agents merely because A/B/C currently share a Room workspace.
 
-Priority boundary: I-035 begins after I-030 closes. I-028 utility benchmarking follows I-035 unless the principal reprioritizes.
+Priority boundary: I-030 is closed; I-035 is now the active development priority. I-028 utility benchmarking follows I-035 unless the principal reprioritizes.
 
 Storage/materialization details, upload limits, supported MIME/type policy, binary export behavior, and rollover retention remain implementation-design work. This roadmap addition does not itself authorize a runtime change beyond the selected capability.
+
+### I-030 — Same-Task worker continuity repair
+
+**Scope:** [same-Task worker provider continuity / public Room delta / concurrent visibility]
+
+**Work state:** COMPLETE
+
+**Reality / evidence:** IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED
+
+**Decision:** D-052
+
+**Evidence:** E-183, E-188, E-190
+
+The remaining defect was a concurrency race in the public Room delta. CORE previously inferred what an inherited provider thread had seen from Assignment/result chronology. A public peer message published while that provider turn was already in flight could therefore fall before the later result event and be skipped from the worker's next delta even though the provider had never received it.
+
+PR #222 replaces that surrogate with durable provider-context visibility provenance:
+
+- each bound provider execution may record `public_context_through_sequence`, the public-context watermark actually supplied to that provider turn;
+- the watermark advances only when the provider turn is bound/started, not merely when a prompt is composed or an Assignment later settles;
+- same-thread delta recovery begins from the exact provider-thread watermark, with Task origin as the baseline for a fresh/new context;
+- unseen public conversational events drain oldest-first as one contiguous prefix;
+- the 50-event cap and character bound carry newer unseen messages forward instead of skipping them;
+- an oversized first unseen event is supplied whole rather than truncated and incorrectly marked seen.
+
+Regression coverage reproduces the exact in-flight peer-message race and a 60-message backlog across the event cap. Principal exact-head verification of `08baf90e8836964ebdb7bc6fd9e50df313f1ddc7` passed the repository-standard fast gate: **72 Linux focused tests, 2 warnings; 119 Windows focused tests; 9 browser transcript tests**. PR #222 merged that exact verified content as `fed7538eaaccf65bb769bc360127a028027afbef`; GitHub comparison from the verified feature head to the merge commit reported zero changed files.
+
+I-030 is closed. Concurrency remains a first-class Room behavior; I-034's interaction-aware sequencing may serialize responsive work when useful, but it is not a substitute for this mechanical visibility guarantee.
 
 ### I-034 — Interaction-aware C sequencing
 

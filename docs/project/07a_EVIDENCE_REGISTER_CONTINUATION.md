@@ -2871,3 +2871,57 @@ PR #220 was marked ready only after the successful exact-head gate and merged wi
 The earlier verification failures were non-product gate failures: first, trailing whitespace introduced in the new E-188 Markdown entry stopped `git diff --check`; second, WSL path conversion failed for a no-space temporary worktree path; third, the repository verifier's `.git`-directory assumption failed inside a linked worktree. These failures did not establish defects in the I-034 coordination behavior and were resolved without changing the verified feature semantics after the formatting correction.
 
 **Assessment:** I-034 / amended D-035 is implemented, principal exact-head verified, and merged. Active development returns to I-030's concurrent public-delta visibility repair.
+
+### E-190 — I-030 provider-context public visibility exact-head verification and merge
+**Date:** 2026-09-27  
+**Status:** VERIFIED BY PRINCIPAL  
+**Kind:** [CORE provider-context visibility / concurrent public delta / exact-head local verification]  
+**Decision:** D-052  
+**Issue:** I-030
+
+The remaining I-030 defect was a concurrency race in D-052's public Room delta. CORE had been using Assignment/result chronology as a proxy for what an inherited provider thread had already seen. If a peer published a public message while another worker's provider turn was already in flight, that peer message could fall before the later worker-result event and then be skipped from the worker's next public delta even though the provider had never received it. Natural God Button evidence in E-188 reproduced this failure mode and showed substantial HISTORY recovery cost.
+
+PR #222, `Repair I-030 provider-context public visibility tracking`, implements exact provider-visibility provenance:
+
+- `agent_executions.public_context_through_sequence` records the public-context watermark actually supplied to a bound provider execution;
+- the watermark is written when the provider turn is bound/started, not when prompt text is merely composed and not when the Assignment later settles;
+- same-thread public-delta recovery begins from the maximum recorded watermark for that provider thread, with Task origin as the baseline for a fresh/new worker context;
+- eligible public conversational events are selected oldest-first;
+- the event cap fetches one extra row to detect queued newer backlog, and only the oldest contiguous bounded prefix is supplied;
+- the prompt packer advances visibility only through complete supplied events; an oversized first unseen event may exceed the ordinary character budget rather than be truncated and incorrectly marked fully seen;
+- when the bounded prefix is not truncated, the watermark may advance to the Assignment-origin upper sequence because every eligible public message through that point has been considered.
+
+Two regressions directly cover the repaired invariant.
+
+The first blocks A after the provider turn has started, lets B publish a public marker while A is in flight, then later delegates A again on the same provider thread. It verifies that A's first execution watermark predates B's marker, that the later A prompt contains the marker in `<public_room_delta>`, and that the later execution watermark advances through it.
+
+The second injects 60 eligible public backlog markers after establishing worker continuity. It verifies that the first later Assignment receives the oldest capped prefix, the next Assignment receives the remaining newer markers, the two delivered marker sets are disjoint, and their union equals all 60 markers. This proves no silent skip or duplication across the 50-event cap.
+
+The principal verified exact feature head:
+
+`08baf90e8836964ebdb7bc6fd9e50df313f1ddc7`
+
+using the repository-standard verifier from the normal `C:\Codex Room` checkout. The successful gate established:
+
+- Codex Room server not listening on port 8765 before checkout mutation;
+- exact remote feature-head match and unchanged canonical base `47f2418e55fdf12b91c8e15b37c496e7493e4226`;
+- clean tracked tree at the exact feature head;
+- `git diff --check`: PASS;
+- Linux Python 3.12 focused core: **72 passed, 2 warnings**;
+- Windows focused portability: **119 passed**;
+- browser transcript stability: **9 passed**;
+- repository-standard verification result: **PASS**;
+- original local branch restored to `main` after verification.
+
+The persistent WSL systemd-user-session warning appeared again but did not prevent WSL execution or any verifier phase from passing.
+
+Earlier attempts to verify the same feature through a temporary clone/worktree exposed verifier-environment assumptions and several one-off operator-block defects. Those attempts did not reach a failing I-030 product test. The associated verifier-hardening detour PR #223 was closed without merge; canonical verifier behavior remained unchanged. The successful evidence above therefore comes from the established normal verification path.
+
+At merge time, PR #222 still pointed to the exact verified head. GitHub merged it as:
+
+`fed7538eaaccf65bb769bc360127a028027afbef`
+
+GitHub comparison from exact verified feature head `08baf90e...` to merge commit `fed7538e...` reported **zero changed files**, establishing byte-equivalent merged implementation and regression content.
+
+**Assessment:** I-030 / D-052 is **IMPLEMENTED / PRINCIPAL EXACT-HEAD VERIFIED / MERGED**. The remaining same-Task concurrent public-delta visibility defect is closed. Independent concurrency remains a supported first-class Room behavior; I-034 may serialize responsive dialogue when interaction value warrants it, but no coordination workaround is required to preserve provider visibility. Active development moves to I-035.
+
