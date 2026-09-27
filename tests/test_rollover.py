@@ -89,6 +89,88 @@ def test_rollover_http_endpoint_leaves_successor_preparing(tmp_path):
         }
 
 
+def test_rollover_keeps_attachments_with_archived_predecessor(tmp_path):
+    adapter = FakeAgentAdapter()
+    data_root = tmp_path / "data"
+    app = create_app(
+        database_path=tmp_path / "attachment-rollover.db",
+        data_root=data_root,
+        adapter=adapter,
+    )
+    with TestClient(app) as client:
+        source = client.post(
+            "/api/rooms",
+            json={
+                "title": "Attachment source",
+                "topic": "Finish before attachment delivery.",
+            },
+        ).json()
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            current = client.get(f"/api/rooms/{source['id']}").json()
+            if current["status"] == RoomStatus.FINISHED and all(
+                agent["execution"]["pending_count"] == 0
+                and agent["execution"]["processing_count"] == 0
+                and agent["execution"]["durable_execution_state"]
+                not in {"claimed", "active", "recovering", "result_ready", "quarantined"}
+                for agent in current["agents"]
+            ):
+                break
+            time.sleep(0.02)
+
+        message = client.post(
+            f"/api/rooms/{source['id']}/messages",
+            json={
+                "target": "agent_a",
+                "content": "Inspect this predecessor-owned attachment.",
+                "files": [
+                    {
+                        "filename": "brief.txt",
+                        "media_type": "text/plain",
+                        "data_url": "data:text/plain;base64,aGVsbG8gd29ybGQ=",
+                    }
+                ],
+            },
+        )
+        assert message.status_code == 201, message.text
+
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            current = client.get(f"/api/rooms/{source['id']}").json()
+            if current["status"] == RoomStatus.FINISHED and all(
+                agent["execution"]["pending_count"] == 0
+                and agent["execution"]["processing_count"] == 0
+                and agent["execution"]["durable_execution_state"]
+                not in {"claimed", "active", "recovering", "result_ready", "quarantined"}
+                for agent in current["agents"]
+            ):
+                break
+            time.sleep(0.02)
+
+        source_attachment_root = data_root / "rooms" / source["id"] / "attachments"
+        source_paths = list(source_attachment_root.iterdir())
+        assert len(source_paths) == 1
+        assert source_paths[0].read_bytes() == b"hello world"
+
+        response = client.post(
+            f"/api/rooms/{source['id']}/rollover",
+            json={"checkpoint": "Carry only the reviewed checkpoint."},
+        )
+        assert response.status_code == 201, response.text
+        successor = response.json()
+
+        predecessor = client.get(f"/api/rooms/{source['id']}").json()
+        assert predecessor["status"] == RoomStatus.ARCHIVED
+        assert source_paths[0].is_file()
+        assert source_paths[0].read_bytes() == b"hello world"
+
+        successor_attachment_root = (
+            data_root / "rooms" / successor["id"] / "attachments"
+        )
+        assert not successor_attachment_root.exists()
+        assert "brief.txt" not in json.dumps(successor)
+
+
 async def _finished_source(
     runtime: RoomRuntime,
     *,

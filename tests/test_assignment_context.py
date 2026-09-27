@@ -378,6 +378,177 @@ async def test_invalid_observer_image_does_not_reopen_finished_room(
     assert not attachment_root.exists() or not any(attachment_root.iterdir())
 
 
+def test_observer_message_bounds_combined_attachment_count() -> None:
+    image = {
+        "filename": "pixel.png",
+        "media_type": "image/png",
+        "data_url": "data:image/png;base64,AA==",
+    }
+    file_item = {
+        "filename": "brief.txt",
+        "media_type": "text/plain",
+        "data_url": "data:text/plain;base64,QQ==",
+    }
+    with pytest.raises(ValidationError, match="at most 4 total attachments"):
+        ObserverMessageRequest(
+            target="agent_a",
+            images=[image, image, image],
+            files=[file_item, file_item],
+        )
+
+
+@pytest.mark.asyncio
+async def test_observer_file_routes_only_to_addressed_assignment_first_turn(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Initial task complete.",
+        )
+    )
+    runtime = await context_runtime_factory(adapter, "observer-file.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Initial task.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    adapter.decisions["agent_a"].extend(
+        [
+            TransactionDecision(
+                action=TransactionAction.HISTORY,
+                history_requests=[HistoryRequest(operation="RECENT", max_results=1)],
+            ),
+            TransactionDecision(
+                action=TransactionAction.COMPLETE,
+                message="A inspected the supplied file.",
+            ),
+        ]
+    )
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="C integrated A's file work.",
+        )
+    )
+
+    event = await runtime.observer_message(
+        room_id,
+        ObserverMessageRequest(
+            target="agent_a",
+            files=[
+                {
+                    "filename": "brief.txt",
+                    "media_type": "text/plain",
+                    "data_url": "data:text/plain;base64,aGVsbG8gd29ybGQ=",
+                }
+            ],
+        ),
+    )
+
+    await wait_until(lambda: len(adapter.completed_calls["agent_a"]) == 2)
+    await wait_until(lambda: len(adapter.completed_calls["agent_c"]) == 2)
+    await wait_until(lambda: _finished(runtime, room_id))
+
+    first_a = adapter.calls["agent_a"][0]
+    second_a = adapter.calls["agent_a"][1]
+    integration_c = adapter.calls["agent_c"][1]
+
+    assert first_a["local_image_paths"] == []
+    assert "<directed_file_attachments>" in first_a["prompt"]
+    assert "brief.txt" in first_a["prompt"]
+    assert "text/plain" in first_a["prompt"]
+    assert "<directed_file_attachments>" not in second_a["prompt"]
+    assert "<directed_file_attachments>" not in integration_c["prompt"]
+    assert adapter.calls["agent_b"] == []
+
+    attachment_root = runtime.data_root / "rooms" / room_id / "attachments"
+    stored_paths = list(attachment_root.iterdir())
+    assert len(stored_paths) == 1
+    file_path = stored_paths[0]
+    assert file_path.suffix == ".txt"
+    assert file_path.read_bytes() == b"hello world"
+    assert runtime.workspace(room_id) not in file_path.parents
+
+    file_attachment_json = first_a["prompt"].split(
+        "<directed_file_attachments>", 1
+    )[1].split("</directed_file_attachments>", 1)[0]
+    delivered_files = json.loads(file_attachment_json)
+    assert delivered_files == [
+        {
+            "filename": "brief.txt",
+            "media_type": "text/plain",
+            "path": str(file_path.resolve()),
+        }
+    ]
+
+    attachments = event["metadata"]["attachments"]
+    assert len(attachments) == 1
+    assert attachments[0]["kind"] == "file"
+    assert attachments[0]["filename"] == "brief.txt"
+    assert attachments[0]["media_type"] == "text/plain"
+    assert attachments[0]["size_bytes"] == 11
+    assert (
+        attachments[0]["sha256"]
+        == "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+    )
+    assert "path" not in attachments[0]
+    assert event["metadata"]["private"] is True
+
+
+@pytest.mark.asyncio
+async def test_invalid_observer_file_does_not_reopen_finished_room(
+    context_runtime_factory,
+):
+    adapter = FakeAgentAdapter({"agent_a": [], "agent_b": [], "agent_c": []})
+    adapter.decisions["agent_c"].append(
+        TransactionDecision(
+            action=TransactionAction.COMPLETE,
+            message="Initial task complete.",
+        )
+    )
+    runtime = await context_runtime_factory(adapter, "invalid-observer-file.db")
+    snapshot = await runtime.create_room(
+        CreateRoomRequest(
+            topic="Initial task.",
+            work_model_version=2,
+            provider_context_mode="assignment_thread",
+        )
+    )
+    room_id = snapshot["id"]
+    await wait_until(lambda: _finished(runtime, room_id))
+    before_events = await runtime.db.get_events(room_id)
+
+    with pytest.raises(ValueError, match="not valid base64"):
+        await runtime.observer_message(
+            room_id,
+            ObserverMessageRequest(
+                target="agent_a",
+                files=[
+                    {
+                        "filename": "broken.txt",
+                        "media_type": "text/plain",
+                        "data_url": "data:text/plain;base64,%%%",
+                    }
+                ],
+            ),
+        )
+
+    room = await runtime.db.get_room(room_id)
+    assert room is not None
+    assert room["status"] == RoomStatus.FINISHED
+    after_events = await runtime.db.get_events(room_id)
+    assert [item["id"] for item in after_events] == [item["id"] for item in before_events]
+    attachment_root = runtime.data_root / "rooms" / room_id / "attachments"
+    assert not attachment_root.exists() or not any(attachment_root.iterdir())
+
+
 @pytest.mark.asyncio
 async def test_assignment_context_mode_gives_same_agent_new_thread_for_new_assignment(
     context_runtime_factory,

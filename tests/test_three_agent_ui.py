@@ -109,18 +109,18 @@ def test_static_ui_exposes_permanent_triad_and_legacy_upgrade_hook() -> None:
     assert 'id="model-policy-summary"' in html
     assert 'room.metadata?.model_policy === "unrestricted"' in javascript
     assert 'Model policy · ${unrestrictedModelAccess ? "Unrestricted" : "Default"}' in javascript
-    assert 'name="images"' in html
-    assert 'accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"' in html
-    assert "serializeObserverImages(files)" in javascript
-    assert "OBSERVER_IMAGE_LIMIT = 4" in javascript
-    assert "OBSERVER_IMAGE_MAX_BYTES = 8 * 1024 * 1024" in javascript
-    assert 'attachment?.kind !== "image"' in javascript
+    assert 'name="attachments"' in html
+    assert 'aria-label="Attach files or images"' in html
+    assert "serializeObserverAttachments(selectedFiles)" in javascript
+    assert "OBSERVER_ATTACHMENT_LIMIT = 4" in javascript
+    assert "OBSERVER_ATTACHMENT_MAX_BYTES = 8 * 1024 * 1024" in javascript
+    assert '["image", "file"].includes(attachment?.kind)' in javascript
     assert ".composer { grid-template-columns: 100px minmax(0, 1fr) 36px 36px; }" in (
         ROOT / "codex_room" / "static" / "styles.css"
     ).read_text(encoding="utf-8")
 
 
-def test_markdown_export_records_image_provenance_without_host_path() -> None:
+def test_markdown_export_records_attachment_provenance_without_host_path() -> None:
     snapshot = _snapshot(("agent_a", "agent_b", "agent_c"))
     event = snapshot["rounds"][0]["events"][0]
     event["metadata"] = {
@@ -132,7 +132,15 @@ def test_markdown_export_records_image_provenance_without_host_path() -> None:
                 "media_type": "image/png",
                 "size_bytes": 1234,
                 "sha256": "a" * 64,
-            }
+            },
+            {
+                "id": "attachment_cafebabe",
+                "kind": "file",
+                "filename": "brief.pdf",
+                "media_type": "application/pdf",
+                "size_bytes": 4321,
+                "sha256": "b" * 64,
+            },
         ]
     }
 
@@ -140,7 +148,10 @@ def test_markdown_export_records_image_provenance_without_host_path() -> None:
 
     assert "Image attachment: diagram.png · image/png · 1234 bytes" in markdown
     assert f"sha256={'a' * 64}" in markdown
+    assert "File attachment: brief.pdf · application/pdf · 4321 bytes" in markdown
+    assert f"sha256={'b' * 64}" in markdown
     assert "attachment_deadbeef" not in markdown
+    assert "attachment_cafebabe" not in markdown
     assert "C:\\" not in markdown
 
 

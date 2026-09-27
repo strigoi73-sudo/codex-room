@@ -259,6 +259,36 @@ test('observer composer sends on Enter, keeps Shift+Enter as newline, and ignore
   await expect(composer).toBeFocused();
 });
 
+test('observer composer sends generic file attachments without changing text-only payloads', async ({ page }) => {
+  const observerMessages = await openFixture(page, makeRoom([]));
+  const target = page.locator('#message-form select[name=target]');
+  const composer = page.locator('#message-form textarea');
+  const attachment = page.locator('#message-form input[name=attachments]');
+
+  await target.selectOption('agent_a');
+  await composer.fill('Inspect the attached brief.');
+  await attachment.setInputFiles({
+    name: 'brief.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('hello world'),
+  });
+  await expect(page.locator('#attachment-status')).toContainText('brief.txt');
+
+  await composer.press('Enter');
+  await expect.poll(() => observerMessages.length).toBe(1);
+  expect(observerMessages[0]).toEqual({
+    target: 'agent_a',
+    content: 'Inspect the attached brief.',
+    files: [{
+      filename: 'brief.txt',
+      media_type: 'text/plain',
+      data_url: 'data:text/plain;base64,aGVsbG8gd29ybGQ=',
+    }],
+  });
+  await expect(composer).toHaveValue('');
+  await expect(page.locator('#attachment-status')).toBeHidden();
+});
+
 test('observer composer grows and preserves per-Room drafts across switching and refresh', async ({ page }) => {
   const secondRoomId = 'room_composer_second';
   const firstRoom = makeRoom([], roomId, 'Primary room');
