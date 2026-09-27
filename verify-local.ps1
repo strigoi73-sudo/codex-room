@@ -3,7 +3,7 @@ param(
     [ValidateSet("Fast", "Full")]
     [string]$Mode = "Fast",
 
-    [string]$Distro = "Ubuntu"
+    [string]$Distro = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -188,10 +188,17 @@ fi
         $startInfo.UseShellExecute = $false
         $startInfo.RedirectStandardInput = $true
 
+        $distroArgument = ""
+        if ($Distro) {
+            $escapedDistro = $Distro.Replace('"', '\"')
+            $distroArgument = '-d "{0}" ' -f $escapedDistro
+        }
+
         $startInfo.Arguments = (
-            '-d "{0}" -- env CODEX_ROOM_PYTHON_SERIES={1} ' +
-            'CODEX_ROOM_VERIFY_MODE={2} bash -s'
-        ) -f $Distro, $Series, $Mode
+            $distroArgument +
+            '-- env CODEX_ROOM_PYTHON_SERIES={0} ' +
+            'CODEX_ROOM_VERIFY_MODE={1} bash -s'
+        ) -f $Series, $Mode
 
         $process = New-Object System.Diagnostics.Process
         $process.StartInfo = $startInfo
