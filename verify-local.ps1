@@ -178,38 +178,25 @@ fi
     # Windows checkouts may convert this PowerShell file to CRLF. Bash requires LF.
     $bash = $bash.Replace("`r`n", "`n").Replace("`r", "")
 
-    # Do not pass a multiline Bash program through the Windows -> WSL command line.
-    # Store the exact UTF-8/LF script under .git and invoke WSL from $repoRoot.
-    # wsl.exe inherits the caller's Windows working directory and exposes that same
-    # checkout as the Linux current directory, so no Windows-path -> WSL-path
-    # conversion is needed.
-    $scriptName = "codex-room-verify-" + [guid]::NewGuid().ToString("N") + ".sh"
-    $tempScript = Join-Path (Join-Path $repoRoot ".git") $scriptName
-    $wslScript = ".git/$scriptName"
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($tempScript, $bash, $utf8NoBom)
-
-    try {
-        Invoke-NativeStep $Label {
-            Push-Location $repoRoot
-            try {
-                $args = @(
-                    "-d", $Distro,
-                    "--",
-                    "env",
-                    "CODEX_ROOM_PYTHON_SERIES=$Series",
-                    "CODEX_ROOM_VERIFY_MODE=$Mode",
-                    "bash", $wslScript
-                )
-                & $wsl @args
-            }
-            finally {
-                Pop-Location
-            }
+    # Stream the Bash program over stdin rather than materializing a temporary
+    # script. WSL inherits $repoRoot as its working directory, so neither explicit
+    # Windows-path conversion nor assumptions about .git being a directory are needed.
+    Invoke-NativeStep $Label {
+        Push-Location $repoRoot
+        try {
+            $args = @(
+                "-d", $Distro,
+                "--",
+                "env",
+                "CODEX_ROOM_PYTHON_SERIES=$Series",
+                "CODEX_ROOM_VERIFY_MODE=$Mode",
+                "bash", "-s"
+            )
+            $bash | & $wsl @args
         }
-    }
-    finally {
-        Remove-Item -LiteralPath $tempScript -Force -ErrorAction SilentlyContinue
+        finally {
+            Pop-Location
+        }
     }
 }
 
