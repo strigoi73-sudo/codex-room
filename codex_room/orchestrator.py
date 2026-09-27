@@ -2176,7 +2176,7 @@ class RoomRuntime:
         astra_authorized: bool = False,
         unrestricted_model_access: bool = False,
         available_execution_configs: dict[str, tuple[str, str]] | None = None,
-    ) -> str:
+    ) -> tuple[str, int | None]:
         round_item = await self.db.get_round(batch["round_id"])
         if round_item is None:
             raise RuntimeError(f"Round {batch['round_id']} is missing")
@@ -2231,14 +2231,18 @@ class RoomRuntime:
             item.get("assignment_id") == assignment["id"]
             for item in context_usage_history
         )
-        public_context_events = (
-            await self.db.get_assignment_public_context_delta(
+        public_context_events: list[dict[str, Any]] = []
+        public_context_upper_sequence: int | None = None
+        public_context_has_more = False
+        if agent["agent_key"] != "agent_c" and not has_prior_assignment_execution:
+            (
+                public_context_events,
+                public_context_upper_sequence,
+                public_context_has_more,
+            ) = await self.db.get_assignment_public_context_delta(
                 assignment["id"],
                 max_events=self.TRANSACTION_PUBLIC_CONTEXT_MAX_EVENTS,
             )
-            if agent["agent_key"] != "agent_c" and not has_prior_assignment_execution
-            else []
-        )
         coordinator_context_economics = None
         if is_root_coordinator:
             coordinator_context_economics = self._coordinator_context_economics(
@@ -2286,46 +2290,59 @@ class RoomRuntime:
             f"Round objective:\n{round_item['prompt']}",
             f"Current assignment:\n{assignment['instruction']}",
         ]
-        if public_context_events:
-            remaining_chars = self.TRANSACTION_PUBLIC_CONTEXT_MAX_CHARS
+        public_context_through_sequence: int | None = None
+        if public_context_upper_sequence is not None:
             selected_public_events: list[tuple[dict[str, Any], str]] = []
-            public_delta_truncated = False
-            for event in reversed(public_context_events):
+            remaining_chars = self.TRANSACTION_PUBLIC_CONTEXT_MAX_CHARS
+            public_delta_char_bounded = False
+            for event in public_context_events:
                 raw_content = event.get("content") or ""
-                if len(raw_content) > remaining_chars:
-                    if not selected_public_events and remaining_chars > 0:
-                        selected_public_events.append(
-                            (event, raw_content[:remaining_chars])
-                        )
-                    public_delta_truncated = True
+                if selected_public_events and len(raw_content) > remaining_chars:
+                    public_delta_char_bounded = True
                     break
                 selected_public_events.append((event, raw_content))
-                remaining_chars -= len(raw_content)
-            selected_public_events.reverse()
-            context_parts.append("<public_room_delta>")
-            for event, content in selected_public_events:
-                context_parts.extend(
-                    [
-                        (
-                            f"<public_message event_id=\"{event['id']}\" "
-                            f"sequence_no=\"{event.get('sequence_no') or ''}\" "
-                            f"source=\"{event.get('source') or ''}\">"
-                        ),
-                        content,
-                        "</public_message>",
-                    ]
-                )
-            if public_delta_truncated:
-                context_parts.append(
-                    "[Older public Room messages were omitted by the bounded context delta.]"
-                )
-            context_parts.append("</public_room_delta>")
-            context_parts.append(
-                "The public Room delta above contains conversational messages published since "
-                "this worker's inherited provider context last settled, or since the current Task "
-                "began when this is a fresh worker context. Treat those messages as shared Room "
-                "conversation, not as private provider context or authoritative Task state."
+                remaining_chars = max(0, remaining_chars - len(raw_content))
+
+            public_delta_bounded = (
+                public_delta_char_bounded or public_context_has_more
             )
+            if selected_public_events:
+                if public_delta_bounded:
+                    public_context_through_sequence = int(
+                        selected_public_events[-1][0]["sequence_no"]
+                    )
+                else:
+                    public_context_through_sequence = public_context_upper_sequence
+            else:
+                public_context_through_sequence = public_context_upper_sequence
+
+            if selected_public_events:
+                context_parts.append("<public_room_delta>")
+                for event, content in selected_public_events:
+                    context_parts.extend(
+                        [
+                            (
+                                f"<public_message event_id=\"{event['id']}\" "
+                                f"sequence_no=\"{event.get('sequence_no') or ''}\" "
+                                f"source=\"{event.get('source') or ''}\">"
+                            ),
+                            content,
+                            "</public_message>",
+                        ]
+                    )
+                if public_delta_bounded:
+                    context_parts.append(
+                        "[Additional newer public Room messages remain queued for a later "
+                        "worker Assignment because this context delta is bounded.]"
+                    )
+                context_parts.append("</public_room_delta>")
+                context_parts.append(
+                    "The public Room delta above is the oldest contiguous unseen portion of "
+                    "shared conversational input for this exact provider context. Messages "
+                    "published while a provider turn is already running remain unseen until a "
+                    "later Assignment supplies them. Treat the supplied messages as shared Room "
+                    "conversation, not as private provider context or authoritative Task state."
+                )
         if coordinator_checkpoint is not None:
             context_parts.extend(
                 [
@@ -2700,7 +2717,7 @@ class RoomRuntime:
                 ),
             ]
         )
-        return "\n\n".join(context_parts)
+        return "\n\n".join(context_parts), public_context_through_sequence
 
     async def _record_invalid_decision_telemetry(
         self,
@@ -3051,7 +3068,10 @@ class RoomRuntime:
 
                 # Compose only after assignment-thread binding so C's first prompt can
                 # report exact-thread coordinator economics truthfully.
-                prompt = await self._assignment_prompt(
+                (
+                    prompt,
+                    public_context_through_sequence,
+                ) = await self._assignment_prompt(
                     batch,
                     agent,
                     astra_authorized=astra_authorized,
@@ -3080,7 +3100,13 @@ class RoomRuntime:
                             "Codex turn used the wrong assignment provider context"
                         )
                     bound = await self.db.bind_execution_turn(
-                        batch["batch_id"], thread_id, turn_id, generation
+                        batch["batch_id"],
+                        thread_id,
+                        turn_id,
+                        generation,
+                        public_context_through_sequence=(
+                            public_context_through_sequence
+                        ),
                     )
                     if not bound:
                         raise RuntimeError(
