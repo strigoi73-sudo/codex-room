@@ -94,34 +94,25 @@ function Invoke-OubV2GradeWithHeartbeat {
     $heartbeat = 0
 
     try {
+        $gradeTimer = [System.Diagnostics.Stopwatch]::StartNew()
+
         while (-not $process.HasExited) {
             Start-Sleep -Seconds $HeartbeatSeconds
 
             if (-not $process.HasExited) {
                 $heartbeat++
                 Write-Host ""
-                Write-Host ("[grade heartbeat {0}] {1} still running - {2}" -f $heartbeat, $TaskId, (Get-Date -Format "HH:mm:ss"))
-
-                $activity = & wsl.exe -e sh -lc @'
-ps -eo pid,ppid,etime,stat,pcpu,pmem,args |
-grep -E 'grade_workspace_native|uv (venv|pip)|pytest|cargo|rustc|git clone|python.*pytest' |
-grep -v grep
-'@ 2>&1
-                $activityExit = $LASTEXITCODE
-                $activityText = ($activity | Out-String).Trim()
-
-                if ($activityText -match "Failed to start the systemd user session") {
-                    throw "WSL reported a failed systemd user session during grading. Run .\Repair-WSL-Codex-Room.ps1 before retrying."
-                }
-
-                if ($activityExit -eq 0 -and -not [string]::IsNullOrWhiteSpace($activityText)) {
-                    Write-Host $activityText
-                }
-                else {
-                    Write-Host "No matching grader child process visible at this instant."
-                }
+                Write-Host (
+                    "[grade heartbeat {0}] {1} still running - elapsed {2:N1} min - wrapper PID {3}" -f
+                    $heartbeat,
+                    $TaskId,
+                    $gradeTimer.Elapsed.TotalMinutes,
+                    $process.Id
+                )
             }
         }
+
+        $gradeTimer.Stop()
 
         $process.WaitForExit()
     }
