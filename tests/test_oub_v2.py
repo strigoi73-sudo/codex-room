@@ -245,3 +245,71 @@ def test_oub_v2_json_output_is_safe_for_legacy_windows_code_pages(
     rendered = raw.getvalue().decode("cp1252")
     assert "\\u274c" in rendered
     assert json.loads(rendered) == {"status": "❌"}
+
+def test_oub_v2_materialization_retries_external_fetch(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    upstream = tmp_path / "upstream"
+    upstream.mkdir()
+    subprocess.run(["git", "init"], cwd=upstream, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "oub@example.invalid"],
+        cwd=upstream,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "OUB Test"],
+        cwd=upstream,
+        check=True,
+    )
+    (upstream / "source.txt").write_text("base\n", encoding="utf-8")
+    subprocess.run(["git", "add", "source.txt"], cwd=upstream, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "base"],
+        cwd=upstream,
+        check=True,
+        capture_output=True,
+    )
+    base_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=upstream,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    real_git = oub_v2._git
+    fetch_attempts = 0
+    sleeps: list[int] = []
+
+    def flaky_git(args, *, cwd=None, timeout=1200, text=True):
+        nonlocal fetch_attempts
+        if args and args[0] == "fetch":
+            fetch_attempts += 1
+            if fetch_attempts < 3:
+                return subprocess.CompletedProcess(
+                    args=args,
+                    returncode=1,
+                    stdout="transient fetch failure",
+                )
+        return real_git(args, cwd=cwd, timeout=timeout, text=text)
+
+    monkeypatch.setattr(oub_v2, "_git", flaky_git)
+    monkeypatch.setattr(oub_v2.time, "sleep", sleeps.append)
+
+    workspace = tmp_path / "workspace"
+    state = oub_v2._materialize_workspace(
+        workspace,
+        {
+            "id": "fetch-retry-test",
+            "project_url": str(upstream),
+            "base_commit": base_commit,
+            "features": [],
+        },
+    )
+
+    assert fetch_attempts == 3
+    assert sleeps == [1, 2]
+    assert state["head"] == base_commit
+    assert state["status"] == ""
