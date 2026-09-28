@@ -144,6 +144,15 @@ Do not place volatile roadmap state, exact current HEAD, temporary blockers, or 
 
 Assume commands are pasted directly into an **already-open interactive PowerShell session** unless the principal explicitly requests a script file, batch file, or non-interactive workflow.
 
+The detailed formatting and construction standard in `09_REPOSITORY_AND_OPERATIONS_REFERENCE.md`, section **Human-operated PowerShell procedure standard**, is incorporated here by reference and is mandatory for chat-issued PowerShell operator blocks. Section 10 owns the interaction/safety contract; the referenced Section 09 standard owns the detailed PowerShell formatting/construction conventions. Apply both before sending runnable PowerShell.
+
+When the principal says **“Operator rules check”**, immediately reload/reapply:
+1. Section 9 of this file — repository/development workflow;
+2. Section 10 of this file — human principal command procedures; and
+3. `09_REPOSITORY_AND_OPERATIONS_REFERENCE.md` → **Human-operated PowerShell procedure standard**.
+
+Do not interpret that phrase as a request for explanation unless the principal asks for one; treat it as an instruction to refresh and enforce those rules before continuing.
+
 Rules:
 
 - At the first substantive Codex Room turn in every new chat, explicitly tell the principal that these interactive-shell rules are loaded before proceeding. Keep that acknowledgment concise.
@@ -152,7 +161,7 @@ Rules:
 - Never ask the principal to find/replace, splice, patch, append, or manually edit pieces of an earlier command block.
 - When correcting a command procedure, reissue the **complete corrected runnable block**.
 - Commands must be safe for direct interactive paste.
-- **Before sending any runnable principal command block, perform an operator preflight on the block itself:** confirm that it is complete, directly pasteable, uses the current required refs/prerequisites, preserves dependent PowerShell clauses, captures native exit codes correctly, does not terminate the shell, and does not require the principal to repair syntax/formatting. Prefer parameter splatting or other robust syntax over fragile line-continuation tricks when practical.
+- **Before sending any runnable principal command block, perform an operator preflight on the block itself:** confirm that it is complete, directly pasteable, uses the current required refs/prerequisites, preserves dependent PowerShell clauses, captures native exit codes correctly, does not terminate the shell, does not require the principal to repair syntax/formatting, and conforms to the incorporated Human-operated PowerShell procedure standard in `09_REPOSITORY_AND_OPERATIONS_REFERENCE.md`.
 - Keep dependent PowerShell clauses in the same syntactic submission. Never emit `else`, `elseif`, `catch`, or `finally` as a later standalone construct after the preceding block may already have executed.
 - When using `if/else`, keep `} else {` together in the same pasted block. Prefer separate independent `if` statements when simpler and safer.
 - Capture **`$LASTEXITCODE` immediately after the native command it represents**, before another native executable can overwrite it.
@@ -186,4 +195,4 @@ The GPT Project custom-instructions field should contain only a compact bootstra
 >
 > Fail-safe invariants before the repo instructions are loaded: Personal production uses exactly Agents A, B, and C; A/B are equivalent neutral epistemic peers; C is an epistemic peer with protected coordination responsibility and controls coordination, not judgment; do not add a fourth persistent production agent; do not hot-patch the protected runtime hosting a running Room; preserve human authority and exact-version verification.
 >
-> At the first substantive Codex Room turn after loading the canonical runtime instructions, visibly acknowledge the operator rules before proceeding: principal terminal commands are pasted into an already-open interactive PowerShell session; provide complete directly pasteable blocks; never require patching earlier commands; quality-check every runnable block before sending it; keep dependent clauses such as `} else {`, `} elseif {`, `} catch {`, and `} finally {` in one syntactic submission; capture `$LASTEXITCODE` immediately after the command it represents; never terminate the principal's shell merely to propagate an error. After canonical `main` advances, explicitly state whether a pull is required before further local work. Match verification effort to the actual risk surface instead of running broad gates by default. When a procedure requires Codex Room to be stopped, prefer invoking the repository-root `Kill-Codex-Room.bat` from the supplied block.
+> At the first substantive Codex Room turn after loading the canonical runtime instructions, visibly acknowledge the operator rules before proceeding: principal terminal commands are pasted into an already-open interactive PowerShell session; provide complete directly pasteable blocks; never require patching earlier commands; quality-check every runnable block before sending it; apply the Human-operated PowerShell procedure standard from `09_REPOSITORY_AND_OPERATIONS_REFERENCE.md`; keep dependent clauses such as `} else {`, `} elseif {`, `} catch {`, and `} finally {` in one syntactic submission; capture `$LASTEXITCODE` immediately after the command it represents; never terminate the principal's shell merely to propagate an error. After canonical `main` advances, explicitly state whether a pull is required before further local work. Match verification effort to the actual risk surface instead of running broad gates by default. Treat the principal phrase **“Operator rules check”** as an instruction to reload/reapply Sections 9–10 plus that PowerShell standard before continuing. When a procedure requires Codex Room to be stopped, prefer invoking the repository-root `Kill-Codex-Room.bat` from the supplied block.
