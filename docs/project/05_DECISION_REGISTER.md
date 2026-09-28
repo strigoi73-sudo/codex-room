@@ -1,7 +1,7 @@
 # Codex Room — Decision Register
 
 **Initialized:** 2026-09-08
-**Last updated:** 2026-09-26
+**Last updated:** 2026-09-27
 **Scope:** Settled architectural, governance, product-direction, and development-order decisions.
 **Freshness:** Later explicit user decisions supersede earlier entries. Implementation status is tracked primarily in Architecture & Current State and the Evidence Register.
 
@@ -1025,3 +1025,26 @@ Settled boundary:
 - The guide deliberately omits quantitative prices, model scores, task-specific triggers, and escalation recipes that could turn descriptive context into an implicit router.
 
 **Principle:** **Inform C's model judgment without replacing it.**
+
+### D-056 — Retire Codex Room and publish the repository as an archival experiment
+**Date:** 2026-09-27
+**Status:** ACTIVE
+**Related:** D-005, D-050, I-028, E-174, E-175, E-199
+
+The principal concluded the Codex Room product experiment after completion of the I-028 OUB v2 utility gate.
+
+Settled disposition:
+
+- active Codex Room product development ends;
+- no further orchestration feature work or benchmark escalation is justified merely to search for a favorable result;
+- the completed PBM/OUB evidence is sufficient for the product decision even though it does not establish a universal claim about all possible multi-agent systems;
+- the repository should be preserved rather than deleted, because the implementation, benchmark machinery, evidence discipline, and negative result have independent experimental and educational value;
+- the repository is authorized for public archival release so others may inspect, run, fork, or modify it;
+- original Codex Room work is released under a permissive MIT license, while copied or referenced third-party benchmark material retains its applicable upstream terms;
+- public release does not reactivate a product roadmap, compatibility commitment, security SLA, or maintenance obligation;
+- historical architectural decisions remain part of the record but no longer imply ongoing development.
+
+The decisive product finding is narrower than “multi-agent systems never work”: under the fair platform comparisons actually run, the current Codex Room architecture did not establish enough practical advantage over Codex Desktop to justify its additional complexity and execution cost.
+
+**Principle:** **When the experiment answers the product question, preserve the evidence and stop rather than developing by inertia.**
+

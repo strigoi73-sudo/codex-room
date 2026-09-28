@@ -1,8 +1,11 @@
 # Codex Room — Product Vision
 
 **Initialized:** 2026-09-08  
-**Scope:** Longer-range direction, product philosophy, and deliberately deferred capability space.  
-**Freshness:** Vision expresses direction. It does not establish current implementation or a committed delivery schedule.
+**Retired:** 2026-09-27  
+**Scope:** Historical longer-range direction, product philosophy, and deliberately deferred capability space.  
+**Freshness:** **HISTORICAL / FROZEN.** D-056 ended active product development after I-028. The material below is preserved to document what the project was trying to become; it is not an active roadmap or commitment.
+
+> **Retirement notice:** Codex Room did not establish enough practical advantage over Codex Desktop in the completed PBM/OUB utility program to justify continued orchestration development. This vision is intentionally preserved rather than rewritten to make the retired experiment appear successful.
 
 ## 1. Product idea
 
