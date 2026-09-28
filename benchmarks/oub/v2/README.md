@@ -25,4 +25,4 @@ The public mission paste remains:
 
 The task's `BENCHMARK.md` instructs the platform to create `OUB_COMPLETE.json` with `{"status":"complete"}` after implementation and self-verification. The marker is a harness completion signal, not part of CooperBench grading.
 
-OUB v2 is invoked explicitly through `oub-v2.ps1`. The repository `CURRENT` pointer remains on v1 until the v2 mechanical dry-run gate is complete.
+OUB v2 is invoked explicitly through `oub-v2.ps1`. The repository `CURRENT` pointer resolves to v2 after the completed Phase-5 mechanical dry-run gate.
