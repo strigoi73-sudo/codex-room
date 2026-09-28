@@ -3308,3 +3308,78 @@ The final O2-2 run showed 28 consecutive 30-second heartbeats over roughly 14 mi
 The gate leaves the frozen sample and Phase-1 fairness contract unchanged. No task was resampled, no Room-specific decomposition was introduced, and no measured platform result was generated.
 
 **Assessment:** I-028 Phase 5 — Mechanical Dry Run is **COMPLETE / PRINCIPAL VERIFIED**. OUB v2 is mechanically ready for measured comparison. Phase 6 — the three frozen Desktop-versus-Room measured comparisons — is next and requires a separate principal invocation.
+
+### E-199 — I-028 OUB v2 Phase-6 measured comparison and retirement evidence
+**Date:** 2026-09-27  
+**Status:** PRINCIPAL VERIFIED / MEASURED  
+**Kind:** [organizational utility benchmark / external tasks / Desktop comparison / product closeout]  
+**Issue:** I-028
+
+The principal completed OUB v2 Phase 6 across the exact three-task sample frozen by E-195 and mechanically validated by E-196 through E-198.
+
+Measured runs:
+
+- O2-1 / LlamaIndex: `oub-v2-o2-1-20260928T022943891985Z`;
+- O2-2 / Typst: `oub-v2-o2-2-20260928T025736556348Z`;
+- O2-3 / dirty-equals: `oub-v2-o2-3-20260928T034112681481Z`.
+
+All three Desktop/Room pairs were classified VALID, comparable, and bound to the same benchmark fingerprint `f004e509185fdf45586fb7cad0f4fbe70f502154c4666bba60eef4001c91430c`. No substantive principal intervention was recorded for either platform.
+
+Aggregate measured outcomes:
+
+- Desktop frozen CooperBench features passed: **4/6**;
+- Room frozen CooperBench features passed: **2/6**;
+- Desktop provider tokens: **2,140,189**;
+- Room provider tokens: **2,497,972**;
+- Room/Desktop total-token ratio: **1.1672**;
+- Desktop summed measured duration: **737.707 s**;
+- Room summed measured duration: **722.349 s**;
+- Room/Desktop summed-duration ratio: **0.9792**;
+- Desktop native descendants: **0**;
+- Room peer invocations: **3**.
+
+Per-task outcomes:
+
+1. **O2-1**
+   - Desktop: VALID, 1/2 features, 759,563 tokens, 327.708 s, 20 tool calls, one thread, zero descendants.
+   - Room: VALID, 0/2 features, 967,610 tokens, 279.727 s, 9 tool calls, 13 executions, one peer invocation.
+   - Room/Desktop token ratio: 1.2739; duration ratio: 0.8536.
+   - Room used Terra high/medium/low configurations.
+
+2. **O2-2**
+   - Desktop: VALID, 2/2 features, 863,424 tokens, 235.405 s, 20 tool calls, one thread, zero descendants.
+   - Room: VALID, 2/2 features, 922,496 tokens, 210.307 s, 7 tool calls, 14 executions, one peer invocation.
+   - Room/Desktop token ratio: 1.0684; duration ratio: 0.8934.
+   - Room used Terra high/medium configurations.
+
+3. **O2-3**
+   - Desktop: VALID, 1/2 features, 517,202 tokens, 174.594 s, 13 tool calls, one thread, zero descendants.
+   - Room: VALID, 0/2 features, 607,866 tokens, 232.315 s, 9 tool calls, 9 executions, one peer invocation.
+   - Room/Desktop token ratio: 1.1753; duration ratio: 1.3306.
+   - Room used Terra high.
+
+Desktop model configuration was not captured by OUB v2 provenance; the principal had selected Terra High for the measured Desktop tasks. The formal OUB result therefore preserves Desktop model configuration as uncaptured rather than inferring it from operator recollection.
+
+The ordinary Room account-level 300-minute provider meter also recorded the following changes during the three Room-active intervals:
+
+- O2-1: 4% used → 12% used (+8 percentage points);
+- O2-2: 15% used → 25% used (+10 points);
+- O2-3: 26% used → 35% used (+9 points).
+
+Those meter deltas are **not exclusive Room billing attribution** because Desktop activity overlapped the Room intervals; D-054 correctly defines them as account-level observations.
+
+Interpretation under the frozen OUB v2 contract:
+
+- the Room architecture did activate peer organization on every task, so the result cannot be dismissed as a no-peer activation failure;
+- the sample did not establish a practical correctness advantage for Room;
+- Room consumed more provider tokens on every task;
+- aggregate measured duration was effectively similar, with task-specific speed differences in both directions;
+- neither platform required substantive principal intervention;
+- OUB v2 computes no composite winner score and this evidence does not establish a universal claim about all multi-agent systems.
+
+Combined with PBM v5 evidence E-174/E-175, Phase 6 answers the I-028 product question: the current Codex Room architecture did **not** demonstrate enough practical advantage over Codex Desktop to justify its additional complexity and execution cost.
+
+The principal therefore directed permanent retirement of active Codex Room product development and public archival preservation of the repository. D-056 records that product decision.
+
+**Assessment:** I-028 is **COMPLETE**. The utility gate did not establish a sufficient product advantage; Codex Room is retired rather than extended by development inertia.
+
