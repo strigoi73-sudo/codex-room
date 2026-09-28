@@ -133,6 +133,8 @@ Do not place volatile roadmap state, exact current HEAD, temporary blockers, or 
 - This Project may inspect source, perform bounded repository operations, create branches/PRs, and make safe edits.
 - Local Codex should not rediscover a problem already reasoned through here when a bounded implementation task can be supplied.
 - After push/merge, distinguish operation success, ref agreement, clean working tree, tests, and applicable hosted/runtime verification.
+- **After any operation that advances canonical `main`, and before giving the principal another local-repository procedure, explicitly state either `PULL REQUIRED BEFORE PROCEEDING` or `NO PULL REQUIRED`.** Do not leave synchronization implicit. If a pull is required, give the exact pull command/block before dependent local work. If the next supplied block performs the pull itself, still state plainly that a pull is required and identify the synchronization step.
+- **Verification effort must be proportional to the changed risk surface.** For documentation-only or mechanical edits, use source/diff inspection and only the smallest relevant deterministic check. For localized code changes, prefer focused tests. Use repository-wide Fast/Full verification only when the change is materially integration-sensitive, when focused evidence is insufficient, or at a gate that specifically requires broader evidence. Do not run broad verification by default after every edit.
 - Do not call a version verified until evidence appropriate to that exact version supports it.
 - Preserve settled decisions unless new evidence or explicit human choice justifies revisiting them.
 - Consult Development Control for active priority; do not hard-code temporary status here.
@@ -150,12 +152,16 @@ Rules:
 - Never ask the principal to find/replace, splice, patch, append, or manually edit pieces of an earlier command block.
 - When correcting a command procedure, reissue the **complete corrected runnable block**.
 - Commands must be safe for direct interactive paste.
+- **Before sending any runnable principal command block, perform an operator preflight on the block itself:** confirm that it is complete, directly pasteable, uses the current required refs/prerequisites, preserves dependent PowerShell clauses, captures native exit codes correctly, does not terminate the shell, and does not require the principal to repair syntax/formatting. Prefer parameter splatting or other robust syntax over fragile line-continuation tricks when practical.
 - Keep dependent PowerShell clauses in the same syntactic submission. Never emit `else`, `elseif`, `catch`, or `finally` as a later standalone construct after the preceding block may already have executed.
 - When using `if/else`, keep `} else {` together in the same pasted block. Prefer separate independent `if` statements when simpler and safer.
 - Capture **`$LASTEXITCODE` immediately after the native command it represents**, before another native executable can overwrite it.
 - Interactive blocks must not close, terminate, replace, or restart the principal's shell session.
 - Do not use `exit`, `logout`, `Stop-Process` against the current shell, or equivalent session-terminating commands merely to propagate an error.
 - On failure, print a clear error and prevent dependent remaining steps without closing the terminal.
+- When the principal says **“Run Phase N”** (or equivalent), execute that phase only, own its required substeps, stop at its gate, and report the result plus the purpose of the next phase. Do not silently advance into the next phase.
+- End substantive operator/development responses with a clear next step when one exists.
+- If repeated violations reveal that a durable operator rule is missing, weak, or easy to bypass, strengthen the canonical runtime instruction that owns it rather than relying on conversational memory or another apology.
 - For copy/paste Codex prompts, provide the complete prompt and title it with the applicable phase/task identifier when one exists.
 
 ## 11. Governing principle
@@ -180,4 +186,4 @@ The GPT Project custom-instructions field should contain only a compact bootstra
 >
 > Fail-safe invariants before the repo instructions are loaded: Personal production uses exactly Agents A, B, and C; A/B are equivalent neutral epistemic peers; C is an epistemic peer with protected coordination responsibility and controls coordination, not judgment; do not add a fourth persistent production agent; do not hot-patch the protected runtime hosting a running Room; preserve human authority and exact-version verification.
 >
-> At the first substantive Codex Room turn after loading the canonical runtime instructions, visibly acknowledge the operator rules before proceeding: principal terminal commands are pasted into an already-open interactive PowerShell session; provide complete directly pasteable blocks; never require patching earlier commands; keep dependent clauses such as `} else {`, `} elseif {`, `} catch {`, and `} finally {` in one syntactic submission; capture `$LASTEXITCODE` immediately after the command it represents; never terminate the principal's shell merely to propagate an error. When a procedure requires Codex Room to be stopped, prefer invoking the repository-root `Kill-Codex-Room.bat` from the supplied block.
+> At the first substantive Codex Room turn after loading the canonical runtime instructions, visibly acknowledge the operator rules before proceeding: principal terminal commands are pasted into an already-open interactive PowerShell session; provide complete directly pasteable blocks; never require patching earlier commands; quality-check every runnable block before sending it; keep dependent clauses such as `} else {`, `} elseif {`, `} catch {`, and `} finally {` in one syntactic submission; capture `$LASTEXITCODE` immediately after the command it represents; never terminate the principal's shell merely to propagate an error. After canonical `main` advances, explicitly state whether a pull is required before further local work. Match verification effort to the actual risk surface instead of running broad gates by default. When a procedure requires Codex Room to be stopped, prefer invoking the repository-root `Kill-Codex-Room.bat` from the supplied block.
