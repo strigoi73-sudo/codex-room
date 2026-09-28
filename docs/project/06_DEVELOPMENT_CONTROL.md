@@ -6,12 +6,11 @@
 
 ## Operator summary
 
-- **Where are we?** I-028 — **Codex Room utility gate** — is IN PROGRESS. Phases 1–5 are complete. OUB v2 has now passed its non-cognitive mechanical dry run across the full frozen three-task CooperBench sample.
-- **What just happened?** Phase 5 verified exact external-repository preparation, equivalent Desktop/Room starts, hidden-test isolation, cross-host Git behavior, isolated WSL candidate replay/grading, fail-closed cleanup, and evidence serialization for all three frozen tasks without starting paid benchmark cognition. The gate also exposed and repaired cross-host line-ending, Windows JSON-console encoding, heartbeat/WSL monitoring, and transient external-fetch resilience defects. See E-198.
-- **What is next?** I-028 Phase 6 — run the measured Desktop-versus-Room comparisons for the three frozen tasks under the Phase-1 contract. Each platform may organize naturally; no substantive principal intervention is allowed after launch.
-- **What remains behind it?** No newly selected implementation item is queued behind I-028; later work remains subject to principal prioritization and demonstrated need.
-- **What is blocked?** Nothing currently blocks ordinary Codex Room use or I-028 Phase 6.
-- **What are we deliberately not doing?** We are not changing the frozen sample, importing CooperBench's prescribed multi-agent orchestration, prescribing Desktop/Room agent roles or topology, or interpreting mechanical dry-run success as evidence that either platform is better.
+- **Where are we?** Codex Room is **RETIRED**. I-028 is COMPLETE and the principal has ended active product development under D-056.
+- **What just happened?** OUB v2 Phase 6 completed all three frozen Desktop-versus-Room measured comparisons. All three pairs were comparable and required no substantive principal intervention. Desktop passed 4/6 frozen CooperBench features versus Room 2/6; Room used 2,497,972 provider tokens versus Desktop 2,140,189 (1.1672×), while aggregate measured duration was effectively a wash at 722.349 s Room versus 737.707 s Desktop. Room invoked peers on all three tasks; Desktop used no descendants. See E-199.
+- **What is next?** No product-development item is queued. The only remaining closeout activity is archival/public-release hygiene authorized by D-056.
+- **What is blocked?** Nothing. There is no active development gate to unblock.
+- **What are we deliberately not doing?** We are not rerunning or resampling benchmarks to seek a preferred outcome, adding orchestration features in hope of reversing the result, or treating retirement as a universal claim about every possible multi-agent architecture.
 
 ## Current development state
 
@@ -234,65 +233,42 @@ PR #210 merged the implementation after exact-head verification of `b923e1654bae
 
 **Scope:** [product-value validation / Room-specific organizational utility / Desktop comparison without handicapping either platform]
 
-**Work state:** IN PROGRESS
+**Work state:** COMPLETE
 
-**Reality / evidence:** OUB v1/O1 FIRST MEASURED COMPARISON COMPLETE; OUB v2 PHASES 1–5 COMPLETE; HARNESS IMPLEMENTED + MECHANICALLY VERIFIED; PHASE 6 MEASURED COMPARISONS NEXT
+**Reality / evidence:** OUB v2 PHASES 1–6 COMPLETE / THREE MEASURED COMPARISONS COMPLETE / PRODUCT UTILITY NOT ESTABLISHED / PROJECT RETIRED
 
-**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179, E-180, E-194, E-195, E-196, E-197, E-198
+**Decision:** D-056
+
+**Evidence basis:** E-174, E-175, E-176, E-177, E-178, E-179, E-180, E-194, E-195, E-196, E-197, E-198, E-199
 
 Purpose: determine whether Codex Room's persistent A/B/C organization creates enough practical value to justify its additional complexity and execution cost.
 
-Current phase state: **Phase 1 — Comparison Contract: COMPLETE. Phase 2 — External Task Sample: COMPLETE. Phase 3 — Deterministic Sanity Check: COMPLETE. Phase 4 — OUB Harness Adaptation: COMPLETE / SOURCE-REVIEWED. Phase 5 — Mechanical Dry Run: COMPLETE / PRINCIPAL VERIFIED. Phase 6 — Measured Comparisons: NEXT.**
+Final phase state: **Phase 1 — Comparison Contract: COMPLETE. Phase 2 — External Task Sample: COMPLETE. Phase 3 — Deterministic Sanity Check: COMPLETE. Phase 4 — OUB Harness Adaptation: COMPLETE. Phase 5 — Mechanical Dry Run: COMPLETE. Phase 6 — Measured Comparisons: COMPLETE.**
 
-OUB v2's comparison contract is now frozen in `benchmarks/oub/v2/PROTOCOL.md`. The initial sample will contain three externally authored tasks selected before any measured v2 run. Selection may exclude candidates for practical benchmark suitability only; it must not optimize for expected Room advantage, expected peer use, a preferred difficulty band, or a particular coordination topology. Both Desktop and Room receive the same frozen task and may organize naturally. Correctness, tokens, duration, orchestration, and human intervention remain separate outcome dimensions, with no composite winner score. A no-peer or otherwise nondiscriminating result remains valid evidence rather than grounds for replacement. See E-194.
+Phase 6 used the exact three-task sample frozen before measurement and the Phase-1 naturalistic platform contract. Desktop and Room received equivalent starting repositories and missions; neither platform was assigned a prescribed topology; no substantive principal intervention occurred after measured work began.
 
-Phase 2 freezes the three-task sample in `benchmarks/oub/v2/SAMPLE.md` and `sample.json`. Selection was deterministic across all 50 pairs in CooperBench's published flash subset at upstream revision `63b9d44d9f39a02fccf5bf0052db48a917a011fd`, using the Phase-1 merge SHA as the fixed selection seed and no pre-draw exclusions. The selected pairs are LlamaIndex task 18813 features 2+5, Typst task 6554 features 4+9, and dirty-equals task 43 features 3+7. Phase 3 must validate those exact tasks before any harness adaptation or measured model run. See E-195.
+Measured aggregate result:
 
-Phase 3 uses `benchmarks/oub/v2/phase3_plan.json` plus `validate_phase3.py`. The plan freezes exact upstream asset Git-blob identities, task-image tags, and base commits. The validator verifies those identities, verifies each task image contains the frozen base commit, records the resolved Docker image identity, and runs only the pair-level checks needed for this gate: each selected feature's tests must fail on untouched base and pass against the task's combined oracle patch. Generated results stay under ignored `data/oub-v2/phase3/`. Phase 3 is not complete until this execution gate passes.
+- Desktop frozen feature tests: **4/6**;
+- Room frozen feature tests: **2/6**;
+- Desktop provider tokens: **2,140,189**;
+- Room provider tokens: **2,497,972**;
+- Room/Desktop token ratio: **1.1672**;
+- Desktop summed measured duration: **737.707 s**;
+- Room summed measured duration: **722.349 s**;
+- Room/Desktop duration ratio: **0.9792**;
+- Desktop descendants: **0**;
+- Room peer invocations: **3**.
 
-The first principal-local execution on 2026-09-27 stopped before task work because Docker was absent. That is an environment prerequisite result, not a sample failure. The fallback path reuses the already-present Ubuntu 24.04 WSL environment instead of introducing Docker Desktop: `oub-v2-phase3-wsl.ps1` installs only the Linux build prerequisites plus user-scoped `uv`, Python 3.10/3.11, and Rust 1.80.0, then runs `validate_phase3_native.py`. Native validation materializes each exact upstream base commit, preserves the frozen CooperBench test and combined-patch blobs, applies patches in the benchmark runner's order, and uses the same task-specific test targets. The task sample and acceptance rule are unchanged.
+Per-task:
 
-The first invocation of that fallback then failed before package installation. Root cause of the wrapper failure: Windows CRLF newlines in a PowerShell here-string were passed verbatim as the `bash -lc` command argument, so Bash parsed the carriage return as part of `pipefail` (`invalid option name` / `pipefail\r`). Separately, every WSL launch was emitting `Failed to start the systemd user session`; current Microsoft WSL issues document this failure class, and Codex Room source contains no `systemd`/`systemctl` dependency. The repair path explicitly sets `boot.systemd=false` in `/etc/wsl.conf` after creating a timestamped backup, restarts WSL, and verifies the warning no longer appears. The corrected Phase-3 wrapper uses direct `apt-get` argument passing and single-line shell commands, avoiding the CRLF command-boundary defect.
+- O2-1: Desktop 1/2 versus Room 0/2; Room used 1.2739× Desktop tokens and 0.8536× Desktop measured duration.
+- O2-2: both 2/2; Room used 1.0684× Desktop tokens and 0.8934× Desktop measured duration.
+- O2-3: Desktop 1/2 versus Room 0/2; Room used 1.1753× Desktop tokens and 1.3306× Desktop measured duration.
 
-Principal execution then completed the gate successfully. The repair backed up `/etc/wsl.conf`, set `boot.systemd=false`, restarted WSL, and verified startup as the ordinary `strigoi73` user with no failed systemd-user-session warning. The Phase-3 validator verified all 24 frozen CooperBench asset Git blobs and all six selected feature pairs: LlamaIndex features 2 and 5, Typst features 4 and 9, and dirty-equals features 3 and 7 each **failed on untouched base as required and passed with the frozen combined oracle**. Overall result: **PASS / exit 0**. The run recorded `data/oub-v2/phase3/phase3-validation-20260927T200300Z.json` locally. Transient DNS failure against `security.ubuntu.com` during package-index refresh and an initial uv TLS read failure both recovered automatically and did not affect the deterministic gate. The WSL runner now skips package installation and version installation when prerequisites are already present, reducing repeated network exposure. See E-196.
+The Room architecture therefore did activate peer coordination, which closes the main ambiguity left by OUB v1. Across this frozen sample that activation did not produce a compensating correctness, cost, speed, or principal-coordination advantage. The benchmark does not compute a composite winner and this closeout does not claim that all multi-agent systems are inferior. It establishes only the product conclusion required by I-028: **Codex Room did not demonstrate enough practical utility over Codex Desktop to justify continued development of the current architecture.**
 
-Phase 4 then implemented a separate `codex_room.oub_v2` harness without mutating historical OUB v1. The adapter binds the three frozen task/base identities, copies the exact six public feature specifications plus the exact six selected upstream test patches, and generates identical measured `BENCHMARK.md` missions. Hidden test patches are never placed in the measured workspaces; they are replayed only after work in an isolated WSL grading clone. Coding changes are expected rather than treated as fixture tampering. The harness records starting HEAD/tree/mission identity, completion through a harness-only `OUB_COMPLETE.json`, Desktop lineage usage/descendants, Room executions/peer invocations/model configurations, duration, tool calls, intervention state, feature-test outcomes, and compact candidate patch/untracked evidence. No composite score or platform winner is produced. `prepare --no-start` creates both task workspaces and the Room without spawning workers or starting the Round, establishing the Phase-5 non-cognitive dry-run path. Source review also hardened Windows portability by using path-aware Git blob hashing and forcing copied external specs/test patches to LF checkout. `CURRENT` remains `v1` until the v2 dry run establishes runtime mechanics. See E-197.
-
-Phase 5 then exercised those mechanics against all three frozen external repositories without starting benchmark cognition. All three tasks verified exact base/tree/mission identity, clean starts, hidden-test isolation, repository-local `core.autocrlf=false` as seen by both Windows and WSL Git, exact two-path replay sentinels, isolated WSL replay/grading that reached both official feature tests, fail-closed abort/cleanup, and compact evidence-bundle serialization. O2-1 completed in run `oub-v2-o2-1-20260927T224939814167Z`; O2-2 completed in run `oub-v2-o2-2-20260928T005520797518Z`; O2-3 completed in run `oub-v2-o2-3-20260928T011052544044Z`. The final O2-2/O2-3 task-set summary reported no paid benchmark cognition and no active OUB runs. Mechanical failures encountered during the gate were repaired at their owning boundaries rather than accepted as benchmark outcomes: cross-host line-ending normalization, legacy Windows JSON output encoding, repo-owned Phase-5 execution/heartbeat behavior, and bounded retry for transient exact-base Git fetch failures. With the mechanical gate complete, OUB v2 is eligible to become `benchmarks/oub/CURRENT`, and Phase 6 may begin only when the principal invokes the measured comparison. See E-198.
-
-The gate must test situations where Room's architecture should matter intrinsically rather than merely giving both products another generic coding battery. Candidate dimensions are:
-
-- independent epistemic analysis where premature convergence or correlated error is a meaningful risk;
-- durable organizational continuity across separate principal interactions or evolving objectives;
-- implementation plus genuinely independent skeptical review where the second perspective can catch consequential defects or alternatives;
-- standing objectives where persistent coordination materially reduces principal re-briefing or manual task management.
-
-Desktop must remain free to use its own native capabilities, including subagents, whenever it chooses. Room must likewise use normal A/B/C behavior. The test must not handicap Desktop or prescribe Room choreography.
-
-A positive result requires demonstrated practical benefit such as materially better answer/output quality, materially better consequential-error detection, materially better continuity, materially less human coordination burden, or a workflow/capability that Desktop cannot reproduce with comparable convenience. More agents, more messages, more provenance, or greater token spend are not success criteria.
-
-If fair utility testing fails to establish a meaningful advantage, the project should explicitly consider simplifying, repurposing, or stopping rather than continuing orchestration work by inertia.
-
-
-Current implementation slice: **OUB v1 / O1 — Competing root causes**.
-
-- OUB is a separate organizational-utility benchmark family rather than a harder PBM battery.
-- O1 is a compact fictional duplicate-charge forensic investigation with one real retry/idempotency causal chain and three plausible competing explanations.
-- Both platforms receive the same ten-file investigation workspace and the same mission; native internal orchestration is unconstrained.
-- No implementation work or outside research is required. The intended model workload is evidence partitioning, competing-hypothesis analysis, causal synthesis, falsification, and control selection.
-- O1's design budget is **10–15 minutes per platform**, with a manifest target of 12 minutes, at most ten fixture files, and at most 30 KB of starting fixture content.
-- The deterministic 100-point grader separately scores root cause, trigger, exact causal ordering, source/operational evidence, rejection of duplicate-ingress / concurrent-claim / database-pool alternatives, and recurrence controls.
-- Reference artifacts and an asset audit are included so satisfiability and grading can be verified before any measured platform run.
-- O1 asset head `266481fa1d66571e250d588c3eba2c2b0f430348` passed exact-head verification: reference score 100, 10 fixture files / 9,840 bytes, focused OUB tests 3/3, unchanged PBM v5 fingerprint, repository fast verifier 64 Linux / 118 Windows / 9 browser, clean scope/head checks. PR #202 merged byte-identically as `7d7d3342432908a553c6456d358d819ab8548079`.
-- The frozen O1 fingerprint is `d6ec60fca42c6dd436b15d4f8621bb711056b1da5aa93f5a6ecaee2188ba4835`.
-- The thin measurement harness creates equivalent Desktop/Room workspaces, starts the ordinary Room arm plus detached monitors, discovers exactly one fresh Desktop root by workspace, aggregates Desktop native descendants and all Room executions, enforces no-substantive-principal-intervention plus frozen-fixture integrity, grades both final workspaces, and reports quality/cost/duration/orchestration separately without declaring a winner.
-- Harness implementation uses a 30-minute safety ceiling while retaining the 10–15 minute / 12-minute target as the intended task budget.
-- Exact harness head `9790c736ba695b8cc127b19ea45b480eb0713867` passed the frozen-asset invariant, harness audit, 14 focused OUB/PBM tests, unchanged PBM v5 fingerprint, repository fast verifier (64 Linux / 118 Windows / 9 browser), and exact scope/head checks. PR #203 merged byte-identically as `21b427a68a582ce3f717f4c64759bebd0c710edc`; see E-177.
-- First measured O1 comparison completed as `oub-v1-o01-20260921T164303033477Z`. Both arms were VALID and used the same frozen fingerprint. Desktop: 167,898 tokens / 56.223 s / 1 thread / 0 descendants. Room: 191,793 tokens / 109.143 s / 5 executions / 0 peer invocations. The observed Room/Desktop token ratio was 1.1423 and duration ratio 1.9413.
-- The reported quality scores (Desktop 45, Room 35) are **not authoritative measures of diagnosis quality**. `BENCHMARK.md` permitted arbitrary descriptive `UPPER_SNAKE_CASE` codes, while the hidden grader required exact canonical strings and one exact four-step chain. Manual inspection shows both platforms identified the unstable per-attempt idempotency identity, ambiguous timeout-after-commit mechanism, the three rejected alternatives, and the two intended controls. Preserve the numeric outputs as historical grader results, but do not use them to infer a 10-point reasoning gap.
-- O1 did not create the intended organizational pressure: both platforms finished far below the 10–15 minute design budget, Desktop used no descendants, and Room used no A/B peer invocation. O1 therefore provides a valid negative signal about spontaneous Room organizational activation plus valid cost/time evidence, but is insufficient as the decisive I-028 utility gate. Do not rerun O1 merely for another stochastic sample; design the next OUB version/task around stronger intrinsic need for independent analysis and a grader contract that cannot penalize unspecified hidden labels.
-- The first O1 launch attempt exposed a launcher race before any measured arm was created: `Restart-Codex-Room.bat` returned after process launch but before the API accepted connections, causing `oub-v1.ps1 prepare` to fail at `/api/health`. PR #205 adds a post-launch readiness gate that polls `/api/health` for up to 30 seconds and cleans up on failure. Exact head `6ef357f512b1ff8b5f485212485c40249dd7fb7a` passed 9 launcher tests, frozen OUB/PBM fingerprint checks, a live restart-readiness probe, no-active-OUB confirmation, and exact scope/head checks; it merged byte-identically as `e0897b692aa985c6aa676a63a55df4cfe247ca17`. See E-178.
-- The second O1 launch attempt reached Room creation but still failed before any measured turn began: OUB tried to delete the newly created live Room `shared` workspace before copying the fixture, but the persistent Codex threads already used that directory as their working directory, producing Windows `WinError 32`. PR #207 aligns OUB with PBM's proven pattern by populating the existing empty Room workspace in place, rejects unexpected pre-existing files, and archives a newly created Room automatically if preparation fails before measurement. Exact head `0eb91145f5eb75237b9dcc4fba1a03620fb971cb` passed 17 focused OUB/PBM tests, a Windows live-workspace lock regression, frozen OUB/PBM fingerprint checks, and exact scope/head checks; it merged byte-identically as `4b8d9a4335fd3abddd02b7ba36a90b20c685a13e`. See E-179.
+Under D-056, I-028 closes and active Codex Room product development ends. The repository is preserved for archival/public experimental use rather than deleted or extended by inertia.
 
 ### I-027 — PBM v5 platform-outcome benchmark
 
