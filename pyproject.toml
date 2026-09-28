@@ -1,7 +1,7 @@
 [project]
 name = "codex-room"
 version = "0.1.0"
-description = "A local room where independent persistent Codex threads collaborate while a human observes."
+description = "Retired experimental local multi-agent organization built around Codex."
 requires-python = ">=3.11"
 dependencies = [
   "aiosqlite>=0.22,<1",
