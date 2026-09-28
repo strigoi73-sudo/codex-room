@@ -3308,4 +3308,3 @@ The final O2-2 run showed 28 consecutive 30-second heartbeats over roughly 14 mi
 The gate leaves the frozen sample and Phase-1 fairness contract unchanged. No task was resampled, no Room-specific decomposition was introduced, and no measured platform result was generated.
 
 **Assessment:** I-028 Phase 5 — Mechanical Dry Run is **COMPLETE / PRINCIPAL VERIFIED**. OUB v2 is mechanically ready for measured comparison. Phase 6 — the three frozen Desktop-versus-Room measured comparisons — is next and requires a separate principal invocation.
-
