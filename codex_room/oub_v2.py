@@ -294,7 +294,7 @@ def _materialize_workspace(
     if allow_existing_root:
         _ensure_empty_existing_root(workspace)
 
-    commands = [
+    setup_commands = [
         ["init"],
         ["config", "core.longpaths", "true"],
         # The same measured workspace is inspected by Windows Git and WSL Git.
@@ -302,16 +302,44 @@ def _materialize_workspace(
         # reinterpret a Windows autocrlf checkout as a repository-wide change.
         ["config", "core.autocrlf", "false"],
         ["remote", "add", "origin", str(task["project_url"])],
-        ["fetch", "--depth", "1", "origin", str(task["base_commit"])],
-        ["checkout", "--detach", "FETCH_HEAD"],
     ]
-    for command in commands:
+    for command in setup_commands:
         proc = _git(command, cwd=workspace)
         if proc.returncode != 0:
             raise OUBV2Error(
                 f"Unable to materialize {task['id']} ({' '.join(command)}): "
                 f"{(proc.stdout or '').strip()[-2000:]}"
             )
+
+    fetch_command = [
+        "fetch",
+        "--depth",
+        "1",
+        "origin",
+        str(task["base_commit"]),
+    ]
+    fetch_proc = None
+    for attempt in range(1, 4):
+        fetch_proc = _git(fetch_command, cwd=workspace)
+        if fetch_proc.returncode == 0:
+            break
+        if attempt < 3:
+            time.sleep(attempt)
+
+    if fetch_proc is None or fetch_proc.returncode != 0:
+        output = "" if fetch_proc is None else (fetch_proc.stdout or "")
+        raise OUBV2Error(
+            f"Unable to materialize {task['id']} ({' '.join(fetch_command)}): "
+            f"{output.strip()[-2000:]}"
+        )
+
+    checkout_command = ["checkout", "--detach", "FETCH_HEAD"]
+    proc = _git(checkout_command, cwd=workspace)
+    if proc.returncode != 0:
+        raise OUBV2Error(
+            f"Unable to materialize {task['id']} ({' '.join(checkout_command)}): "
+            f"{(proc.stdout or '').strip()[-2000:]}"
+        )
 
     head = _git_text(["rev-parse", "HEAD"], cwd=workspace).strip()
     if head != task["base_commit"]:
