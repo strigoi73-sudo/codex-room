@@ -111,6 +111,8 @@ def test_phase5_runner_owns_mechanical_operator_guardrails() -> None:
     assert "No Desktop benchmark worker will be started." in runner
     assert "No Room Round will be started." in runner
     assert "Failed to start the systemd user session" in runner
+    assert "wrapper PID" in runner
+    assert "ps -eo pid,ppid,etime,stat,pcpu,pmem,args" not in runner
     assert "$process.Kill($true)" in runner
     assert "Attempting fail-safe abort" in runner
     assert "I-028 PHASE 5 REQUESTED TASK SET: PASS" in runner
