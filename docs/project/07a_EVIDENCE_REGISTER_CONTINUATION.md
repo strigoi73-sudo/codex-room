@@ -3250,3 +3250,62 @@ Source-review regressions cover frozen sample/asset binding, neutral mission con
 No measured Desktop task or Room Round was started during Phase 4. No task was resampled, no CooperBench multi-agent orchestration was imported, and no claim of runtime dry-run verification is made by this evidence.
 
 **Assessment:** I-028 Phase 4 — OUB Harness Adaptation is **COMPLETE / IMPLEMENTED / SOURCE-REVIEWED**. Phase 5 must now exercise the actual preparation, isolation, WSL grading, cleanup, and serialization mechanics before v2 may be treated as runtime-ready.
+
+### E-198 — I-028 OUB v2 Phase-5 mechanical dry run
+**Date:** 2026-09-27  
+**Status:** PRINCIPAL VERIFIED  
+**Kind:** [organizational utility benchmark / mechanical dry run / cross-host grading / fail-closed evidence]  
+**Issue:** I-028
+
+The principal completed the OUB v2 Phase-5 mechanical gate across the exact three-task sample frozen by E-195 and validated by E-196. No Desktop benchmark worker or Room Round was started during this gate, so no paid benchmark cognition was purchased.
+
+The successful task runs were:
+
+- O2-1 / LlamaIndex: `oub-v2-o2-1-20260927T224939814167Z`;
+- O2-2 / Typst: `oub-v2-o2-2-20260928T005520797518Z`;
+- O2-3 / dirty-equals: `oub-v2-o2-3-20260928T011052544044Z`.
+
+For all three frozen task pairs, the gate established:
+
+- exact frozen upstream base commit on both Desktop and Room workspaces;
+- matching starting Git tree and mission identity;
+- clean supplied source before the replay sentinel;
+- repository-local `core.autocrlf=false` visible identically to Windows Git and WSL Git;
+- absence of hidden CooperBench feature tests from both measured workspaces;
+- Room and active Round remaining in `preparing`, with no benchmark workers spawned;
+- a two-path mechanical candidate consisting only of one tracked README sentinel plus one untracked sentinel;
+- identical Windows/WSL candidate views;
+- successful isolated replay of both tracked and untracked candidate content;
+- execution of both official feature-test targets in the grader;
+- rejection of the intentionally untouched benchmark source as expected;
+- successful abort/cleanup with the Room stopped;
+- inactive final run state;
+- serialized `state.json`, `phase5-grade.json`, and `phase5-check.json` in compact evidence bundles without copying the external repository.
+
+The final O2-2/O2-3 task-set summary was written locally as:
+
+`output/oub/oub-v2-phase5-taskset-20260928T011143Z.json`
+
+and reported:
+
+- canonical head `a40c188551e6caf090a82fcff2168be4aa63c643`;
+- benchmark fingerprint `4476da8998643139519b0947ca280c4a14ed2242d26c031c076a2fbc704927ec`;
+- `OUB CURRENT: v1` at execution time;
+- paid benchmark cognition: **NONE**;
+- active OUB runs: **NONE**;
+- O2-2 result: **PASS**;
+- O2-3 result: **PASS**.
+
+Phase 5 also exposed several infrastructure defects before the final successful gate. They were treated as harness/environment failures rather than platform outcomes and repaired at their owning boundaries:
+
+1. Windows Git materialized CRLF working-tree content under system `core.autocrlf=true`, while WSL Git inspected the same workspace without that Windows system configuration, causing replay to appear repository-wide. Workspace materialization now pins repository-local `core.autocrlf=false`.
+2. A completed Typst grade result containing `❌` could not be printed through a legacy CP1252 Windows console because CLI JSON used raw Unicode. OUB v2 CLI JSON now uses Unicode escaping while preserving semantic values.
+3. The first repo-owned Phase-5 heartbeat performed a synchronous secondary WSL process probe while the grader already owned a WSL operation; the wrapper stalled after its first heartbeat. The heartbeat now monitors only the Windows grader wrapper PID and elapsed time, leaving grading as the sole WSL operation in flight.
+4. One exact-base GitHub fetch failed transiently with SChannel `SEC_E_DECRYPT_FAILURE`, early EOF, and invalid index-pack output. Exact-base materialization now retries only the external frozen-commit fetch, with at most three attempts and bounded 1s/2s backoff, while preserving exact-commit validation and fail-closed behavior.
+
+The final O2-2 run showed 28 consecutive 30-second heartbeats over roughly 14 minutes before successful replay/grading, demonstrating that the repaired heartbeat remained live throughout the long Typst build/test path. O2-3 then completed without a heartbeat interval elapsing.
+
+The gate leaves the frozen sample and Phase-1 fairness contract unchanged. No task was resampled, no Room-specific decomposition was introduced, and no measured platform result was generated.
+
+**Assessment:** I-028 Phase 5 — Mechanical Dry Run is **COMPLETE / PRINCIPAL VERIFIED**. OUB v2 is mechanically ready for measured comparison. Phase 6 — the three frozen Desktop-versus-Room measured comparisons — is next and requires a separate principal invocation.
+
