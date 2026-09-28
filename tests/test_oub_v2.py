@@ -283,7 +283,7 @@ def test_oub_v2_materialization_retries_external_fetch(
     fetch_attempts = 0
     sleeps: list[int] = []
 
-    def flaky_git(args, *, cwd, text=True):
+    def flaky_git(args, *, cwd=None, timeout=1200, text=True):
         nonlocal fetch_attempts
         if args and args[0] == "fetch":
             fetch_attempts += 1
@@ -293,7 +293,7 @@ def test_oub_v2_materialization_retries_external_fetch(
                     returncode=1,
                     stdout="transient fetch failure",
                 )
-        return real_git(args, cwd=cwd, text=text)
+        return real_git(args, cwd=cwd, timeout=timeout, text=text)
 
     monkeypatch.setattr(oub_v2, "_git", flaky_git)
     monkeypatch.setattr(oub_v2.time, "sleep", sleeps.append)
@@ -313,4 +313,3 @@ def test_oub_v2_materialization_retries_external_fetch(
     assert sleeps == [1, 2]
     assert state["head"] == base_commit
     assert state["status"] == ""
-
